@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reiz-Reaktions-Schema</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { 
+      font-family: system-ui, -apple-system, sans-serif; 
+      background: linear-gradient(to bottom, #f8fafc, #ffffff);
+      min-height: 100vh;
+      padding: 16px;
+    }
+    
+    .container { max-width: 1000px; margin: 0 auto; }
+    
+    .title { text-align: center; margin-bottom: 24px; }
+    .title h1 { font-size: 1.5rem; font-weight: bold; color: #1f2937; margin-bottom: 4px; }
+    .title p { font-size: 0.875rem; color: #6b7280; }
+    
+    .main-card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+    
+    .labels-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    
+    .label-item { text-align: center; font-size: 0.875rem; font-weight: bold; }
+    .label-item.narrow { width: 96px; }
+    .label-item.wide { flex: 1; }
+    .label-inactive { color: #9ca3af; }
+    .label-amber { color: #d97706; }
+    .label-green { color: #16a34a; }
+    .label-purple { color: #7c3aed; }
+    
+    .schema-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    
+    .symbol-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+    }
+    
+    .symbol-inner {
+      position: relative;
+      height: 112px;
+      width: 96px;
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #f3f4f6;
+      transition: all 0.3s;
+    }
+    .symbol-inner.active-amber { 
+      background: #fef3c7; 
+      box-shadow: 0 0 0 4px #f59e0b;
+    }
+    .symbol-inner.active-green { 
+      background: #f0fdf4; 
+      box-shadow: 0 0 0 4px #22c55e;
+    }
+    .symbol-inner.active-purple { 
+      background: #faf5ff; 
+      box-shadow: 0 0 0 4px #a855f7;
+    }
+    
+    .pulse-bg {
+      position: absolute;
+      inset: 0;
+      border-radius: 16px;
+      background: #fcd34d;
+      opacity: 0.3;
+      animation: pulse 1s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 0.5; }
+    }
+    
+    @keyframes ping {
+      0% { transform: scale(1); opacity: 1; }
+      75%, 100% { transform: scale(1.5); opacity: 0; }
+    }
+    
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+    
+    .emoji-large { font-size: 2.5rem; }
+    .emoji-medium { font-size: 2rem; }
+    .emoji-small { font-size: 1.5rem; }
+    
+    .ping { animation: ping 1s infinite; }
+    .bounce { animation: bounce 0.5s infinite; }
+    
+    .symbol-label {
+      font-size: 0.75rem;
+      margin-top: 8px;
+      font-weight: 500;
+      color: #6b7280;
+    }
+    .symbol-label.active { color: #d97706; }
+    .symbol-label.active-green { color: #16a34a; }
+    .symbol-label.active-purple { color: #7c3aed; }
+    
+    .nerve-box {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+    }
+    
+    .nerve-inner {
+      position: relative;
+      height: 112px;
+      width: 100%;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 8px;
+      background: #f3f4f6;
+      transition: all 0.3s;
+    }
+    .nerve-inner.active-green { 
+      background: #f0fdf4; 
+      box-shadow: 0 0 0 4px #22c55e;
+    }
+    .nerve-inner.active-purple { 
+      background: #faf5ff; 
+      box-shadow: 0 0 0 4px #a855f7;
+    }
+    
+    .info-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+      padding: 20px;
+      border-left: 4px solid #d1d5db;
+      transition: border-color 0.3s;
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+    }
+    .info-card.border-amber { border-left-color: #f59e0b; }
+    .info-card.border-green { border-left-color: #22c55e; }
+    .info-card.border-purple { border-left-color: #a855f7; }
+    
+    .info-icon { font-size: 2rem; }
+    .info-title { font-size: 1.125rem; font-weight: bold; color: #1f2937; margin-bottom: 4px; }
+    .info-text { color: #4b5563; line-height: 1.5; }
+    
+    .hint {
+      text-align: center;
+      font-size: 0.75rem;
+      color: #9ca3af;
+      margin-top: 16px;
+    }
+    
+    .relative { position: relative; }
+    .absolute { position: absolute; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    const ReizReaktionSchema = () => {
+      const [phase, setPhase] = useState(0);
+      const [sparkPosition, setSparkPosition] = useState(0);
+
+      const phases = [
+        { title: "Reiz-Reaktions-Schema", description: "Klicke auf einen Schritt, um das Schema zu erkunden.", icon: "👆" },
+        { title: "1. Reiz", description: "Du siehst und riechst einen Muffin. Die Sinneszellen in deinen Augen und deiner Nase wandeln diese Reize in Nervenimpulse um.", icon: "👁️" },
+        { title: "2. Reizleitung zum Gehirn", description: "Die Empfindungsnerven leiten die Nervenimpulse über das Rückenmark ins Gehirn.", icon: "⚡" },
+        { title: "3. Reizverarbeitung", description: "Im Gehirn werden die Nervenimpulse verarbeitet und beurteilt. Du triffst eine Entscheidung: Du willst den Muffin nehmen!", icon: "🧠" },
+        { title: "4. Reizleitung zu den Muskeln", description: "Das Gehirn sendet neue Nervenimpulse. Die Bewegungsnerven leiten sie über das Rückenmark zu deinen Muskeln.", icon: "⚡" },
+        { title: "5. Reaktion", description: "Die Nervenimpulse kommen in den Muskeln an. Dein Arm und deine Hand bewegen sich – du greifst den Muffin!", icon: "💪" }
+      ];
+
+      useEffect(() => {
+        if (phase === 2 || phase === 4) {
+          setSparkPosition(0);
+          const interval = setInterval(() => {
+            setSparkPosition(prev => prev >= 100 ? 100 : prev + 2);
+          }, 30);
+          return () => clearInterval(interval);
+        } else {
+          setSparkPosition(0);
+        }
+      }, [phase]);
+
+      const SenseOrgan = ({ active, onClick }) => (
+        <div className="symbol-box" onClick={onClick}>
+          <div className={`symbol-inner ${active ? 'active-amber' : ''}`}>
+            {active && <div className="pulse-bg"></div>}
+            <div className="relative" style={{display:'flex',flexDirection:'column',alignItems:'center'}}>
+              <span className="emoji-large">👁️</span>
+              <span className="emoji-medium">👃</span>
+            </div>
+          </div>
+          <span className={`symbol-label ${active ? 'active' : ''}`}>Sinnesorgan</span>
+        </div>
+      );
+
+      const Brain = ({ active, processing, onClick }) => (
+        <div className="symbol-box" onClick={onClick}>
+          <div className={`symbol-inner ${active ? 'active-amber' : ''}`}>
+            {active && <div className="pulse-bg"></div>}
+            <div className="relative">
+              <span className="emoji-large">🧠</span>
+              {processing && (
+                <>
+                  <span className="absolute ping" style={{top:'-8px',left:'-8px',fontSize:'1rem'}}>⚡</span>
+                  <span className="absolute ping" style={{top:'-8px',right:'-8px',fontSize:'1rem',animationDelay:'0.2s'}}>⚡</span>
+                  <span className="absolute bounce" style={{bottom:'-12px',left:'50%',transform:'translateX(-50%)',fontSize:'0.875rem'}}>💡</span>
+                </>
+              )}
+            </div>
+          </div>
+          <span className={`symbol-label ${active ? 'active' : ''}`}>Gehirn</span>
+        </div>
+      );
+
+      const Muscle = ({ active, reacting, onClick }) => (
+        <div className="symbol-box" onClick={onClick}>
+          <div className={`symbol-inner ${active ? 'active-amber' : ''}`}>
+            {active && <div className="pulse-bg"></div>}
+            <div className="relative" style={{display:'flex',flexDirection:'column',alignItems:'center'}}>
+              <span className="emoji-large">💪</span>
+              <span className={`emoji-medium ${reacting ? 'bounce' : ''}`}>{reacting ? '✊' : '🤚'}</span>
+            </div>
+            {active && !reacting && (
+              <span className="absolute ping" style={{top:'4px',right:'4px',fontSize:'0.875rem'}}>⚡</span>
+            )}
+          </div>
+          <span className={`symbol-label ${active ? 'active' : ''}`}>Muskel</span>
+        </div>
+      );
+
+      const NerveFuse = ({ active, sparkPos, isGreen, label, onClick }) => {
+        const color = isGreen ? "#22C55E" : "#9333EA";
+        const burntColor = isGreen ? "#166534" : "#581C87";
+        const sparkColor = isGreen ? "#4ADE80" : "#C084FC";
+        const activeClass = isGreen ? 'active-green' : 'active-purple';
+        const labelClass = isGreen ? 'active-green' : 'active-purple';
+        
+        return (
+          <div className="nerve-box" onClick={onClick}>
+            <div className={`nerve-inner ${active ? activeClass : ''}`}>
+              <svg viewBox="0 0 160 40" style={{width:'100%',height:'40px'}}>
+                <line x1="5" y1="20" x2="140" y2="20" 
+                      stroke={active ? color : "#D1D5DB"} 
+                      strokeWidth="6" strokeLinecap="round" strokeDasharray="8 5"/>
+                {active && sparkPos > 0 && (
+                  <line x1="5" y1="20" x2={5 + sparkPos * 1.35} y2="20" 
+                        stroke={burntColor} strokeWidth="6" strokeLinecap="round" strokeDasharray="8 5"/>
+                )}
+                <polygon points="155,20 140,10 140,30" 
+                         fill={active && sparkPos >= 100 ? burntColor : active ? color : "#D1D5DB"}/>
+                {active && sparkPos > 0 && sparkPos < 100 && (
+                  <g transform={`translate(${5 + sparkPos * 1.35}, 20)`}>
+                    <circle r="12" fill={sparkColor} opacity="0.3">
+                      <animate attributeName="r" values="10;14;10" dur="0.15s" repeatCount="indefinite"/>
+                    </circle>
+                    <circle r="8" fill={sparkColor} opacity="0.5"/>
+                    <circle r="4" fill="white">
+                      <animate attributeName="r" values="3;5;3" dur="0.1s" repeatCount="indefinite"/>
+                    </circle>
+                    <circle cx="-9" cy="-3" r="2" fill={sparkColor} opacity="0.8">
+                      <animate attributeName="opacity" values="0.8;0;0.8" dur="0.12s" repeatCount="indefinite"/>
+                    </circle>
+                    <circle cx="-7" cy="4" r="1.5" fill="white" opacity="0.9">
+                      <animate attributeName="opacity" values="0.9;0;0.9" dur="0.1s" repeatCount="indefinite"/>
+                    </circle>
+                  </g>
+                )}
+                {active && sparkPos >= 100 && (
+                  <circle cx="150" cy="20" r="8" fill={sparkColor} opacity="0.6">
+                    <animate attributeName="r" values="8;16;8" dur="0.4s" repeatCount="2"/>
+                    <animate attributeName="opacity" values="0.6;0;0.6" dur="0.4s" repeatCount="2"/>
+                  </circle>
+                )}
+              </svg>
+            </div>
+            <span className={`symbol-label ${active ? labelClass : ''}`}>{label}</span>
+          </div>
+        );
+      };
+
+      const currentPhase = phases[phase];
+      const borderClass = phase === 0 ? '' : phase === 2 ? 'border-green' : phase === 4 ? 'border-purple' : 'border-amber';
+
+      return (
+        <div className="container">
+          <div className="title">
+            <h1>Reiz-Reaktions-Schema</h1>
+            <p>Klicke auf einen Bereich, um mehr zu erfahren</p>
+          </div>
+
+          <div className="main-card">
+            <div className="labels-row">
+              <div className={`label-item narrow ${phase === 1 ? 'label-amber' : 'label-inactive'}`}>Reiz</div>
+              <div className={`label-item wide ${phase === 2 ? 'label-green' : 'label-inactive'}`}>Reizleitung</div>
+              <div className={`label-item narrow ${phase === 3 ? 'label-amber' : 'label-inactive'}`}>Verarbeitung</div>
+              <div className={`label-item wide ${phase === 4 ? 'label-purple' : 'label-inactive'}`}>Reizleitung</div>
+              <div className={`label-item narrow ${phase === 5 ? 'label-amber' : 'label-inactive'}`}>Reaktion</div>
+            </div>
+
+            <div className="schema-row">
+              <SenseOrgan active={phase === 1} onClick={() => setPhase(1)} />
+              <NerveFuse active={phase === 2} sparkPos={phase === 2 ? sparkPosition : phase > 2 ? 100 : 0} 
+                         isGreen={true} label="Empfindungsnerven" onClick={() => setPhase(2)} />
+              <Brain active={phase === 3} processing={phase === 3} onClick={() => setPhase(3)} />
+              <NerveFuse active={phase === 4} sparkPos={phase === 4 ? sparkPosition : phase > 4 ? 100 : 0} 
+                         isGreen={false} label="Bewegungsnerven" onClick={() => setPhase(4)} />
+              <Muscle active={phase === 5} reacting={phase === 5} onClick={() => setPhase(5)} />
+            </div>
+          </div>
+
+          <div className={`info-card ${borderClass}`}>
+            <span className="info-icon">{currentPhase.icon}</span>
+            <div>
+              <div className="info-title">{currentPhase.title}</div>
+              <p className="info-text">{currentPhase.description}</p>
+            </div>
+          </div>
+
+          <p className="hint">💡 Nervenimpulse sind kurze, elektrische Signale, die durch das Nervensystem wandern.</p>
+        </div>
+      );
+    };
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<ReizReaktionSchema />);
+  </script>
+</body>
+</html>
