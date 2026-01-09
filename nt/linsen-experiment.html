@@ -413,7 +413,12 @@
         const lightSourceX = 38;
         const lightSourceRadius = 18;
         
+        const LENS_HEIGHT = 120; // Feste Linsenhöhe
+        
         function resizeCanvas() {
+            const oldWidth = canvas.width || 1;
+            const oldHeight = canvas.height || 1;
+            
             const rect = canvas.parentElement.getBoundingClientRect();
             canvas.width = rect.width;
             canvas.height = rect.height;
@@ -421,6 +426,22 @@
             // Overlay auf volle Fenstergrösse
             overlay.width = window.innerWidth;
             overlay.height = window.innerHeight;
+            
+            // Positionen der Objekte relativ anpassen
+            if (oldWidth > 1 && oldHeight > 1) {
+                const scaleX = canvas.width / oldWidth;
+                const scaleY = canvas.height / oldHeight;
+                
+                lenses.forEach(lens => {
+                    lens.x *= scaleX;
+                    lens.y *= scaleY;
+                });
+                
+                rulers.forEach(ruler => {
+                    ruler.x *= scaleX;
+                    ruler.y *= scaleY;
+                });
+            }
             
             draw();
         }
@@ -655,7 +676,7 @@
         
         function drawLensOnContext(context, lens, isActive) {
             const props = lensTypes[lens.lensType];
-            const height = Math.min(140, canvas.height * 0.35);
+            const height = LENS_HEIGHT;
             const width = props.width;
             
             if (isActive) {
@@ -811,7 +832,7 @@
             let currentAngle = 0;
             let passedLens = false;
             
-            const lensHeight = Math.min(140, canvas.height * 0.35);
+            const lensHeight = LENS_HEIGHT;
             
             ctx.beginPath();
             ctx.moveTo(currentX, currentY);
@@ -862,7 +883,7 @@
         
         function drawLens(lens, isActive) {
             const props = lensTypes[lens.lensType];
-            const height = Math.min(140, canvas.height * 0.35);
+            const height = LENS_HEIGHT;
             const width = props.width;
             
             ctx.save();
@@ -980,7 +1001,7 @@
             }
             
             // Dann Linsen
-            const lensHeight = Math.min(140, canvas.height * 0.35);
+            const lensHeight = LENS_HEIGHT;
             for (let i = lenses.length - 1; i >= 0; i--) {
                 const lens = lenses[i];
                 const width = lensTypes[lens.lensType].width + 20;
@@ -1138,6 +1159,11 @@
                     isRotating = true;
                     initialAngle = Math.atan2(touch2.clientY - touch1.clientY, touch2.clientX - touch1.clientX);
                     initialRotation = draggedObject.rotation || 0;
+                    dragOffset.x = 0;
+                    dragOffset.y = 0;
+                    dragClientPos.x = (touch1.clientX + touch2.clientX) / 2;
+                    dragClientPos.y = (touch1.clientY + touch2.clientY) / 2;
+                    drawOverlay();
                     return;
                 }
                 
@@ -1159,6 +1185,12 @@
                         draggedType = 'ruler';
                         initialAngle = Math.atan2(touch2.clientY - touch1.clientY, touch2.clientX - touch1.clientX);
                         initialRotation = ruler.rotation || 0;
+                        dragOffset.x = 0;
+                        dragOffset.y = 0;
+                        dragClientPos.x = (touch1.clientX + touch2.clientX) / 2;
+                        dragClientPos.y = (touch1.clientY + touch2.clientY) / 2;
+                        draw();
+                        drawOverlay();
                         break;
                     }
                 }
@@ -1180,6 +1212,8 @@
                     isRotating = true;
                     initialAngle = Math.atan2(touch2.clientY - touch1.clientY, touch2.clientX - touch1.clientX);
                     initialRotation = draggedObject.rotation || 0;
+                    dragOffset.x = 0;
+                    dragOffset.y = 0;
                 }
                 
                 // Neuer Winkel zwischen den Fingern
@@ -1193,7 +1227,12 @@
                 draggedObject.x = (touch1.clientX + touch2.clientX) / 2 - rect.left;
                 draggedObject.y = (touch1.clientY + touch2.clientY) / 2 - rect.top;
                 
+                // Overlay-Position aktualisieren
+                dragClientPos.x = (touch1.clientX + touch2.clientX) / 2;
+                dragClientPos.y = (touch1.clientY + touch2.clientY) / 2;
+                
                 draw();
+                drawOverlay();
             } else if (isRotating && e.touches.length === 2) {
                 e.preventDefault();
                 const touch1 = e.touches[0];
@@ -1210,7 +1249,12 @@
                 draggedObject.x = (touch1.clientX + touch2.clientX) / 2 - rect.left;
                 draggedObject.y = (touch1.clientY + touch2.clientY) / 2 - rect.top;
                 
+                // Overlay-Position aktualisieren
+                dragClientPos.x = (touch1.clientX + touch2.clientX) / 2;
+                dragClientPos.y = (touch1.clientY + touch2.clientY) / 2;
+                
                 draw();
+                drawOverlay();
             } else if (draggedObject && !isRotating && e.touches.length === 1) {
                 e.preventDefault();
                 const touch = e.touches[0];
