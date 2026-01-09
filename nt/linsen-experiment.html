@@ -1133,6 +1133,14 @@
                 const midX = (touch1.clientX + touch2.clientX) / 2 - rect.left;
                 const midY = (touch1.clientY + touch2.clientY) / 2 - rect.top;
                 
+                // Wenn bereits ein Lineal gezogen wird, in Rotationsmodus wechseln
+                if (draggedObject && draggedType === 'ruler') {
+                    isRotating = true;
+                    initialAngle = Math.atan2(touch2.clientY - touch1.clientY, touch2.clientX - touch1.clientX);
+                    initialRotation = draggedObject.rotation || 0;
+                    return;
+                }
+                
                 // Prüfen ob ein Lineal unter den Fingern ist
                 for (let i = rulers.length - 1; i >= 0; i--) {
                     const ruler = rulers[i];
@@ -1161,7 +1169,32 @@
         });
         
         document.addEventListener('touchmove', (e) => {
-            if (isRotating && e.touches.length === 2) {
+            if (e.touches.length === 2 && draggedObject && draggedType === 'ruler') {
+                // Zwei Finger auf Lineal - Rotationsmodus
+                e.preventDefault();
+                const touch1 = e.touches[0];
+                const touch2 = e.touches[1];
+                
+                if (!isRotating) {
+                    // Gerade in Rotationsmodus gewechselt
+                    isRotating = true;
+                    initialAngle = Math.atan2(touch2.clientY - touch1.clientY, touch2.clientX - touch1.clientX);
+                    initialRotation = draggedObject.rotation || 0;
+                }
+                
+                // Neuer Winkel zwischen den Fingern
+                const currentAngle = Math.atan2(touch2.clientY - touch1.clientY, touch2.clientX - touch1.clientX);
+                const angleDiff = currentAngle - initialAngle;
+                
+                draggedObject.rotation = initialRotation + angleDiff;
+                
+                // Mitte zwischen Fingern als neue Position
+                const rect = canvas.getBoundingClientRect();
+                draggedObject.x = (touch1.clientX + touch2.clientX) / 2 - rect.left;
+                draggedObject.y = (touch1.clientY + touch2.clientY) / 2 - rect.top;
+                
+                draw();
+            } else if (isRotating && e.touches.length === 2) {
                 e.preventDefault();
                 const touch1 = e.touches[0];
                 const touch2 = e.touches[1];
@@ -1178,7 +1211,7 @@
                 draggedObject.y = (touch1.clientY + touch2.clientY) / 2 - rect.top;
                 
                 draw();
-            } else if (draggedObject && !isRotating) {
+            } else if (draggedObject && !isRotating && e.touches.length === 1) {
                 e.preventDefault();
                 const touch = e.touches[0];
                 handleMove(touch.clientX, touch.clientY);
@@ -1187,14 +1220,30 @@
         
         document.addEventListener('touchend', (e) => {
             if (isRotating) {
-                isRotating = false;
-                draggedObject = null;
-                draggedType = null;
-                draw();
+                if (e.touches.length === 1) {
+                    // Ein Finger noch drauf - zurück zu Verschieben
+                    isRotating = false;
+                    const touch = e.touches[0];
+                    const rect = canvas.getBoundingClientRect();
+                    dragOffset.x = touch.clientX - rect.left - draggedObject.x;
+                    dragOffset.y = touch.clientY - rect.top - draggedObject.y;
+                    dragClientPos.x = touch.clientX - dragOffset.x;
+                    dragClientPos.y = touch.clientY - dragOffset.y;
+                    drawOverlay();
+                } else {
+                    // Alle Finger weg
+                    isRotating = false;
+                    draggedObject = null;
+                    draggedType = null;
+                    draw();
+                    drawOverlay();
+                }
             } else if (draggedObject) {
-                e.preventDefault();
-                const touch = e.changedTouches[0];
-                handleEnd(touch.clientX, touch.clientY);
+                if (e.touches.length === 0) {
+                    e.preventDefault();
+                    const touch = e.changedTouches[0];
+                    handleEnd(touch.clientX, touch.clientY);
+                }
             }
         });
         
