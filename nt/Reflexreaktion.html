@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reflexreaktion</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { 
+      font-family: system-ui, -apple-system, sans-serif; 
+      background: linear-gradient(to bottom, #f8fafc, #ffffff);
+      min-height: 100vh;
+      padding: 16px;
+    }
+    
+    .container { max-width: 1100px; margin: 0 auto; }
+    
+    .title { text-align: center; margin-bottom: 20px; }
+    .title h1 { font-size: 1.5rem; font-weight: bold; color: #1f2937; margin-bottom: 4px; }
+    .title p { font-size: 0.875rem; color: #6b7280; }
+    
+    .main-card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+    
+    .label-item { text-align: center; font-size: 0.85rem; font-weight: bold; }
+    .label-inactive { color: #9ca3af; }
+    .label-amber { color: #d97706; }
+    .label-red { color: #dc2626; }
+    .label-green { color: #16a34a; }
+    .label-purple { color: #7c3aed; }
+    .label-blue { color: #2563eb; }
+    
+    .schema-container {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+    
+    /* Top row with brain */
+    .brain-row {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      width: 100%;
+      padding-bottom: 0;
+    }
+    
+    /* Vertical nerve from spinal cord to brain */
+    .vertical-nerve-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    /* Main horizontal row */
+    .main-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      width: 100%;
+    }
+    
+    .symbol-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      width: 100px;
+      flex-shrink: 0;
+    }
+    
+    .symbol-inner {
+      position: relative;
+      height: 100px;
+      width: 100px;
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #f3f4f6;
+      transition: all 0.3s;
+    }
+    .symbol-inner.active-amber { 
+      background: #fef3c7; 
+      box-shadow: 0 0 0 4px #f59e0b;
+    }
+    .symbol-inner.active-red { 
+      background: #fef2f2; 
+      box-shadow: 0 0 0 4px #ef4444;
+    }
+    .symbol-inner.active-green { 
+      background: #f0fdf4; 
+      box-shadow: 0 0 0 4px #22c55e;
+    }
+    .symbol-inner.active-purple { 
+      background: #faf5ff; 
+      box-shadow: 0 0 0 4px #a855f7;
+    }
+    .symbol-inner.active-blue { 
+      background: #eff6ff; 
+      box-shadow: 0 0 0 4px #3b82f6;
+    }
+    
+    .pulse-bg {
+      position: absolute;
+      inset: 0;
+      border-radius: 16px;
+      background: #fcd34d;
+      opacity: 0.3;
+      animation: pulse 1s infinite;
+    }
+    .pulse-bg.red { background: #fca5a5; }
+    .pulse-bg.blue { background: #93c5fd; }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 0.5; }
+    }
+    
+    @keyframes ping {
+      0% { transform: scale(1); opacity: 1; }
+      75%, 100% { transform: scale(1.5); opacity: 0; }
+    }
+    
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+    
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-3px); }
+      75% { transform: translateX(3px); }
+    }
+    
+    .emoji-large { font-size: 2.5rem; }
+    .emoji-medium { font-size: 1.75rem; }
+    .emoji-small { font-size: 1.25rem; }
+    
+    .ping { animation: ping 1s infinite; }
+    .bounce { animation: bounce 0.5s infinite; }
+    .shake { animation: shake 0.2s infinite; }
+    
+    .symbol-label {
+      font-size: 0.8rem;
+      margin-top: 8px;
+      font-weight: 500;
+      color: #6b7280;
+      text-align: center;
+      line-height: 1.2;
+    }
+    .symbol-label.active { color: #d97706; }
+    .symbol-label.active-red { color: #dc2626; }
+    .symbol-label.active-green { color: #16a34a; }
+    .symbol-label.active-purple { color: #7c3aed; }
+    .symbol-label.active-blue { color: #2563eb; }
+    
+    .nerve-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+    }
+    
+    .nerve-box.horizontal {
+      flex: 1;
+      min-width: 120px;
+    }
+    
+    .nerve-box.horizontal .nerve-inner {
+      height: 100px;
+    }
+    
+    .nerve-inner {
+      position: relative;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f3f4f6;
+      transition: all 0.3s;
+    }
+    
+    .nerve-inner.horizontal {
+      height: 100px;
+      width: 100%;
+      padding: 0 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .nerve-inner.vertical {
+      width: 100px;
+      height: 80px;
+      padding: 8px 0;
+    }
+    
+    .nerve-inner.active-green { 
+      background: #f0fdf4; 
+      box-shadow: 0 0 0 3px #22c55e;
+    }
+    .nerve-inner.active-purple { 
+      background: #faf5ff; 
+      box-shadow: 0 0 0 3px #a855f7;
+    }
+    .nerve-inner.active-blue { 
+      background: #eff6ff; 
+      box-shadow: 0 0 0 3px #3b82f6;
+    }
+    
+    .info-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+      padding: 20px;
+      border-left: 4px solid #d1d5db;
+      transition: border-color 0.3s;
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+    }
+    .info-card.border-amber { border-left-color: #f59e0b; }
+    .info-card.border-red { border-left-color: #ef4444; }
+    .info-card.border-green { border-left-color: #22c55e; }
+    .info-card.border-purple { border-left-color: #a855f7; }
+    .info-card.border-blue { border-left-color: #3b82f6; }
+    
+    .info-icon { font-size: 2rem; }
+    .info-title { font-size: 1.125rem; font-weight: bold; color: #1f2937; margin-bottom: 4px; }
+    .info-text { color: #4b5563; line-height: 1.5; }
+    
+    .hint {
+      text-align: center;
+      font-size: 0.75rem;
+      color: #9ca3af;
+      margin-top: 16px;
+      background: #fef3c7;
+      padding: 12px;
+      border-radius: 8px;
+    }
+    .hint strong { color: #92400e; }
+    
+    .relative { position: relative; }
+    .absolute { position: absolute; }
+    
+    .speed-badge {
+      font-size: 0.6rem;
+      padding: 2px 6px;
+      border-radius: 8px;
+      position: absolute;
+      white-space: nowrap;
+    }
+    .speed-fast {
+      background: #dcfce7;
+      color: #166534;
+    }
+    .speed-slow {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    .labels-row-main {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+      width: 100%;
+    }
+    
+    .label-spacer { width: 100px; text-align: center; flex-shrink: 0; }
+    .label-nerve { flex: 1; min-width: 120px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    const ReflexSchema = () => {
+      const [phase, setPhase] = useState(0);
+      const [sparkPosition, setSparkPosition] = useState(0);
+      const [sparkPosition2, setSparkPosition2] = useState(0);
+      const [brainSparkPosition, setBrainSparkPosition] = useState(0);
+
+      const phases = [
+        { 
+          title: "Reflexreaktion", 
+          description: "Reflexe sind schnelle Reaktionen auf starke Reize. Bei einem Reflex ist das Gehirn nicht beteiligt – die Reaktion geschieht automatisch, bevor du den Schmerz überhaupt spürst. Klicke auf einen Schritt, um den Reflex zu erkunden.", 
+          icon: "👆" 
+        },
+        { 
+          title: "1. Starker Reiz", 
+          description: "Sobald Samuels Finger den heissen Muffin berühren, werden manche Sinneszellen in der Haut stark gereizt.", 
+          icon: "🔥" 
+        },
+        { 
+          title: "2. Empfindungsnerven zum Rückenmark", 
+          description: "Die Sinneszellen schicken darum viele Nervenimpulse in sehr kurzer Zeit zum Rückenmark (Empfindungsnerven).", 
+          icon: "⚡" 
+        },
+        { 
+          title: "3. Verarbeitung im Rückenmark", 
+          description: "Weil sehr viele Nervenimpulse in kurzer Zeit ins Rückenmark kommen, schickt das Rückenmark sofort neue Nervenimpulse in die Muskeln der Arme (Bewegungsnerven). Das Gehirn ist nicht beteiligt!", 
+          icon: "🔀" 
+        },
+        { 
+          title: "4. Zwei Wege gleichzeitig!", 
+          description: "Das Rückenmark sendet Signale auf zwei Wegen: Schnell zu den Muskeln (Bewegungsnerven) UND langsamer zum Gehirn.", 
+          icon: "⚡" 
+        },
+        { 
+          title: "5. Reaktion – Hand zurück!", 
+          description: "Samuel zieht die Hand zurück. Die Reaktion passiert automatisch und sehr schnell – noch bevor Samuel den Schmerz spürt!", 
+          icon: "✋" 
+        },
+        { 
+          title: "6. Schmerzempfindung im Gehirn", 
+          description: "Die Nervenimpulse kommen aber erst im Gehirn an, wenn Samuel die Hand schon weggezogen hat. Erst jetzt spürt er den Schmerz und erst jetzt wird ihm bewusst, dass der Muffin heiss ist.", 
+          icon: "😣" 
+        }
+      ];
+
+      useEffect(() => {
+        if (phase === 2) {
+          setSparkPosition(0);
+          const interval = setInterval(() => {
+            setSparkPosition(prev => prev >= 100 ? 100 : prev + 3);
+          }, 25);
+          return () => clearInterval(interval);
+        } else if (phase === 4) {
+          setSparkPosition2(0);
+          setBrainSparkPosition(0);
+          const interval = setInterval(() => {
+            setSparkPosition2(prev => prev >= 100 ? 100 : prev + 4);
+            setBrainSparkPosition(prev => prev >= 100 ? 100 : prev + 2);
+          }, 25);
+          return () => clearInterval(interval);
+        } else {
+          setSparkPosition(0);
+          setSparkPosition2(0);
+          setBrainSparkPosition(0);
+        }
+      }, [phase]);
+
+      const SkinSensor = ({ active, onClick }) => (
+        <div className="symbol-box" onClick={onClick}>
+          <div className={`symbol-inner ${active ? 'active-red' : ''}`}>
+            {active && <div className="pulse-bg red"></div>}
+            <div className="relative" style={{display:'flex',flexDirection:'column',alignItems:'center'}}>
+              <span className="emoji-large">🖐️</span>
+              <span className="emoji-small">🔥</span>
+            </div>
+          </div>
+          <span className={`symbol-label ${active ? 'active-red' : ''}`}>Sinneszellen<br/>(Haut)</span>
+        </div>
+      );
+
+      const SpinalCord = ({ active, processing, onClick }) => (
+        <div className="symbol-box" onClick={onClick}>
+          <div className={`symbol-inner ${active ? 'active-amber' : ''}`}>
+            {active && <div className="pulse-bg"></div>}
+            <div className="relative">
+              <span className="emoji-large">🔀</span>
+              {processing && (
+                <>
+                  <span className="absolute ping" style={{top:'-8px',left:'-8px',fontSize:'0.875rem'}}>⚡</span>
+                  <span className="absolute ping" style={{top:'-8px',right:'-8px',fontSize:'0.875rem',animationDelay:'0.2s'}}>⚡</span>
+                </>
+              )}
+            </div>
+          </div>
+          <span className={`symbol-label ${active ? 'active' : ''}`}>Rückenmark</span>
+        </div>
+      );
+
+      const Muscle = ({ active, reacting, onClick }) => (
+        <div className="symbol-box" onClick={onClick}>
+          <div className={`symbol-inner ${active ? 'active-amber' : ''}`}>
+            {active && <div className="pulse-bg"></div>}
+            <div className="relative" style={{display:'flex',flexDirection:'column',alignItems:'center'}}>
+              <span className={`emoji-large ${reacting ? 'shake' : ''}`}>💪</span>
+              <span className={`emoji-medium ${reacting ? 'bounce' : ''}`}>{reacting ? '✋' : '🤚'}</span>
+            </div>
+          </div>
+          <span className={`symbol-label ${active ? 'active' : ''}`}>Muskel<br/>(Arm)</span>
+        </div>
+      );
+
+      const Brain = ({ active, feeling, onClick }) => (
+        <div className="symbol-box" onClick={onClick}>
+          <div className={`symbol-inner ${active ? 'active-blue' : ''}`}>
+            {active && <div className="pulse-bg blue"></div>}
+            <div className="relative">
+              <span className="emoji-large">🧠</span>
+              {feeling && (
+                <span className="absolute bounce" style={{bottom:'-8px',left:'50%',transform:'translateX(-50%)',fontSize:'1.125rem'}}>😣</span>
+              )}
+            </div>
+          </div>
+          <span className={`symbol-label ${active ? 'active-blue' : ''}`}>Gehirn</span>
+        </div>
+      );
+
+      const HorizontalNerve = ({ active, sparkPos, color, label, onClick, showSpeed }) => {
+        const colors = {
+          green: { main: "#22C55E", burnt: "#166534", spark: "#4ADE80", activeClass: 'active-green', labelClass: 'active-green' },
+          purple: { main: "#9333EA", burnt: "#581C87", spark: "#C084FC", activeClass: 'active-purple', labelClass: 'active-purple' },
+        };
+        const c = colors[color];
+        
+        return (
+          <div className="nerve-box horizontal" onClick={onClick}>
+            <div className={`nerve-inner horizontal ${active ? c.activeClass : ''}`}>
+              {showSpeed && (
+                <span className="speed-badge speed-fast" style={{top:'-10px',left:'50%',transform:'translateX(-50%)'}}>
+                  ⚡ SCHNELL
+                </span>
+              )}
+              <svg viewBox="0 0 120 30" style={{width:'100%',height:'30px'}}>
+                <line x1="5" y1="15" x2="100" y2="15" 
+                      stroke={active ? c.main : "#D1D5DB"} 
+                      strokeWidth="5" strokeLinecap="round" strokeDasharray="6 4"/>
+                {active && sparkPos > 0 && (
+                  <line x1="5" y1="15" x2={5 + sparkPos * 0.95} y2="15" 
+                        stroke={c.burnt} strokeWidth="5" strokeLinecap="round" strokeDasharray="6 4"/>
+                )}
+                <polygon points="115,15 100,7 100,23" 
+                         fill={active && sparkPos >= 100 ? c.burnt : active ? c.main : "#D1D5DB"}/>
+                {active && sparkPos > 0 && sparkPos < 100 && (
+                  <g transform={`translate(${5 + sparkPos * 0.95}, 15)`}>
+                    <circle r="8" fill={c.spark} opacity="0.3">
+                      <animate attributeName="r" values="6;10;6" dur="0.15s" repeatCount="indefinite"/>
+                    </circle>
+                    <circle r="4" fill={c.spark} opacity="0.6"/>
+                    <circle r="2" fill="white"/>
+                  </g>
+                )}
+                {active && sparkPos >= 100 && (
+                  <circle cx="110" cy="15" r="5" fill={c.spark} opacity="0.6">
+                    <animate attributeName="r" values="5;10;5" dur="0.3s" repeatCount="2"/>
+                    <animate attributeName="opacity" values="0.6;0;0.6" dur="0.3s" repeatCount="2"/>
+                  </circle>
+                )}
+              </svg>
+            </div>
+            <span className={`symbol-label ${active ? c.labelClass : ''}`}>{label}</span>
+          </div>
+        );
+      };
+
+      const VerticalNerve = ({ active, sparkPos, onClick, showSpeed }) => {
+        const c = { main: "#3B82F6", burnt: "#1E40AF", spark: "#60A5FA" };
+        
+        return (
+          <div className="nerve-box" onClick={onClick} style={{marginTop:'8px', marginBottom:'8px'}}>
+            <div className={`nerve-inner vertical ${active ? 'active-blue' : ''}`}>
+              {showSpeed && (
+                <span className="speed-badge speed-slow" style={{left:'calc(100% + 4px)',top:'50%',transform:'translateY(-50%)'}}>
+                  🐢 langsamer
+                </span>
+              )}
+              <svg viewBox="0 0 30 70" style={{width:'30px',height:'100%'}}>
+                <line x1="15" y1="65" x2="15" y2="15" 
+                      stroke={active ? c.main : "#D1D5DB"} 
+                      strokeWidth="5" strokeLinecap="round" strokeDasharray="6 4"/>
+                {active && sparkPos > 0 && (
+                  <line x1="15" y1="65" x2="15" y2={65 - sparkPos * 0.5} 
+                        stroke={c.burnt} strokeWidth="5" strokeLinecap="round" strokeDasharray="6 4"/>
+                )}
+                <polygon points="15,5 7,18 23,18" 
+                         fill={active && sparkPos >= 100 ? c.burnt : active ? c.main : "#D1D5DB"}/>
+                {active && sparkPos > 0 && sparkPos < 100 && (
+                  <g transform={`translate(15, ${65 - sparkPos * 0.5})`}>
+                    <circle r="8" fill={c.spark} opacity="0.3">
+                      <animate attributeName="r" values="6;10;6" dur="0.15s" repeatCount="indefinite"/>
+                    </circle>
+                    <circle r="4" fill={c.spark} opacity="0.6"/>
+                    <circle r="2" fill="white"/>
+                  </g>
+                )}
+                {active && sparkPos >= 100 && (
+                  <circle cx="15" cy="10" r="5" fill={c.spark} opacity="0.6">
+                    <animate attributeName="r" values="5;10;5" dur="0.3s" repeatCount="2"/>
+                    <animate attributeName="opacity" values="0.6;0;0.6" dur="0.3s" repeatCount="2"/>
+                  </circle>
+                )}
+              </svg>
+            </div>
+          </div>
+        );
+      };
+
+      const currentPhase = phases[phase];
+      const borderClass = phase === 0 ? '' : 
+                          phase === 1 ? 'border-red' : 
+                          phase === 2 ? 'border-green' : 
+                          phase === 3 ? 'border-amber' :
+                          phase === 4 ? 'border-purple' : 
+                          phase === 5 ? 'border-amber' :
+                          'border-blue';
+
+      return (
+        <div className="container">
+          <div className="title">
+            <h1>Reflexreaktion</h1>
+            <p>Klicke auf einen Bereich, um mehr zu erfahren</p>
+          </div>
+
+          <div className="main-card">
+            {/* Brain at top with vertical nerve */}
+            <div className="brain-row">
+              <div className="vertical-nerve-container">
+                <Brain 
+                  active={phase === 6} 
+                  feeling={phase === 6} 
+                  onClick={() => setPhase(6)} 
+                />
+                <VerticalNerve 
+                  active={phase === 4} 
+                  sparkPos={phase === 4 ? brainSparkPosition : phase >= 5 ? 100 : 0}
+                  onClick={() => setPhase(4)}
+                  showSpeed={phase === 4}
+                />
+              </div>
+            </div>
+
+            {/* Labels for main row */}
+            <div className="labels-row-main">
+              <div className={`label-spacer label-item ${phase === 1 ? 'label-red' : 'label-inactive'}`}>Reiz</div>
+              <div className={`label-nerve label-item ${phase === 2 ? 'label-green' : 'label-inactive'}`}>Reizleitung</div>
+              <div className={`label-spacer label-item ${phase === 3 ? 'label-amber' : 'label-inactive'}`}>Verarbeitung</div>
+              <div className={`label-nerve label-item ${phase === 4 ? 'label-purple' : 'label-inactive'}`}>Reizleitung</div>
+              <div className={`label-spacer label-item ${phase === 5 ? 'label-amber' : 'label-inactive'}`}>Reaktion</div>
+            </div>
+
+            {/* Main horizontal row */}
+            <div className="main-row">
+              <SkinSensor active={phase === 1} onClick={() => setPhase(1)} />
+              
+              <HorizontalNerve 
+                active={phase === 2} 
+                sparkPos={phase === 2 ? sparkPosition : phase > 2 ? 100 : 0} 
+                color="green" 
+                label="Empfindungsnerven" 
+                onClick={() => setPhase(2)}
+              />
+              
+              <SpinalCord 
+                active={phase === 3} 
+                processing={phase === 3 || phase === 4} 
+                onClick={() => setPhase(3)} 
+              />
+              
+              <HorizontalNerve 
+                active={phase === 4} 
+                sparkPos={phase === 4 ? sparkPosition2 : phase > 4 ? 100 : 0} 
+                color="purple" 
+                label="Bewegungsnerven" 
+                onClick={() => setPhase(4)}
+                showSpeed={phase === 4}
+              />
+              
+              <Muscle 
+                active={phase === 5} 
+                reacting={phase === 5} 
+                onClick={() => setPhase(5)} 
+              />
+            </div>
+          </div>
+
+          <div className={`info-card ${borderClass}`}>
+            <span className="info-icon">{currentPhase.icon}</span>
+            <div>
+              <div className="info-title">{currentPhase.title}</div>
+              <p className="info-text">{currentPhase.description}</p>
+            </div>
+          </div>
+
+          <p className="hint">
+            <strong>💡 Die Aufgabe von Reflexen:</strong> Das schnelle Zurückziehen der Hand hat verhindert, dass Samuel sich die Finger schlimmer verbrannt hat. Die Aufgabe von Reflexen ist, vor schweren Verletzungen zu schützen.
+          </p>
+        </div>
+      );
+    };
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<ReflexSchema />);
+  </script>
+</body>
+</html>
