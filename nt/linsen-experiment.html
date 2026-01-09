@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Experimente mit Linsen</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            font-family: 'Nunito', sans-serif;
+            background: #0a0a12;
+            height: 100%;
+            width: 100%;
+            color: #e8e8e8;
+            overflow: hidden;
+            touch-action: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+        }
+        
+        /* Obere Leiste - Sammellinsen */
+        .top-panel {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: rgba(0, 200, 255, 0.05);
+            border-bottom: 1px solid rgba(0, 200, 255, 0.2);
+        }
+        
+        /* Untere Leiste - Zerstreuungslinsen */
+        .bottom-panel {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: rgba(255, 100, 100, 0.05);
+            border-top: 1px solid rgba(255, 100, 100, 0.2);
+        }
+        
+        .panel-title {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #888;
+            margin-right: 10px;
+            white-space: nowrap;
+        }
+        
+        .top-panel .panel-title { color: #00c8ff; }
+        .bottom-panel .panel-title { color: #ff6464; }
+        
+        .lens-option {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 4px 8px;
+            cursor: grab;
+            transition: all 0.2s;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 58px;
+            justify-content: center;
+        }
+        
+        .lens-option:active {
+            transform: scale(0.95);
+            opacity: 0.7;
+        }
+        
+        .lens-option svg {
+            display: block;
+            width: 28px;
+            height: 40px;
+        }
+        
+        .lens-option .lens-name {
+            font-size: 0.6rem;
+            color: #888;
+            margin-top: 2px;
+        }
+        
+        .lens-option.convex { border-color: rgba(0, 200, 255, 0.4); }
+        .lens-option.concave { border-color: rgba(255, 100, 100, 0.4); }
+        
+        /* Lineal-Option */
+        .ruler-option {
+            background: rgba(255, 200, 50, 0.1);
+            border: 2px solid rgba(255, 200, 50, 0.4);
+            border-radius: 8px;
+            padding: 4px 10px;
+            text-align: center;
+            cursor: grab;
+            transition: all 0.2s;
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 58px;
+        }
+        
+        .ruler-option:active {
+            transform: scale(0.95);
+            opacity: 0.7;
+        }
+        
+        .ruler-option span {
+            font-size: 2rem;
+        }
+        
+        /* Brennpunkt-Toggle */
+        .focal-toggle {
+            background: rgba(255, 100, 50, 0.1);
+            border: 2px solid rgba(255, 100, 50, 0.3);
+            border-radius: 8px;
+            padding: 4px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 58px;
+            opacity: 0.5;
+        }
+        
+        .focal-toggle.active {
+            background: rgba(255, 150, 50, 0.3);
+            border-color: rgba(255, 150, 50, 0.8);
+            opacity: 1;
+        }
+        
+        .focal-toggle.disabled {
+            opacity: 0.2;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        
+        .focal-toggle span {
+            font-size: 2rem;
+        }
+        
+        /* Brennweite-Toggle */
+        #focalLengthToggle {
+            background: rgba(255, 200, 0, 0.1);
+            border-color: rgba(255, 200, 0, 0.3);
+        }
+        
+        #focalLengthToggle.active {
+            background: rgba(255, 200, 0, 0.3);
+            border-color: rgba(255, 200, 0, 0.8);
+        }
+        
+        #focalLengthToggle span {
+            color: #ffcc00;
+        }
+        
+        /* Papierkorb oben rechts */
+        .trash-zone {
+            position: fixed;
+            top: 8px;
+            right: 8px;
+            width: 58px;
+            height: 58px;
+            background: rgba(255, 50, 50, 0.15);
+            border: 2px dashed rgba(255, 80, 80, 0.5);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            z-index: 100;
+        }
+        
+        .trash-zone .trash-icon {
+            font-size: 2rem;
+        }
+        
+        .trash-zone.active {
+            background: rgba(255, 50, 50, 0.5);
+            border-color: #ff6666;
+            transform: scale(1.1);
+        }
+        
+        /* Experimentierfeld */
+        .experiment-area {
+            flex: 1;
+            position: relative;
+            background: radial-gradient(ellipse at 0% 50%, rgba(20, 20, 40, 1) 0%, #0a0a12 70%);
+            overflow: hidden;
+        }
+        
+        #experimentCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+        
+        #dragOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+        }
+        
+        /* Mobile Anpassungen */
+        @media (max-width: 500px) {
+            .top-panel, .bottom-panel {
+                padding: 6px 8px;
+                gap: 5px;
+            }
+            
+            .panel-title {
+                font-size: 0.55rem;
+                margin-right: 8px;
+            }
+            
+            .lens-option {
+                padding: 3px 5px;
+                height: 46px;
+            }
+            
+            .lens-option svg {
+                width: 22px;
+                height: 32px;
+            }
+            
+            .lens-option .lens-name {
+                font-size: 0.5rem;
+            }
+            
+            .ruler-option {
+                height: 46px;
+                padding: 4px 8px;
+            }
+            
+            .ruler-option span {
+                font-size: 1.5rem;
+            }
+            
+            .focal-toggle {
+                height: 46px;
+                padding: 4px 8px;
+            }
+            
+            .focal-toggle span {
+                font-size: 1.5rem;
+            }
+            
+            .trash-zone {
+                width: 46px;
+                height: 46px;
+            }
+            
+            .trash-zone .trash-icon {
+                font-size: 1.5rem;
+            }
+        }
+        
+        @media (max-height: 400px) {
+            .top-panel, .bottom-panel {
+                padding: 4px 8px;
+            }
+            
+            .lens-option svg {
+                height: 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Obere Leiste - Sammellinsen -->
+        <div class="top-panel">
+            <div class="panel-title">Sammellinsen</div>
+            
+            <div class="lens-option convex" data-type="convex-strong">
+                <svg viewBox="0 0 40 70">
+                    <path d="M20 5 Q35 35, 20 65 Q5 35, 20 5 Z" fill="rgba(0,200,255,0.3)" stroke="#00c8ff" stroke-width="2"/>
+                </svg>
+                <div class="lens-name">stark</div>
+            </div>
+            
+            <div class="lens-option convex" data-type="convex-medium">
+                <svg viewBox="0 0 40 70">
+                    <path d="M20 5 Q30 35, 20 65 Q10 35, 20 5 Z" fill="rgba(0,200,255,0.25)" stroke="#00c8ff" stroke-width="2"/>
+                </svg>
+                <div class="lens-name">mittel</div>
+            </div>
+            
+            <div class="lens-option convex" data-type="convex-weak">
+                <svg viewBox="0 0 40 70">
+                    <path d="M20 5 Q26 35, 20 65 Q14 35, 20 5 Z" fill="rgba(0,200,255,0.2)" stroke="#00c8ff" stroke-width="2"/>
+                </svg>
+                <div class="lens-name">schwach</div>
+            </div>
+        </div>
+        
+        <!-- Papierkorb oben rechts -->
+        <div class="trash-zone" id="trashZone">
+            <span class="trash-icon">🗑️</span>
+        </div>
+        
+        <!-- Experimentierfeld -->
+        <div class="experiment-area">
+            <canvas id="experimentCanvas"></canvas>
+        </div>
+        
+        <!-- Untere Leiste - Zerstreuungslinsen -->
+        <div class="bottom-panel">
+            <div class="panel-title">Zerstreuungslinsen</div>
+            
+            <div class="lens-option concave" data-type="concave-strong">
+                <svg viewBox="0 0 40 70">
+                    <path d="M8 5 Q20 25, 8 65 L32 65 Q20 25, 32 5 Z" fill="rgba(255,100,100,0.3)" stroke="#ff6464" stroke-width="2"/>
+                </svg>
+                <div class="lens-name">stark</div>
+            </div>
+            
+            <div class="lens-option concave" data-type="concave-medium">
+                <svg viewBox="0 0 40 70">
+                    <path d="M10 5 Q20 28, 10 65 L30 65 Q20 28, 30 5 Z" fill="rgba(255,100,100,0.25)" stroke="#ff6464" stroke-width="2"/>
+                </svg>
+                <div class="lens-name">mittel</div>
+            </div>
+            
+            <div class="lens-option concave" data-type="concave-weak">
+                <svg viewBox="0 0 40 70">
+                    <path d="M12 5 Q20 30, 12 65 L28 65 Q20 30, 28 5 Z" fill="rgba(255,100,100,0.2)" stroke="#ff6464" stroke-width="2"/>
+                </svg>
+                <div class="lens-name">schwach</div>
+            </div>
+            
+            <div class="ruler-option" data-type="ruler">
+                <span>📏</span>
+            </div>
+            
+            <div class="focal-toggle" id="focalToggle">
+                <span>🔥</span>
+            </div>
+            
+            <div class="focal-toggle" id="focalLengthToggle">
+                <span>↔</span>
+            </div>
+        </div>
+        
+        <!-- Overlay für gezogene Objekte -->
+        <canvas id="dragOverlay"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('experimentCanvas');
+        const ctx = canvas.getContext('2d');
+        const overlay = document.getElementById('dragOverlay');
+        const overlayCtx = overlay.getContext('2d');
+        
+        // Objekte im Experimentierfeld
+        let lenses = [];
+        let rulers = [];
+        let draggedObject = null;
+        let draggedType = null; // 'lens' oder 'ruler'
+        let dragOffset = { x: 0, y: 0 };
+        let dragClientPos = { x: 0, y: 0 }; // Position für Overlay
+        
+        // Zwei-Finger-Rotation für Lineal
+        let isRotating = false;
+        let initialAngle = 0;
+        let initialRotation = 0;
+        
+        // Brennpunkt anzeigen
+        let showFocalPoint = false;
+        let showFocalLength = false;
+        
+        // Linseneigenschaften
+        const lensTypes = {
+            'convex-strong': { type: 'convex', power: 0.012, width: 28, color: 'rgba(0, 200, 255, 0.4)', stroke: '#00c8ff' },
+            'convex-medium': { type: 'convex', power: 0.008, width: 20, color: 'rgba(0, 200, 255, 0.35)', stroke: '#00c8ff' },
+            'convex-weak': { type: 'convex', power: 0.004, width: 14, color: 'rgba(0, 200, 255, 0.3)', stroke: '#00c8ff' },
+            'concave-strong': { type: 'concave', power: 0.012, width: 28, color: 'rgba(255, 100, 100, 0.4)', stroke: '#ff6464' },
+            'concave-medium': { type: 'concave', power: 0.008, width: 20, color: 'rgba(255, 100, 100, 0.35)', stroke: '#ff6464' },
+            'concave-weak': { type: 'concave', power: 0.004, width: 14, color: 'rgba(255, 100, 100, 0.3)', stroke: '#ff6464' }
+        };
+        
+        // Lichtstrahlen (mit active-Status)
+        const rays = [
+            { color: '#ff4444', glowColor: 'rgba(255, 68, 68, 0.5)', yOffset: -50, active: true },
+            { color: '#44ff44', glowColor: 'rgba(68, 255, 68, 0.5)', yOffset: 0, active: true },
+            { color: '#4488ff', glowColor: 'rgba(68, 136, 255, 0.5)', yOffset: 50, active: true }
+        ];
+        
+        const lightSourceX = 38;
+        const lightSourceRadius = 18;
+        
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            
+            // Overlay auf volle Fenstergrösse
+            overlay.width = window.innerWidth;
+            overlay.height = window.innerHeight;
+            
+            draw();
+        }
+        
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const centerY = canvas.height / 2;
+            const startX = 50;
+            
+            // Toggle-Buttons deaktivieren wenn mehrere Linsen
+            const focalToggle = document.getElementById('focalToggle');
+            const focalLengthToggle = document.getElementById('focalLengthToggle');
+            
+            if (lenses.length !== 1) {
+                focalToggle.classList.add('disabled');
+                focalLengthToggle.classList.add('disabled');
+            } else {
+                focalToggle.classList.remove('disabled');
+                focalLengthToggle.classList.remove('disabled');
+            }
+            
+            // Lichtquelle
+            drawLightSource(startX, centerY);
+            
+            // Strahlendaten sammeln für Brennpunkt-Berechnung
+            const rayEndData = [];
+            
+            // Lichtstrahlen (nur aktive)
+            rays.forEach(ray => {
+                if (ray.active) {
+                    const endData = drawRay(startX, centerY + ray.yOffset, ray.color, ray.glowColor);
+                    if (endData) {
+                        endData.color = ray.color;
+                        rayEndData.push(endData);
+                    }
+                }
+            });
+            
+            // Brennpunkt und Brennweite nur bei genau einer Linse anzeigen
+            if (rayEndData.length >= 2 && lenses.length === 1) {
+                drawFocalPointAndLength(rayEndData);
+            }
+            
+            // Linsen (ausser der gezogenen)
+            lenses.forEach((lens, i) => {
+                if (draggedObject !== lens) {
+                    drawLens(lens, false);
+                }
+            });
+            
+            // Lineale (ausser dem gezogenen)
+            rulers.forEach((ruler, i) => {
+                if (draggedObject !== ruler) {
+                    drawRuler(ruler, false);
+                }
+            });
+        }
+        
+        function drawFocalPointAndLength(rayEndData) {
+            // Letzte Linse finden (am weitesten rechts)
+            const sortedLenses = [...lenses].sort((a, b) => a.x - b.x);
+            const lastLens = sortedLenses[sortedLenses.length - 1];
+            const lastLensType = lensTypes[lastLens.lensType].type;
+            const isVirtual = lastLensType === 'concave';
+            
+            // Schnittpunkte zwischen allen Strahlenpaaren finden
+            const intersections = [];
+            
+            for (let i = 0; i < rayEndData.length; i++) {
+                for (let j = i + 1; j < rayEndData.length; j++) {
+                    const r1 = rayEndData[i];
+                    const r2 = rayEndData[j];
+                    
+                    const intersection = getLineIntersection(r1, r2);
+                    
+                    if (intersection && 
+                        intersection.x > 10 && intersection.x < canvas.width - 10 &&
+                        intersection.y > 10 && intersection.y < canvas.height - 10) {
+                        intersections.push(intersection);
+                    }
+                }
+            }
+            
+            if (intersections.length > 0) {
+                const avgX = intersections.reduce((sum, p) => sum + p.x, 0) / intersections.length;
+                const avgY = intersections.reduce((sum, p) => sum + p.y, 0) / intersections.length;
+                
+                const spread = Math.max(
+                    ...intersections.map(p => Math.hypot(p.x - avgX, p.y - avgY))
+                );
+                
+                if (spread < 50) {
+                    // Bei konkaven Linsen: gestrichelte Rückwärtsverlängerungen zeichnen
+                    if (isVirtual && (showFocalPoint || showFocalLength)) {
+                        rayEndData.forEach(ray => {
+                            ctx.save();
+                            ctx.strokeStyle = ray.color;
+                            ctx.lineWidth = 2;
+                            ctx.setLineDash([8, 6]);
+                            ctx.globalAlpha = 0.6;
+                            
+                            ctx.beginPath();
+                            ctx.moveTo(ray.x, ray.y);
+                            ctx.lineTo(avgX, avgY);
+                            ctx.stroke();
+                            
+                            ctx.restore();
+                        });
+                    }
+                    
+                    // Brennpunkt zeichnen
+                    if (showFocalPoint) {
+                        if (isVirtual) {
+                            // Virtueller Brennpunkt - hohler Kreis
+                            ctx.save();
+                            ctx.strokeStyle = '#ffffff';
+                            ctx.lineWidth = 3;
+                            ctx.setLineDash([]);
+                            
+                            // Äusserer Glow
+                            ctx.shadowColor = 'rgba(255, 200, 100, 0.8)';
+                            ctx.shadowBlur = 15;
+                            
+                            ctx.beginPath();
+                            ctx.arc(avgX, avgY, 8, 0, Math.PI * 2);
+                            ctx.stroke();
+                            
+                            // F Label
+                            ctx.shadowBlur = 0;
+                            ctx.fillStyle = '#ffffff';
+                            ctx.font = 'bold 18px Nunito, sans-serif';
+                            ctx.textAlign = 'center';
+                            ctx.fillText('F', avgX, avgY - 18);
+                            
+                            ctx.restore();
+                        } else {
+                            // Reeller Brennpunkt - leuchtender gefüllter Punkt
+                            const gradient = ctx.createRadialGradient(avgX, avgY, 0, avgX, avgY, 20);
+                            gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+                            gradient.addColorStop(0.3, 'rgba(255, 255, 200, 0.8)');
+                            gradient.addColorStop(1, 'rgba(255, 200, 100, 0)');
+                            
+                            ctx.fillStyle = gradient;
+                            ctx.beginPath();
+                            ctx.arc(avgX, avgY, 20, 0, Math.PI * 2);
+                            ctx.fill();
+                            
+                            ctx.fillStyle = '#ffffff';
+                            ctx.beginPath();
+                            ctx.arc(avgX, avgY, 4, 0, Math.PI * 2);
+                            ctx.fill();
+                            
+                            // F Label
+                            ctx.fillStyle = '#ffffff';
+                            ctx.font = 'bold 18px Nunito, sans-serif';
+                            ctx.textAlign = 'center';
+                            ctx.fillText('F', avgX, avgY - 25);
+                        }
+                    }
+                    
+                    // Brennweite-Linie zeichnen
+                    if (showFocalLength) {
+                        ctx.save();
+                        ctx.strokeStyle = '#ffcc00';
+                        ctx.lineWidth = 4;
+                        ctx.setLineDash([10, 6]);
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(lastLens.x, lastLens.y);
+                        ctx.lineTo(avgX, avgY);
+                        ctx.stroke();
+                        
+                        // "f" Label
+                        const midX = (lastLens.x + avgX) / 2;
+                        const midY = (lastLens.y + avgY) / 2 - 15;
+                        
+                        ctx.setLineDash([]);
+                        ctx.fillStyle = '#ffcc00';
+                        ctx.font = 'bold italic 18px Nunito, sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('f', midX, midY);
+                        
+                        ctx.restore();
+                    }
+                }
+            }
+        }
+        
+        function drawFocalPoint(rayEndData) {
+            // Legacy - wird nicht mehr verwendet
+        }
+        
+        function getLineIntersection(r1, r2) {
+            // Linien in Form: y = mx + b
+            // r1: Punkt (x1, y1) mit Winkel a1
+            // r2: Punkt (x2, y2) mit Winkel a2
+            
+            const m1 = Math.tan(r1.angle);
+            const m2 = Math.tan(r2.angle);
+            
+            // Parallele Linien schneiden sich nicht
+            if (Math.abs(m1 - m2) < 0.0001) return null;
+            
+            // b = y - mx
+            const b1 = r1.y - m1 * r1.x;
+            const b2 = r2.y - m2 * r2.x;
+            
+            // Schnittpunkt: m1*x + b1 = m2*x + b2
+            const x = (b2 - b1) / (m1 - m2);
+            const y = m1 * x + b1;
+            
+            return { x, y };
+        }
+        
+        function drawOverlay() {
+            overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+            
+            if (draggedObject) {
+                overlayCtx.save();
+                overlayCtx.translate(dragClientPos.x, dragClientPos.y);
+                
+                if (draggedType === 'lens') {
+                    drawLensOnContext(overlayCtx, draggedObject, true);
+                } else if (draggedType === 'ruler') {
+                    drawRulerOnContext(overlayCtx, true, draggedObject.rotation || 0);
+                }
+                
+                overlayCtx.restore();
+            }
+        }
+        
+        function drawLensOnContext(context, lens, isActive) {
+            const props = lensTypes[lens.lensType];
+            const height = Math.min(140, canvas.height * 0.35);
+            const width = props.width;
+            
+            if (isActive) {
+                context.shadowColor = props.stroke;
+                context.shadowBlur = 25;
+            }
+            
+            context.beginPath();
+            
+            if (props.type === 'convex') {
+                // Sammellinse
+                context.moveTo(0, -height/2);
+                context.quadraticCurveTo(width, 0, 0, height/2);
+                context.quadraticCurveTo(-width, 0, 0, -height/2);
+            } else {
+                // Zerstreuungslinse - in der Mitte dünn
+                const edgeWidth = width * 0.5;
+                context.moveTo(-edgeWidth, -height/2);
+                context.quadraticCurveTo(0, 0, -edgeWidth, height/2);
+                context.lineTo(edgeWidth, height/2);
+                context.quadraticCurveTo(0, 0, edgeWidth, -height/2);
+                context.closePath();
+            }
+            
+            context.fillStyle = props.color;
+            context.fill();
+            context.strokeStyle = props.stroke;
+            context.lineWidth = 2;
+            context.stroke();
+            context.shadowBlur = 0;
+        }
+        
+        function drawRulerOnContext(context, isActive, rotation) {
+            const width = 280;
+            const height = 35;
+            
+            context.save();
+            context.rotate(rotation || 0);
+            
+            if (isActive) {
+                context.shadowColor = '#ffcc44';
+                context.shadowBlur = 15;
+            }
+            
+            context.fillStyle = 'rgba(255, 220, 150, 0.9)';
+            context.beginPath();
+            context.roundRect(-width/2, -height/2, width, height, 4);
+            context.fill();
+            
+            context.strokeStyle = 'rgba(200, 150, 50, 0.8)';
+            context.lineWidth = 2;
+            context.stroke();
+            context.shadowBlur = 0;
+            
+            // Markierungen
+            context.strokeStyle = '#554422';
+            context.fillStyle = '#443311';
+            context.font = '9px Nunito, sans-serif';
+            context.textAlign = 'center';
+            
+            const pixelsPerCm = 25;
+            const startX = -width/2 + 15;
+            
+            for (let i = 0; i <= 10; i++) {
+                const x = startX + i * pixelsPerCm;
+                
+                context.beginPath();
+                context.moveTo(x, -height/2 + 3);
+                context.lineTo(x, -height/2 + 14);
+                context.lineWidth = 1.5;
+                context.stroke();
+                
+                context.fillText(i, x, height/2 - 6);
+                
+                if (i < 10) {
+                    context.beginPath();
+                    context.moveTo(x + pixelsPerCm/2, -height/2 + 3);
+                    context.lineTo(x + pixelsPerCm/2, -height/2 + 10);
+                    context.lineWidth = 1;
+                    context.stroke();
+                }
+            }
+            
+            // cm Label entfernt - nur Zahlen
+            
+            context.restore();
+        }
+        
+        function drawLightSource(x, centerY) {
+            ctx.fillStyle = 'rgba(30, 30, 50, 0.9)';
+            ctx.beginPath();
+            ctx.roundRect(0, centerY - 80, 42, 160, 5);
+            ctx.fill();
+            
+            ctx.strokeStyle = 'rgba(100, 100, 120, 0.5)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            rays.forEach(ray => {
+                const y = centerY + ray.yOffset;
+                
+                if (ray.active) {
+                    // Aktiv: Glow und heller Punkt
+                    const gradient = ctx.createRadialGradient(lightSourceX, y, 0, lightSourceX, y, 20);
+                    gradient.addColorStop(0, ray.color);
+                    gradient.addColorStop(1, 'transparent');
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.arc(lightSourceX, y, 20, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    ctx.fillStyle = ray.color;
+                    ctx.beginPath();
+                    ctx.arc(lightSourceX, y, 6, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    // Inaktiv: Dunkler Kreis mit Umrandung
+                    ctx.fillStyle = 'rgba(40, 40, 50, 0.8)';
+                    ctx.beginPath();
+                    ctx.arc(lightSourceX, y, 6, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    ctx.strokeStyle = ray.color;
+                    ctx.lineWidth = 2;
+                    ctx.globalAlpha = 0.4;
+                    ctx.stroke();
+                    ctx.globalAlpha = 1;
+                }
+            });
+        }
+        
+        function drawRay(startX, startY, color, glowColor) {
+            const sortedLenses = [...lenses].sort((a, b) => a.x - b.x);
+            
+            ctx.lineCap = 'round';
+            
+            ctx.strokeStyle = glowColor;
+            ctx.lineWidth = 10;
+            ctx.globalAlpha = 0.3;
+            drawRayPath(startX, startY, sortedLenses);
+            
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.globalAlpha = 1;
+            const endData = drawRayPath(startX, startY, sortedLenses);
+            
+            return endData;
+        }
+        
+        function drawRayPath(startX, startY, sortedLenses) {
+            let currentX = startX;
+            let currentY = startY;
+            let currentAngle = 0;
+            let passedLens = false;
+            
+            const lensHeight = Math.min(140, canvas.height * 0.35);
+            
+            ctx.beginPath();
+            ctx.moveTo(currentX, currentY);
+            
+            for (const lens of sortedLenses) {
+                const lensTop = lens.y - lensHeight / 2;
+                const lensBottom = lens.y + lensHeight / 2;
+                
+                let intersectX = lens.x;
+                let intersectY;
+                
+                if (Math.abs(currentAngle) < 0.001) {
+                    intersectY = currentY;
+                } else {
+                    intersectY = currentY + Math.tan(currentAngle) * (lens.x - currentX);
+                }
+                
+                if (intersectY >= lensTop && intersectY <= lensBottom && intersectX > currentX) {
+                    ctx.lineTo(intersectX, intersectY);
+                    
+                    const distFromCenter = intersectY - lens.y;
+                    const props = lensTypes[lens.lensType];
+                    
+                    if (props.type === 'convex') {
+                        currentAngle += -distFromCenter * props.power;
+                    } else {
+                        currentAngle += distFromCenter * props.power;
+                    }
+                    
+                    currentX = intersectX;
+                    currentY = intersectY;
+                    passedLens = true;
+                }
+            }
+            
+            const endX = canvas.width + 50;
+            const endY = currentY + Math.tan(currentAngle) * (endX - currentX);
+            ctx.lineTo(endX, endY);
+            
+            ctx.stroke();
+            
+            // Rückgabe der Strahlendaten nach der letzten Linse
+            if (passedLens) {
+                return { x: currentX, y: currentY, angle: currentAngle };
+            }
+            return null;
+        }
+        
+        function drawLens(lens, isActive) {
+            const props = lensTypes[lens.lensType];
+            const height = Math.min(140, canvas.height * 0.35);
+            const width = props.width;
+            
+            ctx.save();
+            ctx.translate(lens.x, lens.y);
+            
+            if (isActive) {
+                ctx.shadowColor = props.stroke;
+                ctx.shadowBlur = 25;
+            }
+            
+            ctx.beginPath();
+            
+            if (props.type === 'convex') {
+                // Sammellinse - in der Mitte dick, aussen dünn
+                ctx.moveTo(0, -height/2);
+                ctx.quadraticCurveTo(width, 0, 0, height/2);
+                ctx.quadraticCurveTo(-width, 0, 0, -height/2);
+            } else {
+                // Zerstreuungslinse - in der Mitte dünn, aussen dick
+                // Linke Seite wölbt sich nach innen (zur Mitte hin)
+                // Rechte Seite wölbt sich nach innen (zur Mitte hin)
+                const edgeWidth = width * 0.5;
+                ctx.moveTo(-edgeWidth, -height/2);
+                ctx.quadraticCurveTo(0, 0, -edgeWidth, height/2);
+                ctx.lineTo(edgeWidth, height/2);
+                ctx.quadraticCurveTo(0, 0, edgeWidth, -height/2);
+                ctx.closePath();
+            }
+            
+            ctx.fillStyle = props.color;
+            ctx.fill();
+            ctx.strokeStyle = props.stroke;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            ctx.restore();
+        }
+        
+        function drawRuler(ruler, isActive) {
+            const width = 280;
+            const height = 35;
+            
+            ctx.save();
+            ctx.translate(ruler.x, ruler.y);
+            ctx.rotate(ruler.rotation || 0);
+            
+            if (isActive) {
+                ctx.shadowColor = '#ffcc44';
+                ctx.shadowBlur = 15;
+            }
+            
+            // Lineal-Körper
+            ctx.fillStyle = 'rgba(255, 220, 150, 0.9)';
+            ctx.beginPath();
+            ctx.roundRect(-width/2, -height/2, width, height, 4);
+            ctx.fill();
+            
+            ctx.strokeStyle = 'rgba(200, 150, 50, 0.8)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Markierungen
+            ctx.strokeStyle = '#554422';
+            ctx.fillStyle = '#443311';
+            ctx.font = '9px Nunito, sans-serif';
+            ctx.textAlign = 'center';
+            
+            const pixelsPerCm = 25;
+            const startX = -width/2 + 15;
+            
+            for (let i = 0; i <= 10; i++) {
+                const x = startX + i * pixelsPerCm;
+                
+                // Zentimeter-Strich
+                ctx.beginPath();
+                ctx.moveTo(x, -height/2 + 3);
+                ctx.lineTo(x, -height/2 + 14);
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                
+                // Zahl
+                ctx.fillText(i, x, height/2 - 6);
+                
+                // Halbe Zentimeter
+                if (i < 10) {
+                    ctx.beginPath();
+                    ctx.moveTo(x + pixelsPerCm/2, -height/2 + 3);
+                    ctx.lineTo(x + pixelsPerCm/2, -height/2 + 10);
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+            }
+            
+            // cm Label entfernt - nur Zahlen
+            
+            ctx.restore();
+        }
+        
+        function getObjectAt(x, y) {
+            // Zuerst Lineale prüfen (oben)
+            for (let i = rulers.length - 1; i >= 0; i--) {
+                const ruler = rulers[i];
+                
+                // Rotation berücksichtigen bei Hitbox
+                const cos = Math.cos(-(ruler.rotation || 0));
+                const sin = Math.sin(-(ruler.rotation || 0));
+                const dx = x - ruler.x;
+                const dy = y - ruler.y;
+                const localX = dx * cos - dy * sin;
+                const localY = dx * sin + dy * cos;
+                
+                if (localX >= -140 && localX <= 140 && localY >= -20 && localY <= 20) {
+                    return { obj: ruler, type: 'ruler' };
+                }
+            }
+            
+            // Dann Linsen
+            const lensHeight = Math.min(140, canvas.height * 0.35);
+            for (let i = lenses.length - 1; i >= 0; i--) {
+                const lens = lenses[i];
+                const width = lensTypes[lens.lensType].width + 20;
+                
+                if (x >= lens.x - width && x <= lens.x + width &&
+                    y >= lens.y - lensHeight/2 && y <= lens.y + lensHeight/2) {
+                    return { obj: lens, type: 'lens' };
+                }
+            }
+            
+            return null;
+        }
+        
+        function isOverTrash(clientX, clientY) {
+            const trashZone = document.getElementById('trashZone');
+            const rect = trashZone.getBoundingClientRect();
+            return clientX >= rect.left - 15 && 
+                   clientX <= rect.right + 15 && 
+                   clientY >= rect.top - 15 && 
+                   clientY <= rect.bottom + 15;
+        }
+        
+        function getLightEmitterAt(x, y) {
+            const centerY = canvas.height / 2;
+            for (let i = 0; i < rays.length; i++) {
+                const ray = rays[i];
+                const emitterY = centerY + ray.yOffset;
+                const dx = x - lightSourceX;
+                const dy = y - emitterY;
+                if (dx * dx + dy * dy <= lightSourceRadius * lightSourceRadius) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+        
+        function handleStart(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            const x = clientX - rect.left;
+            const y = clientY - rect.top;
+            
+            // Prüfe ob Licht-Emitter geklickt wurde
+            const emitterIndex = getLightEmitterAt(x, y);
+            if (emitterIndex >= 0) {
+                rays[emitterIndex].active = !rays[emitterIndex].active;
+                draw();
+                return;
+            }
+            
+            const hit = getObjectAt(x, y);
+            if (hit) {
+                draggedObject = hit.obj;
+                draggedType = hit.type;
+                dragOffset.x = x - hit.obj.x;
+                dragOffset.y = y - hit.obj.y;
+                
+                // Initiale Overlay-Position
+                dragClientPos.x = clientX - dragOffset.x;
+                dragClientPos.y = clientY - dragOffset.y;
+                
+                draw();
+                drawOverlay();
+            }
+        }
+        
+        function handleMove(clientX, clientY) {
+            if (draggedObject) {
+                const rect = canvas.getBoundingClientRect();
+                draggedObject.x = clientX - rect.left - dragOffset.x;
+                draggedObject.y = clientY - rect.top - dragOffset.y;
+                
+                // Position für Overlay (in Screen-Koordinaten)
+                dragClientPos.x = clientX - dragOffset.x;
+                dragClientPos.y = clientY - dragOffset.y;
+                
+                const trashZone = document.getElementById('trashZone');
+                if (isOverTrash(clientX, clientY)) {
+                    trashZone.classList.add('active');
+                } else {
+                    trashZone.classList.remove('active');
+                }
+                
+                draw();
+                drawOverlay();
+            }
+        }
+        
+        function handleEnd(clientX, clientY) {
+            if (draggedObject) {
+                if (isOverTrash(clientX, clientY)) {
+                    if (draggedType === 'lens') {
+                        lenses = lenses.filter(l => l !== draggedObject);
+                    } else {
+                        rulers = rulers.filter(r => r !== draggedObject);
+                    }
+                }
+                
+                document.getElementById('trashZone').classList.remove('active');
+            }
+            
+            draggedObject = null;
+            draggedType = null;
+            draw();
+            overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+        }
+        
+        // Maus-Events - mousedown auf canvas, move/up auf document für Drag außerhalb
+        canvas.addEventListener('mousedown', (e) => handleStart(e.clientX, e.clientY));
+        document.addEventListener('mousemove', (e) => handleMove(e.clientX, e.clientY));
+        document.addEventListener('mouseup', (e) => handleEnd(e.clientX, e.clientY));
+        
+        // Mausrad zum Drehen des Lineals
+        canvas.addEventListener('wheel', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // Prüfen ob Maus über einem Lineal ist
+            for (let i = rulers.length - 1; i >= 0; i--) {
+                const ruler = rulers[i];
+                
+                // Berücksichtige Rotation bei Hitbox-Berechnung
+                const cos = Math.cos(-(ruler.rotation || 0));
+                const sin = Math.sin(-(ruler.rotation || 0));
+                const dx = x - ruler.x;
+                const dy = y - ruler.y;
+                const localX = dx * cos - dy * sin;
+                const localY = dx * sin + dy * cos;
+                
+                if (localX >= -140 && localX <= 140 && localY >= -20 && localY <= 20) {
+                    e.preventDefault();
+                    ruler.rotation = (ruler.rotation || 0) + e.deltaY * 0.003;
+                    draw();
+                    break;
+                }
+            }
+        }, { passive: false });
+        
+        // Touch-Events - touchstart auf canvas, move/end auf document
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            
+            if (e.touches.length === 2) {
+                // Zwei-Finger-Geste: Rotation starten
+                const rect = canvas.getBoundingClientRect();
+                const touch1 = e.touches[0];
+                const touch2 = e.touches[1];
+                
+                // Mitte zwischen den zwei Fingern
+                const midX = (touch1.clientX + touch2.clientX) / 2 - rect.left;
+                const midY = (touch1.clientY + touch2.clientY) / 2 - rect.top;
+                
+                // Prüfen ob ein Lineal unter den Fingern ist
+                for (let i = rulers.length - 1; i >= 0; i--) {
+                    const ruler = rulers[i];
+                    
+                    // Rotation berücksichtigen
+                    const cos = Math.cos(-(ruler.rotation || 0));
+                    const sin = Math.sin(-(ruler.rotation || 0));
+                    const dx = midX - ruler.x;
+                    const dy = midY - ruler.y;
+                    const localX = dx * cos - dy * sin;
+                    const localY = dx * sin + dy * cos;
+                    
+                    if (localX >= -140 && localX <= 140 && localY >= -30 && localY <= 30) {
+                        isRotating = true;
+                        draggedObject = ruler;
+                        draggedType = 'ruler';
+                        initialAngle = Math.atan2(touch2.clientY - touch1.clientY, touch2.clientX - touch1.clientX);
+                        initialRotation = ruler.rotation || 0;
+                        break;
+                    }
+                }
+            } else if (e.touches.length === 1) {
+                const touch = e.touches[0];
+                handleStart(touch.clientX, touch.clientY);
+            }
+        });
+        
+        document.addEventListener('touchmove', (e) => {
+            if (isRotating && e.touches.length === 2) {
+                e.preventDefault();
+                const touch1 = e.touches[0];
+                const touch2 = e.touches[1];
+                
+                // Neuer Winkel zwischen den Fingern
+                const currentAngle = Math.atan2(touch2.clientY - touch1.clientY, touch2.clientX - touch1.clientX);
+                const angleDiff = currentAngle - initialAngle;
+                
+                draggedObject.rotation = initialRotation + angleDiff;
+                
+                // Mitte zwischen Fingern als neue Position
+                const rect = canvas.getBoundingClientRect();
+                draggedObject.x = (touch1.clientX + touch2.clientX) / 2 - rect.left;
+                draggedObject.y = (touch1.clientY + touch2.clientY) / 2 - rect.top;
+                
+                draw();
+            } else if (draggedObject && !isRotating) {
+                e.preventDefault();
+                const touch = e.touches[0];
+                handleMove(touch.clientX, touch.clientY);
+            }
+        }, { passive: false });
+        
+        document.addEventListener('touchend', (e) => {
+            if (isRotating) {
+                isRotating = false;
+                draggedObject = null;
+                draggedType = null;
+                draw();
+            } else if (draggedObject) {
+                e.preventDefault();
+                const touch = e.changedTouches[0];
+                handleEnd(touch.clientX, touch.clientY);
+            }
+        });
+        
+        // Linsen/Lineal aus Panel ziehen
+        function setupPanelItem(element) {
+            const type = element.dataset.type;
+            
+            function createObject(clientX, clientY) {
+                const rect = canvas.getBoundingClientRect();
+                const x = clientX - rect.left;
+                const y = clientY - rect.top;
+                
+                if (type === 'ruler') {
+                    const newRuler = { x: x, y: y, rotation: 0 };
+                    rulers.push(newRuler);
+                    draggedObject = newRuler;
+                    draggedType = 'ruler';
+                } else {
+                    const newLens = { x: x, y: y, lensType: type };
+                    lenses.push(newLens);
+                    draggedObject = newLens;
+                    draggedType = 'lens';
+                }
+                
+                dragOffset.x = 0;
+                dragOffset.y = 0;
+                dragClientPos.x = clientX;
+                dragClientPos.y = clientY;
+                
+                draw();
+                drawOverlay();
+            }
+            
+            // Touch - sofort erstellen (natürliches Verhalten auf Touch)
+            element.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                createObject(touch.clientX, touch.clientY);
+            });
+            
+            element.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                if (draggedObject) {
+                    const touch = e.touches[0];
+                    handleMove(touch.clientX, touch.clientY);
+                }
+            });
+            
+            element.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                if (draggedObject) {
+                    const touch = e.changedTouches[0];
+                    handleEnd(touch.clientX, touch.clientY);
+                }
+            });
+            
+            // Maus-Drag für Desktop - erst beim Ziehen erstellen
+            element.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                let hasMoved = false;
+                let startX = e.clientX;
+                let startY = e.clientY;
+                
+                const onMouseMove = (e) => {
+                    if (!hasMoved) {
+                        // Erst bei Bewegung das Objekt erstellen
+                        hasMoved = true;
+                        createObject(e.clientX, e.clientY);
+                    } else {
+                        handleMove(e.clientX, e.clientY);
+                    }
+                };
+                
+                const onMouseUp = (e) => {
+                    if (hasMoved && draggedObject) {
+                        handleEnd(e.clientX, e.clientY);
+                    }
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                };
+                
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            });
+        }
+        
+        document.querySelectorAll('.lens-option').forEach(setupPanelItem);
+        document.querySelector('.ruler-option').addEventListener('touchstart', (e) => e.preventDefault());
+        setupPanelItem(document.querySelector('.ruler-option'));
+        
+        // Brennpunkt-Toggle
+        const focalToggle = document.getElementById('focalToggle');
+        
+        focalToggle.addEventListener('click', () => {
+            showFocalPoint = !showFocalPoint;
+            focalToggle.classList.toggle('active', showFocalPoint);
+            draw();
+        });
+        
+        // Brennweite-Toggle
+        const focalLengthToggle = document.getElementById('focalLengthToggle');
+        
+        focalLengthToggle.addEventListener('click', () => {
+            showFocalLength = !showFocalLength;
+            focalLengthToggle.classList.toggle('active', showFocalLength);
+            draw();
+        });
+        
+        // Init
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+    </script>
+</body>
+</html>
