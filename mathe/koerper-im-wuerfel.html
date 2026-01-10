@@ -13,11 +13,25 @@
             background: #fff;
             color: #000;
             padding: 20px;
-            max-width: 1200px;
+            max-width: 900px;
             margin: 0 auto;
             overflow-x: hidden;
         }
         h1 { font-size: 1.2rem; font-weight: 500; margin-bottom: 20px; text-align: center; }
+        
+        /* Tablet/PC: compact layout, no scroll */
+        @media (min-width: 481px) {
+            html, body {
+                height: 100%;
+                overflow: hidden;
+            }
+            body { padding: 10px; }
+            h1 { margin-bottom: 8px; }
+            .task-section { margin-bottom: 6px; }
+            .new-task-btn { margin-bottom: 6px; padding: 6px 16px; }
+            .controls { margin-top: 4px; }
+            .status { margin-top: 4px; }
+        }
         
         .task-section {
             display: flex;
@@ -101,10 +115,6 @@
                 margin-bottom: 10px;
             }
             .view-box label { font-size: 0.7rem; margin-bottom: 3px; }
-            .view-box canvas { 
-                width: 90px !important; 
-                height: 90px !important; 
-            }
             
             .new-task-btn {
                 padding: 8px 16px;
@@ -133,10 +143,6 @@
         
         /* Very small screens */
         @media (max-width: 360px) {
-            .view-box canvas { 
-                width: 75px !important; 
-                height: 75px !important; 
-            }
             button {
                 font-size: 0.7rem;
                 padding: 4px 6px;
@@ -950,8 +956,9 @@
             
             newTask();
             handleResize();
-            // Delayed resize to ensure CSS is fully applied
+            // Multiple delayed resizes to ensure layout settles
             setTimeout(handleResize, 100);
+            setTimeout(handleResize, 300);
             animate();
         }
         
@@ -1253,7 +1260,7 @@
             // Position relative to canvas
             const wrapper = document.createElement('div');
             wrapper.id = 'canvasWrapper';
-            wrapper.style.cssText = 'position: relative; margin: 0 auto; overflow: hidden;';
+            wrapper.style.cssText = 'position: relative; margin: 0 auto;';
             canvasEl.parentNode.insertBefore(wrapper, canvasEl);
             wrapper.appendChild(canvasEl);
             wrapper.appendChild(container);
@@ -1911,75 +1918,48 @@
         function handleResize() {
             const canvas = document.getElementById('canvas3d');
             const wrapper = document.getElementById('canvasWrapper');
-            const button = document.querySelector('.new-task-btn');
             
-            // Get width from button (which correctly respects body padding)
-            const contentWidth = button ? button.offsetWidth : document.body.clientWidth;
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
             
-            // Calculate available height (window height minus other elements)
-            const header = document.querySelector('h1');
-            const taskSection = document.querySelector('.task-section');
-            const newTaskBtn = document.querySelector('.new-task-btn');
-            const controlsDivs = document.querySelectorAll('.controls');
-            const status = document.querySelector('.status');
-            const feedback = document.querySelector('.feedback');
+            let width, height, taskSize;
             
-            let usedHeight = 0;
-            if (header) usedHeight += header.offsetHeight;
-            if (taskSection) usedHeight += taskSection.offsetHeight;
-            if (newTaskBtn) usedHeight += newTaskBtn.offsetHeight;
-            controlsDivs.forEach(div => usedHeight += div.offsetHeight);
-            if (status) usedHeight += status.offsetHeight;
-            if (feedback && feedback.offsetHeight > 0) usedHeight += feedback.offsetHeight;
-            
-            // Add margins/padding (approximate)
-            usedHeight += 80;
-            
-            const availableHeight = window.innerHeight - usedHeight;
-            
-            // Calculate dimensions maintaining 4:3 aspect ratio
-            // Width-limited: width = contentWidth, height = width * 0.75
-            // Height-limited: height = availableHeight, width = height / 0.75
-            
-            let width, height;
-            const widthFromContent = contentWidth;
-            const heightFromContent = widthFromContent * 0.75;
-            
-            const heightFromAvailable = availableHeight;
-            const widthFromAvailable = heightFromAvailable / 0.75;
-            
-            // On mobile, use width-based sizing; on larger screens, use the larger option
-            const isMobile = window.innerWidth <= 480;
-            
-            if (isMobile) {
-                // Mobile: prioritize width
-                width = Math.min(600, widthFromContent);
+            if (viewportWidth <= 480) {
+                // MOBILE: Width-first approach
+                const bodyPadding = 20;
+                width = viewportWidth - bodyPadding;
                 height = Math.round(width * 0.75);
+                taskSize = viewportWidth <= 360 ? 75 : 90;
+                
+                if (wrapper) {
+                    wrapper.style.width = width + 'px';
+                    wrapper.style.height = 'auto';
+                }
             } else {
-                // Tablet/PC: use whichever gives larger canvas while fitting both constraints
-                if (widthFromAvailable <= contentWidth && heightFromAvailable > 0) {
-                    // Height is the limiting factor
-                    height = Math.max(200, availableHeight);
-                    width = Math.round(height / 0.75);
-                    // But don't exceed content width
-                    if (width > contentWidth) {
-                        width = contentWidth;
-                        height = Math.round(width * 0.75);
-                    }
-                } else {
-                    // Width is the limiting factor
-                    width = widthFromContent;
+                // TABLET/PC: Height-first approach
+                // Task size scales with viewport
+                taskSize = Math.max(70, Math.min(110, Math.floor(viewportHeight * 0.11)));
+                
+                // Reserve space: header(35) + taskViews + button(35) + controls(75) + status(25) + padding(20) + buffer(30)
+                const taskRowHeight = taskSize + 22; // task canvas + label
+                const reservedHeight = 35 + taskRowHeight + 35 + 75 + 25 + 20 + 30;
+                const availableCanvasHeight = viewportHeight - reservedHeight;
+                
+                // Canvas: fit in available height with 4:3 ratio
+                height = Math.max(200, availableCanvasHeight);
+                width = Math.round(height / 0.75);
+                
+                // But limit width to body max-width minus padding
+                const maxWidth = Math.min(viewportWidth - 20, 880);
+                if (width > maxWidth) {
+                    width = maxWidth;
                     height = Math.round(width * 0.75);
                 }
-            }
-            
-            // Ensure minimum size and maximum size
-            width = Math.max(200, Math.min(900, width));
-            height = Math.max(150, Math.min(675, height));
-            
-            // Set wrapper size (for orientation cube positioning)
-            if (wrapper) {
-                wrapper.style.width = width + 'px';
+                
+                if (wrapper) {
+                    wrapper.style.width = width + 'px';
+                    wrapper.style.height = height + 'px';
+                }
             }
             
             // Set canvas size
@@ -2000,30 +1980,26 @@
                 camera.updateProjectionMatrix();
             }
             
-            // Resize task views - larger on bigger screens
-            const viewportWidth = document.documentElement.clientWidth;
+            // Resize task views
             const taskCanvases = ['viewFront', 'viewRight', 'viewTop'];
-            let taskSize;
-            if (viewportWidth <= 360) {
-                taskSize = 75;
-            } else if (viewportWidth <= 480) {
-                taskSize = 90;
-            } else if (viewportWidth <= 768) {
-                taskSize = 120;
-            } else {
-                taskSize = 150;
-            }
             taskCanvases.forEach(id => {
                 const c = document.getElementById(id);
                 c.width = taskSize;
                 c.height = taskSize;
+                c.style.width = taskSize + 'px';
+                c.style.height = taskSize + 'px';
             });
             
             if (currentShape) drawTaskViews();
         }
         
         window.addEventListener('resize', handleResize);
-        window.addEventListener('orientationchange', () => setTimeout(handleResize, 100));
+        window.addEventListener('orientationchange', () => {
+            // Multiple delayed calls to ensure proper layout after orientation change
+            setTimeout(handleResize, 100);
+            setTimeout(handleResize, 300);
+            setTimeout(handleResize, 500);
+        });
     </script>
 </body>
 </html>
