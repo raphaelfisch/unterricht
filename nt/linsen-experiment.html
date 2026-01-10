@@ -78,6 +78,8 @@
             flex-direction: column;
             align-items: center;
             height: 58px;
+            width: 58px;
+            min-width: 58px;
             justify-content: center;
         }
         
@@ -115,6 +117,8 @@
             align-items: center;
             justify-content: center;
             height: 58px;
+            width: 58px;
+            min-width: 58px;
         }
         
         .ruler-option:active {
@@ -139,6 +143,8 @@
             align-items: center;
             justify-content: center;
             height: 58px;
+            width: 58px;
+            min-width: 58px;
             opacity: 0.5;
         }
         
@@ -151,7 +157,6 @@
         .focal-toggle.disabled {
             opacity: 0.2;
             cursor: not-allowed;
-            pointer-events: none;
         }
         
         .focal-toggle span {
@@ -173,11 +178,69 @@
             color: #ffcc00;
         }
         
-        /* Papierkorb oben rechts */
-        .trash-zone {
+        /* Optische Achse Toggle */
+        .axis-toggle {
+            background: rgba(150, 150, 150, 0.1);
+            border: 2px solid rgba(150, 150, 150, 0.3);
+            border-radius: 8px;
+            padding: 4px 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 58px;
+            width: 58px;
+            min-width: 58px;
+            opacity: 0.5;
+        }
+        
+        .axis-toggle.active {
+            background: rgba(200, 200, 200, 0.3);
+            border-color: rgba(200, 200, 200, 0.8);
+            opacity: 1;
+        }
+        
+        .axis-toggle span {
+            font-size: 2rem;
+            color: #aaaaaa;
+        }
+        
+        /* Papierkorb und Reset oben rechts */
+        .top-right-buttons {
             position: fixed;
             top: 8px;
             right: 8px;
+            display: flex;
+            gap: 8px;
+            z-index: 100;
+        }
+        
+        .reset-button {
+            width: 58px;
+            height: 58px;
+            background: rgba(100, 150, 255, 0.15);
+            border: 2px solid rgba(100, 150, 255, 0.5);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .reset-button:hover, .reset-button:active {
+            background: rgba(100, 150, 255, 0.3);
+            border-color: rgba(100, 150, 255, 0.8);
+        }
+        
+        .reset-button span {
+            font-size: 2rem;
+            color: #88aaff;
+        }
+        
+        .trash-zone {
             width: 58px;
             height: 58px;
             background: rgba(255, 50, 50, 0.15);
@@ -187,7 +250,6 @@
             align-items: center;
             justify-content: center;
             transition: all 0.2s;
-            z-index: 100;
         }
         
         .trash-zone .trash-icon {
@@ -226,20 +288,23 @@
         }
         
         /* Mobile Anpassungen */
+        @media (max-width: 600px) {
+            .panel-title {
+                display: none;
+            }
+        }
+        
         @media (max-width: 500px) {
             .top-panel, .bottom-panel {
                 padding: 6px 8px;
                 gap: 5px;
             }
             
-            .panel-title {
-                font-size: 0.55rem;
-                margin-right: 8px;
-            }
-            
             .lens-option {
                 padding: 3px 5px;
                 height: 46px;
+                width: 46px;
+                min-width: 46px;
             }
             
             .lens-option svg {
@@ -253,6 +318,8 @@
             
             .ruler-option {
                 height: 46px;
+                width: 46px;
+                min-width: 46px;
                 padding: 4px 8px;
             }
             
@@ -262,6 +329,8 @@
             
             .focal-toggle {
                 height: 46px;
+                width: 46px;
+                min-width: 46px;
                 padding: 4px 8px;
             }
             
@@ -275,6 +344,26 @@
             }
             
             .trash-zone .trash-icon {
+                font-size: 1.5rem;
+            }
+            
+            .reset-button {
+                width: 46px;
+                height: 46px;
+            }
+            
+            .reset-button span {
+                font-size: 1.5rem;
+            }
+            
+            .axis-toggle {
+                height: 46px;
+                width: 46px;
+                min-width: 46px;
+                padding: 4px 8px;
+            }
+            
+            .axis-toggle span {
                 font-size: 1.5rem;
             }
         }
@@ -296,21 +385,21 @@
         <div class="top-panel">
             <div class="panel-title">Sammellinsen</div>
             
-            <div class="lens-option convex" data-type="convex-strong">
+            <div class="lens-option convex" data-type="convex-strong" title="Sammellinse stark">
                 <svg viewBox="0 0 40 70">
                     <path d="M20 5 Q35 35, 20 65 Q5 35, 20 5 Z" fill="rgba(0,200,255,0.3)" stroke="#00c8ff" stroke-width="2"/>
                 </svg>
                 <div class="lens-name">stark</div>
             </div>
             
-            <div class="lens-option convex" data-type="convex-medium">
+            <div class="lens-option convex" data-type="convex-medium" title="Sammellinse mittel">
                 <svg viewBox="0 0 40 70">
                     <path d="M20 5 Q30 35, 20 65 Q10 35, 20 5 Z" fill="rgba(0,200,255,0.25)" stroke="#00c8ff" stroke-width="2"/>
                 </svg>
                 <div class="lens-name">mittel</div>
             </div>
             
-            <div class="lens-option convex" data-type="convex-weak">
+            <div class="lens-option convex" data-type="convex-weak" title="Sammellinse schwach">
                 <svg viewBox="0 0 40 70">
                     <path d="M20 5 Q26 35, 20 65 Q14 35, 20 5 Z" fill="rgba(0,200,255,0.2)" stroke="#00c8ff" stroke-width="2"/>
                 </svg>
@@ -318,9 +407,14 @@
             </div>
         </div>
         
-        <!-- Papierkorb oben rechts -->
-        <div class="trash-zone" id="trashZone">
-            <span class="trash-icon">🗑️</span>
+        <!-- Papierkorb und Reset oben rechts -->
+        <div class="top-right-buttons">
+            <div class="reset-button" id="resetButton" title="Alles zurücksetzen">
+                <span>↻</span>
+            </div>
+            <div class="trash-zone" id="trashZone" title="Objekt löschen">
+                <span class="trash-icon">🗑️</span>
+            </div>
         </div>
         
         <!-- Experimentierfeld -->
@@ -332,37 +426,41 @@
         <div class="bottom-panel">
             <div class="panel-title">Zerstreuungslinsen</div>
             
-            <div class="lens-option concave" data-type="concave-strong">
+            <div class="lens-option concave" data-type="concave-strong" title="Zerstreuungslinse stark">
                 <svg viewBox="0 0 40 70">
                     <path d="M8 5 Q20 25, 8 65 L32 65 Q20 25, 32 5 Z" fill="rgba(255,100,100,0.3)" stroke="#ff6464" stroke-width="2"/>
                 </svg>
                 <div class="lens-name">stark</div>
             </div>
             
-            <div class="lens-option concave" data-type="concave-medium">
+            <div class="lens-option concave" data-type="concave-medium" title="Zerstreuungslinse mittel">
                 <svg viewBox="0 0 40 70">
                     <path d="M10 5 Q20 28, 10 65 L30 65 Q20 28, 30 5 Z" fill="rgba(255,100,100,0.25)" stroke="#ff6464" stroke-width="2"/>
                 </svg>
                 <div class="lens-name">mittel</div>
             </div>
             
-            <div class="lens-option concave" data-type="concave-weak">
+            <div class="lens-option concave" data-type="concave-weak" title="Zerstreuungslinse schwach">
                 <svg viewBox="0 0 40 70">
                     <path d="M12 5 Q20 30, 12 65 L28 65 Q20 30, 28 5 Z" fill="rgba(255,100,100,0.2)" stroke="#ff6464" stroke-width="2"/>
                 </svg>
                 <div class="lens-name">schwach</div>
             </div>
             
-            <div class="ruler-option" data-type="ruler">
+            <div class="ruler-option" data-type="ruler" title="Lineal">
                 <span>📏</span>
             </div>
             
-            <div class="focal-toggle" id="focalToggle">
+            <div class="focal-toggle" id="focalToggle" title="Brennpunkt anzeigen">
                 <span>🔥</span>
             </div>
             
-            <div class="focal-toggle" id="focalLengthToggle">
+            <div class="focal-toggle" id="focalLengthToggle" title="Brennweite anzeigen">
                 <span>↔</span>
+            </div>
+            
+            <div class="axis-toggle" id="axisToggle" title="Optische Achse anzeigen">
+                <span>─</span>
             </div>
         </div>
         
@@ -392,6 +490,7 @@
         // Brennpunkt anzeigen
         let showFocalPoint = false;
         let showFocalLength = false;
+        let showAxis = false;
         
         // Linseneigenschaften
         const lensTypes = {
@@ -405,9 +504,9 @@
         
         // Lichtstrahlen (mit active-Status)
         const rays = [
-            { color: '#ff4444', glowColor: 'rgba(255, 68, 68, 0.5)', yOffset: -50, active: true },
+            { color: '#ff4444', glowColor: 'rgba(255, 68, 68, 0.5)', yOffset: -40, active: true },
             { color: '#44ff44', glowColor: 'rgba(68, 255, 68, 0.5)', yOffset: 0, active: true },
-            { color: '#4488ff', glowColor: 'rgba(68, 136, 255, 0.5)', yOffset: 50, active: true }
+            { color: '#4488ff', glowColor: 'rgba(68, 136, 255, 0.5)', yOffset: 40, active: true }
         ];
         
         const lightSourceX = 38;
@@ -466,6 +565,20 @@
             
             // Lichtquelle
             drawLightSource(startX, centerY);
+            
+            // Optische Achse
+            if (showAxis) {
+                ctx.save();
+                ctx.strokeStyle = 'rgba(150, 150, 150, 0.5)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([10, 8]);
+                ctx.beginPath();
+                ctx.moveTo(50, centerY);
+                ctx.lineTo(canvas.width, centerY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.restore();
+            }
             
             // Strahlendaten sammeln für Brennpunkt-Berechnung
             const rayEndData = [];
@@ -1382,6 +1495,7 @@
         const focalToggle = document.getElementById('focalToggle');
         
         focalToggle.addEventListener('click', () => {
+            if (focalToggle.classList.contains('disabled')) return;
             showFocalPoint = !showFocalPoint;
             focalToggle.classList.toggle('active', showFocalPoint);
             draw();
@@ -1391,9 +1505,36 @@
         const focalLengthToggle = document.getElementById('focalLengthToggle');
         
         focalLengthToggle.addEventListener('click', () => {
+            if (focalLengthToggle.classList.contains('disabled')) return;
             showFocalLength = !showFocalLength;
             focalLengthToggle.classList.toggle('active', showFocalLength);
             draw();
+        });
+        
+        // Optische Achse Toggle
+        const axisToggle = document.getElementById('axisToggle');
+        
+        axisToggle.addEventListener('click', () => {
+            showAxis = !showAxis;
+            axisToggle.classList.toggle('active', showAxis);
+            draw();
+        });
+        
+        // Reset-Button
+        const resetButton = document.getElementById('resetButton');
+        
+        resetButton.addEventListener('click', () => {
+            lenses = [];
+            rulers = [];
+            rays.forEach(ray => ray.active = true);
+            showFocalPoint = false;
+            showFocalLength = false;
+            showAxis = false;
+            focalToggle.classList.remove('active');
+            focalLengthToggle.classList.remove('active');
+            axisToggle.classList.remove('active');
+            draw();
+            drawOverlay();
         });
         
         // Init
