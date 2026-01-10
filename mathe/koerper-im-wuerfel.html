@@ -44,7 +44,7 @@
         }
         .new-task-btn:hover { background: #1d4ed8; }
         
-        .workspace { width: 100%; }
+        .workspace { width: 100%; position: relative; }
         #canvas3d { 
             border: 1px solid #ccc; 
             cursor: grab; 
@@ -176,7 +176,6 @@
             <button onclick="setView('iso')" class="active" id="btnIso">Schrägbild</button>
         </div>
         <div class="controls">
-            <button onclick="undoLastEdge()">Rückgängig</button>
             <button onclick="clearAll()">Löschen</button>
             <button class="success" onclick="checkSolution()">✓ Prüfen</button>
             <button onclick="showSolution()">Lösung</button>
@@ -656,7 +655,8 @@
                 edges: [
                     [[0,0,0],[2,0,0]], [[2,0,0],[2,0,2]], [[2,0,2],[0,0,2]], [[0,0,2],[0,0,0]],
                     [[0,0,0],[0,2,0]], [[2,0,0],[2,2,0]],
-                    [[0,2,0],[2,2,0]]
+                    [[0,2,0],[2,2,0]],
+                    [[0,0,2],[0,2,0]], [[2,0,2],[2,2,0]]
                 ],
                 faces: [
                     [[0,0,0], [2,0,0], [2,0,2], [0,0,2]],
@@ -670,7 +670,8 @@
                 edges: [
                     [[0,0,0],[2,0,0]], [[2,0,0],[2,2,0]], [[2,2,0],[0,2,0]], [[0,2,0],[0,0,0]],
                     [[0,0,2],[2,0,2]], [[2,0,2],[2,2,2]],
-                    [[0,0,0],[0,0,2]], [[2,0,0],[2,0,2]], [[2,2,0],[2,2,2]], [[0,2,0],[0,0,2]]
+                    [[0,0,0],[0,0,2]], [[2,0,0],[2,0,2]], [[2,2,0],[2,2,2]], 
+                    [[0,2,0],[0,0,2]], [[0,0,2],[2,2,2]]
                 ],
                 faces: [
                     [[0,0,0], [2,0,0], [2,2,0], [0,2,0]],
@@ -884,7 +885,8 @@
                 edges: [
                     [[0,0,0],[2,0,0]], [[2,0,0],[2,0,2]], [[2,0,2],[0,0,2]], [[0,0,2],[0,0,0]],
                     [[0,0,2],[0,2,2]], [[2,0,2],[2,2,2]],
-                    [[0,2,2],[2,2,2]]
+                    [[0,2,2],[2,2,2]],
+                    [[0,0,0],[0,2,2]], [[2,0,0],[2,2,2]]
                 ],
                 faces: [
                     [[0,0,0], [2,0,0], [2,0,2], [0,0,2]],
@@ -898,7 +900,8 @@
                 edges: [
                     [[0,0,0],[2,0,0]], [[2,0,0],[2,0,2]], [[2,0,2],[0,0,2]], [[0,0,2],[0,0,0]],
                     [[0,0,0],[0,2,0]], [[0,0,2],[0,2,2]],
-                    [[0,2,0],[0,2,2]]
+                    [[0,2,0],[0,2,2]],
+                    [[2,0,0],[0,2,0]], [[2,0,2],[0,2,2]]
                 ],
                 faces: [
                     [[0,0,0], [2,0,0], [2,0,2], [0,0,2]],
@@ -936,6 +939,8 @@
             
             createGrid();
             createWireframeCube();
+            createOrientationCube();
+            updateCameraPosition(); // Set initial camera position for both main and orientation cube
             
             canvas.addEventListener('mousedown', onMouseDown);
             canvas.addEventListener('mousemove', onMouseMove);
@@ -958,6 +963,17 @@
             camera.position.set(x, y, z);
             camera.lookAt(center);
             camera.updateProjectionMatrix();
+            
+            // Update orientation camera to match
+            if (orientationCamera) {
+                const dist = 5;
+                orientationCamera.position.set(
+                    dist * Math.sin(cameraPhi) * Math.sin(cameraTheta),
+                    dist * Math.cos(cameraPhi),
+                    dist * Math.sin(cameraPhi) * Math.cos(cameraTheta)
+                );
+                orientationCamera.lookAt(0, 0, 0);
+            }
         }
         
         // Determine which faces of the cube are hidden from current camera view
@@ -992,32 +1008,174 @@
         
         // Check if a shape edge is hidden
         function isShapeEdgeHidden(p1, p2) {
-            const hiddenFaces = getHiddenFaces();
-            let hiddenCount = 0;
+            if (!currentShape || !currentShape.faces) return false;
             
-            // Check which cube faces this edge lies on
-            // Edge on x=0 face
-            if (p1.x === 0 && p2.x === 0 && hiddenFaces.includes('x0')) hiddenCount++;
-            // Edge on x=2 face
-            if (p1.x === 2 && p2.x === 2 && hiddenFaces.includes('x2')) hiddenCount++;
-            // Edge on y=0 face
-            if (p1.y === 0 && p2.y === 0 && hiddenFaces.includes('y0')) hiddenCount++;
-            // Edge on y=2 face
-            if (p1.y === 2 && p2.y === 2 && hiddenFaces.includes('y2')) hiddenCount++;
-            // Edge on z=0 face
-            if (p1.z === 0 && p2.z === 0 && hiddenFaces.includes('z0')) hiddenCount++;
-            // Edge on z=2 face
-            if (p1.z === 2 && p2.z === 2 && hiddenFaces.includes('z2')) hiddenCount++;
+            const camPos = camera.position.clone();
             
-            return hiddenCount >= 2;
+            // Edge midpoint
+            const edgeMid = new THREE.Vector3(
+                (p1.x + p2.x) / 2,
+                (p1.y + p2.y) / 2,
+                (p1.z + p2.z) / 2
+            );
+            
+            // Get all faces that this edge belongs to
+            const edgeFaceIndices = [];
+            for (let fi = 0; fi < currentShape.faces.length; fi++) {
+                const face = currentShape.faces[fi];
+                const p1OnFace = face.some(v => 
+                    Math.abs(v[0] - p1.x) < 0.01 && 
+                    Math.abs(v[1] - p1.y) < 0.01 && 
+                    Math.abs(v[2] - p1.z) < 0.01
+                );
+                const p2OnFace = face.some(v => 
+                    Math.abs(v[0] - p2.x) < 0.01 && 
+                    Math.abs(v[1] - p2.y) < 0.01 && 
+                    Math.abs(v[2] - p2.z) < 0.01
+                );
+                if (p1OnFace && p2OnFace) {
+                    edgeFaceIndices.push(fi);
+                }
+            }
+            
+            // If edge has no faces or only one face, it's visible
+            if (edgeFaceIndices.length <= 1) return false;
+            
+            // METHOD 1: Check if edge is occluded by another face (raycasting)
+            const rayDir = new THREE.Vector3().subVectors(edgeMid, camPos).normalize();
+            const distToEdge = camPos.distanceTo(edgeMid);
+            
+            for (let fi = 0; fi < currentShape.faces.length; fi++) {
+                // Skip faces that contain this edge
+                if (edgeFaceIndices.includes(fi)) continue;
+                
+                const face = currentShape.faces[fi];
+                const vertices = face.map(v => new THREE.Vector3(v[0], v[1], v[2]));
+                
+                const t = rayPolygonIntersect(camPos, rayDir, vertices);
+                
+                if (t !== null && t > 0.01 && t < distToEdge - 0.01) {
+                    return true; // Occluded by another face
+                }
+            }
+            
+            // METHOD 2: Check if all adjacent faces are back-facing (backface culling)
+            // Calculate shape centroid
+            const allVerts = new Set();
+            currentShape.edges.forEach(edge => {
+                allVerts.add(edge[0].join(','));
+                allVerts.add(edge[1].join(','));
+            });
+            const shapeCentroid = new THREE.Vector3();
+            allVerts.forEach(key => {
+                const [x, y, z] = key.split(',').map(Number);
+                shapeCentroid.add(new THREE.Vector3(x, y, z));
+            });
+            shapeCentroid.divideScalar(allVerts.size);
+            
+            // Check each adjacent face
+            for (const fi of edgeFaceIndices) {
+                const face = currentShape.faces[fi];
+                const vertices = face.map(v => new THREE.Vector3(v[0], v[1], v[2]));
+                
+                // Face centroid
+                const faceCentroid = new THREE.Vector3();
+                vertices.forEach(v => faceCentroid.add(v));
+                faceCentroid.divideScalar(vertices.length);
+                
+                // Face normal
+                const v0 = vertices[0], v1 = vertices[1], v2 = vertices[2];
+                const e1 = new THREE.Vector3().subVectors(v1, v0);
+                const e2 = new THREE.Vector3().subVectors(v2, v0);
+                const normal = new THREE.Vector3().crossVectors(e1, e2).normalize();
+                
+                // Test which direction is "outside" by moving a test point
+                const testDist = 0.5;
+                const testPointA = faceCentroid.clone().add(normal.clone().multiplyScalar(testDist));
+                const testPointB = faceCentroid.clone().sub(normal.clone().multiplyScalar(testDist));
+                
+                // The point farther from shape center is "outside"
+                const distA = testPointA.distanceTo(shapeCentroid);
+                const distB = testPointB.distanceTo(shapeCentroid);
+                
+                const outwardNormal = (distA > distB) ? normal : normal.clone().negate();
+                
+                // Direction from face to camera  
+                const faceToCamera = new THREE.Vector3().subVectors(camPos, faceCentroid);
+                
+                // Face is front-facing if outward normal points towards camera
+                if (outwardNormal.dot(faceToCamera) > 0) {
+                    return false; // At least one face is visible, edge is visible
+                }
+            }
+            
+            // All adjacent faces are back-facing
+            return true;
+        }
+        
+        function rayPolygonIntersect(rayOrigin, rayDir, vertices) {
+            const v0 = vertices[0], v1 = vertices[1], v2 = vertices[2];
+            const e1 = new THREE.Vector3().subVectors(v1, v0);
+            const e2 = new THREE.Vector3().subVectors(v2, v0);
+            const normal = new THREE.Vector3().crossVectors(e1, e2);
+            
+            if (normal.lengthSq() < 0.0001) return null;
+            normal.normalize();
+            
+            const denom = normal.dot(rayDir);
+            if (Math.abs(denom) < 0.0001) return null;
+            
+            const t = new THREE.Vector3().subVectors(v0, rayOrigin).dot(normal) / denom;
+            if (t < 0) return null;
+            
+            const P = rayOrigin.clone().add(rayDir.clone().multiplyScalar(t));
+            
+            // Point-in-polygon test
+            const n = vertices.length;
+            for (let i = 0; i < n; i++) {
+                const va = vertices[i];
+                const vb = vertices[(i + 1) % n];
+                const edge = new THREE.Vector3().subVectors(vb, va);
+                const toPoint = new THREE.Vector3().subVectors(P, va);
+                const cross = new THREE.Vector3().crossVectors(edge, toPoint);
+                if (cross.dot(normal) < -0.0001) return null;
+            }
+            
+            return t;
+        }
+        
+        // Shuffle array for fair distribution
+        let shapeQueue = [];
+        let lastShapeKey = null;
+        
+        function shuffleArray(array) {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+        
+        function getNextShape() {
+            // Refill queue if empty
+            if (shapeQueue.length === 0) {
+                shapeQueue = shuffleArray(Object.keys(shapes));
+                // Make sure first of new queue isn't same as last shown
+                if (shapeQueue[0] === lastShapeKey && shapeQueue.length > 1) {
+                    // Move it to the end
+                    shapeQueue.push(shapeQueue.shift());
+                }
+            }
+            lastShapeKey = shapeQueue.shift();
+            return lastShapeKey;
         }
         
         function newTask() {
             clearAll();
             hideFeedback();
-            const shapeKeys = Object.keys(shapes);
-            const randomKey = shapeKeys[Math.floor(Math.random() * shapeKeys.length)];
-            currentShape = shapes[randomKey];
+            const shapeKey = getNextShape();
+            currentShape = shapes[shapeKey];
             drawTaskViews();
         }
         
@@ -1025,14 +1183,14 @@
             for (let x = 0; x <= GRID_SIZE; x++) {
                 for (let y = 0; y <= GRID_SIZE; y++) {
                     for (let z = 0; z <= GRID_SIZE; z++) {
-                        // Visible ring
-                        const ringGeometry = new THREE.TorusGeometry(0.06, 0.015, 8, 16);
-                        const ringMaterial = new THREE.MeshBasicMaterial({ color: 0x666666 });
-                        const ring = new THREE.Mesh(ringGeometry, ringMaterial);
-                        ring.position.set(x, y, z);
-                        ring.userData = { point: { x, y, z }, isRing: true };
-                        cubeGroup.add(ring);
-                        pointMeshes.push(ring);
+                        // Visible point as small sphere
+                        const pointGeometry = new THREE.SphereGeometry(0.065, 12, 12);
+                        const pointMaterial = new THREE.MeshBasicMaterial({ color: 0x666666 });
+                        const point = new THREE.Mesh(pointGeometry, pointMaterial);
+                        point.position.set(x, y, z);
+                        point.userData = { point: { x, y, z }, isRing: true };
+                        cubeGroup.add(point);
+                        pointMeshes.push(point);
                         
                         // Invisible larger hitbox (bigger on mobile)
                         const hitSize = ('ontouchstart' in window) ? 0.25 : 0.18;
@@ -1044,12 +1202,173 @@
                         });
                         const hitBox = new THREE.Mesh(hitGeometry, hitMaterial);
                         hitBox.position.set(x, y, z);
-                        hitBox.userData = { point: { x, y, z }, ringMesh: ring };
+                        hitBox.userData = { point: { x, y, z }, ringMesh: point };
                         cubeGroup.add(hitBox);
                         hitBoxes.push(hitBox);
                     }
                 }
             }
+            
+            }
+        
+        // Mini orientation cube - separate scene and renderer
+        let orientationScene, orientationCamera, orientationRenderer, orientationCube;
+        
+        function createFaceTexture(letter, bgColor) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            
+            // Background color
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(0, 0, 256, 256);
+            
+            if (letter) {
+                // Black outline for better visibility
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 8;
+                ctx.font = 'bold 180px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.strokeText(letter, 128, 128);
+                
+                // White letter
+                ctx.fillStyle = 'white';
+                ctx.fillText(letter, 128, 128);
+            }
+            
+            return new THREE.CanvasTexture(canvas);
+        }
+        
+        function createOrientationCube() {
+            // Create container div - inside canvas area, bottom right
+            const canvasEl = document.getElementById('canvas3d');
+            const container = document.createElement('div');
+            container.id = 'orientationContainer';
+            container.style.cssText = 'position: absolute; bottom: 10px; right: 10px; width: 100px; height: 100px; pointer-events: none; z-index: 100;';
+            
+            // Position relative to canvas
+            const wrapper = document.createElement('div');
+            wrapper.style.cssText = 'position: relative; display: block; width: fit-content; margin: 0 auto;';
+            canvasEl.parentNode.insertBefore(wrapper, canvasEl);
+            wrapper.appendChild(canvasEl);
+            wrapper.appendChild(container);
+            
+            // Separate scene
+            orientationScene = new THREE.Scene();
+            orientationScene.background = null;
+            
+            // Orthographic camera like main view
+            const frustumSize = 1.5;
+            orientationCamera = new THREE.OrthographicCamera(
+                -frustumSize/2, frustumSize/2,
+                frustumSize/2, -frustumSize/2,
+                0.1, 100
+            );
+            
+            // Separate renderer
+            orientationRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            orientationRenderer.setSize(100, 100);
+            orientationRenderer.setClearColor(0x000000, 0);
+            container.appendChild(orientationRenderer.domElement);
+            
+            // Create the cube group
+            orientationCube = new THREE.Group();
+            
+            const s = 0.4; // half-size
+            
+            // Create faces with textures
+            // Front (V) - Blue - at z = +s
+            const frontTex = createFaceTexture('V', '#3498db');
+            const frontGeom = new THREE.PlaneGeometry(s*2, s*2);
+            const frontMat = new THREE.MeshBasicMaterial({ map: frontTex, side: THREE.FrontSide });
+            const front = new THREE.Mesh(frontGeom, frontMat);
+            front.position.z = s;
+            orientationCube.add(front);
+            
+            // Back - at z = -s
+            const backTex = createFaceTexture('', '#85c1e9');
+            const backGeom = new THREE.PlaneGeometry(s*2, s*2);
+            const backMat = new THREE.MeshBasicMaterial({ map: backTex, side: THREE.FrontSide });
+            const back = new THREE.Mesh(backGeom, backMat);
+            back.position.z = -s;
+            back.rotation.y = Math.PI;
+            orientationCube.add(back);
+            
+            // Right (R) - Green - at x = +s
+            const rightTex = createFaceTexture('R', '#27ae60');
+            const rightGeom = new THREE.PlaneGeometry(s*2, s*2);
+            const rightMat = new THREE.MeshBasicMaterial({ map: rightTex, side: THREE.FrontSide });
+            const right = new THREE.Mesh(rightGeom, rightMat);
+            right.position.x = s;
+            right.rotation.y = Math.PI/2;
+            orientationCube.add(right);
+            
+            // Left - at x = -s
+            const leftTex = createFaceTexture('', '#82e0aa');
+            const leftGeom = new THREE.PlaneGeometry(s*2, s*2);
+            const leftMat = new THREE.MeshBasicMaterial({ map: leftTex, side: THREE.FrontSide });
+            const left = new THREE.Mesh(leftGeom, leftMat);
+            left.position.x = -s;
+            left.rotation.y = -Math.PI/2;
+            orientationCube.add(left);
+            
+            // Top (O) - Orange - at y = +s
+            const topTex = createFaceTexture('O', '#e67e22');
+            const topGeom = new THREE.PlaneGeometry(s*2, s*2);
+            const topMat = new THREE.MeshBasicMaterial({ map: topTex, side: THREE.FrontSide });
+            const top = new THREE.Mesh(topGeom, topMat);
+            top.position.y = s;
+            top.rotation.x = -Math.PI/2;
+            orientationCube.add(top);
+            
+            // Bottom - at y = -s
+            const bottomTex = createFaceTexture('', '#f5b041');
+            const bottomGeom = new THREE.PlaneGeometry(s*2, s*2);
+            const bottomMat = new THREE.MeshBasicMaterial({ map: bottomTex, side: THREE.FrontSide });
+            const bottom = new THREE.Mesh(bottomGeom, bottomMat);
+            bottom.position.y = -s;
+            bottom.rotation.x = Math.PI/2;
+            orientationCube.add(bottom);
+            
+            // Add edges - all visible, no hidden/visible distinction
+            const edgePositions = [
+                // Bottom face edges
+                [[-s, -s, -s], [s, -s, -s]],
+                [[s, -s, -s], [s, -s, s]],
+                [[s, -s, s], [-s, -s, s]],
+                [[-s, -s, s], [-s, -s, -s]],
+                // Top face edges
+                [[-s, s, -s], [s, s, -s]],
+                [[s, s, -s], [s, s, s]],
+                [[s, s, s], [-s, s, s]],
+                [[-s, s, s], [-s, s, -s]],
+                // Vertical edges
+                [[-s, -s, -s], [-s, s, -s]],
+                [[s, -s, -s], [s, s, -s]],
+                [[s, -s, s], [s, s, s]],
+                [[-s, -s, s], [-s, s, s]]
+            ];
+            
+            edgePositions.forEach(edge => {
+                const start = new THREE.Vector3(edge[0][0], edge[0][1], edge[0][2]);
+                const end = new THREE.Vector3(edge[1][0], edge[1][1], edge[1][2]);
+                const length = start.distanceTo(end);
+                
+                const geometry = new THREE.CylinderGeometry(0.015, 0.015, length, 8);
+                geometry.translate(0, length / 2, 0);
+                geometry.rotateX(Math.PI / 2);
+                
+                const material = new THREE.MeshBasicMaterial({ color: 0x000000 });
+                const cylinder = new THREE.Mesh(geometry, material);
+                cylinder.position.copy(start);
+                cylinder.lookAt(end);
+                
+                orientationCube.add(cylinder);
+            });
+            
+            orientationScene.add(orientationCube);
         }
         
         function createWireframeCube() {
@@ -1089,14 +1408,21 @@
         }
         
         function addEdge(p1, p2) {
-            const exists = edges.some(e => 
+            const existingIndex = edges.findIndex(e => 
                 (e.p1.x === p1.x && e.p1.y === p1.y && e.p1.z === p1.z &&
                  e.p2.x === p2.x && e.p2.y === p2.y && e.p2.z === p2.z) ||
                 (e.p1.x === p2.x && e.p1.y === p2.y && e.p1.z === p2.z &&
                  e.p2.x === p1.x && e.p2.y === p1.y && e.p2.z === p1.z)
             );
-            if (exists) return;
-            edges.push({ p1, p2 });
+            
+            if (existingIndex !== -1) {
+                // Edge exists - remove it (toggle)
+                edges.splice(existingIndex, 1);
+            } else {
+                // Edge doesn't exist - add it
+                edges.push({ p1, p2 });
+            }
+            
             updateEdgeVisuals();
             document.getElementById('edgeCount').textContent = edges.length;
             hideFeedback();
@@ -1107,42 +1433,73 @@
             edgeLines.forEach(line => cubeGroup.remove(line));
             edgeLines = [];
             
-            const hasColoredFaces = faceMeshes.length > 0;
-            
             edges.forEach(edge => {
                 const isHidden = isShapeEdgeHidden(edge.p1, edge.p2);
                 
-                let material;
+                const start = new THREE.Vector3(edge.p1.x, edge.p1.y, edge.p1.z);
+                const end = new THREE.Vector3(edge.p2.x, edge.p2.y, edge.p2.z);
+                const direction = new THREE.Vector3().subVectors(end, start);
+                const length = direction.length();
+                
                 if (isHidden) {
-                    material = new THREE.LineDashedMaterial({ 
-                        color: 0x000000, 
-                        dashSize: 0.03, 
-                        gapSize: 0.06,
-                        depthTest: false,
-                        depthWrite: false,
-                        transparent: true
-                    });
+                    // Dashed line for hidden edges - create segments
+                    const dashLength = 0.08;
+                    const gapLength = 0.08;
+                    const segmentLength = dashLength + gapLength;
+                    const numSegments = Math.ceil(length / segmentLength);
+                    
+                    for (let i = 0; i < numSegments; i++) {
+                        const tStart = (i * segmentLength) / length;
+                        const tEnd = Math.min((i * segmentLength + dashLength) / length, 1);
+                        
+                        if (tStart >= 1) break;
+                        
+                        const segStart = start.clone().lerp(end, tStart);
+                        const segEnd = start.clone().lerp(end, tEnd);
+                        const segLength = segStart.distanceTo(segEnd);
+                        
+                        if (segLength < 0.01) continue;
+                        
+                        const segGeom = new THREE.CylinderGeometry(0.02, 0.02, segLength, 6);
+                        segGeom.translate(0, segLength / 2, 0);
+                        segGeom.rotateX(Math.PI / 2);
+                        
+                        const segMat = new THREE.MeshBasicMaterial({ 
+                            color: 0x000000,
+                            depthTest: false,
+                            depthWrite: false,
+                            transparent: true
+                        });
+                        
+                        const segment = new THREE.Mesh(segGeom, segMat);
+                        segment.position.copy(segStart);
+                        segment.lookAt(segEnd);
+                        segment.renderOrder = 1001;
+                        
+                        cubeGroup.add(segment);
+                        edgeLines.push(segment);
+                    }
                 } else {
-                    material = new THREE.LineBasicMaterial({ 
+                    // Solid line for visible edges
+                    const geometry = new THREE.CylinderGeometry(0.03, 0.03, length, 8);
+                    geometry.translate(0, length / 2, 0);
+                    geometry.rotateX(Math.PI / 2);
+                    
+                    const material = new THREE.MeshBasicMaterial({ 
                         color: 0x000000,
                         depthTest: false,
                         depthWrite: false,
                         transparent: true
                     });
+                    
+                    const cylinder = new THREE.Mesh(geometry, material);
+                    cylinder.position.copy(start);
+                    cylinder.lookAt(end);
+                    cylinder.renderOrder = 1001;
+                    
+                    cubeGroup.add(cylinder);
+                    edgeLines.push(cylinder);
                 }
-                
-                const points = [
-                    new THREE.Vector3(edge.p1.x, edge.p1.y, edge.p1.z),
-                    new THREE.Vector3(edge.p2.x, edge.p2.y, edge.p2.z)
-                ];
-                
-                const geometry = new THREE.BufferGeometry().setFromPoints(points);
-                const line = new THREE.Line(geometry, material);
-                line.computeLineDistances();
-                line.renderOrder = 999;
-                
-                cubeGroup.add(line);
-                edgeLines.push(line);
             });
         }
         
@@ -1243,14 +1600,12 @@
                         color: color, 
                         side: THREE.DoubleSide,
                         transparent: true,
-                        opacity: 0.5,
+                        opacity: 0.6,
                         depthWrite: false,
-                        polygonOffset: true,
-                        polygonOffsetFactor: 1,
-                        polygonOffsetUnits: 1
+                        depthTest: false
                     });
                     const mesh = new THREE.Mesh(geometry, material);
-                    mesh.renderOrder = 0;
+                    mesh.renderOrder = -1;
                     cubeGroup.add(mesh);
                     faceMeshes.push(mesh);
                 }
@@ -1411,7 +1766,7 @@
             switch(view) {
                 case 'front': targetTheta = 0; targetPhi = Math.PI / 2; break;
                 case 'right': targetTheta = Math.PI / 2; targetPhi = Math.PI / 2; break;
-                case 'top': targetTheta = 0; targetPhi = 0.01; break;
+                case 'top': targetTheta = 0; targetPhi = 0.001; break;
                 case 'iso': 
                 default: targetTheta = Math.PI / 5; targetPhi = Math.PI * 0.38; break;
             }
@@ -1430,16 +1785,6 @@
             
             document.querySelectorAll('.controls button').forEach(btn => btn.classList.remove('active'));
             event.target.classList.add('active');
-        }
-        
-        function undoLastEdge() {
-            if (edges.length > 0) {
-                edges.pop();
-                updateEdgeVisuals();
-                document.getElementById('edgeCount').textContent = edges.length;
-                hideFeedback();
-                clearFaces();
-            }
         }
         
         function clearAll() {
@@ -1542,7 +1887,12 @@
         
         function animate() {
             requestAnimationFrame(animate);
-            pointMeshes.forEach(mesh => mesh.lookAt(camera.position));
+            
+            // Render orientation cube
+            if (orientationRenderer && orientationScene && orientationCamera) {
+                orientationRenderer.render(orientationScene, orientationCamera);
+            }
+            
             renderer.render(scene, camera);
         }
         
