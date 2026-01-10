@@ -47,6 +47,8 @@
             color: #fff;
             border-color: #000;
         }
+        .tab-short { display: none; }
+        .tab-full { display: inline; }
 
         .tab-content {
             display: none;
@@ -569,6 +571,138 @@
             cursor: pointer;
         }
 
+        /* Option checkbox */
+        .option-checkbox {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .option-checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            color: #666;
+        }
+        .option-checkbox-label input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        /* Exam styles */
+        .exam-screen {
+            text-align: center;
+        }
+        .exam-info {
+            padding: 40px 20px;
+        }
+        .exam-info h2 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        .exam-info p {
+            font-size: 1rem;
+            color: #444;
+            margin-bottom: 8px;
+        }
+        .exam-note {
+            font-size: 0.9rem !important;
+            color: #888 !important;
+            margin-top: 16px !important;
+            margin-bottom: 24px !important;
+        }
+        .start-btn {
+            font-family: inherit;
+            font-size: 1rem;
+            padding: 12px 32px;
+            background: #2563eb;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 16px;
+        }
+        .start-btn:hover { background: #1d4ed8; }
+
+        .exam-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        .exam-progress {
+            font-size: 1rem;
+            color: #444;
+        }
+        .exam-timer {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2563eb;
+            font-variant-numeric: tabular-nums;
+        }
+        .exam-timer.warning {
+            color: #dc2626;
+        }
+
+        .exam-results-content {
+            padding: 40px 20px;
+        }
+        .exam-results-content h2 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 24px;
+        }
+        .exam-score {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+        }
+        .exam-percent {
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: #2563eb;
+            margin-bottom: 32px;
+        }
+        .exam-results-content h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #444;
+        }
+        .exam-wrong-list {
+            text-align: left;
+            max-width: 400px;
+            margin: 0 auto 24px;
+        }
+        .exam-wrong-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        .exam-wrong-item .task {
+            color: #666;
+            margin-bottom: 4px;
+        }
+        .exam-wrong-item .answers {
+            display: flex;
+            gap: 16px;
+        }
+        .exam-wrong-item .your-answer {
+            color: #dc2626;
+        }
+        .exam-wrong-item .correct-answer {
+            color: #16a34a;
+        }
+
         /* Responsive */
         /* Tablet */
         @media (max-width: 768px) {
@@ -598,10 +732,12 @@
             }
             .tab-btn { 
                 font-size: 0.75rem; 
-                padding: 8px 10px;
+                padding: 8px 6px;
                 flex: 1;
                 text-align: center;
             }
+            .tab-short { display: inline; }
+            .tab-full { display: none; }
             .score-bar {
                 font-size: 0.85rem;
                 padding: 8px 0;
@@ -658,10 +794,23 @@
             .theory-level-btn { font-size: 0.7rem; padding: 5px 8px; }
             .theory-checkbox-label { font-size: 0.8rem; gap: 8px; }
             .theory-checkbox-label input[type="checkbox"] { width: 16px; height: 16px; }
+            .option-checkbox { gap: 16px; }
+            .option-checkbox-label { font-size: 0.8rem; }
             .popup { width: 95%; }
             .popup-header { padding: 14px 16px; }
             .popup-content { padding: 16px; }
             .help-section { margin-top: 24px; padding-top: 16px; }
+            .exam-info { padding: 24px 16px; }
+            .exam-info h2 { font-size: 1.2rem; }
+            .exam-info p { font-size: 0.9rem; }
+            .exam-header { padding: 12px 0; }
+            .exam-progress { font-size: 0.9rem; }
+            .exam-timer { font-size: 1.1rem; }
+            .exam-results-content { padding: 24px 16px; }
+            .exam-score { font-size: 1.2rem; }
+            .exam-percent { font-size: 2rem; }
+            .exam-wrong-item { font-size: 0.85rem; }
+            .exam-wrong-item .answers { flex-direction: column; gap: 4px; }
         }
 
         /* Very small phones */
@@ -679,6 +828,7 @@
             .theory-digit { width: 30px; height: 42px; font-size: 1.3rem; }
             .theory-digit.decimal { width: 12px; }
             .theory-label { width: 30px; font-size: 0.45rem; }
+            .option-checkbox-label { font-size: 0.75rem; }
         }
     </style>
 </head>
@@ -688,8 +838,9 @@
     <!-- Tab Navigation -->
     <div class="tab-nav">
         <button class="tab-btn active" data-tab="theory">Theorie</button>
-        <button class="tab-btn" data-tab="identify">Stellen erkennen</button>
+        <button class="tab-btn" data-tab="identify"><span class="tab-full">Stellen erkennen</span><span class="tab-short">Stellen</span></button>
         <button class="tab-btn" data-tab="practice">Üben</button>
+        <button class="tab-btn" data-tab="exam">Prüfung</button>
     </div>
 
     <!-- ========== TAB 1: THEORIE ========== -->
@@ -707,6 +858,7 @@
                     <div class="theory-digit">2</div>
                     <div class="theory-digit">7</div>
                     <div class="theory-digit">4</div>
+                    <div class="theory-digit">5</div>
                 </div>
                 <div class="theory-labels">
                     <div class="theory-label">Hunderter</div>
@@ -716,6 +868,7 @@
                     <div class="theory-label">Zehntel</div>
                     <div class="theory-label">Hundert-<br>stel</div>
                     <div class="theory-label">Tausend-<br>stel</div>
+                    <div class="theory-label">Zehn-<br>tausendstel</div>
                 </div>
             </div>
         </div>
@@ -793,7 +946,7 @@
         </div>
 
         <div class="theory-section">
-            <h2>Beispiel: Runde 385,274 auf Zehntel</h2>
+            <h2>Beispiel: Runde 385,2745 auf Zehntel</h2>
             <p>"Auf Zehntel" bedeutet dasselbe wie "auf 1 Stelle nach dem Komma".</p>
             
             <div class="theory-example">
@@ -805,6 +958,7 @@
                     <div class="theory-digit target">2</div>
                     <div class="theory-digit decision">7</div>
                     <div class="theory-digit">4</div>
+                    <div class="theory-digit">5</div>
                 </div>
                 <div class="theory-labels">
                     <div class="theory-label"></div>
@@ -813,6 +967,7 @@
                     <div class="theory-label decimal"></div>
                     <div class="theory-label">Ziel</div>
                     <div class="theory-label">Entscheid.</div>
+                    <div class="theory-label"></div>
                     <div class="theory-label"></div>
                 </div>
                 
@@ -830,7 +985,7 @@
                 </div>
                 <div class="theory-step">
                     <div class="theory-step-num">4</div>
-                    <div class="theory-step-text">Ergebnis: 385,<span class="highlight-blue">2</span> wird zu <strong>385,3</strong></div>
+                    <div class="theory-step-text">Ergebnis: 385,<span class="highlight-blue">2</span>745 wird zu <strong>385,3</strong></div>
                 </div>
             </div>
         </div>
@@ -874,6 +1029,13 @@
             <button class="mode-btn" data-mode="both">Beides</button>
         </div>
 
+        <div class="option-checkbox">
+            <label class="option-checkbox-label">
+                <input type="checkbox" id="show-labels" checked>
+                <span>Stellenwerte anzeigen</span>
+            </label>
+        </div>
+
         <div class="task-area">
             <p class="instruction" id="identify-instruction">Klicke auf die <span class="target-place">Zielstelle</span> beim Runden auf <span class="target-place" id="identify-target">Zehntel</span></p>
             <div class="number-wrapper">
@@ -909,9 +1071,15 @@
             <button class="level-btn" data-level="gemischt">Gemischt</button>
         </div>
 
-        <div class="mode-select">
-            <button class="mode-btn" data-practice-mode="marked">Mit Markierungen</button>
-            <button class="mode-btn active" data-practice-mode="unmarked">Ohne Markierungen</button>
+        <div class="option-checkbox">
+            <label class="option-checkbox-label">
+                <input type="checkbox" id="practice-show-markers">
+                <span>Markierungen anzeigen</span>
+            </label>
+            <label class="option-checkbox-label">
+                <input type="checkbox" id="practice-show-labels" checked>
+                <span>Stellenwerte anzeigen</span>
+            </label>
         </div>
 
         <div class="task-area">
@@ -969,6 +1137,58 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== TAB 4: PRÜFUNG ========== -->
+    <div id="tab-exam" class="tab-content">
+        <!-- Start screen -->
+        <div id="exam-start" class="exam-screen">
+            <div class="exam-info">
+                <h2>Prüfungsmodus</h2>
+                <p>12 Aufgaben aus allen Schwierigkeitsstufen</p>
+                <p>Zeitlimit: 2 Minuten</p>
+                <p class="exam-note">Keine Hilfen, kein Feedback während der Prüfung.</p>
+                <button class="start-btn" id="exam-start-btn">Prüfung starten</button>
+            </div>
+        </div>
+
+        <!-- Exam screen -->
+        <div id="exam-active" class="exam-screen" style="display: none;">
+            <div class="exam-header">
+                <div class="exam-progress">Aufgabe <span id="exam-current">1</span> / 12</div>
+                <div class="exam-timer" id="exam-timer">2:00</div>
+            </div>
+
+            <div class="task-area">
+                <p class="instruction">Runde auf <span class="target-place" id="exam-target-place">Ganzzahl</span></p>
+                <div class="number-wrapper">
+                    <div class="number-display" id="exam-number-display"></div>
+                </div>
+            </div>
+
+            <div class="input-area">
+                <input type="text" class="answer-input" id="exam-answer" placeholder="?" autocomplete="off" inputmode="decimal">
+                <button class="check-btn" id="exam-next-btn">Weiter</button>
+            </div>
+        </div>
+
+        <!-- Results screen -->
+        <div id="exam-results" class="exam-screen" style="display: none;">
+            <div class="exam-results-content">
+                <h2>Ergebnis</h2>
+                <div class="exam-score">
+                    <span id="exam-correct">0</span> / 12 richtig
+                </div>
+                <div class="exam-percent" id="exam-percent">0%</div>
+                
+                <div id="exam-wrong-section" style="display: none;">
+                    <h3>Falsche Antworten:</h3>
+                    <div id="exam-wrong-list" class="exam-wrong-list"></div>
+                </div>
+                
+                <button class="start-btn" id="exam-restart-btn">Neue Prüfung</button>
             </div>
         </div>
     </div>
@@ -1068,7 +1288,7 @@
         let currentTheoryLevel = 'ganzzahl';
 
         function updateTheoryDisplay() {
-            // For the number 385,274: indices are 0,1,2 (int), 3 (decimal), 4,5,6 (dec)
+            // For the number 385,2745: indices are 0,1,2 (int), 3 (decimal), 4,5,6,7 (dec)
             const intLength = 3; // 385
             const { targetIdx, decisionIdx } = getTargetAndDecisionIndex(currentTheoryLevel, intLength);
             
@@ -1157,6 +1377,7 @@
         const identifySkipBtn = document.getElementById('identify-skip-btn');
         const identifyNextBtn = document.getElementById('identify-next-btn');
         const modeBtns = document.querySelectorAll('.mode-btn');
+        const showLabelsCheckbox = document.getElementById('show-labels');
 
         modeBtns.forEach(btn => {
             btn.addEventListener('click', () => {
@@ -1168,6 +1389,10 @@
                 updateIdentifyDisplay();
                 generateIdentifyTask();
             });
+        });
+
+        showLabelsCheckbox.addEventListener('change', () => {
+            identifyLabelRow.style.display = showLabelsCheckbox.checked ? 'flex' : 'none';
         });
 
         function displayIdentifyNumber(number, level, clickable = true) {
@@ -1331,6 +1556,7 @@
             
             updateIdentifyInstruction();
             displayIdentifyNumber(identifyState.currentNumber, identifyState.currentLevel, true);
+            identifyLabelRow.style.display = showLabelsCheckbox.checked ? 'flex' : 'none';
         }
 
         function updateIdentifyDisplay() {
@@ -1373,7 +1599,8 @@
         const practiceNextBtn = document.getElementById('practice-next-btn');
         const practiceLegend = document.getElementById('practice-legend');
         const levelBtns = document.querySelectorAll('.level-btn');
-        const practiceModeBtns = document.querySelectorAll('[data-practice-mode]');
+        const practiceShowMarkersCheckbox = document.getElementById('practice-show-markers');
+        const practiceShowLabelsCheckbox = document.getElementById('practice-show-labels');
         const helpBtn = document.getElementById('help-btn');
         const popupOverlay = document.getElementById('popup-overlay');
         const popupClose = document.getElementById('popup-close');
@@ -1392,21 +1619,25 @@
             }
         });
 
+        practiceShowMarkersCheckbox.addEventListener('change', () => {
+            practiceState.showMarkers = practiceShowMarkersCheckbox.checked;
+            practiceLegend.style.display = practiceState.showMarkers ? 'flex' : 'none';
+            // Re-display current number with/without markers
+            if (practiceState.currentNumber) {
+                displayPracticeNumber(practiceState.currentNumber, practiceState.actualLevel);
+                practiceLabelRow.style.display = practiceShowLabelsCheckbox.checked ? 'flex' : 'none';
+            }
+        });
+
+        practiceShowLabelsCheckbox.addEventListener('change', () => {
+            practiceLabelRow.style.display = practiceShowLabelsCheckbox.checked ? 'flex' : 'none';
+        });
+
         levelBtns.forEach(btn => {
             btn.addEventListener('click', () => {
                 levelBtns.forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 practiceState.level = btn.dataset.level;
-                generatePracticeTask();
-            });
-        });
-
-        practiceModeBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                practiceModeBtns.forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                practiceState.showMarkers = btn.dataset.practiceMode === 'marked';
-                practiceLegend.style.display = practiceState.showMarkers ? 'flex' : 'none';
                 generatePracticeTask();
             });
         });
@@ -1505,6 +1736,7 @@
             practiceTargetPlace.textContent = displayName;
             
             displayPracticeNumber(practiceState.currentNumber, actualLevel);
+            practiceLabelRow.style.display = practiceShowLabelsCheckbox.checked ? 'flex' : 'none';
             practiceAnswerInput.focus();
         }
 
@@ -1598,6 +1830,212 @@
         practiceNextBtn.addEventListener('click', generatePracticeTask);
 
         practiceAnswerInput.addEventListener('input', (e) => {
+            e.target.value = e.target.value.replace(/[^0-9.,\-]/g, '');
+        });
+
+        // ========== TAB 4: PRÜFUNG ==========
+        const examState = {
+            tasks: [],
+            currentTask: 0,
+            answers: [],
+            timerInterval: null,
+            timeRemaining: 120, // 2 minutes in seconds
+            started: false
+        };
+
+        const examStartScreen = document.getElementById('exam-start');
+        const examActiveScreen = document.getElementById('exam-active');
+        const examResultsScreen = document.getElementById('exam-results');
+        const examStartBtn = document.getElementById('exam-start-btn');
+        const examRestartBtn = document.getElementById('exam-restart-btn');
+        const examCurrentDisplay = document.getElementById('exam-current');
+        const examTimerDisplay = document.getElementById('exam-timer');
+        const examNumberDisplay = document.getElementById('exam-number-display');
+        const examTargetPlace = document.getElementById('exam-target-place');
+        const examAnswerInput = document.getElementById('exam-answer');
+        const examNextBtn = document.getElementById('exam-next-btn');
+        const examCorrectDisplay = document.getElementById('exam-correct');
+        const examPercentDisplay = document.getElementById('exam-percent');
+        const examWrongSection = document.getElementById('exam-wrong-section');
+        const examWrongList = document.getElementById('exam-wrong-list');
+
+        function generateExamTasks() {
+            examState.tasks = [];
+            const allLevels = ['zehner', 'ganzzahl', 'zehntel', 'hundertstel', 'tausendstel'];
+            
+            for (let i = 0; i < 12; i++) {
+                const level = allLevels[Math.floor(Math.random() * allLevels.length)];
+                const levelConfig = levels[level];
+                const number = levelConfig.generate();
+                const correctAnswer = levelConfig.round(number);
+                const displayName = getRandomAltName(level);
+                
+                examState.tasks.push({
+                    number,
+                    level,
+                    displayName,
+                    correctAnswer
+                });
+            }
+        }
+
+        function displayExamNumber(number) {
+            examNumberDisplay.innerHTML = '';
+            
+            const numStr = number.toString();
+            const parts = numStr.split('.');
+            const intPart = parts[0];
+            const decPart = parts[1] || '';
+            
+            for (let i = 0; i < intPart.length; i++) {
+                const box = document.createElement('div');
+                box.className = 'digit-box';
+                box.textContent = intPart[i];
+                examNumberDisplay.appendChild(box);
+            }
+            
+            if (decPart) {
+                const decBox = document.createElement('div');
+                decBox.className = 'digit-box decimal';
+                decBox.textContent = ',';
+                examNumberDisplay.appendChild(decBox);
+                
+                for (let i = 0; i < decPart.length; i++) {
+                    const box = document.createElement('div');
+                    box.className = 'digit-box';
+                    box.textContent = decPart[i];
+                    examNumberDisplay.appendChild(box);
+                }
+            }
+        }
+
+        function showExamTask() {
+            const task = examState.tasks[examState.currentTask];
+            examCurrentDisplay.textContent = examState.currentTask + 1;
+            examTargetPlace.textContent = task.displayName;
+            displayExamNumber(task.number);
+            examAnswerInput.value = '';
+            examAnswerInput.focus();
+        }
+
+        function updateTimer() {
+            examState.timeRemaining--;
+            
+            const minutes = Math.floor(examState.timeRemaining / 60);
+            const seconds = examState.timeRemaining % 60;
+            examTimerDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            
+            if (examState.timeRemaining <= 60) {
+                examTimerDisplay.classList.add('warning');
+            }
+            
+            if (examState.timeRemaining <= 0) {
+                endExam();
+            }
+        }
+
+        function startExam() {
+            generateExamTasks();
+            examState.currentTask = 0;
+            examState.answers = [];
+            examState.timeRemaining = 120;
+            examState.started = true;
+            
+            examTimerDisplay.textContent = '2:00';
+            examTimerDisplay.classList.remove('warning');
+            
+            examStartScreen.style.display = 'none';
+            examResultsScreen.style.display = 'none';
+            examActiveScreen.style.display = 'block';
+            
+            showExamTask();
+            
+            examState.timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        function submitExamAnswer() {
+            const userAnswer = examAnswerInput.value.trim();
+            examState.answers.push(userAnswer);
+            
+            examState.currentTask++;
+            
+            if (examState.currentTask >= 12) {
+                endExam();
+            } else {
+                showExamTask();
+            }
+        }
+
+        function endExam() {
+            clearInterval(examState.timerInterval);
+            examState.started = false;
+            
+            examActiveScreen.style.display = 'none';
+            examResultsScreen.style.display = 'block';
+            
+            // Calculate results
+            let correct = 0;
+            const wrongAnswers = [];
+            
+            examState.tasks.forEach((task, idx) => {
+                const userAnswer = parseFloat(examState.answers[idx]?.replace(',', '.') || 'NaN');
+                const isCorrect = Math.abs(userAnswer - task.correctAnswer) < 0.00001;
+                
+                if (isCorrect) {
+                    correct++;
+                } else {
+                    wrongAnswers.push({
+                        number: task.number,
+                        displayName: task.displayName,
+                        level: task.level,
+                        userAnswer: examState.answers[idx] || '–',
+                        correctAnswer: formatAnswer(task.correctAnswer, task.level)
+                    });
+                }
+            });
+            
+            const percent = Math.round((correct / 12) * 100);
+            
+            examCorrectDisplay.textContent = correct;
+            examPercentDisplay.textContent = `${percent}%`;
+            
+            // Show wrong answers
+            if (wrongAnswers.length > 0) {
+                examWrongSection.style.display = 'block';
+                examWrongList.innerHTML = '';
+                
+                wrongAnswers.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'exam-wrong-item';
+                    div.innerHTML = `
+                        <div class="task">${item.number.toString().replace('.', ',')} auf ${item.displayName}</div>
+                        <div class="answers">
+                            <span class="your-answer">Deine Antwort: ${item.userAnswer}</span>
+                            <span class="correct-answer">Richtig: ${item.correctAnswer}</span>
+                        </div>
+                    `;
+                    examWrongList.appendChild(div);
+                });
+            } else {
+                examWrongSection.style.display = 'none';
+            }
+        }
+
+        examStartBtn.addEventListener('click', startExam);
+        examRestartBtn.addEventListener('click', () => {
+            examResultsScreen.style.display = 'none';
+            examStartScreen.style.display = 'block';
+        });
+        
+        examNextBtn.addEventListener('click', submitExamAnswer);
+        
+        examAnswerInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && examState.started) {
+                submitExamAnswer();
+            }
+        });
+        
+        examAnswerInput.addEventListener('input', (e) => {
             e.target.value = e.target.value.replace(/[^0-9.,\-]/g, '');
         });
     </script>
