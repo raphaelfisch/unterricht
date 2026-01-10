@@ -13,7 +13,7 @@
             background: #fff;
             color: #000;
             padding: 20px;
-            max-width: 800px;
+            max-width: 1200px;
             margin: 0 auto;
             overflow-x: hidden;
         }
@@ -1915,8 +1915,67 @@
             
             // Get width from button (which correctly respects body padding)
             const contentWidth = button ? button.offsetWidth : document.body.clientWidth;
-            const width = Math.min(600, contentWidth);
-            const height = Math.round(width * 0.75); // 4:3 aspect ratio
+            
+            // Calculate available height (window height minus other elements)
+            const header = document.querySelector('h1');
+            const taskSection = document.querySelector('.task-section');
+            const newTaskBtn = document.querySelector('.new-task-btn');
+            const controlsDivs = document.querySelectorAll('.controls');
+            const status = document.querySelector('.status');
+            const feedback = document.querySelector('.feedback');
+            
+            let usedHeight = 0;
+            if (header) usedHeight += header.offsetHeight;
+            if (taskSection) usedHeight += taskSection.offsetHeight;
+            if (newTaskBtn) usedHeight += newTaskBtn.offsetHeight;
+            controlsDivs.forEach(div => usedHeight += div.offsetHeight);
+            if (status) usedHeight += status.offsetHeight;
+            if (feedback && feedback.offsetHeight > 0) usedHeight += feedback.offsetHeight;
+            
+            // Add margins/padding (approximate)
+            usedHeight += 80;
+            
+            const availableHeight = window.innerHeight - usedHeight;
+            
+            // Calculate dimensions maintaining 4:3 aspect ratio
+            // Width-limited: width = contentWidth, height = width * 0.75
+            // Height-limited: height = availableHeight, width = height / 0.75
+            
+            let width, height;
+            const widthFromContent = contentWidth;
+            const heightFromContent = widthFromContent * 0.75;
+            
+            const heightFromAvailable = availableHeight;
+            const widthFromAvailable = heightFromAvailable / 0.75;
+            
+            // On mobile, use width-based sizing; on larger screens, use the larger option
+            const isMobile = window.innerWidth <= 480;
+            
+            if (isMobile) {
+                // Mobile: prioritize width
+                width = Math.min(600, widthFromContent);
+                height = Math.round(width * 0.75);
+            } else {
+                // Tablet/PC: use whichever gives larger canvas while fitting both constraints
+                if (widthFromAvailable <= contentWidth && heightFromAvailable > 0) {
+                    // Height is the limiting factor
+                    height = Math.max(200, availableHeight);
+                    width = Math.round(height / 0.75);
+                    // But don't exceed content width
+                    if (width > contentWidth) {
+                        width = contentWidth;
+                        height = Math.round(width * 0.75);
+                    }
+                } else {
+                    // Width is the limiting factor
+                    width = widthFromContent;
+                    height = Math.round(width * 0.75);
+                }
+            }
+            
+            // Ensure minimum size and maximum size
+            width = Math.max(200, Math.min(900, width));
+            height = Math.max(150, Math.min(675, height));
             
             // Set wrapper size (for orientation cube positioning)
             if (wrapper) {
@@ -1941,10 +2000,19 @@
                 camera.updateProjectionMatrix();
             }
             
-            // Resize task views
+            // Resize task views - larger on bigger screens
             const viewportWidth = document.documentElement.clientWidth;
             const taskCanvases = ['viewFront', 'viewRight', 'viewTop'];
-            const taskSize = viewportWidth <= 360 ? 75 : (viewportWidth <= 480 ? 90 : 120);
+            let taskSize;
+            if (viewportWidth <= 360) {
+                taskSize = 75;
+            } else if (viewportWidth <= 480) {
+                taskSize = 90;
+            } else if (viewportWidth <= 768) {
+                taskSize = 120;
+            } else {
+                taskSize = 150;
+            }
             taskCanvases.forEach(id => {
                 const c = document.getElementById(id);
                 c.width = taskSize;
