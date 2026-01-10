@@ -126,7 +126,7 @@
             display: flex;
             justify-content: center;
             gap: 4px;
-            margin-top: 8px;
+            margin-top: 4px;
         }
         .digit-box {
             width: 64px;
@@ -374,6 +374,35 @@
         .popup-content .rule-box {
             margin-top: 16px;
         }
+        .popup-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .popup-btn {
+            font-family: inherit;
+            font-size: 0.95rem;
+            padding: 10px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .popup-btn-cancel {
+            background: #fff;
+            color: #444;
+            border: 1px solid #ccc;
+        }
+        .popup-btn-cancel:hover {
+            background: #f5f5f5;
+        }
+        .popup-btn-confirm {
+            background: #dc2626;
+            color: #fff;
+            border: none;
+        }
+        .popup-btn-confirm:hover {
+            background: #b91c1c;
+        }
         .rule-box {
             display: flex;
             gap: 16px;
@@ -384,6 +413,8 @@
             padding: 12px 20px;
             border-radius: 6px;
             text-align: center;
+            flex: 1;
+            max-width: 160px;
         }
         .rule.down {
             background: #fef3c7;
@@ -433,7 +464,7 @@
             display: flex;
             justify-content: center;
             gap: 4px;
-            margin: 20px 0;
+            margin: 20px 0 0;
         }
         .theory-digit {
             width: 48px;
@@ -466,13 +497,13 @@
             display: flex;
             justify-content: center;
             gap: 4px;
-            margin-top: 8px;
+            margin-top: 4px;
         }
         .theory-label {
             width: 48px;
             height: 28px;
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: center;
             text-align: center;
             font-size: 0.65rem;
@@ -556,7 +587,7 @@
             display: flex;
             flex-direction: column;
             gap: 12px;
-            margin-top: 8px;
+            margin-bottom: 20px;
         }
         .theory-checkbox-label {
             display: flex;
@@ -777,7 +808,7 @@
                 padding: 8px 12px;
             }
             .rule-box { flex-direction: column; gap: 10px; }
-            .rule { padding: 10px 16px; }
+            .rule { padding: 10px 16px; max-width: none; }
             .rule-digits { font-size: 1.1rem; }
             .theory-digit { width: 36px; height: 48px; font-size: 1.5rem; }
             .theory-digit.decimal { width: 14px; }
@@ -879,38 +910,6 @@
             
             <div class="theory-example">
                 <div class="theory-interactive">
-                    <div class="theory-select-row">
-                        <span>Runden auf:</span>
-                        <div class="theory-level-btns">
-                            <button class="theory-level-btn" data-theory-level="zehner">Zehner</button>
-                            <button class="theory-level-btn active" data-theory-level="ganzzahl">Ganzzahl</button>
-                            <button class="theory-level-btn" data-theory-level="zehntel">Zehntel</button>
-                            <button class="theory-level-btn" data-theory-level="hundertstel">Hundertstel</button>
-                            <button class="theory-level-btn" data-theory-level="tausendstel">Tausendstel</button>
-                        </div>
-                    </div>
-                    
-                    <div class="theory-number" id="theory-interactive-number">
-                        <div class="theory-digit" data-idx="0">3</div>
-                        <div class="theory-digit" data-idx="1">8</div>
-                        <div class="theory-digit" data-idx="2">5</div>
-                        <div class="theory-digit decimal">,</div>
-                        <div class="theory-digit" data-idx="4">2</div>
-                        <div class="theory-digit" data-idx="5">7</div>
-                        <div class="theory-digit" data-idx="6">4</div>
-                        <div class="theory-digit" data-idx="7">5</div>
-                    </div>
-                    <div class="theory-labels" id="theory-interactive-labels">
-                        <div class="theory-label">Hunderter</div>
-                        <div class="theory-label">Zehner</div>
-                        <div class="theory-label">Einer</div>
-                        <div class="theory-label decimal"></div>
-                        <div class="theory-label">Zehntel</div>
-                        <div class="theory-label">Hundert-<br>stel</div>
-                        <div class="theory-label">Tausend-<br>stel</div>
-                        <div class="theory-label">Zehn-<br>tausendstel</div>
-                    </div>
-                    
                     <div class="theory-checkboxes">
                         <label class="theory-checkbox-label">
                             <input type="checkbox" id="show-target">
@@ -922,6 +921,40 @@
                             <div class="legend-box decision"></div>
                             <span><strong>Entscheidungsziffer</strong> – die Stelle rechts daneben, die entscheidet</span>
                         </label>
+                    </div>
+
+                    <div class="theory-select-row">
+                        <span>Runden auf:</span>
+                        <div class="theory-level-btns">
+                            <button class="theory-level-btn" data-theory-level="zehner">Zehner</button>
+                            <button class="theory-level-btn active" data-theory-level="ganzzahl">Ganzzahl</button>
+                            <button class="theory-level-btn" data-theory-level="zehntel">Zehntel</button>
+                            <button class="theory-level-btn" data-theory-level="hundertstel">Hundertstel</button>
+                            <button class="theory-level-btn" data-theory-level="tausendstel">Tausendstel</button>
+                        </div>
+                    </div>
+                    
+                    <div class="number-wrapper">
+                        <div class="theory-number" id="theory-interactive-number">
+                            <div class="theory-digit" data-idx="0">3</div>
+                            <div class="theory-digit" data-idx="1">8</div>
+                            <div class="theory-digit" data-idx="2">5</div>
+                            <div class="theory-digit decimal">,</div>
+                            <div class="theory-digit" data-idx="4">2</div>
+                            <div class="theory-digit" data-idx="5">7</div>
+                            <div class="theory-digit" data-idx="6">4</div>
+                            <div class="theory-digit" data-idx="7">5</div>
+                        </div>
+                        <div class="theory-labels" id="theory-interactive-labels">
+                            <div class="theory-label">Hunderter</div>
+                            <div class="theory-label">Zehner</div>
+                            <div class="theory-label">Einer</div>
+                            <div class="theory-label decimal"></div>
+                            <div class="theory-label">Zehntel</div>
+                            <div class="theory-label">Hundert-<br>stel</div>
+                            <div class="theory-label">Tausend-<br>stel</div>
+                            <div class="theory-label">Zehn-<br>tausendstel</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1031,7 +1064,7 @@
 
         <div class="option-checkbox">
             <label class="option-checkbox-label">
-                <input type="checkbox" id="show-labels" checked>
+                <input type="checkbox" id="show-labels">
                 <span>Stellenwerte anzeigen</span>
             </label>
         </div>
@@ -1040,7 +1073,7 @@
             <p class="instruction" id="identify-instruction">Klicke auf die <span class="target-place">Zielstelle</span> beim Runden auf <span class="target-place" id="identify-target">Zehntel</span></p>
             <div class="number-wrapper">
                 <div class="number-display" id="identify-number-display"></div>
-                <div class="label-row" id="identify-label-row"></div>
+                <div class="label-row" id="identify-label-row" style="display: none;"></div>
             </div>
         </div>
 
@@ -1077,7 +1110,7 @@
                 <span>Markierungen anzeigen</span>
             </label>
             <label class="option-checkbox-label">
-                <input type="checkbox" id="practice-show-labels" checked>
+                <input type="checkbox" id="practice-show-labels">
                 <span>Stellenwerte anzeigen</span>
             </label>
         </div>
@@ -1086,7 +1119,7 @@
             <p class="instruction">Runde auf <span class="target-place" id="practice-target-place">Ganzzahl</span></p>
             <div class="number-wrapper">
                 <div class="number-display" id="practice-number-display"></div>
-                <div class="label-row" id="practice-label-row"></div>
+                <div class="label-row" id="practice-label-row" style="display: none;"></div>
             </div>
         </div>
 
@@ -1189,6 +1222,22 @@
                 </div>
                 
                 <button class="start-btn" id="exam-restart-btn">Neue Prüfung</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exam Abort Popup -->
+    <div class="popup-overlay" id="exam-abort-overlay">
+        <div class="popup">
+            <div class="popup-header">
+                <span>Prüfung abbrechen?</span>
+            </div>
+            <div class="popup-content" style="text-align: center;">
+                <p>Willst du die Prüfung wirklich abbrechen?</p>
+                <div class="popup-buttons">
+                    <button class="popup-btn popup-btn-cancel" id="exam-abort-no">Nein</button>
+                    <button class="popup-btn popup-btn-confirm" id="exam-abort-yes">Ja</button>
+                </div>
             </div>
         </div>
     </div>
@@ -1325,31 +1374,72 @@
         // ========== TAB NAVIGATION ==========
         const tabBtns = document.querySelectorAll('.tab-btn');
         const tabContents = document.querySelectorAll('.tab-content');
+        const examAbortOverlay = document.getElementById('exam-abort-overlay');
+        const examAbortYes = document.getElementById('exam-abort-yes');
+        const examAbortNo = document.getElementById('exam-abort-no');
+        let pendingTabSwitch = null;
 
         tabBtns.forEach(btn => {
             btn.addEventListener('click', () => {
                 const tab = btn.dataset.tab;
                 
-                tabBtns.forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                
-                tabContents.forEach(content => {
-                    content.classList.remove('active');
-                    if (content.id === `tab-${tab}`) {
-                        content.classList.add('active');
-                    }
-                });
-
-                // Initialize tab if needed
-                if (tab === 'identify' && !identifyState.initialized) {
-                    generateIdentifyTask();
-                    identifyState.initialized = true;
+                // Check if exam is running and user is trying to leave
+                if (typeof examState !== 'undefined' && examState.started && tab !== 'exam') {
+                    pendingTabSwitch = tab;
+                    examAbortOverlay.classList.add('visible');
+                    return;
                 }
-                if (tab === 'practice' && !practiceState.initialized) {
-                    generatePracticeTask();
-                    practiceState.initialized = true;
+                
+                switchToTab(tab);
+            });
+        });
+
+        function switchToTab(tab) {
+            tabBtns.forEach(b => b.classList.remove('active'));
+            document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+            
+            tabContents.forEach(content => {
+                content.classList.remove('active');
+                if (content.id === `tab-${tab}`) {
+                    content.classList.add('active');
                 }
             });
+
+            // Initialize tab if needed
+            if (tab === 'identify' && !identifyState.initialized) {
+                generateIdentifyTask();
+                identifyState.initialized = true;
+            }
+            if (tab === 'practice' && !practiceState.initialized) {
+                generatePracticeTask();
+                practiceState.initialized = true;
+            }
+        }
+
+        examAbortNo.addEventListener('click', () => {
+            examAbortOverlay.classList.remove('visible');
+            pendingTabSwitch = null;
+        });
+
+        examAbortYes.addEventListener('click', () => {
+            examAbortOverlay.classList.remove('visible');
+            // End the exam
+            clearInterval(examState.timerInterval);
+            examState.started = false;
+            document.getElementById('exam-active').style.display = 'none';
+            document.getElementById('exam-start').style.display = 'block';
+            // Switch to the pending tab
+            if (pendingTabSwitch) {
+                switchToTab(pendingTabSwitch);
+                pendingTabSwitch = null;
+            }
+        });
+
+        examAbortOverlay.addEventListener('click', (e) => {
+            if (e.target === examAbortOverlay) {
+                examAbortOverlay.classList.remove('visible');
+                pendingTabSwitch = null;
+            }
         });
 
         // ========== TAB 2: STELLEN ERKENNEN ==========
