@@ -50,8 +50,6 @@
             cursor: grab; 
             display: block; 
             background: #fff;
-            width: 100%;
-            max-width: 600px;
             margin: 0 auto;
         }
         #canvas3d:active { cursor: grabbing; }
@@ -109,10 +107,6 @@
                 padding: 8px 16px;
                 font-size: 0.85rem;
                 margin-bottom: 10px;
-            }
-            
-            #canvas3d {
-                height: 300px !important;
             }
             
             .controls {
@@ -953,6 +947,8 @@
             
             newTask();
             handleResize();
+            // Delayed resize to ensure CSS is fully applied
+            setTimeout(handleResize, 100);
             animate();
         }
         
@@ -1901,15 +1897,22 @@
         // Handle resize for responsive canvas
         function handleResize() {
             const canvas = document.getElementById('canvas3d');
-            const container = canvas.parentElement;
-            const width = Math.min(600, container.clientWidth);
-            const height = window.innerWidth <= 480 ? 300 : 450;
             
-            canvas.width = width;
-            canvas.height = height;
+            // Calculate size based on container width
+            const container = canvas.parentElement;
+            const maxWidth = Math.min(600, container.clientWidth);
+            const width = maxWidth;
+            const height = Math.round(width * 0.75); // 4:3 aspect ratio
+            
+            // Set both CSS and canvas pixel size
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+            canvas.width = width * window.devicePixelRatio;
+            canvas.height = height * window.devicePixelRatio;
             
             if (renderer && camera) {
                 renderer.setSize(width, height);
+                renderer.setPixelRatio(window.devicePixelRatio);
                 const aspect = width / height;
                 const frustumSize = 5;
                 camera.left = -frustumSize * aspect / 2;
@@ -1932,6 +1935,7 @@
         }
         
         window.addEventListener('resize', handleResize);
+        window.addEventListener('orientationchange', () => setTimeout(handleResize, 100));
     </script>
 </body>
 </html>
