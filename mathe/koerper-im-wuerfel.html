@@ -1189,7 +1189,7 @@
             for (let x = 0; x <= GRID_SIZE; x++) {
                 for (let y = 0; y <= GRID_SIZE; y++) {
                     for (let z = 0; z <= GRID_SIZE; z++) {
-                        // Visible point as small sphere
+                        // Visible point as small sphere (base size, will be scaled in handleResize)
                         const pointGeometry = new THREE.SphereGeometry(0.065, 12, 12);
                         const pointMaterial = new THREE.MeshBasicMaterial({ color: 0x666666 });
                         const point = new THREE.Mesh(pointGeometry, pointMaterial);
@@ -1215,7 +1215,9 @@
                 }
             }
             
-            }
+            // Scale points based on screen size
+            updateVisualScale();
+        }
         
         // Mini orientation cube - separate scene and renderer
         let orientationScene, orientationCamera, orientationRenderer, orientationCube;
@@ -1470,7 +1472,8 @@
                         
                         if (segLength < 0.01) continue;
                         
-                        const segGeom = new THREE.CylinderGeometry(0.02, 0.02, segLength, 6);
+                        const segRadius = 0.02 * edgeScale;
+                        const segGeom = new THREE.CylinderGeometry(segRadius, segRadius, segLength, 6);
                         segGeom.translate(0, segLength / 2, 0);
                         segGeom.rotateX(Math.PI / 2);
                         
@@ -1491,7 +1494,8 @@
                     }
                 } else {
                     // Solid line for visible edges
-                    const geometry = new THREE.CylinderGeometry(0.03, 0.03, length, 8);
+                    const edgeRadius = 0.03 * edgeScale;
+                    const geometry = new THREE.CylinderGeometry(edgeRadius, edgeRadius, length, 8);
                     geometry.translate(0, length / 2, 0);
                     geometry.rotateX(Math.PI / 2);
                     
@@ -1914,6 +1918,36 @@
         
         window.addEventListener('DOMContentLoaded', init);
         
+        // Global scale for edges
+        let edgeScale = 1.0;
+        
+        // Update point and edge size based on screen
+        function updateVisualScale() {
+            const viewportWidth = window.innerWidth;
+            const oldScale = edgeScale;
+            
+            if (viewportWidth <= 480) {
+                // Mobile: full size
+                edgeScale = 1.0;
+            } else if (viewportWidth <= 768) {
+                // Tablet: smaller
+                edgeScale = 0.7;
+            } else {
+                // PC: even smaller
+                edgeScale = 0.55;
+            }
+            
+            // Update point sizes
+            pointMeshes.forEach(point => {
+                point.scale.set(edgeScale, edgeScale, edgeScale);
+            });
+            
+            // Re-render edges with new scale only if scale changed and edges exist
+            if (oldScale !== edgeScale && edges.length > 0) {
+                updateEdgeVisuals();
+            }
+        }
+        
         // Handle resize for responsive canvas
         function handleResize() {
             const canvas = document.getElementById('canvas3d');
@@ -1991,6 +2025,9 @@
             });
             
             if (currentShape) drawTaskViews();
+            
+            // Update point and edge sizes
+            updateVisualScale();
         }
         
         window.addEventListener('resize', handleResize);
