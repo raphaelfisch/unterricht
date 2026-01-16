@@ -105,6 +105,63 @@
         .feedback.correct { display: block; background: #dcfce7; color: #166534; border: 1px solid #86efac; }
         .feedback.incorrect { display: block; background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; }
         
+        /* Popup Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-overlay.show {
+            display: flex;
+        }
+        .modal-content {
+            background: white;
+            padding: 24px 32px;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 90%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            animation: popIn 0.2s ease-out;
+        }
+        @keyframes popIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .modal-content.correct {
+            border: 3px solid #22c55e;
+        }
+        .modal-content.incorrect {
+            border: 3px solid #f97316;
+        }
+        .modal-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+        .modal-text {
+            font-size: 1.2rem;
+            margin-bottom: 16px;
+            color: #333;
+        }
+        .modal-btn {
+            padding: 10px 24px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background: #4a90d9;
+            color: white;
+        }
+        .modal-btn:hover {
+            background: #3a7bc8;
+        }
+        
         /* Mobile responsive */
         @media (max-width: 480px) {
             body { padding: 10px; }
@@ -188,6 +245,15 @@
             · <span id="edgeCount">0</span> Kanten
         </div>
         <div class="feedback" id="feedback"></div>
+    </div>
+    
+    <!-- Feedback Modal -->
+    <div class="modal-overlay" id="feedbackModal" onclick="if(event.target===this)closeModal()">
+        <div class="modal-content" id="modalContent">
+            <div class="modal-icon" id="modalIcon">🔸</div>
+            <div class="modal-text" id="modalText">Feedback</div>
+            <button class="modal-btn" onclick="closeModal()">OK</button>
+        </div>
     </div>
 
     <script>
@@ -2319,7 +2385,7 @@
             if (!currentShape) return;
             
             const solutionEdges = currentShape.edges;
-            let allCorrect = true;
+            let correctCount = 0;
             
             for (const solEdge of solutionEdges) {
                 const p1 = { x: solEdge[0][0], y: solEdge[0][1], z: solEdge[0][2] };
@@ -2332,26 +2398,52 @@
                      e.p2.x === p1.x && e.p2.y === p1.y && e.p2.z === p1.z)
                 );
                 
-                if (!found) {
-                    allCorrect = false;
-                    break;
+                if (found) {
+                    correctCount++;
                 }
             }
             
-            const extraEdges = edges.length !== solutionEdges.length;
-            const feedback = document.getElementById('feedback');
+            const missingCount = solutionEdges.length - correctCount;
+            const extraCount = edges.length - correctCount;
             
-            if (allCorrect && !extraEdges) {
-                feedback.textContent = '✓ Richtig! Alle Kanten stimmen.';
-                feedback.className = 'feedback correct';
+            let icon, text, isCorrect;
+            
+            if (missingCount === 0 && extraCount === 0) {
+                icon = '✅';
+                text = 'Richtig! Alle Kanten stimmen.';
+                isCorrect = true;
                 showFaces();
-            } else if (allCorrect && extraEdges) {
-                feedback.textContent = '⚠ Fast richtig! Du hast zu viele Kanten.';
-                feedback.className = 'feedback incorrect';
+            } else if (edges.length === 0) {
+                icon = '✏️';
+                text = 'Zeichne die Kanten des Körpers ein.';
+                isCorrect = false;
+            } else if (missingCount === 0 && extraCount > 0) {
+                icon = '⚠️';
+                text = `Fast richtig! ${extraCount} Kante${extraCount === 1 ? '' : 'n'} zu viel.`;
+                isCorrect = false;
+            } else if (missingCount > 0 && extraCount === 0) {
+                icon = '🔸';
+                text = `Noch ${missingCount} Kante${missingCount === 1 ? ' fehlt' : 'n fehlen'}.`;
+                isCorrect = false;
             } else {
-                feedback.textContent = '✗ Noch nicht richtig. Es fehlen Kanten.';
-                feedback.className = 'feedback incorrect';
+                icon = '🔸';
+                text = `${missingCount} Kante${missingCount === 1 ? ' fehlt' : 'n fehlen'}, ${extraCount} zu viel.`;
+                isCorrect = false;
             }
+            
+            showModal(icon, text, isCorrect);
+        }
+        
+        function showModal(icon, text, isCorrect) {
+            document.getElementById('modalIcon').textContent = icon;
+            document.getElementById('modalText').textContent = text;
+            const content = document.getElementById('modalContent');
+            content.className = 'modal-content ' + (isCorrect ? 'correct' : 'incorrect');
+            document.getElementById('feedbackModal').classList.add('show');
+        }
+        
+        function closeModal() {
+            document.getElementById('feedbackModal').classList.remove('show');
         }
         
         function showFaces() {
