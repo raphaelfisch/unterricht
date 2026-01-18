@@ -1710,9 +1710,8 @@
         }
         
         // Check if a shape edge is hidden (based on shape's own faces)
-        // Hybrid approach: 
-        // - For axis-aligned faces: use simple hidden-face logic (reliable for cubes/prisms)
-        // - For diagonal faces: use raycast
+        // - Axis-aligned faces: use proven hidden-direction method (works perfectly for cubes/prisms)
+        // - Diagonal faces: use dot product with face normal
         function isShapeEdgeHidden(p1, p2) {
             if (!currentShape || !currentShape.faces) return false;
             
@@ -1724,11 +1723,9 @@
             if (camPos.y > center.y) hiddenDirs.push('-y'); else hiddenDirs.push('+y');
             if (camPos.z > center.z) hiddenDirs.push('-z'); else hiddenDirs.push('+z');
             
-            // Find faces adjacent to this edge and analyze them
+            // Find faces adjacent to this edge
             const adjacentFaces = [];
-            const adjacentFaceIndices = [];
-            for (let i = 0; i < currentShape.faces.length; i++) {
-                const face = currentShape.faces[i];
+            for (const face of currentShape.faces) {
                 const p1OnFace = face.some(v => 
                     Math.abs(v[0] - p1.x) < 0.01 && 
                     Math.abs(v[1] - p1.y) < 0.01 && 
@@ -1741,20 +1738,15 @@
                 );
                 if (p1OnFace && p2OnFace) {
                     adjacentFaces.push(face);
-                    adjacentFaceIndices.push(i);
                 }
             }
             
-            // Edge with less than 2 adjacent faces - use raycast method
+            // Edge with less than 2 adjacent faces is always visible
             if (adjacentFaces.length < 2) {
-                return isEdgeBlockedByRaycast(p1, p2, adjacentFaceIndices);
+                return false;
             }
             
-            // Analyze each adjacent face
-            let allHidden = true;
-            let hasDiagonalFace = false;
-            let debugInfo = [];
-            
+            // Check each adjacent face
             for (const face of adjacentFaces) {
                 const vertices = face.map(v => new THREE.Vector3(v[0], v[1], v[2]));
                 
@@ -1770,8 +1762,10 @@
                 const absZ = Math.abs(normal.z);
                 const maxComponent = Math.max(absX, absY, absZ);
                 
+                let faceIsVisible;
+                
                 if (maxComponent > 0.9) {
-                    // Axis-aligned face: use direction method
+                    // AXIS-ALIGNED face: use direction method (proven for cubes/prisms)
                     let faceDir = '';
                     if (absX >= absY && absX >= absZ) {
                         faceDir = normal.x > 0 ? '+x' : '-x';
@@ -1780,61 +1774,27 @@
                     } else {
                         faceDir = normal.z > 0 ? '+z' : '-z';
                     }
-                    const isHidden = hiddenDirs.includes(faceDir);
-                    debugInfo.push(`axis:${faceDir}=${isHidden?'H':'V'}`);
-                    if (!isHidden) allHidden = false;
+                    // Face is visible if its direction is NOT in hiddenDirs
+                    faceIsVisible = !hiddenDirs.includes(faceDir);
                 } else {
-                    // Diagonal face - mark for raycast
-                    hasDiagonalFace = true;
-                    debugInfo.push('diagonal');
+                    // DIAGONAL face: use dot product
+                    const faceCentroid = new THREE.Vector3();
+                    vertices.forEach(v => faceCentroid.add(v));
+                    faceCentroid.divideScalar(vertices.length);
+                    
+                    const toCamera = new THREE.Vector3().subVectors(camPos, faceCentroid).normalize();
+                    const dot = normal.dot(toCamera);
+                    faceIsVisible = dot > 0;
+                }
+                
+                // If ANY adjacent face is visible, edge is visible
+                if (faceIsVisible) {
+                    return false;
                 }
             }
             
-            // If any diagonal face is involved, use raycast for accuracy
-            if (hasDiagonalFace) {
-                const blocked = isEdgeBlockedByRaycast(p1, p2, adjacentFaceIndices);
-                console.log(`Edge (${p1.x},${p1.y},${p1.z})-(${p2.x},${p2.y},${p2.z}): [${debugInfo.join(', ')}] raycast=${blocked?'HIDDEN':'VISIBLE'}`);
-                return blocked;
-            }
-            
-            // All faces are axis-aligned: edge hidden only if ALL adjacent faces are hidden
-            console.log(`Edge (${p1.x},${p1.y},${p1.z})-(${p2.x},${p2.y},${p2.z}): [${debugInfo.join(', ')}] => ${allHidden ? 'HIDDEN' : 'VISIBLE'}`);
-            return allHidden;
-        }
-        
-        // Helper: Check if edge is blocked by raycast
-        function isEdgeBlockedByRaycast(p1, p2, adjacentFaceIndices) {
-            const camPos = camera.position;
-            
-            // Calculate edge midpoint
-            const edgeMid = new THREE.Vector3(
-                (p1.x + p2.x) / 2,
-                (p1.y + p2.y) / 2,
-                (p1.z + p2.z) / 2
-            );
-            
-            // Direction from edge midpoint to camera
-            const toCameraVec = new THREE.Vector3().subVectors(camPos, edgeMid);
-            const distanceToCamera = toCameraVec.length();
-            const toCamera = toCameraVec.normalize();
-            
-            // Start ray slightly offset from edge midpoint
-            const rayStart = edgeMid.clone().add(toCamera.clone().multiplyScalar(0.01));
-            
-            for (let i = 0; i < currentShape.faces.length; i++) {
-                // Skip faces that contain this edge
-                if (adjacentFaceIndices.includes(i)) continue;
-                
-                const face = currentShape.faces[i];
-                const vertices = face.map(v => new THREE.Vector3(v[0], v[1], v[2]));
-                
-                // Check if ray intersects this face between edge and camera
-                const t = rayPolygonIntersect(rayStart, toCamera, vertices);
-                if (t !== null && t > 0.01 && t < distanceToCamera - 0.1) {
-                    return true;
-                }
-            }
-            return false;
+            // All adjacent faces are hidden - edge is hidden
+            return true;
         }
         
         function rayPolygonIntersect(rayOrigin, rayDir, vertices) {
