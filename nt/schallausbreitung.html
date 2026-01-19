@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schallausbreitung</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f0f0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .simulation-box {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+            border: 1px solid #ddd;
+            max-width: 900px;
+            width: 100%;
+        }
+        
+        .simulation-area {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 250px;
+            margin-bottom: 30px;
+            position: relative;
+        }
+        
+        .speaker {
+            width: 80px;
+            height: 200px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .speaker svg {
+            width: 100%;
+            height: 120px;
+        }
+        
+        .particles-container {
+            flex: 1;
+            height: 200px;
+            position: relative;
+            overflow: hidden;
+            margin: 0 10px;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #00bcd4;
+            border-radius: 50%;
+        }
+        
+        .particle.marked {
+            background: #ff5722;
+            width: 12px;
+            height: 12px;
+            margin-left: -2px;
+            margin-top: -2px;
+            box-shadow: 0 0 8px rgba(255, 87, 34, 0.6);
+        }
+        
+        .receiver {
+            width: 80px;
+            height: 200px;
+            flex-shrink: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .receiver svg {
+            width: 100%;
+            height: auto;
+            max-height: 200px;
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .playback-controls {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .play-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid #333;
+            background: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        
+        .play-btn:hover {
+            background: #f5f5f5;
+        }
+        
+        .play-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+        
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex: 1;
+        }
+        
+        .volume-control span {
+            font-size: 0.9em;
+            color: #666;
+            min-width: 40px;
+        }
+        
+        .volume-slider {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 6px;
+            background: #333;
+            border-radius: 3px;
+            outline: none;
+        }
+        
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #333;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        
+        .volume-slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: #333;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .receiver-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .receiver-controls span {
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .receiver-btn {
+            padding: 8px 16px;
+            border: 2px solid #333;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.2s;
+        }
+        
+        .receiver-btn:hover {
+            background: #f5f5f5;
+        }
+        
+        .receiver-btn.active {
+            background: #333;
+            color: white;
+        }
+        
+        .checkbox-control {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-left: 20px;
+            cursor: pointer;
+            font-size: 0.9em;
+            color: #333;
+        }
+        
+        .checkbox-control input {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        
+        @media (max-width: 600px) {
+            .playback-controls {
+                flex-wrap: wrap;
+            }
+            
+            .speaker, .receiver {
+                width: 60px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="simulation-box">
+        <div class="simulation-area">
+            <div class="speaker" id="speaker">
+                <svg viewBox="0 0 80 120" id="speaker-svg">
+                    <!-- Gehäuse -->
+                    <rect x="5" y="30" width="20" height="60" rx="3" fill="#444" stroke="#333" stroke-width="1.5"/>
+                    <!-- Membran-Halterung -->
+                    <ellipse cx="25" cy="60" rx="5" ry="20" fill="#555" stroke="#333" stroke-width="1"/>
+                    <!-- Konus -->
+                    <path id="speaker-cone" d="M 25 40 L 55 25 L 55 95 L 25 80 Z" fill="#e0e0e0" stroke="#999" stroke-width="1.5"/>
+                    <!-- Membran -->
+                    <ellipse id="speaker-membrane" cx="55" cy="60" rx="6" ry="35" fill="#ccc" stroke="#999" stroke-width="1.5"/>
+                    <!-- Zentrum -->
+                    <circle cx="25" cy="60" r="8" fill="#333" stroke="#222" stroke-width="1"/>
+                    <circle cx="25" cy="60" r="4" fill="#555"/>
+                </svg>
+            </div>
+            
+            <div class="particles-container" id="particles-container"></div>
+            
+            <div class="receiver" id="receiver"></div>
+        </div>
+        
+        <div class="controls">
+            <div class="playback-controls">
+                <button class="play-btn" id="play-btn">
+                    <svg id="play-icon" viewBox="0 0 24 24" fill="#333">
+                        <polygon points="5,3 19,12 5,21"/>
+                    </svg>
+                    <svg id="pause-icon" viewBox="0 0 24 24" fill="#333" style="display:none;">
+                        <rect x="5" y="3" width="4" height="18"/>
+                        <rect x="15" y="3" width="4" height="18"/>
+                    </svg>
+                </button>
+                
+                <div class="volume-control">
+                    <span>Leise</span>
+                    <input type="range" class="volume-slider" id="volume-slider" min="0" max="100" value="50">
+                    <span>Laut</span>
+                </div>
+            </div>
+            
+            <div class="receiver-controls">
+                <span>Schallempfänger:</span>
+                <button class="receiver-btn active" data-receiver="neutral">Ohr</button>
+                <button class="receiver-btn" data-receiver="fest">Fest</button>
+                <button class="receiver-btn" data-receiver="elastisch">Elastisch</button>
+                
+                <label class="checkbox-control">
+                    <input type="checkbox" id="show-marked" checked>
+                    <span>Teilchen markieren</span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const ROWS = 9;
+        const COLS = 22;
+        const PARTICLE_SPACING = 22;
+        
+        let isPlaying = false;
+        let particles = [];
+        let animationId = null;
+        let time = 0;
+        let currentReceiver = 'neutral';
+        let volume = 50;
+        
+        const container = document.getElementById('particles-container');
+        const playBtn = document.getElementById('play-btn');
+        const playIcon = document.getElementById('play-icon');
+        const pauseIcon = document.getElementById('pause-icon');
+        const volumeSlider = document.getElementById('volume-slider');
+        const receiverElement = document.getElementById('receiver');
+        const speakerCone = document.getElementById('speaker-cone');
+        const speakerMembrane = document.getElementById('speaker-membrane');
+        const receiverBtns = document.querySelectorAll('.receiver-btn');
+        
+        const receivers = {
+            neutral: `
+                <svg viewBox="0 0 60 200">
+                    <!-- Ohrmuschel aussen -->
+                    <path d="M 32 25
+                             C 55 25, 58 60, 55 100
+                             C 52 140, 48 165, 35 175
+                             C 22 185, 18 175, 22 162
+                             C 26 152, 35 145, 38 125
+                             C 41 105, 40 75, 36 55
+                             C 32 35, 28 28, 32 25" 
+                          fill="#f5f5f5" stroke="#888" stroke-width="2"/>
+                    <!-- Innere Falte (Antihelix) -->
+                    <path d="M 34 45
+                             C 45 55, 46 80, 44 105
+                             C 42 130, 36 145, 30 140" 
+                          fill="none" stroke="#aaa" stroke-width="2"/>
+                    <!-- Ohrläppchen -->
+                    <ellipse cx="28" cy="168" rx="8" ry="10" fill="#f5f5f5" stroke="#888" stroke-width="1.5"/>
+                    <!-- Gehörgang -->
+                    <ellipse cx="30" cy="100" rx="7" ry="14" fill="#e0e0e0" stroke="#999" stroke-width="1.5"/>
+                </svg>
+            `,
+            fest: `
+                <svg viewBox="0 0 60 200">
+                    <!-- Mauer-Rechteck mit Rahmen -->
+                    <rect x="5" y="5" width="50" height="190" fill="#d4c4b0" stroke="#8b7355" stroke-width="2"/>
+                    <!-- Steinmuster -->
+                    <g fill="none" stroke="#8b7355" stroke-width="1">
+                        <!-- Reihe 1 -->
+                        <line x1="5" y1="20" x2="55" y2="20"/>
+                        <line x1="30" y1="5" x2="30" y2="20"/>
+                        <!-- Reihe 2 -->
+                        <line x1="5" y1="35" x2="55" y2="35"/>
+                        <line x1="18" y1="20" x2="18" y2="35"/>
+                        <line x1="42" y1="20" x2="42" y2="35"/>
+                        <!-- Reihe 3 -->
+                        <line x1="5" y1="50" x2="55" y2="50"/>
+                        <line x1="30" y1="35" x2="30" y2="50"/>
+                        <!-- Reihe 4 -->
+                        <line x1="5" y1="65" x2="55" y2="65"/>
+                        <line x1="18" y1="50" x2="18" y2="65"/>
+                        <line x1="42" y1="50" x2="42" y2="65"/>
+                        <!-- Reihe 5 -->
+                        <line x1="5" y1="80" x2="55" y2="80"/>
+                        <line x1="30" y1="65" x2="30" y2="80"/>
+                        <!-- Reihe 6 -->
+                        <line x1="5" y1="95" x2="55" y2="95"/>
+                        <line x1="18" y1="80" x2="18" y2="95"/>
+                        <line x1="42" y1="80" x2="42" y2="95"/>
+                        <!-- Reihe 7 -->
+                        <line x1="5" y1="110" x2="55" y2="110"/>
+                        <line x1="30" y1="95" x2="30" y2="110"/>
+                        <!-- Reihe 8 -->
+                        <line x1="5" y1="125" x2="55" y2="125"/>
+                        <line x1="18" y1="110" x2="18" y2="125"/>
+                        <line x1="42" y1="110" x2="42" y2="125"/>
+                        <!-- Reihe 9 -->
+                        <line x1="5" y1="140" x2="55" y2="140"/>
+                        <line x1="30" y1="125" x2="30" y2="140"/>
+                        <!-- Reihe 10 -->
+                        <line x1="5" y1="155" x2="55" y2="155"/>
+                        <line x1="18" y1="140" x2="18" y2="155"/>
+                        <line x1="42" y1="140" x2="42" y2="155"/>
+                        <!-- Reihe 11 -->
+                        <line x1="5" y1="170" x2="55" y2="170"/>
+                        <line x1="30" y1="155" x2="30" y2="170"/>
+                        <!-- Reihe 12 -->
+                        <line x1="5" y1="185" x2="55" y2="185"/>
+                        <line x1="18" y1="170" x2="18" y2="185"/>
+                        <line x1="42" y1="170" x2="42" y2="185"/>
+                        <!-- Reihe 13 -->
+                        <line x1="30" y1="185" x2="30" y2="195"/>
+                    </g>
+                </svg>
+            `,
+            elastisch: `
+                <svg viewBox="0 0 80 200">
+                    <!-- Rahmen oben und unten -->
+                    <rect x="25" y="5" width="15" height="10" fill="#666" rx="2"/>
+                    <rect x="25" y="185" width="15" height="10" fill="#666" rx="2"/>
+                    <!-- Membran -->
+                    <path id="membrane-path" d="M 32 15 Q 32 100, 32 185" stroke="#888" stroke-width="4" fill="none" stroke-linecap="round"/>
+                </svg>
+            `
+        };
+        
+        function initParticles() {
+            container.innerHTML = '';
+            particles = [];
+            const containerWidth = container.offsetWidth;
+            const containerHeight = container.offsetHeight;
+            
+            // Berechne Spacing dynamisch, um den ganzen Raum zu füllen
+            const spacingX = (containerWidth - 20) / (COLS - 1);
+            const spacingY = (containerHeight - 20) / (ROWS - 1);
+            const startX = 10;
+            const startY = 10;
+            
+            // Markiertes Teilchen in der Mitte
+            const markedRow = Math.floor(ROWS / 2);
+            const markedCol = Math.floor(COLS / 2);
+            const showMarked = document.getElementById('show-marked')?.checked ?? true;
+            
+            for (let row = 0; row < ROWS; row++) {
+                for (let col = 0; col < COLS; col++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    
+                    // Markiere das mittlere Teilchen (wenn Checkbox aktiv)
+                    if (row === markedRow && col === markedCol && showMarked) {
+                        particle.classList.add('marked');
+                    }
+                    
+                    const baseX = startX + col * spacingX;
+                    const baseY = startY + row * spacingY;
+                    particle.style.left = baseX + 'px';
+                    particle.style.top = baseY + 'px';
+                    container.appendChild(particle);
+                    particles.push({ element: particle, baseX, baseY, col, row, spacingX, isMarked: row === markedRow && col === markedCol });
+                }
+            }
+        }
+        
+        function updateReceiver(type) {
+            currentReceiver = type;
+            receiverElement.innerHTML = receivers[type];
+            receiverBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.receiver === type));
+        }
+        
+        function animate() {
+            if (!isPlaying) return;
+            
+            time += 0.08;
+            // Amplitude relativ zum Spacing (falls Partikel existieren)
+            const spacingX = particles.length > 0 ? particles[0].spacingX : 25;
+            const minAmplitude = spacingX * 0.15; // Mindestbewegung auch bei leise
+            const maxAmplitude = spacingX * 0.6;
+            const amplitude = minAmplitude + (volume / 100) * (maxAmplitude - minAmplitude);
+            const pulseWidth = 4;
+            const speed = 2.5;
+            
+            const waveFront = time * speed;
+            const wallCol = COLS - 1;
+            
+            // Berechne reflektierte Welle (nur bei Mauer)
+            let reflectedWaveFront = -100; // Deaktiviert
+            if (currentReceiver === 'fest') {
+                // Welle reflektiert an der Mauer
+                if (waveFront > wallCol) {
+                    reflectedWaveFront = wallCol - (waveFront - wallCol);
+                }
+            }
+            
+            // Ende-Bedingung je nach Modus
+            let shouldStop = false;
+            if (currentReceiver === 'fest') {
+                // Bei Mauer: warten bis reflektierte Welle zurück beim Lautsprecher ist
+                shouldStop = waveFront > wallCol && reflectedWaveFront < -pulseWidth - 2;
+            } else {
+                // Bei Ohr/Membran: warten bis Welle am Ende angekommen und absorbiert
+                shouldStop = waveFront > wallCol + pulseWidth + 2;
+            }
+            
+            if (shouldStop) {
+                isPlaying = false;
+                playIcon.style.display = 'block';
+                pauseIcon.style.display = 'none';
+                time = 0;
+                
+                particles.forEach(p => p.element.style.left = p.baseX + 'px');
+                speakerMembrane.setAttribute('cx', 55);
+                speakerCone.setAttribute('d', 'M 25 40 L 55 25 L 55 95 L 25 80 Z');
+                const membranePath = document.getElementById('membrane-path');
+                if (membranePath) membranePath.setAttribute('d', 'M 32 15 Q 32 100, 32 185');
+                return;
+            }
+            
+            // Lautsprecher schwingt nur am Anfang
+            let speakerDisplacement = 0;
+            if (waveFront < pulseWidth) {
+                speakerDisplacement = Math.sin((waveFront / pulseWidth) * Math.PI) * amplitude;
+            }
+            const membraneX = 55 + speakerDisplacement * 0.5;
+            speakerMembrane.setAttribute('cx', membraneX);
+            speakerCone.setAttribute('d', `M 25 40 L ${membraneX} 25 L ${membraneX} 95 L 25 80 Z`);
+            
+            // Partikel Animation
+            particles.forEach(p => {
+                let displacement = 0;
+                
+                if (currentReceiver === 'fest') {
+                    // Mauer: Hinwelle + Rückwelle (Reflexion)
+                    // Hinwelle (nur bis zur Mauer)
+                    if (waveFront <= wallCol + pulseWidth) {
+                        const distanceFromWave = waveFront - p.col;
+                        if (distanceFromWave > 0 && distanceFromWave < pulseWidth && p.col < wallCol) {
+                            displacement += Math.sin((distanceFromWave / pulseWidth) * Math.PI) * amplitude;
+                        }
+                    }
+                    // Rückwelle (reflektiert)
+                    if (reflectedWaveFront > -pulseWidth) {
+                        const distanceFromReflected = p.col - reflectedWaveFront;
+                        if (distanceFromReflected > 0 && distanceFromReflected < pulseWidth && p.col < wallCol) {
+                            displacement -= Math.sin((distanceFromReflected / pulseWidth) * Math.PI) * amplitude * 0.7;
+                        }
+                    }
+                } else {
+                    // Ohr/Membran: Welle wird absorbiert (geht nicht weiter als Empfänger)
+                    const effectiveWaveFront = Math.min(waveFront, wallCol + pulseWidth);
+                    const distanceFromWave = effectiveWaveFront - p.col;
+                    if (distanceFromWave > 0 && distanceFromWave < pulseWidth) {
+                        displacement = Math.sin((distanceFromWave / pulseWidth) * Math.PI) * amplitude;
+                    }
+                }
+                
+                p.element.style.left = (p.baseX + displacement) + 'px';
+            });
+            
+            // Elastische Membran oder Ohr schwingt wenn Welle ankommt
+            if (currentReceiver === 'elastisch' || currentReceiver === 'neutral') {
+                const distanceFromWave = waveFront - wallCol;
+                let membraneOffset = 0;
+                
+                if (distanceFromWave > 0 && distanceFromWave < pulseWidth) {
+                    membraneOffset = Math.sin((distanceFromWave / pulseWidth) * Math.PI) * (amplitude * 0.6);
+                }
+                
+                if (currentReceiver === 'elastisch') {
+                    const membranePath = document.getElementById('membrane-path');
+                    if (membranePath) {
+                        membranePath.setAttribute('d', `M 32 15 Q ${32 + membraneOffset} 100, 32 185`);
+                    }
+                }
+            }
+            
+            animationId = requestAnimationFrame(animate);
+        }
+        
+        function togglePlay() {
+            isPlaying = !isPlaying;
+            playIcon.style.display = isPlaying ? 'none' : 'block';
+            pauseIcon.style.display = isPlaying ? 'block' : 'none';
+            
+            if (isPlaying) {
+                animate();
+            } else {
+                cancelAnimationFrame(animationId);
+                // Reset Partikel
+                particles.forEach(p => p.element.style.left = p.baseX + 'px');
+                // Reset Lautsprecher
+                speakerMembrane.setAttribute('cx', 55);
+                speakerCone.setAttribute('d', 'M 25 40 L 55 25 L 55 95 L 25 80 Z');
+                // Reset Membran
+                const membranePath = document.getElementById('membrane-path');
+                if (membranePath) membranePath.setAttribute('d', 'M 32 15 Q 32 100, 32 185');
+            }
+        }
+        
+        playBtn.addEventListener('click', togglePlay);
+        volumeSlider.addEventListener('input', e => volume = parseInt(e.target.value));
+        receiverBtns.forEach(btn => btn.addEventListener('click', () => updateReceiver(btn.dataset.receiver)));
+        window.addEventListener('resize', () => { initParticles(); if (!isPlaying) particles.forEach(p => p.element.style.left = p.baseX + 'px'); });
+        
+        // Checkbox für markiertes Teilchen
+        const showMarkedCheckbox = document.getElementById('show-marked');
+        showMarkedCheckbox.addEventListener('change', () => {
+            particles.forEach(p => {
+                if (p.isMarked) {
+                    if (showMarkedCheckbox.checked) {
+                        p.element.classList.add('marked');
+                    } else {
+                        p.element.classList.remove('marked');
+                    }
+                }
+            });
+        });
+        
+        initParticles();
+        updateReceiver('neutral');
+    </script>
+</body>
+</html>
