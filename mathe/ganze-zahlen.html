@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Addition & Subtraktion ganzer Zahlen</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        button, .clickable { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+        body { font-family: system-ui, -apple-system, sans-serif; background: #fff; color: #000; padding: 20px; max-width: 750px; margin: 0 auto; }
+        h1 { font-size: 1.2rem; font-weight: 500; margin-bottom: 20px; text-align: center; }
+
+        /* Tabs */
+        .tab-nav { display: flex; gap: 8px; justify-content: center; margin-bottom: 24px; border-bottom: 1px solid #eee; padding-bottom: 16px; }
+        .tab-btn { font-family: inherit; font-size: 0.95rem; padding: 8px 20px; border: 1px solid #ccc; background: #fff; cursor: pointer; border-radius: 3px; }
+        .tab-btn:hover { background: #f5f5f5; }
+        .tab-btn.active { background: #000; color: #fff; border-color: #000; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Score */
+        .score-bar { display: flex; justify-content: space-between; font-size: 0.9rem; color: #666; margin-bottom: 20px; padding: 10px 0; border-bottom: 1px solid #eee; }
+        .streak-fire { color: #f59e0b; }
+        .timer-display { font-weight: 600; color: #000; }
+        .timer-display.warning { color: #f59e0b; }
+        .timer-display.danger { color: #dc2626; }
+
+        /* Level */
+        .level-select { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 24px; }
+        .level-btn { font-family: inherit; font-size: 0.85rem; padding: 6px 14px; border: 1px solid #ccc; background: #fff; cursor: pointer; border-radius: 3px; }
+        .level-btn:hover { background: #f5f5f5; }
+        .level-btn.active { background: #000; color: #fff; border-color: #000; }
+
+        /* Feedback */
+        .feedback { text-align: center; font-size: 1rem; min-height: 28px; margin: 16px 0; }
+        .feedback.correct { color: #16a34a; }
+        .feedback.wrong { color: #dc2626; }
+        .success-inline { background: #dcfce7; border: 2px solid #22c55e; border-radius: 8px; padding: 16px; margin-top: 16px; }
+        .success-inline-content { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px; }
+        .success-inline-icon { font-size: 1.5rem; }
+        .success-inline-text { font-size: 1.1rem; font-weight: 600; color: #16a34a; }
+        .success-inline-points { font-size: 1rem; font-weight: 700; color: #16a34a; background: #fff; padding: 4px 10px; border-radius: 4px; }
+        .success-inline-streak { font-size: 1rem; font-weight: 600; color: #f59e0b; }
+
+        /* Buttons */
+        .button-row { display: flex; justify-content: center; gap: 10px; }
+        .action-btn { font-family: inherit; font-size: 0.85rem; padding: 6px 14px; border: 1px solid #ccc; background: #fff; cursor: pointer; border-radius: 3px; }
+        .action-btn:hover { background: #f5f5f5; }
+        .action-btn.primary { background: #2563eb; color: #fff; border-color: #2563eb; }
+        .action-btn.primary:hover { background: #1d4ed8; }
+        .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Theorie */
+        .theory-section { margin-bottom: 28px; }
+        .theory-section h2 { font-size: 1.05rem; font-weight: 600; margin-bottom: 12px; }
+        .theory-section p, .theory-section li { font-size: 0.95rem; line-height: 1.7; color: #333; }
+        .theory-section ul { padding-left: 20px; margin: 8px 0; }
+        .theory-section li { margin-bottom: 6px; }
+
+        .rule-box { background: #dbeafe; border: 1px solid #3b82f6; border-radius: 8px; padding: 16px; margin: 12px 0; }
+        .rule-box h3 { font-size: 0.95rem; font-weight: 600; color: #1d4ed8; margin-bottom: 8px; }
+        .rule-box p, .rule-box li { font-size: 0.9rem; color: #1d4ed8; }
+
+        .example-box { background: #f9f9f9; border: 1px solid #eee; border-radius: 8px; padding: 16px; margin: 12px 0; }
+        .example-box h3 { font-size: 0.9rem; font-weight: 600; color: #666; margin-bottom: 10px; }
+
+        .math-expr { font-family: 'Times New Roman', serif; font-style: italic; font-size: 1.15rem; }
+        .math-line { padding: 4px 0; font-family: 'Times New Roman', serif; font-style: italic; font-size: 1.1rem; }
+        .math-positive { color: #16a34a; font-weight: 600; }
+        .math-negative { color: #dc2626; font-weight: 600; }
+        .math-result { color: #2563eb; font-weight: 700; }
+
+        /* Zahlenstrahl */
+        .number-line-container { margin: 20px 0; overflow-x: auto; padding: 10px 0; }
+        .number-line { position: relative; height: 80px; min-width: 100%; }
+        .number-line-axis { position: absolute; top: 40px; left: 0; right: 0; height: 2px; background: #000; }
+        .number-line-tick { position: absolute; top: 33px; width: 2px; height: 16px; background: #000; }
+        .number-line-label { position: absolute; top: 55px; transform: translateX(-50%); font-size: 0.8rem; color: #666; }
+        .number-line-zero { font-weight: 700; color: #000; }
+        .number-line-point { position: absolute; top: 30px; width: 20px; height: 20px; border-radius: 50%; transform: translateX(-50%); z-index: 2; }
+        .number-line-arrow { position: absolute; top: 20px; height: 4px; border-radius: 2px; z-index: 1; }
+
+        /* Aufgabe */
+        .task-display { text-align: center; padding: 30px 20px; background: #f9f9f9; border-radius: 8px; margin-bottom: 20px; }
+        .task-expression { font-size: 2rem; font-weight: 600; margin-bottom: 8px; }
+        .task-hint { font-size: 0.85rem; color: #999; }
+
+        .answer-section { display: flex; justify-content: center; align-items: center; gap: 12px; margin-bottom: 16px; }
+        .answer-input { font-family: inherit; font-size: 1.3rem; width: 120px; text-align: center; padding: 10px; border: 2px solid #ccc; border-radius: 6px; outline: none; }
+        .answer-input:focus { border-color: #2563eb; }
+        .answer-input.correct { border-color: #22c55e; background: #dcfce7; }
+        .answer-input.wrong { border-color: #ef4444; background: #fef2f2; }
+        .check-btn { font-family: inherit; font-size: 1rem; padding: 10px 24px; background: #2563eb; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+        .check-btn:hover { background: #1d4ed8; }
+        .check-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .solution-display { text-align: center; margin: 12px 0; font-size: 1rem; color: #dc2626; }
+
+        /* Prüfung */
+        .exam-start { text-align: center; padding: 40px 20px; }
+        .exam-start h2 { font-size: 1.3rem; font-weight: 600; margin-bottom: 12px; }
+        .exam-description { color: #666; margin-bottom: 24px; }
+        .exam-info { display: flex; justify-content: center; gap: 24px; margin-bottom: 32px; }
+        .exam-info-item { font-size: 0.95rem; color: #444; }
+        .exam-results { text-align: center; padding: 40px 20px; }
+        .exam-score { font-size: 3rem; font-weight: 700; color: #000; margin: 20px 0 8px; }
+        .exam-percent { font-size: 1.5rem; color: #666; margin-bottom: 32px; }
+        .exam-wrong-section { text-align: left; margin-top: 32px; padding-top: 24px; border-top: 1px solid #eee; }
+        .exam-wrong-section h3 { font-size: 1rem; font-weight: 600; margin-bottom: 16px; }
+        .exam-wrong-item { border: 1px solid #eee; border-radius: 6px; margin-bottom: 8px; overflow: hidden; }
+        .exam-wrong-header { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: #fef2f2; cursor: pointer; }
+        .exam-wrong-header:hover { background: #fee2e2; }
+        .exam-wrong-toggle { transition: transform 0.2s; }
+        .exam-wrong-toggle.open { transform: rotate(180deg); }
+        .exam-wrong-solution { display: none; padding: 16px; background: #fff; border-top: 1px solid #eee; }
+        .exam-wrong-solution.open { display: block; }
+
+        /* Popup */
+        .popup-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+        .popup-overlay.visible { display: flex; }
+        .popup { background: #fff; border-radius: 8px; max-width: 400px; width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.2); overflow: hidden; }
+        .popup-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #eee; font-weight: 600; }
+        .popup-content { padding: 20px; font-size: 0.95rem; color: #444; line-height: 1.6; text-align: center; }
+        .popup-buttons { display: flex; gap: 12px; justify-content: center; margin-top: 20px; }
+        .popup-btn { font-family: inherit; font-size: 0.95rem; padding: 10px 24px; border-radius: 4px; cursor: pointer; }
+        .popup-btn-cancel { background: #fff; color: #444; border: 1px solid #ccc; }
+        .popup-btn-cancel:hover { background: #f5f5f5; }
+        .popup-btn-confirm { background: #dc2626; color: #fff; border: none; }
+        .popup-btn-confirm:hover { background: #b91c1c; }
+
+        .highlight-blue { color: #2563eb; font-weight: 600; }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            body { padding: 15px; }
+            .tab-btn { padding: 6px 12px; font-size: 0.85rem; }
+            .level-btn { padding: 5px 10px; font-size: 0.8rem; }
+            .task-expression { font-size: 1.5rem; }
+            .answer-input { font-size: 1.1rem; width: 100px; }
+        }
+    </style>
+</head>
+<body>
+    <h1>Addition & Subtraktion ganzer Zahlen</h1>
+
+    <div class="tab-nav">
+        <button class="tab-btn active" onclick="showTab('theory')">Theorie</button>
+        <button class="tab-btn" onclick="showTab('practice')">Üben</button>
+        <button class="tab-btn" onclick="showTab('exam')">Prüfung</button>
+    </div>
+
+    <!-- TAB: THEORIE -->
+    <div id="tab-theory" class="tab-content active">
+        <div class="theory-section">
+            <h2>Was sind ganze Zahlen?</h2>
+            <p>Ganze Zahlen sind alle Zahlen ohne Komma – also auch die negativen:</p>
+            <p class="math-line" style="text-align:center; margin: 12px 0;">… , −3, −2, −1, 0, 1, 2, 3, …</p>
+            <p>Auf dem Zahlenstrahl liegen negative Zahlen <strong>links</strong> von der Null, positive <strong>rechts</strong>.</p>
+        </div>
+
+        <div class="theory-section">
+            <h2>Der Zahlenstrahl als Hilfsmittel</h2>
+            <div class="rule-box">
+                <h3>Grundprinzip</h3>
+                <ul>
+                    <li><strong>Addieren (+)</strong> = auf dem Zahlenstrahl nach <strong>rechts</strong> gehen</li>
+                    <li><strong>Subtrahieren (−)</strong> = auf dem Zahlenstrahl nach <strong>links</strong> gehen</li>
+                </ul>
+            </div>
+            <div class="example-box">
+                <h3>Beispiel</h3>
+                <p class="math-line"><span class="math-positive">3 + 5</span> = <span class="math-result">8</span></p>
+                <p class="math-line" style="color:#666;">→ Starte bei 3, gehe 5 Schritte nach rechts → landest bei 8</p>
+                <p class="math-line" style="margin-top: 8px;"><span class="math-negative">3 − 5</span> = <span class="math-result">−2</span></p>
+                <p class="math-line" style="color:#666;">→ Starte bei 3, gehe 5 Schritte nach links → landest bei −2</p>
+            </div>
+        </div>
+
+        <div class="theory-section">
+            <h2>Was passiert bei negativen Zahlen?</h2>
+            <p>Wenn du eine <strong>negative Zahl addierst</strong>, drehst du die Richtung um – du gehst also nach <strong>links</strong> statt nach rechts. Und wenn du eine negative Zahl <strong>subtrahierst</strong>, drehst du auch um – du gehst nach <strong>rechts</strong>.</p>
+            <div class="rule-box">
+                <h3>Vorzeichenregel</h3>
+                <ul>
+                    <li><strong>+ (+) → rechts</strong> (normal addieren)</li>
+                    <li><strong>− (−) → rechts</strong> (Richtung dreht um)</li>
+                    <li><strong>+ (−) → links</strong> (Richtung dreht um)</li>
+                    <li><strong>− (+) → links</strong> (normal subtrahieren)</li>
+                </ul>
+                <p style="margin-top: 8px;">Kurz: <strong>Gleiche Vorzeichen → rechts, verschiedene → links</strong></p>
+            </div>
+        </div>
+
+        <div class="theory-section">
+            <h2>Beispiele Schritt für Schritt</h2>
+            <div class="example-box">
+                <h3>Beispiel 1</h3>
+                <p class="math-line"><span class="math-negative">(−9)</span> + <span class="math-positive">(+4)</span> = <span class="math-result">−5</span></p>
+                <p class="math-line" style="color:#666;">→ Starte bei −9, addiere eine positive Zahl → gehe 4 nach rechts → landest bei −5</p>
+            </div>
+            <div class="example-box">
+                <h3>Beispiel 2</h3>
+                <p class="math-line"><span class="math-positive">3</span> − <span class="math-negative">(−7)</span> = <span class="math-result">10</span></p>
+                <p class="math-line" style="color:#666;">→ Starte bei 3, subtrahiere eine negative Zahl → Richtung dreht um → gehe 7 nach rechts → landest bei 10</p>
+            </div>
+            <div class="example-box">
+                <h3>Beispiel 3</h3>
+                <p class="math-line"><span class="math-negative">(−4)</span> + <span class="math-negative">(−2)</span> = <span class="math-result">−6</span></p>
+                <p class="math-line" style="color:#666;">→ Starte bei −4, addiere eine negative Zahl → gehe 2 nach links → landest bei −6</p>
+            </div>
+            <div class="example-box">
+                <h3>Beispiel 4</h3>
+                <p class="math-line"><span class="math-negative">(−2)</span> − <span class="math-positive">(+5)</span> = <span class="math-result">−7</span></p>
+                <p class="math-line" style="color:#666;">→ Starte bei −2, subtrahiere eine positive Zahl → gehe 5 nach links → landest bei −7</p>
+            </div>
+        </div>
+
+        <div class="theory-section">
+            <h2>Zusammenfassung</h2>
+            <div class="rule-box">
+                <h3>So gehst du vor</h3>
+                <ul>
+                    <li><strong>1.</strong> Finde deinen Startpunkt auf dem Zahlenstrahl</li>
+                    <li><strong>2.</strong> Bestimme die Richtung: Addition → rechts, Subtraktion → links</li>
+                    <li><strong>3.</strong> Negative Zahl? → Richtung umdrehen!</li>
+                    <li><strong>4.</strong> Gehe die entsprechende Anzahl Schritte</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB: ÜBEN -->
+    <div id="tab-practice" class="tab-content">
+        <div class="score-bar">
+            <span>Punkte: <strong id="practice-score">0</strong></span>
+            <span>Streak: <strong id="practice-streak">0</strong> <span class="streak-fire" id="practice-streak-fire" style="display:none;">🔥</span></span>
+        </div>
+
+        <div class="level-select">
+            <button class="level-btn active" onclick="selectDifficulty('easy', this)">⭐ Einfach</button>
+            <button class="level-btn" onclick="selectDifficulty('medium', this)">⭐⭐ Mittel</button>
+            <button class="level-btn" onclick="selectDifficulty('hard', this)">⭐⭐⭐ Schwer</button>
+        </div>
+
+        <div id="practice-game-area">
+            <div class="task-display" id="practice-task-display">
+                <div class="task-expression" id="practice-expression"></div>
+                <div class="task-hint" id="practice-hint"></div>
+            </div>
+            <div class="answer-section">
+                <input type="number" class="answer-input" id="practice-answer" placeholder="?" autocomplete="off">
+                <button class="check-btn" id="practice-check-btn" onclick="checkPracticeAnswer()">Prüfen</button>
+            </div>
+            <div class="solution-display" id="practice-solution"></div>
+        </div>
+
+        <div class="feedback" id="practice-feedback"></div>
+
+        <div class="button-row">
+            <button class="action-btn" onclick="skipTask()">Überspringen</button>
+            <button class="action-btn primary" onclick="nextPracticeTask()" id="next-btn" style="display:none;">Nächste Aufgabe</button>
+        </div>
+    </div>
+
+    <!-- TAB: PRÜFUNG -->
+    <div id="tab-exam" class="tab-content">
+        <div id="exam-start" class="exam-start">
+            <h2>Prüfungsmodus</h2>
+            <p class="exam-description">10 Aufgaben in 2 Minuten. Du siehst das Ergebnis erst am Schluss.</p>
+            <div class="exam-info">
+                <div class="exam-info-item">📝 10 Aufgaben</div>
+                <div class="exam-info-item">⏱️ 2 Minuten</div>
+            </div>
+            <button class="action-btn primary" onclick="startExam()">🚀 Prüfung starten</button>
+        </div>
+
+        <div id="exam-active" style="display:none;">
+            <div class="score-bar">
+                <span>Aufgabe: <strong id="exam-current">1</strong>/10</span>
+                <span id="exam-timer" class="timer-display">2:00</span>
+            </div>
+
+            <div class="task-display" id="exam-task-display">
+                <div class="task-expression" id="exam-expression"></div>
+            </div>
+            <div class="answer-section">
+                <input type="number" class="answer-input" id="exam-answer" placeholder="?" autocomplete="off">
+            </div>
+
+            <div class="button-row">
+                <button class="action-btn primary" id="exam-next-btn" onclick="nextExamTask()">Nächste Aufgabe →</button>
+            </div>
+        </div>
+
+        <div id="exam-results" class="exam-results" style="display:none;">
+            <h2>Prüfung beendet!</h2>
+            <div class="exam-score" id="exam-correct">8/10</div>
+            <div class="exam-percent" id="exam-percent">80%</div>
+
+            <div class="exam-wrong-section" id="exam-wrong-section" style="display:none;">
+                <h3>Diese Aufgaben waren falsch:</h3>
+                <div id="exam-wrong-list"></div>
+            </div>
+
+            <div class="button-row" style="margin-top: 24px;">
+                <button class="action-btn primary" onclick="restartExam()">🔄 Neue Prüfung</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Prüfung-Abbrechen Popup -->
+    <div class="popup-overlay" id="exam-abort-overlay">
+        <div class="popup">
+            <div class="popup-header">
+                <span>Prüfung abbrechen?</span>
+            </div>
+            <div class="popup-content">
+                <p>Willst du die Prüfung wirklich abbrechen?</p>
+                <div class="popup-buttons">
+                    <button class="popup-btn popup-btn-cancel" id="exam-abort-no">Nein</button>
+                    <button class="popup-btn popup-btn-confirm" id="exam-abort-yes">Ja</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ====== TAB NAVIGATION ======
+        let pendingTabSwitch = null;
+
+        function showTab(tabName) {
+            if (typeof examState !== 'undefined' && examState.started && tabName !== 'exam') {
+                pendingTabSwitch = tabName;
+                document.getElementById('exam-abort-overlay').classList.add('visible');
+                return;
+            }
+            switchToTab(tabName);
+        }
+
+        function switchToTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('tab-' + tabName).classList.add('active');
+            document.querySelector(`.tab-btn[onclick*="${tabName}"]`).classList.add('active');
+
+            if (tabName === 'practice' && !practiceState.initialized) {
+                initPractice();
+                practiceState.initialized = true;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const examAbortOverlay = document.getElementById('exam-abort-overlay');
+            const examAbortYes = document.getElementById('exam-abort-yes');
+            const examAbortNo = document.getElementById('exam-abort-no');
+
+            examAbortNo.addEventListener('click', () => {
+                examAbortOverlay.classList.remove('visible');
+                pendingTabSwitch = null;
+            });
+
+            examAbortYes.addEventListener('click', () => {
+                examAbortOverlay.classList.remove('visible');
+                clearInterval(examState.timerInterval);
+                examState.started = false;
+                document.getElementById('exam-active').style.display = 'none';
+                document.getElementById('exam-start').style.display = 'block';
+                if (pendingTabSwitch) {
+                    switchToTab(pendingTabSwitch);
+                    pendingTabSwitch = null;
+                }
+            });
+
+            examAbortOverlay.addEventListener('click', (e) => {
+                if (e.target === examAbortOverlay) {
+                    examAbortOverlay.classList.remove('visible');
+                    pendingTabSwitch = null;
+                }
+            });
+        });
+
+        // ====== TASK GENERATION ======
+        function randInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function generateTask(difficulty) {
+            let a, b, op;
+            op = Math.random() < 0.5 ? '+' : '−';
+
+            switch (difficulty) {
+                case 'easy':
+                    // Kleine Zahlen, -10 bis 10
+                    a = randInt(-10, 10);
+                    b = randInt(-10, 10);
+                    break;
+                case 'medium':
+                    // Mittlere Zahlen, -50 bis 50
+                    a = randInt(-50, 50);
+                    b = randInt(-50, 50);
+                    break;
+                case 'hard':
+                    // Grosse Zahlen, -200 bis 200
+                    a = randInt(-200, 200);
+                    b = randInt(-200, 200);
+                    break;
+                default:
+                    a = randInt(-10, 10);
+                    b = randInt(-10, 10);
+            }
+
+            // Avoid trivial tasks like 0+0
+            if (a === 0 && b === 0) b = randInt(1, 5) * (Math.random() < 0.5 ? -1 : 1);
+
+            const result = op === '+' ? a + b : a - b;
+
+            // Format expression with parentheses for negatives
+            const formatNum = (n) => n < 0 ? `(${n})` : `${n}`;
+            const expression = `${formatNum(a)} ${op} ${formatNum(b)}`;
+
+            return { a, b, op, result, expression };
+        }
+
+        // ====== PRACTICE MODE ======
+        const practiceState = {
+            initialized: false,
+            score: 0,
+            streak: 0,
+            difficulty: 'easy',
+            currentTask: null,
+            answered: false
+        };
+
+        function initPractice() {
+            generatePracticeTask();
+        }
+
+        function updatePracticeStats() {
+            document.getElementById('practice-score').textContent = practiceState.score;
+            document.getElementById('practice-streak').textContent = practiceState.streak;
+            const fire = document.getElementById('practice-streak-fire');
+            fire.style.display = practiceState.streak >= 3 ? 'inline' : 'none';
+        }
+
+        function selectDifficulty(diff, btn) {
+            document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            practiceState.difficulty = diff;
+            generatePracticeTask();
+        }
+
+        function generatePracticeTask() {
+            practiceState.currentTask = generateTask(practiceState.difficulty);
+            practiceState.answered = false;
+
+            document.getElementById('practice-expression').textContent = practiceState.currentTask.expression + ' = ?';
+            
+            // Hint based on difficulty
+            const hints = {
+                easy: 'Zahlen von −10 bis 10',
+                medium: 'Zahlen von −50 bis 50',
+                hard: 'Zahlen von −200 bis 200'
+            };
+            document.getElementById('practice-hint').textContent = hints[practiceState.difficulty];
+
+            const input = document.getElementById('practice-answer');
+            input.value = '';
+            input.className = 'answer-input';
+            input.disabled = false;
+            input.focus();
+
+            document.getElementById('practice-check-btn').disabled = false;
+            document.getElementById('practice-feedback').className = 'feedback';
+            document.getElementById('practice-feedback').innerHTML = '';
+            document.getElementById('practice-solution').textContent = '';
+            document.getElementById('next-btn').style.display = 'none';
+        }
+
+        function calculatePoints(streak) {
+            return 100 + (streak - 1) * 25;
+        }
+
+        function checkPracticeAnswer() {
+            if (practiceState.answered) return;
+
+            const input = document.getElementById('practice-answer');
+            const userAnswer = parseInt(input.value);
+
+            if (isNaN(userAnswer)) {
+                input.focus();
+                return;
+            }
+
+            practiceState.answered = true;
+            input.disabled = true;
+            document.getElementById('practice-check-btn').disabled = true;
+
+            const task = practiceState.currentTask;
+
+            if (userAnswer === task.result) {
+                // Correct
+                input.classList.add('correct');
+                practiceState.streak++;
+                const points = calculatePoints(practiceState.streak);
+                practiceState.score += points;
+                updatePracticeStats();
+
+                setTimeout(() => {
+                    const feedback = document.getElementById('practice-feedback');
+                    feedback.className = 'feedback success-inline';
+                    feedback.innerHTML = `
+                        <div class="success-inline-content">
+                            <span class="success-inline-icon">🎉</span>
+                            <span class="success-inline-text">Richtig!</span>
+                            <span class="success-inline-points">+${points} Punkte</span>
+                            ${practiceState.streak >= 2 ? `<span class="success-inline-streak">🔥 ${practiceState.streak} Streak</span>` : ''}
+                        </div>
+                    `;
+                    document.getElementById('next-btn').style.display = 'inline-block';
+                }, 600);
+            } else {
+                // Wrong
+                input.classList.add('wrong');
+                practiceState.streak = 0;
+                updatePracticeStats();
+
+                const feedback = document.getElementById('practice-feedback');
+                feedback.className = 'feedback wrong';
+                feedback.textContent = 'Leider falsch!';
+
+                document.getElementById('practice-solution').innerHTML = 
+                    `Richtige Antwort: <strong>${task.result}</strong>`;
+                document.getElementById('next-btn').style.display = 'inline-block';
+            }
+        }
+
+        function skipTask() {
+            if (practiceState.answered) return;
+            practiceState.streak = 0;
+            updatePracticeStats();
+            generatePracticeTask();
+        }
+
+        function nextPracticeTask() {
+            generatePracticeTask();
+        }
+
+        // Enter key support for practice
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const practiceTab = document.getElementById('tab-practice');
+                const examTab = document.getElementById('tab-exam');
+
+                if (practiceTab.classList.contains('active')) {
+                    if (!practiceState.answered) {
+                        checkPracticeAnswer();
+                    } else {
+                        nextPracticeTask();
+                    }
+                } else if (examTab.classList.contains('active') && examState.started) {
+                    nextExamTask();
+                }
+            }
+        });
+
+        // ====== EXAM MODE ======
+        const examState = {
+            tasks: [],
+            currentTask: 0,
+            timerInterval: null,
+            timeRemaining: 120,
+            started: false
+        };
+
+        function generateExamTasks() {
+            examState.tasks = [];
+            // Mix of difficulties: 3 easy, 4 medium, 3 hard
+            const diffs = ['easy','easy','easy','medium','medium','medium','medium','hard','hard','hard'];
+            // Shuffle
+            for (let i = diffs.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [diffs[i], diffs[j]] = [diffs[j], diffs[i]];
+            }
+            for (let i = 0; i < 10; i++) {
+                const task = generateTask(diffs[i]);
+                examState.tasks.push({ ...task, userAnswer: null, correct: false });
+            }
+        }
+
+        function startExam() {
+            generateExamTasks();
+            examState.currentTask = 0;
+            examState.timeRemaining = 120;
+            examState.started = true;
+
+            document.getElementById('exam-start').style.display = 'none';
+            document.getElementById('exam-results').style.display = 'none';
+            document.getElementById('exam-active').style.display = 'block';
+
+            const timerDisplay = document.getElementById('exam-timer');
+            timerDisplay.className = 'timer-display';
+            timerDisplay.textContent = '2:00';
+
+            loadExamTask();
+            examState.timerInterval = setInterval(updateExamTimer, 1000);
+        }
+
+        function loadExamTask() {
+            const task = examState.tasks[examState.currentTask];
+            document.getElementById('exam-expression').textContent = task.expression + ' = ?';
+            document.getElementById('exam-current').textContent = examState.currentTask + 1;
+
+            const input = document.getElementById('exam-answer');
+            // Restore previous answer if user goes back
+            input.value = task.userAnswer !== null ? task.userAnswer : '';
+            input.className = 'answer-input';
+            input.focus();
+
+            const btn = document.getElementById('exam-next-btn');
+            if (examState.currentTask === 9) {
+                btn.textContent = 'Prüfung abschliessen ✓';
+            } else {
+                btn.textContent = 'Nächste Aufgabe →';
+            }
+        }
+
+        function saveExamAnswer() {
+            const input = document.getElementById('exam-answer');
+            const val = parseInt(input.value);
+            const task = examState.tasks[examState.currentTask];
+            if (!isNaN(val)) {
+                task.userAnswer = val;
+                task.correct = (val === task.result);
+            } else {
+                task.userAnswer = null;
+                task.correct = false;
+            }
+        }
+
+        function nextExamTask() {
+            saveExamAnswer();
+
+            if (examState.currentTask < 9) {
+                examState.currentTask++;
+                loadExamTask();
+            } else {
+                endExam();
+            }
+        }
+
+        function updateExamTimer() {
+            examState.timeRemaining--;
+            const minutes = Math.floor(examState.timeRemaining / 60);
+            const seconds = examState.timeRemaining % 60;
+            const display = document.getElementById('exam-timer');
+            display.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+            if (examState.timeRemaining <= 60) {
+                display.classList.add('danger');
+                display.classList.remove('warning');
+            } else if (examState.timeRemaining <= 120) {
+                display.classList.add('warning');
+                display.classList.remove('danger');
+            }
+
+            if (examState.timeRemaining <= 0) {
+                saveExamAnswer();
+                endExam();
+            }
+        }
+
+        function endExam() {
+            clearInterval(examState.timerInterval);
+            examState.started = false;
+
+            document.getElementById('exam-active').style.display = 'none';
+            document.getElementById('exam-results').style.display = 'block';
+
+            const correct = examState.tasks.filter(t => t.correct).length;
+            const total = examState.tasks.length;
+            const percent = Math.round(correct / total * 100);
+
+            document.getElementById('exam-correct').textContent = `${correct}/${total}`;
+            document.getElementById('exam-percent').textContent = `${percent}%`;
+
+            // Show wrong answers
+            const wrongTasks = examState.tasks.map((t, i) => ({ ...t, index: i })).filter(t => !t.correct);
+            const wrongSection = document.getElementById('exam-wrong-section');
+            const wrongList = document.getElementById('exam-wrong-list');
+
+            if (wrongTasks.length > 0) {
+                wrongSection.style.display = 'block';
+                wrongList.innerHTML = '';
+                wrongTasks.forEach(t => {
+                    const item = document.createElement('div');
+                    item.className = 'exam-wrong-item';
+                    const userText = t.userAnswer !== null ? t.userAnswer : '(keine Antwort)';
+                    item.innerHTML = `
+                        <div class="exam-wrong-header" onclick="toggleWrongItem(this)">
+                            <span>Aufgabe ${t.index + 1}: ${t.expression}</span>
+                            <span class="exam-wrong-toggle">▼</span>
+                        </div>
+                        <div class="exam-wrong-solution">
+                            <p>Deine Antwort: <strong style="color:#dc2626;">${userText}</strong></p>
+                            <p>Richtige Antwort: <strong style="color:#16a34a;">${t.result}</strong></p>
+                        </div>
+                    `;
+                    wrongList.appendChild(item);
+                });
+            } else {
+                wrongSection.style.display = 'none';
+            }
+        }
+
+        function toggleWrongItem(header) {
+            const toggle = header.querySelector('.exam-wrong-toggle');
+            const solution = header.nextElementSibling;
+            toggle.classList.toggle('open');
+            solution.classList.toggle('open');
+        }
+
+        function restartExam() {
+            document.getElementById('exam-results').style.display = 'none';
+            document.getElementById('exam-start').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
