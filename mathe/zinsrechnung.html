@@ -9,6 +9,7 @@
   :root {
     --kapital: #4878B0;
     --brutto: #E8913A;
+    --brutto-light: #F0A85C;
     --vst: #C0392B;
     --vst-bg: #E8A0A0;
     --netto: #6AAF4A;
@@ -305,6 +306,51 @@
     margin-bottom:10px; font-weight:600; min-height:22px;
   }
 
+  /* Mode toggle */
+  .mode-toggle {
+    display: flex;
+    gap: 0;
+    justify-content: center;
+    margin-bottom: 18px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 2px solid var(--border);
+    max-width: 480px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .mode-btn {
+    flex: 1;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 10px 16px;
+    border: none;
+    cursor: pointer;
+    background: white;
+    color: var(--text-light);
+    transition: all 0.25s ease;
+    line-height: 1.3;
+  }
+
+  .mode-btn:hover { background: #F5F3EE; }
+
+  .mode-btn.active {
+    background: var(--header-bg);
+    color: var(--text);
+    box-shadow: inset 0 -3px 0 var(--header-border);
+  }
+
+  .mode-sub {
+    font-size: 0.7rem;
+    font-weight: 600;
+    opacity: 0.7;
+  }
+
+  /* Hidden elements in ohne-VSt mode */
+  .hide-vst { display: none !important; }
+
   /* Responsive */
   @media (max-width:700px) {
     .grid { min-width:600px; }
@@ -315,8 +361,14 @@
 <body>
 
 <div class="container">
-  <h1>💰 Zinsrechnung mit Verrechnungssteuer</h1>
+  <h1>💰 Zinsrechnung</h1>
   <p class="subtitle">Klicke auf die Balken: 1× = gegeben, 2× = gesucht, 3× = zurücksetzen</p>
+
+  <!-- VST MODE TOGGLE -->
+  <div class="mode-toggle">
+    <button class="mode-btn" id="btn-ohne-vst" onclick="setMode('ohne')">Ohne Verrechnungssteuer<br><span class="mode-sub">Bruttozins ≤ CHF 200</span></button>
+    <button class="mode-btn active" id="btn-mit-vst" onclick="setMode('mit')">Mit Verrechnungssteuer<br><span class="mode-sub">Bruttozins > CHF 200</span></button>
+  </div>
 
   <div class="legend">
     <div class="legend-item"><div class="legend-dot giv"></div> Gegeben</div>
@@ -331,8 +383,8 @@
 
       <!-- HEADERS -->
       <div class="hdr">Kapital vor<br>Zinsabschluss</div>
-      <div class="hdr">Bruttojahreszins<br>> CHF 200</div>
-      <div class="hdr">Abzug<br>Verrechnungs­steuer</div>
+      <div class="hdr">Bruttojahreszins<br><span id="hdr-brutto-sub">> CHF 200</span></div>
+      <div class="hdr vst-only" id="hdr-vst">Abzug<br>Verrechnungs­steuer</div>
       <div class="hdr">Kapital nach<br>Zinsabschluss</div>
 
       <!-- Dashed reference line at Kapital top edge (all 4 columns) -->
@@ -366,8 +418,8 @@
         </div>
       </div>
 
-      <!-- ===== CELL 3: VSt / Netto ===== -->
-      <div class="cell" id="cell-vst">
+      <!-- ===== CELL 3: VSt / Netto (vst-only) ===== -->
+      <div class="cell vst-only" id="cell-vst">
         <div class="vst-area">
           <div class="vst-block-wrapper">
             <!-- VSt bar -->
@@ -414,7 +466,7 @@
           <div class="bar-badge" id="badge-kapnach"></div>
           <!-- Netto part on top -->
           <div class="kapnach-netto-part" style="height:39px; display:flex; align-items:center; justify-content:center;">
-            <div class="bar-label-inside" style="color:var(--text); font-size:0.65rem; text-shadow:none;">
+            <div class="bar-label-inside" id="kapnach-top-label" style="color:var(--text); font-size:0.65rem; text-shadow:none;">
               + Nettojahreszins
             </div>
           </div>
@@ -443,6 +495,8 @@
 
 <script>
   // ===== STATE =====
+  let vstMode = 'mit'; // 'mit' or 'ohne'
+
   const bars = {
     kapital: { state:'none' },
     brutto:  { state:'none' },
@@ -450,8 +504,50 @@
     netto:   { state:'none' },
     kapnach: { state:'none' },
   };
-  const allIds = Object.keys(bars);
+  let allIds = Object.keys(bars);
   let hintLevel = 0;
+
+  // ===== MODE SWITCH =====
+  function setMode(mode) {
+    vstMode = mode;
+    resetAll();
+
+    document.getElementById('btn-mit-vst').classList.toggle('active', mode === 'mit');
+    document.getElementById('btn-ohne-vst').classList.toggle('active', mode === 'ohne');
+
+    // Show/hide VSt column
+    const vstElements = document.querySelectorAll('.vst-only');
+    const line2 = document.getElementById('line-vst-netto');
+    const grid = document.getElementById('main-grid');
+    const hdrBruttoSub = document.getElementById('hdr-brutto-sub');
+    const kapnachTopLabel = document.getElementById('kapnach-top-label');
+    const kapnachNettoPart = document.querySelector('.kapnach-netto-part');
+
+    if (mode === 'ohne') {
+      vstElements.forEach(el => el.classList.add('hide-vst'));
+      line2.classList.add('hide-vst');
+      grid.style.gridTemplateColumns = '1fr 1fr 1fr';
+      hdrBruttoSub.textContent = '≤ CHF 200';
+      kapnachTopLabel.textContent = '+ Bruttojahreszins';
+      kapnachNettoPart.style.background = 'linear-gradient(180deg, var(--brutto-light), var(--brutto))';
+      kapnachNettoPart.style.borderColor = 'var(--brutto)';
+      kapnachNettoPart.style.height = '60px';
+      // Update available bars
+      allIds = ['kapital','brutto','kapnach'];
+    } else {
+      vstElements.forEach(el => el.classList.remove('hide-vst'));
+      line2.classList.remove('hide-vst');
+      grid.style.gridTemplateColumns = '1fr 1fr 1fr 1fr';
+      hdrBruttoSub.textContent = '> CHF 200';
+      kapnachTopLabel.textContent = '+ Nettojahreszins';
+      kapnachNettoPart.style.background = '';
+      kapnachNettoPart.style.borderColor = '';
+      kapnachNettoPart.style.height = '39px';
+      allIds = Object.keys(bars);
+    }
+
+    setTimeout(positionLines, 50);
+  }
 
   // ===== CYCLE STATE =====
   function cycleBar(id) {
@@ -516,35 +612,52 @@
   }
 
   // ===== HINT LOGIC =====
-  const hints = {
-    // searched → possible hints depending on what's given
-    'brutto': {
-      hint: 'Was brauchst du, um den Bruttozins zu berechnen? Schau dir die Zinsformel an.',
-      formula: 'Z = K · p / 100'
-    },
-    'kapital': {
-      hint: 'Die Zinsformel enthält K – wie kannst du sie nach K umstellen?',
-      formula: 'K = Z · 100 / p'
-    },
-    'vst': {
-      hint: 'Wie viel Prozent vom Bruttozins beträgt die Verrechnungssteuer?',
-      formula: 'VSt = Z · 0.35'
-    },
-    'netto': {
-      hint: 'Was bleibt übrig, wenn die Verrechnungssteuer abgezogen wird?',
-      formula: 'Z_netto = Z · 0.65\noder: Z_netto = Z − VSt'
-    },
-    'kapnach': {
-      hint: 'Woraus setzt sich das Kapital nach Zinsabschluss zusammen? Schau dir die Säule an.',
-      formula: 'K_nachher = K + Z_netto'
-    },
-  };
+  function getHints() {
+    if (vstMode === 'ohne') {
+      return {
+        'brutto': {
+          hint: 'Was brauchst du, um den Bruttozins zu berechnen? Schau dir die Zinsformel an.',
+          formula: 'Z = K · p / 100'
+        },
+        'kapital': {
+          hint: 'Die Zinsformel enthält K – wie kannst du sie nach K umstellen?',
+          formula: 'K = Z · 100 / p'
+        },
+        'kapnach': {
+          hint: 'Woraus setzt sich das Kapital nach Zinsabschluss zusammen? Schau dir die Säule an.',
+          formula: 'K_nachher = K + Z'
+        },
+      };
+    }
+    return {
+      'brutto': {
+        hint: 'Was brauchst du, um den Bruttozins zu berechnen? Schau dir die Zinsformel an.',
+        formula: 'Z = K · p / 100'
+      },
+      'kapital': {
+        hint: 'Die Zinsformel enthält K – wie kannst du sie nach K umstellen?',
+        formula: 'K = Z · 100 / p'
+      },
+      'vst': {
+        hint: 'Wie viel Prozent vom Bruttozins beträgt die Verrechnungssteuer?',
+        formula: 'VSt = Z · 0.35'
+      },
+      'netto': {
+        hint: 'Was bleibt übrig, wenn die Verrechnungssteuer abgezogen wird?',
+        formula: 'Z_netto = Z · 0.65\noder: Z_netto = Z − VSt'
+      },
+      'kapnach': {
+        hint: 'Woraus setzt sich das Kapital nach Zinsabschluss zusammen? Schau dir die Säule an.',
+        formula: 'K_nachher = K + Z_netto'
+      },
+    };
+  }
 
   function showHint(level) {
     const searched = allIds.find(id => bars[id].state === 'searched');
     if (!searched) return;
 
-    const h = hints[searched];
+    const h = getHints()[searched];
     if (!h) return;
 
     hintLevel = level;
