@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zinsrechnung – Interaktive Übersicht</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --kapital: #4878B0;
+    --brutto: #E8913A;
+    --vst: #C0392B;
+    --vst-bg: #E8A0A0;
+    --netto: #6AAF4A;
+    --netto-bg: #A8D88A;
+    --kapnach: #7B4FAF;
+    --header-bg: #D6EDCA;
+    --header-border: #8AB87A;
+    --bg: #F7F5F0;
+    --card: #FFFFFF;
+    --text: #2C2C2C;
+    --text-light: #6B6B6B;
+    --border: #CCCCCC;
+    --cell-bg: #FFFFFF;
+    --given: #27AE60;
+    --searched: #E67E22;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh; padding: 20px;
+  }
+
+  .container { max-width: 920px; margin: 0 auto; }
+
+  h1 { font-size: 1.4rem; font-weight: 800; text-align: center; margin-bottom: 4px; }
+  .subtitle { text-align:center; color:var(--text-light); font-size:0.85rem; margin-bottom:16px; }
+
+  /* Legend */
+  .legend {
+    display:flex; gap:18px; justify-content:center; align-items:center;
+    margin-bottom:16px; flex-wrap:wrap; font-size:0.8rem; font-weight:600;
+  }
+  .legend-item { display:flex; align-items:center; gap:5px; }
+  .legend-dot { width:14px; height:14px; border-radius:4px; }
+  .legend-dot.giv { background:var(--given); }
+  .legend-dot.src { background:var(--searched); }
+
+  /* ===== TABLE / DIAGRAM ===== */
+  .diagram-card {
+    background: var(--card); border-radius: 12px; box-shadow: var(--shadow);
+    padding: 0; margin-bottom: 16px; overflow-x: auto;
+    position: relative;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    min-width: 660px;
+    border: 2px solid var(--border);
+    position: relative;
+  }
+
+  /* Dashed reference line spanning all columns */
+  .dashed-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 0;
+    border-top: 2.5px dashed rgba(0, 0, 0, 0.25);
+    pointer-events: none;
+    z-index: 4;
+  }
+
+  /* Second line only spans right half (columns 3-4) */
+  .dashed-line-half {
+    left: 50%;
+  }
+
+  /* Header row */
+  .hdr {
+    background: var(--header-bg);
+    border: 1px solid var(--border);
+    padding: 14px 8px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.88rem;
+    line-height: 1.35;
+  }
+
+  /* Cell */
+  .cell {
+    border: 1px solid var(--border);
+    background: var(--cell-bg);
+    min-height: 300px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 8px 12px 10px;
+  }
+
+  /* ===== CLICKABLE BARS ===== */
+  .bar-click {
+    cursor: pointer;
+    transition: filter 0.2s, outline 0.2s;
+    position: relative;
+  }
+  .bar-click:hover { filter: brightness(1.08); }
+
+  /* State outlines */
+  .bar-click.state-given {
+    outline: 3px solid var(--given);
+    outline-offset: 2px;
+  }
+  .bar-click.state-searched {
+    outline: 3px solid var(--searched);
+    outline-offset: 2px;
+    animation: pulseOutline 2s ease-in-out infinite;
+  }
+
+  @keyframes pulseOutline {
+    0%,100% { outline-offset: 2px; }
+    50% { outline-offset: 5px; }
+  }
+
+  /* State badge on bars */
+  .bar-badge {
+    position: absolute;
+    top: -10px; right: -10px;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.6rem; font-weight: 800; color: white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    opacity: 0; transform: scale(0);
+    transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1);
+    z-index: 5;
+  }
+  .bar-badge.show { opacity:1; transform:scale(1); }
+  .bar-badge.giv-b { background: var(--given); }
+  .bar-badge.src-b { background: var(--searched); }
+
+  /* ===== COLUMN 1: Kapital ===== */
+  .kapital-bar {
+    width: 55%;
+    background: var(--kapital);
+    border-radius: 0;
+  }
+
+  .bar-label-inside {
+    color: white; font-weight: 700; font-size: 0.8rem;
+    text-align: center; text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    padding: 6px 4px;
+  }
+
+  /* ===== COLUMN 2: Bruttozins (floating at top of Kapital level) ===== */
+  .brutto-area {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 1;
+  }
+
+  .brutto-bar {
+    width: 40%;
+    background: var(--brutto);
+    border-radius: 0;
+  }
+
+  /* Spacer to align brutto on top of kapital */
+  .kapital-spacer {
+    width: 100%;
+  }
+
+  /* ===== COLUMN 3: VSt split ===== */
+  .vst-area {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    flex: 1;
+    position: relative;
+  }
+
+  .vst-block-wrapper {
+    width: 55%;
+    position: relative;
+  }
+
+  .vst-bar {
+    background: var(--vst-bg);
+    border: 1px solid var(--vst);
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+
+  .netto-bar {
+    background: var(--netto-bg);
+    border: 1px solid var(--netto);
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+
+  .vst-label, .netto-label {
+    font-size: 0.7rem; font-weight: 700; padding: 4px 6px;
+    text-align: center; white-space: nowrap;
+  }
+
+  /* Curly brace SVGs */
+  .brace-r-svg {
+    position: absolute;
+    right: -12px;
+    width: 10px;
+    pointer-events: none;
+  }
+
+  .brace-r-pct {
+    position: absolute;
+    right: -42px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+
+  .brace-l-svg {
+    position: absolute;
+    left: -12px;
+    width: 10px;
+    pointer-events: none;
+  }
+
+  .brace-l-pct {
+    position: absolute;
+    left: -46px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--text-light);
+    pointer-events: none;
+    white-space: nowrap;
+  }
+
+  /* ===== COLUMN 4: Kapital nachher ===== */
+  .kapnach-stack {
+    width: 55%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .kapnach-netto-part {
+    background: var(--netto-bg);
+    border: 1px solid var(--netto);
+  }
+
+  .kapnach-kapital-part {
+    background: var(--kapnach);
+  }
+
+  /* ===== HINT SYSTEM ===== */
+  .hint-area {
+    background: var(--card); border-radius: 12px; box-shadow: var(--shadow);
+    padding: 14px 18px; margin-bottom: 16px;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+
+  .hint-label { font-size:0.8rem; font-weight:700; color:var(--text-light); }
+
+  .btn {
+    font-family:'Nunito',sans-serif; font-size:0.8rem; font-weight:700;
+    border:none; border-radius:8px; padding:8px 14px; cursor:pointer;
+    transition: all 0.2s;
+  }
+  .btn:hover { transform:translateY(-1px); box-shadow:var(--shadow); }
+  .btn:active { transform:translateY(0); }
+  .btn:disabled { opacity:0.35; cursor:not-allowed; transform:none!important; box-shadow:none!important; }
+  .btn-hint { background:#FFF3CD; color:#856404; border:1px solid #FFDB70; }
+  .btn-reset { background:#E0DCD4; color:var(--text); }
+
+  .hint-display {
+    width:100%; margin-top:6px; padding:10px 14px;
+    background:#FFFBE6; border:1px solid #FFE082; border-radius:8px;
+    font-size:0.85rem; line-height:1.6; display:none;
+  }
+  .hint-display.visible { display:block; animation: fadeIn 0.3s ease; }
+
+  .hint-formula {
+    font-family:'JetBrains Mono',monospace; font-size:0.82rem;
+    background:white; padding:5px 10px; border-radius:6px;
+    border:1px solid var(--border); margin-top:6px; display:inline-block;
+  }
+
+  @keyframes fadeIn { from{opacity:0;transform:translateY(4px);} to{opacity:1;transform:translateY(0);} }
+
+  .info-text {
+    text-align:center; font-size:0.8rem; color:var(--text-light);
+    margin-bottom:10px; font-weight:600; min-height:22px;
+  }
+
+  /* Responsive */
+  @media (max-width:700px) {
+    .grid { min-width:600px; }
+    h1 { font-size:1.2rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>💰 Zinsrechnung mit Verrechnungssteuer</h1>
+  <p class="subtitle">Klicke auf die Balken: 1× = gegeben, 2× = gesucht, 3× = zurücksetzen</p>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot giv"></div> Gegeben</div>
+    <div class="legend-item"><div class="legend-dot src"></div> Gesucht</div>
+  </div>
+
+  <div class="info-text" id="info-text"></div>
+
+  <!-- ===== DIAGRAM ===== -->
+  <div class="diagram-card">
+    <div class="grid" id="main-grid">
+
+      <!-- HEADERS -->
+      <div class="hdr">Kapital vor<br>Zinsabschluss</div>
+      <div class="hdr">Bruttojahreszins<br>> CHF 200</div>
+      <div class="hdr">Abzug<br>Verrechnungs­steuer</div>
+      <div class="hdr">Kapital nach<br>Zinsabschluss</div>
+
+      <!-- Dashed reference line at Kapital top edge (all 4 columns) -->
+      <div class="dashed-line" id="line-kapital-top"></div>
+      <!-- Dashed reference line at VSt/Netto split (columns 3-4 only) -->
+      <div class="dashed-line dashed-line-half" id="line-vst-netto"></div>
+
+      <!-- ===== CELL 1: Kapital ===== -->
+      <div class="cell" id="cell-kapital">
+        <div class="kapital-bar bar-click" id="bar-kapital"
+             style="height:220px; display:flex; align-items:center; justify-content:center;"
+             onclick="cycleBar('kapital')">
+          <div class="bar-badge" id="badge-kapital"></div>
+          <div class="bar-label-inside">Kapital</div>
+        </div>
+      </div>
+
+      <!-- ===== CELL 2: Bruttozins ===== -->
+      <div class="cell" id="cell-brutto">
+        <div class="brutto-area">
+          <div class="brutto-bar bar-click" id="bar-brutto"
+               style="height:60px; display:flex; align-items:center; justify-content:center;"
+               onclick="cycleBar('brutto')">
+            <div class="bar-badge" id="badge-brutto"></div>
+            <div class="bar-label-inside" style="font-size:0.75rem;">
+              Brutto-<br>jahres-<br>zins
+            </div>
+          </div>
+          <!-- Invisible spacer matching Kapital height -->
+          <div class="kapital-spacer" style="height:220px;"></div>
+        </div>
+      </div>
+
+      <!-- ===== CELL 3: VSt / Netto ===== -->
+      <div class="cell" id="cell-vst">
+        <div class="vst-area">
+          <div class="vst-block-wrapper">
+            <!-- VSt bar -->
+            <div class="vst-bar bar-click" id="bar-vst"
+                 style="height:21px;"
+                 onclick="cycleBar('vst')">
+              <div class="bar-badge" id="badge-vst"></div>
+              <span class="vst-label">Verrechnungssteuer</span>
+            </div>
+            <!-- Netto bar -->
+            <div class="netto-bar bar-click" id="bar-netto"
+                 style="height:39px;"
+                 onclick="cycleBar('netto')">
+              <div class="bar-badge" id="badge-netto"></div>
+              <span class="netto-label">Nettojahreszins</span>
+            </div>
+
+            <!-- RIGHT: } 35% and } 65% -->
+            <svg class="brace-r-svg" style="top:1px; height:19px;" viewBox="0 0 12 100" preserveAspectRatio="none">
+              <path d="M 1,0 Q 1,25 6,48 L 11,50 L 6,52 Q 1,75 1,100" fill="none" stroke="#aaa" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+            <span class="brace-r-pct" style="top:3px; color:var(--vst);">35%</span>
+
+            <svg class="brace-r-svg" style="top:22px; height:37px;" viewBox="0 0 12 100" preserveAspectRatio="none">
+              <path d="M 1,0 Q 1,25 6,48 L 11,50 L 6,52 Q 1,75 1,100" fill="none" stroke="#aaa" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+            <span class="brace-r-pct" style="top:32px; color:var(--netto);">65%</span>
+
+            <!-- LEFT: { 100% spanning both -->
+            <svg class="brace-l-svg" style="top:1px; height:58px;" viewBox="0 0 12 100" preserveAspectRatio="none">
+              <path d="M 11,0 Q 11,25 6,48 L 1,50 L 6,52 Q 11,75 11,100" fill="none" stroke="#aaa" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+            <span class="brace-l-pct" style="top:22px;">100%</span>
+          </div>
+          <!-- Invisible spacer -->
+          <div class="kapital-spacer" style="height:220px;"></div>
+        </div>
+      </div>
+
+      <!-- ===== CELL 4: Kapital nachher ===== -->
+      <div class="cell" id="cell-kapnach">
+        <div class="kapnach-stack bar-click" id="bar-kapnach"
+             onclick="cycleBar('kapnach')">
+          <div class="bar-badge" id="badge-kapnach"></div>
+          <!-- Netto part on top -->
+          <div class="kapnach-netto-part" style="height:39px; display:flex; align-items:center; justify-content:center;">
+            <div class="bar-label-inside" style="color:var(--text); font-size:0.65rem; text-shadow:none;">
+              + Nettojahreszins
+            </div>
+          </div>
+          <!-- Kapital part below -->
+          <div class="kapnach-kapital-part" style="height:220px; display:flex; align-items:center; justify-content:center;">
+            <div class="bar-label-inside">Kapital</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- ===== HINT SYSTEM ===== -->
+  <div class="hint-area">
+    <div class="hint-label">Brauchst du Hilfe?</div>
+    <button class="btn btn-hint" id="btn-hint1" onclick="showHint(1)" disabled>💡 Tipp</button>
+    <button class="btn btn-hint" id="btn-hint2" onclick="showHint(2)" disabled>📐 Formel</button>
+    <div style="flex:1;"></div>
+    <button class="btn btn-reset" onclick="resetAll()">↺ Zurücksetzen</button>
+    <div class="hint-display" id="hint-display"></div>
+  </div>
+
+</div>
+
+<script>
+  // ===== STATE =====
+  const bars = {
+    kapital: { state:'none' },
+    brutto:  { state:'none' },
+    vst:     { state:'none' },
+    netto:   { state:'none' },
+    kapnach: { state:'none' },
+  };
+  const allIds = Object.keys(bars);
+  let hintLevel = 0;
+
+  // ===== CYCLE STATE =====
+  function cycleBar(id) {
+    const states = ['none','given','searched'];
+    const cur = states.indexOf(bars[id].state);
+    const next = states[(cur+1) % 3];
+
+    if (next === 'searched') {
+      allIds.forEach(bid => {
+        if (bid !== id && bars[bid].state === 'searched') bars[bid].state = 'none';
+      });
+    }
+
+    bars[id].state = next;
+    hintLevel = 0;
+    updateUI();
+  }
+
+  // ===== UPDATE UI =====
+  function updateUI() {
+    allIds.forEach(id => {
+      const el = document.getElementById(`bar-${id}`);
+      const badge = document.getElementById(`badge-${id}`);
+      const st = bars[id].state;
+
+      el.classList.remove('state-given','state-searched');
+      badge.classList.remove('show','giv-b','src-b');
+
+      if (st === 'given') {
+        el.classList.add('state-given');
+        badge.classList.add('show','giv-b');
+        badge.textContent = '✓';
+      } else if (st === 'searched') {
+        el.classList.add('state-searched');
+        badge.classList.add('show','src-b');
+        badge.textContent = '?';
+      }
+    });
+
+    // Info text
+    const given = allIds.filter(id => bars[id].state === 'given');
+    const searched = allIds.filter(id => bars[id].state === 'searched');
+    const info = document.getElementById('info-text');
+
+    if (given.length === 0 && searched.length === 0) {
+      info.textContent = '';
+    } else if (searched.length === 0) {
+      info.textContent = '👆 Jetzt die gesuchte Grösse markieren (2× klicken)';
+    } else if (given.length === 0) {
+      info.textContent = '👆 Markiere die gegebenen Grössen (1× klicken)';
+    } else {
+      info.textContent = '🤔 Überlege: Welchen Weg nimmst du von grün nach orange?';
+    }
+
+    // Hint buttons
+    const ready = given.length > 0 && searched.length > 0;
+    document.getElementById('btn-hint1').disabled = !ready;
+    document.getElementById('btn-hint2').disabled = !ready || hintLevel < 1;
+
+    // Hide old hints
+    document.getElementById('hint-display').classList.remove('visible');
+  }
+
+  // ===== HINT LOGIC =====
+  const hints = {
+    // searched → possible hints depending on what's given
+    'brutto': {
+      hint: 'Was brauchst du, um den Bruttozins zu berechnen? Schau dir die Zinsformel an.',
+      formula: 'Z = K · p · t ∕ (100 · 360)'
+    },
+    'kapital': {
+      hint: 'Die Zinsformel enthält K – wie kannst du sie nach K umstellen?',
+      formula: 'K = Z · 100 · 360 ∕ (p · t)'
+    },
+    'vst': {
+      hint: 'Wie viel Prozent vom Bruttozins beträgt die Verrechnungssteuer?',
+      formula: 'VSt = Z · 0.35'
+    },
+    'netto': {
+      hint: 'Was bleibt übrig, wenn die Verrechnungssteuer abgezogen wird?',
+      formula: 'Z_netto = Z · 0.65\noder: Z_netto = Z − VSt'
+    },
+    'kapnach': {
+      hint: 'Woraus setzt sich das Kapital nach Zinsabschluss zusammen? Schau dir die Säule an.',
+      formula: 'K_nachher = K + Z_netto'
+    },
+  };
+
+  function showHint(level) {
+    const searched = allIds.find(id => bars[id].state === 'searched');
+    if (!searched) return;
+
+    const h = hints[searched];
+    if (!h) return;
+
+    hintLevel = level;
+    document.getElementById('btn-hint2').disabled = hintLevel < 1;
+
+    const hintEl = document.getElementById('hint-display');
+
+    if (level === 1) {
+      hintEl.innerHTML = `💡 <strong>Tipp:</strong> ${h.hint}`;
+      hintEl.classList.add('visible');
+    } else if (level === 2) {
+      const formulas = h.formula.split('\n').map(f =>
+        `<div class="hint-formula">${f}</div>`
+      ).join('');
+      hintEl.innerHTML = `📐 <strong>Formel:</strong><br>${formulas}`;
+      hintEl.classList.add('visible');
+    }
+  }
+
+  // ===== RESET =====
+  function resetAll() {
+    allIds.forEach(id => { bars[id].state = 'none'; });
+    hintLevel = 0;
+    document.getElementById('hint-display').classList.remove('visible');
+    updateUI();
+  }
+
+  // Init
+  updateUI();
+
+  // Position dashed lines
+  function positionLines() {
+    const grid = document.getElementById('main-grid');
+    const kapBar = document.getElementById('bar-kapital');
+    const vstBar = document.getElementById('bar-vst');
+    const gridRect = grid.getBoundingClientRect();
+    const kapRect = kapBar.getBoundingClientRect();
+    const vstRect = vstBar.getBoundingClientRect();
+
+    // Line 1: top of Kapital bar, all 4 columns
+    document.getElementById('line-kapital-top').style.top =
+      (kapRect.top - gridRect.top - 3) + 'px';
+
+    // Line 2: between VSt and Netto (= bottom of VSt bar), columns 3-4
+    document.getElementById('line-vst-netto').style.top =
+      (vstRect.bottom - gridRect.top - 3) + 'px';
+  }
+
+  positionLines();
+  window.addEventListener('resize', positionLines);
+</script>
+
+</body>
+</html>
