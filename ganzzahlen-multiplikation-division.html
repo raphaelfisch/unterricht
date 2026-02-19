@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multiplikation & Division ganzer Zahlen</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        button, .clickable { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+        body { font-family: system-ui, -apple-system, sans-serif; background: #fff; color: #000; padding: 20px; max-width: 750px; margin: 0 auto; }
+        h1 { font-size: 1.2rem; font-weight: 500; margin-bottom: 20px; text-align: center; }
+
+        /* Tabs */
+        .tab-nav { display: flex; gap: 8px; justify-content: center; margin-bottom: 24px; border-bottom: 1px solid #eee; padding-bottom: 16px; }
+        .tab-btn { font-family: inherit; font-size: 0.95rem; padding: 8px 20px; border: 1px solid #ccc; background: #fff; cursor: pointer; border-radius: 3px; }
+        .tab-btn:hover { background: #f5f5f5; }
+        .tab-btn.active { background: #000; color: #fff; border-color: #000; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Score */
+        .score-bar { display: flex; justify-content: space-between; font-size: 0.9rem; color: #666; margin-bottom: 20px; padding: 10px 0; border-bottom: 1px solid #eee; }
+        .streak-fire { color: #f59e0b; }
+        .timer-display { font-weight: 600; color: #000; }
+        .timer-display.warning { color: #f59e0b; }
+        .timer-display.danger { color: #dc2626; }
+
+        /* Level */
+        .level-select { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 24px; }
+        .level-btn { font-family: inherit; font-size: 0.85rem; padding: 6px 14px; border: 1px solid #ccc; background: #fff; cursor: pointer; border-radius: 3px; }
+        .level-btn:hover { background: #f5f5f5; }
+        .level-btn.active { background: #000; color: #fff; border-color: #000; }
+
+        /* Task */
+        .task-area { text-align: center; padding: 30px 0; }
+        .task-expression { font-size: 2rem; font-weight: 600; margin-bottom: 8px; }
+        .task-hint { font-size: 0.85rem; color: #999; margin-bottom: 20px; }
+
+        /* Input */
+        .input-row { display: flex; gap: 8px; justify-content: center; align-items: center; margin-bottom: 16px; }
+        .answer-input { font-family: inherit; font-size: 1.2rem; width: 120px; padding: 8px 12px; border: 1px solid #ccc; border-radius: 3px; text-align: center; }
+        .answer-input:focus { outline: none; border-color: #000; }
+        .check-btn { font-family: inherit; font-size: 1rem; padding: 8px 20px; border: 1px solid #000; background: #000; color: #fff; cursor: pointer; border-radius: 3px; }
+        .check-btn:hover { background: #333; }
+        .check-btn:disabled { background: #ccc; border-color: #ccc; cursor: not-allowed; }
+        .skip-btn { font-family: inherit; font-size: 0.85rem; padding: 6px 14px; border: 1px solid #ccc; background: #fff; cursor: pointer; border-radius: 3px; color: #666; }
+        .skip-btn:hover { background: #f5f5f5; }
+
+        /* Feedback */
+        .feedback { font-size: 0.95rem; min-height: 28px; margin-top: 12px; font-weight: 500; }
+        .feedback.correct { color: #16a34a; }
+        .feedback.wrong { color: #dc2626; }
+        .feedback.skipped { color: #666; }
+
+        /* Points animation */
+        .points-popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2.5rem; font-weight: 700; pointer-events: none; opacity: 0; z-index: 100; }
+        .points-popup.show { animation: popUp 0.8s ease-out forwards; }
+        .points-popup.correct { color: #16a34a; }
+        .points-popup.wrong { color: #dc2626; }
+        @keyframes popUp {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            30% { opacity: 1; transform: translate(-50%, -60%) scale(1.2); }
+            100% { opacity: 0; transform: translate(-50%, -100%) scale(1); }
+        }
+
+        /* Theory */
+        .theory-section { margin-bottom: 24px; }
+        .theory-section h2 { font-size: 1.05rem; font-weight: 600; margin-bottom: 10px; }
+        .theory-section p { font-size: 0.95rem; line-height: 1.6; margin-bottom: 8px; }
+        .rule-box { background: #f9f9f9; border: 1px solid #eee; padding: 16px; border-radius: 3px; margin: 12px 0; }
+        .rule-box h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 10px; }
+        .rule-box ul { list-style: none; padding: 0; }
+        .rule-box li { padding: 4px 0; font-size: 0.95rem; }
+        .example-box { background: #fff; border: 1px solid #ddd; padding: 16px; border-radius: 3px; margin: 12px 0; }
+        .example-box h3 { font-size: 0.9rem; font-weight: 600; margin-bottom: 8px; color: #666; }
+        .math-line { font-size: 1.05rem; margin: 4px 0; line-height: 1.6; }
+        .math-positive { color: #16a34a; }
+        .math-negative { color: #dc2626; }
+        .math-result { font-weight: 600; }
+
+        /* Help toggle */
+        .help-toggle { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 20px; font-size: 0.85rem; color: #666; }
+        .help-toggle label { cursor: pointer; }
+        .help-toggle input { cursor: pointer; }
+
+        /* Exam */
+        .exam-setup { text-align: center; padding: 20px 0; }
+        .exam-description { font-size: 0.95rem; color: #666; margin-bottom: 20px; line-height: 1.5; }
+        .exam-start-btn { font-family: inherit; font-size: 1rem; padding: 10px 30px; border: 1px solid #000; background: #000; color: #fff; cursor: pointer; border-radius: 3px; }
+        .exam-start-btn:hover { background: #333; }
+        .exam-progress { font-size: 0.85rem; color: #666; margin-bottom: 12px; }
+        .exam-info { display: flex; gap: 20px; justify-content: center; margin-bottom: 20px; font-size: 0.9rem; color: #666; }
+        .exam-info-item { display: flex; align-items: center; gap: 4px; }
+
+        /* Results */
+        .results-container { padding: 20px 0; }
+        .results-header { text-align: center; margin-bottom: 24px; }
+        .results-score { font-size: 2.5rem; font-weight: 700; margin-bottom: 4px; }
+        .results-label { font-size: 0.95rem; color: #666; }
+        .results-stats { display: flex; gap: 20px; justify-content: center; margin-bottom: 24px; font-size: 0.9rem; }
+        .results-stat { text-align: center; }
+        .results-stat-value { font-size: 1.3rem; font-weight: 600; }
+        .results-stat-label { color: #666; font-size: 0.8rem; }
+        .results-list { margin-top: 20px; }
+        .result-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; font-size: 0.95rem; }
+        .result-item.wrong { color: #dc2626; }
+        .result-item.correct { color: #16a34a; }
+        .result-correction { font-size: 0.85rem; color: #666; }
+        .retry-btn { font-family: inherit; font-size: 1rem; padding: 10px 30px; border: 1px solid #000; background: #000; color: #fff; cursor: pointer; border-radius: 3px; margin-top: 20px; display: block; margin-left: auto; margin-right: auto; }
+        .retry-btn:hover { background: #333; }
+
+        /* Responsive */
+        @media (max-width: 500px) {
+            body { padding: 12px; }
+            .task-expression { font-size: 1.5rem; }
+            .tab-btn { padding: 6px 14px; font-size: 0.85rem; }
+            .level-btn { padding: 5px 10px; font-size: 0.8rem; }
+        }
+    </style>
+</head>
+<body>
+    <h1>Multiplikation & Division ganzer Zahlen</h1>
+
+    <div class="tab-nav">
+        <button class="tab-btn active" onclick="switchTab('theory')">Theorie</button>
+        <button class="tab-btn" onclick="switchTab('practice')">Üben</button>
+        <button class="tab-btn" onclick="switchTab('exam')">Prüfung</button>
+    </div>
+
+    <!-- ==================== THEORIE ==================== -->
+    <div id="tab-theory" class="tab-content active">
+        <div class="theory-section">
+            <h2>Vorzeichenregeln bei Multiplikation und Division</h2>
+            <p>Für Multiplikation und Division gilt die gleiche, einfache Regel:</p>
+            <div class="rule-box">
+                <h3>Merke</h3>
+                <ul>
+                    <li><strong>Gleiche Vorzeichen → Ergebnis positiv (+)</strong></li>
+                    <li><strong>Verschiedene Vorzeichen → Ergebnis negativ (−)</strong></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="theory-section">
+            <h2>Vorzeichenregeln im Detail</h2>
+            <div class="rule-box">
+                <h3>Multiplikation</h3>
+                <ul>
+                    <li><strong>(+) · (+) = +</strong> → Plus mal Plus ergibt Plus</li>
+                    <li><strong>(−) · (−) = +</strong> → Minus mal Minus ergibt Plus</li>
+                    <li><strong>(+) · (−) = −</strong> → Plus mal Minus ergibt Minus</li>
+                    <li><strong>(−) · (+) = −</strong> → Minus mal Plus ergibt Minus</li>
+                </ul>
+            </div>
+            <div class="rule-box">
+                <h3>Division</h3>
+                <ul>
+                    <li><strong>(+) : (+) = +</strong> → Plus durch Plus ergibt Plus</li>
+                    <li><strong>(−) : (−) = +</strong> → Minus durch Minus ergibt Plus</li>
+                    <li><strong>(+) : (−) = −</strong> → Plus durch Minus ergibt Minus</li>
+                    <li><strong>(−) : (+) = −</strong> → Minus durch Plus ergibt Minus</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="theory-section">
+            <h2>Beispiele</h2>
+            <div class="example-box">
+                <h3>Multiplikation</h3>
+                <p class="math-line"><span class="math-positive">(+3)</span> · <span class="math-positive">(+4)</span> = <span class="math-result">+12</span></p>
+                <p class="math-line" style="color:#666;">→ Gleiche Vorzeichen → positiv. 3 · 4 = 12</p>
+                <p class="math-line" style="margin-top: 8px;"><span class="math-negative">(−5)</span> · <span class="math-negative">(−3)</span> = <span class="math-result">+15</span></p>
+                <p class="math-line" style="color:#666;">→ Gleiche Vorzeichen → positiv. 5 · 3 = 15</p>
+                <p class="math-line" style="margin-top: 8px;"><span class="math-positive">(+6)</span> · <span class="math-negative">(−2)</span> = <span class="math-result">−12</span></p>
+                <p class="math-line" style="color:#666;">→ Verschiedene Vorzeichen → negativ. 6 · 2 = 12</p>
+                <p class="math-line" style="margin-top: 8px;"><span class="math-negative">(−7)</span> · <span class="math-positive">(+4)</span> = <span class="math-result">−28</span></p>
+                <p class="math-line" style="color:#666;">→ Verschiedene Vorzeichen → negativ. 7 · 4 = 28</p>
+            </div>
+            <div class="example-box">
+                <h3>Division</h3>
+                <p class="math-line"><span class="math-positive">(+12)</span> : <span class="math-positive">(+4)</span> = <span class="math-result">+3</span></p>
+                <p class="math-line" style="color:#666;">→ Gleiche Vorzeichen → positiv. 12 : 4 = 3</p>
+                <p class="math-line" style="margin-top: 8px;"><span class="math-negative">(−18)</span> : <span class="math-negative">(−6)</span> = <span class="math-result">+3</span></p>
+                <p class="math-line" style="color:#666;">→ Gleiche Vorzeichen → positiv. 18 : 6 = 3</p>
+                <p class="math-line" style="margin-top: 8px;"><span class="math-positive">(+20)</span> : <span class="math-negative">(−5)</span> = <span class="math-result">−4</span></p>
+                <p class="math-line" style="color:#666;">→ Verschiedene Vorzeichen → negativ. 20 : 5 = 4</p>
+                <p class="math-line" style="margin-top: 8px;"><span class="math-negative">(−24)</span> : <span class="math-positive">(+8)</span> = <span class="math-result">−3</span></p>
+                <p class="math-line" style="color:#666;">→ Verschiedene Vorzeichen → negativ. 24 : 8 = 3</p>
+            </div>
+        </div>
+
+        <div class="theory-section">
+            <h2>Zusammenfassung</h2>
+            <div class="rule-box">
+                <h3>So gehst du vor</h3>
+                <ul>
+                    <li><strong>1.</strong> Bestimme das Vorzeichen: gleiche Vorzeichen → plus, verschiedene → minus</li>
+                    <li><strong>2.</strong> Rechne mit den Zahlen ohne Vorzeichen (multiplizieren oder dividieren)</li>
+                    <li><strong>3.</strong> Setze das Vorzeichen vor das Ergebnis</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== ÜBEN ==================== -->
+    <div id="tab-practice" class="tab-content">
+        <div class="score-bar">
+            <span>Punkte: <strong id="practice-score">0</strong></span>
+            <span id="practice-streak"></span>
+        </div>
+
+        <div class="level-select">
+            <button class="level-btn active" onclick="setLevel(1)">Level 1</button>
+            <button class="level-btn" onclick="setLevel(2)">Level 2</button>
+            <button class="level-btn" onclick="setLevel(3)">Level 3</button>
+            <button class="level-btn" onclick="setLevel(4)">Level 4</button>
+            <button class="level-btn" onclick="setLevel(5)">Level 5</button>
+        </div>
+
+        <div class="help-toggle">
+            <input type="checkbox" id="help-check">
+            <label for="help-check">Vorzeichen-Hilfe anzeigen</label>
+        </div>
+
+        <div class="task-area">
+            <div class="task-expression" id="practice-expression"></div>
+            <div class="task-hint" id="practice-hint"></div>
+            <div class="input-row">
+                <input type="number" class="answer-input" id="practice-input" placeholder="?"
+                    onkeydown="if(event.key==='Enter')checkPractice()">
+                <button class="check-btn" id="practice-check-btn" onclick="checkPractice()">Prüfen</button>
+                <button class="skip-btn" onclick="skipPractice()">Überspringen</button>
+            </div>
+            <div class="feedback" id="practice-feedback"></div>
+        </div>
+    </div>
+
+    <!-- ==================== PRÜFUNG ==================== -->
+    <div id="tab-exam" class="tab-content">
+        <div id="exam-setup" class="exam-setup">
+            <div class="exam-info">
+                <div class="exam-info-item">📝 10 Aufgaben</div>
+                <div class="exam-info-item">⏱️ 2 Minuten</div>
+            </div>
+            <p class="exam-description">10 Aufgaben in 2 Minuten. Du siehst das Ergebnis erst am Schluss.</p>
+            <button class="exam-start-btn" onclick="startExam()">Prüfung starten</button>
+        </div>
+
+        <div id="exam-active" style="display:none;">
+            <div class="score-bar">
+                <span class="exam-progress" id="exam-progress">Aufgabe 1 / 10</span>
+                <span id="exam-timer" class="timer-display">2:00</span>
+            </div>
+            <div class="task-area">
+                <div class="task-expression" id="exam-expression"></div>
+                <div class="input-row">
+                    <input type="number" class="answer-input" id="exam-input" placeholder="?"
+                        onkeydown="if(event.key==='Enter')submitExamAnswer()">
+                    <button class="check-btn" onclick="submitExamAnswer()">Weiter</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="exam-results" style="display:none;" class="results-container">
+            <div class="results-header">
+                <div class="results-score" id="results-score"></div>
+                <div class="results-label" id="results-label"></div>
+            </div>
+            <div class="results-stats">
+                <div class="results-stat">
+                    <div class="results-stat-value" id="results-correct">0</div>
+                    <div class="results-stat-label">Richtig</div>
+                </div>
+                <div class="results-stat">
+                    <div class="results-stat-value" id="results-wrong">0</div>
+                    <div class="results-stat-label">Falsch</div>
+                </div>
+                <div class="results-stat">
+                    <div class="results-stat-value" id="results-time">0s</div>
+                    <div class="results-stat-label">Zeit</div>
+                </div>
+            </div>
+            <div class="results-list" id="results-list"></div>
+            <button class="retry-btn" onclick="resetExam()">Nochmal versuchen</button>
+        </div>
+    </div>
+
+    <!-- Points popup -->
+    <div class="points-popup" id="points-popup"></div>
+
+    <script>
+    // ==================== STATE ====================
+    let currentLevel = 1;
+    let practiceScore = 0;
+    let practiceStreak = 0;
+    let currentTask = null;
+    let practiceAttempts = 0;
+
+    const examState = {
+        active: false,
+        tasks: [],
+        answers: [],
+        currentIndex: 0,
+        timeRemaining: 120,
+        timerInterval: null,
+        startTime: null
+    };
+
+    // ==================== TABS ====================
+    function switchTab(tab) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('tab-' + tab).classList.add('active');
+        document.querySelectorAll('.tab-btn').forEach(b => {
+            if ((tab === 'theory' && b.textContent === 'Theorie') ||
+                (tab === 'practice' && b.textContent === 'Üben') ||
+                (tab === 'exam' && b.textContent === 'Prüfung'))
+                b.classList.add('active');
+        });
+        if (tab === 'practice' && !currentTask) generateTask();
+    }
+
+    // ==================== LEVELS ====================
+    function setLevel(level) {
+        currentLevel = level;
+        document.querySelectorAll('.level-btn').forEach((b, i) => {
+            b.classList.toggle('active', i === level - 1);
+        });
+        generateTask();
+    }
+
+    // ==================== TASK GENERATION ====================
+    function randInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function randSign() {
+        return Math.random() < 0.5 ? 1 : -1;
+    }
+
+    function generateTask() {
+        const task = createTask(currentLevel);
+        currentTask = task;
+        practiceAttempts = 0;
+
+        const expr = document.getElementById('practice-expression');
+        const hint = document.getElementById('practice-hint');
+        const input = document.getElementById('practice-input');
+        const feedback = document.getElementById('practice-feedback');
+        const checkBtn = document.getElementById('practice-check-btn');
+
+        expr.textContent = task.display;
+        feedback.textContent = '';
+        feedback.className = 'feedback';
+        input.value = '';
+        input.disabled = false;
+        checkBtn.disabled = false;
+        input.focus();
+
+        // Help hint
+        const helpOn = document.getElementById('help-check').checked;
+        if (helpOn) {
+            hint.textContent = task.hint;
+        } else {
+            hint.textContent = '';
+        }
+    }
+
+    function createTask(level) {
+        let a, b, op, answer, display, hint;
+
+        switch (level) {
+            case 1: // Multiplikation, kleine Zahlen, ein negatives
+                a = randInt(2, 9) * randSign();
+                b = randInt(2, 9);
+                if (a > 0) { b = -b; } // mindestens eine negative
+                op = '·';
+                answer = a * b;
+                display = formatExpr(a, op, b);
+                hint = sameSign(a, b)
+                    ? 'Gleiche Vorzeichen → Ergebnis positiv'
+                    : 'Verschiedene Vorzeichen → Ergebnis negativ';
+                break;
+
+            case 2: // Multiplikation, grössere Zahlen, beide können negativ sein
+                a = randInt(2, 12) * randSign();
+                b = randInt(2, 12) * randSign();
+                op = '·';
+                answer = a * b;
+                display = formatExpr(a, op, b);
+                hint = sameSign(a, b)
+                    ? 'Gleiche Vorzeichen → Ergebnis positiv'
+                    : 'Verschiedene Vorzeichen → Ergebnis negativ';
+                break;
+
+            case 3: // Division, saubere Ergebnisse
+                answer = randInt(2, 9) * randSign();
+                b = randInt(2, 9) * randSign();
+                a = answer * b;
+                op = ':';
+                display = formatExpr(a, op, b);
+                hint = sameSign(a, b)
+                    ? 'Gleiche Vorzeichen → Ergebnis positiv'
+                    : 'Verschiedene Vorzeichen → Ergebnis negativ';
+                break;
+
+            case 4: // Division, grössere Zahlen
+                answer = randInt(2, 12) * randSign();
+                b = randInt(2, 12) * randSign();
+                a = answer * b;
+                op = ':';
+                display = formatExpr(a, op, b);
+                hint = sameSign(a, b)
+                    ? 'Gleiche Vorzeichen → Ergebnis positiv'
+                    : 'Verschiedene Vorzeichen → Ergebnis negativ';
+                break;
+
+            case 5: // Gemischt, alles
+                if (Math.random() < 0.5) {
+                    // Multiplikation
+                    a = randInt(2, 12) * randSign();
+                    b = randInt(2, 12) * randSign();
+                    op = '·';
+                    answer = a * b;
+                } else {
+                    // Division
+                    answer = randInt(2, 12) * randSign();
+                    b = randInt(2, 12) * randSign();
+                    a = answer * b;
+                    op = ':';
+                }
+                display = formatExpr(a, op, b);
+                hint = sameSign(a, b)
+                    ? 'Gleiche Vorzeichen → Ergebnis positiv'
+                    : 'Verschiedene Vorzeichen → Ergebnis negativ';
+                break;
+        }
+
+        return { a, b, op, answer, display, hint };
+    }
+
+    function sameSign(a, b) {
+        return (a > 0 && b > 0) || (a < 0 && b < 0);
+    }
+
+    function formatNum(n) {
+        if (n >= 0) return '(+' + n + ')';
+        return '(' + n + ')'; // − wird automatisch angezeigt
+    }
+
+    function formatExpr(a, op, b) {
+        return formatNum(a) + ' ' + op + ' ' + formatNum(b) + ' = ?';
+    }
+
+    // ==================== PRACTICE ====================
+    function checkPractice() {
+        const input = document.getElementById('practice-input');
+        const feedback = document.getElementById('practice-feedback');
+        const val = input.value.trim();
+
+        if (val === '') return;
+
+        const userAnswer = parseInt(val);
+        practiceAttempts++;
+
+        if (userAnswer === currentTask.answer) {
+            // Correct
+            let points = practiceAttempts === 1 ? 10 : 5;
+            if (practiceAttempts === 1) {
+                practiceStreak++;
+                if (practiceStreak >= 3) points += practiceStreak * 2;
+            } else {
+                practiceStreak = 0;
+            }
+
+            practiceScore += points;
+            document.getElementById('practice-score').textContent = practiceScore;
+            updateStreak();
+
+            feedback.textContent = '✓ Richtig! +' + points + ' Punkte';
+            feedback.className = 'feedback correct';
+            showPointsPopup('+' + points, true);
+
+            input.disabled = true;
+            document.getElementById('practice-check-btn').disabled = true;
+
+            setTimeout(generateTask, 1000);
+        } else {
+            // Wrong
+            practiceStreak = 0;
+            updateStreak();
+
+            if (practiceAttempts >= 2) {
+                feedback.textContent = '✗ Die Antwort ist ' + currentTask.answer;
+                feedback.className = 'feedback wrong';
+                showPointsPopup('−5', false);
+                practiceScore = Math.max(0, practiceScore - 5);
+                document.getElementById('practice-score').textContent = practiceScore;
+
+                input.disabled = true;
+                document.getElementById('practice-check-btn').disabled = true;
+                setTimeout(generateTask, 1500);
+            } else {
+                feedback.textContent = '✗ Falsch – versuch es nochmal.';
+                feedback.className = 'feedback wrong';
+                input.value = '';
+                input.focus();
+            }
+        }
+    }
+
+    function skipPractice() {
+        const feedback = document.getElementById('practice-feedback');
+        feedback.textContent = 'Übersprungen. Antwort: ' + currentTask.answer;
+        feedback.className = 'feedback skipped';
+        practiceStreak = 0;
+        updateStreak();
+        setTimeout(generateTask, 1200);
+    }
+
+    function updateStreak() {
+        const streakEl = document.getElementById('practice-streak');
+        if (practiceStreak >= 3) {
+            streakEl.innerHTML = '<span class="streak-fire">🔥 ' + practiceStreak + ' Serie</span>';
+        } else {
+            streakEl.textContent = '';
+        }
+    }
+
+    function showPointsPopup(text, isCorrect) {
+        const popup = document.getElementById('points-popup');
+        popup.textContent = text;
+        popup.className = 'points-popup show ' + (isCorrect ? 'correct' : 'wrong');
+        setTimeout(() => { popup.className = 'points-popup'; }, 900);
+    }
+
+    // ==================== EXAM ====================
+    function startExam() {
+        examState.active = true;
+        examState.tasks = [];
+        examState.answers = [];
+        examState.currentIndex = 0;
+        examState.timeRemaining = 120;
+        examState.startTime = Date.now();
+
+        // Generate 10 tasks: mix of all levels
+        for (let i = 0; i < 10; i++) {
+            const level = i < 2 ? 1 : i < 4 ? 2 : i < 6 ? 3 : i < 8 ? 4 : 5;
+            examState.tasks.push(createTask(level));
+        }
+        // Shuffle
+        for (let i = examState.tasks.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [examState.tasks[i], examState.tasks[j]] = [examState.tasks[j], examState.tasks[i]];
+        }
+
+        document.getElementById('exam-setup').style.display = 'none';
+        document.getElementById('exam-active').style.display = 'block';
+        document.getElementById('exam-results').style.display = 'none';
+
+        showExamTask();
+        startExamTimer();
+    }
+
+    function showExamTask() {
+        const task = examState.tasks[examState.currentIndex];
+        document.getElementById('exam-expression').textContent = task.display;
+        document.getElementById('exam-progress').textContent =
+            'Aufgabe ' + (examState.currentIndex + 1) + ' / 10';
+        const input = document.getElementById('exam-input');
+        input.value = '';
+        input.disabled = false;
+        input.focus();
+    }
+
+    function submitExamAnswer() {
+        const input = document.getElementById('exam-input');
+        const val = input.value.trim();
+
+        // Allow empty = skip
+        examState.answers.push(val === '' ? null : parseInt(val));
+        examState.currentIndex++;
+
+        if (examState.currentIndex >= 10) {
+            endExam();
+        } else {
+            showExamTask();
+        }
+    }
+
+    function startExamTimer() {
+        const timerDisplay = document.getElementById('exam-timer');
+        timerDisplay.textContent = '2:00';
+        timerDisplay.className = 'timer-display';
+
+        examState.timerInterval = setInterval(() => {
+            examState.timeRemaining--;
+            const m = Math.floor(examState.timeRemaining / 60);
+            const s = examState.timeRemaining % 60;
+            timerDisplay.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+
+            if (examState.timeRemaining <= 30) {
+                timerDisplay.className = 'timer-display danger';
+            } else if (examState.timeRemaining <= 60) {
+                timerDisplay.className = 'timer-display warning';
+            }
+
+            if (examState.timeRemaining <= 0) {
+                // Fill remaining with null
+                while (examState.answers.length < 10) {
+                    examState.answers.push(null);
+                }
+                endExam();
+            }
+        }, 1000);
+    }
+
+    function endExam() {
+        clearInterval(examState.timerInterval);
+        examState.active = false;
+
+        const elapsed = Math.round((Date.now() - examState.startTime) / 1000);
+        let correct = 0;
+        let wrong = 0;
+
+        for (let i = 0; i < 10; i++) {
+            if (examState.answers[i] === examState.tasks[i].answer) {
+                correct++;
+            } else {
+                wrong++;
+            }
+        }
+
+        const pct = Math.round(correct / 10 * 100);
+
+        document.getElementById('exam-active').style.display = 'none';
+        document.getElementById('exam-results').style.display = 'block';
+
+        document.getElementById('results-score').textContent = pct + '%';
+        document.getElementById('results-correct').textContent = correct;
+        document.getElementById('results-wrong').textContent = wrong;
+
+        const em = Math.floor(elapsed / 60);
+        const es = elapsed % 60;
+        document.getElementById('results-time').textContent =
+            em > 0 ? em + ':' + (es < 10 ? '0' : '') + es + ' min' : es + 's';
+
+        // Label
+        let label = '';
+        if (pct === 100) label = 'Perfekt! 🎉';
+        else if (pct >= 80) label = 'Sehr gut!';
+        else if (pct >= 60) label = 'Gut gemacht.';
+        else if (pct >= 40) label = 'Übe noch ein wenig.';
+        else label = 'Das wird schon – übe weiter!';
+        document.getElementById('results-label').textContent = label;
+
+        // Results list
+        const list = document.getElementById('results-list');
+        list.innerHTML = '';
+        for (let i = 0; i < 10; i++) {
+            const task = examState.tasks[i];
+            const userAns = examState.answers[i];
+            const isCorrect = userAns === task.answer;
+            const div = document.createElement('div');
+            div.className = 'result-item ' + (isCorrect ? 'correct' : 'wrong');
+
+            const taskText = task.display.replace(' = ?', '');
+            if (isCorrect) {
+                div.innerHTML = taskText + ' = ' + task.answer + ' ✓';
+            } else {
+                const userDisplay = userAns === null ? '–' : userAns;
+                div.innerHTML = taskText + ' = <span style="text-decoration:line-through;">' +
+                    userDisplay + '</span> <span class="result-correction">→ ' + task.answer + '</span>';
+            }
+            list.appendChild(div);
+        }
+    }
+
+    function resetExam() {
+        document.getElementById('exam-setup').style.display = 'block';
+        document.getElementById('exam-active').style.display = 'none';
+        document.getElementById('exam-results').style.display = 'none';
+    }
+
+    // ==================== HELP TOGGLE ====================
+    document.getElementById('help-check').addEventListener('change', function() {
+        const hint = document.getElementById('practice-hint');
+        if (this.checked && currentTask) {
+            hint.textContent = currentTask.hint;
+        } else {
+            hint.textContent = '';
+        }
+    });
+
+    // ==================== INIT ====================
+    // Don't auto-generate task until user clicks "Üben"
+    </script>
+</body>
+</html>
