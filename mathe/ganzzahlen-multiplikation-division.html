@@ -102,10 +102,17 @@
         .results-stat-value { font-size: 1.3rem; font-weight: 600; }
         .results-stat-label { color: #666; font-size: 0.8rem; }
         .results-list { margin-top: 20px; }
-        .result-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; font-size: 0.95rem; }
-        .result-item.wrong { color: #dc2626; }
-        .result-item.correct { color: #16a34a; }
-        .result-correction { font-size: 0.85rem; color: #666; }
+        .results-list h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 12px; }
+        .result-item-correct { color: #16a34a; padding: 6px 0; font-size: 0.95rem; }
+        .exam-wrong-item { background: #fff3f3; border: 1px solid #fecaca; border-radius: 3px; margin-bottom: 8px; overflow: hidden; }
+        .exam-wrong-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; cursor: pointer; font-size: 0.95rem; color: #000; }
+        .exam-wrong-header:hover { background: #fee2e2; }
+        .exam-wrong-toggle { font-size: 0.8rem; color: #999; transition: transform 0.2s; }
+        .exam-wrong-item.open .exam-wrong-toggle { transform: rotate(180deg); }
+        .exam-wrong-solution { display: none; padding: 10px 14px; border-top: 1px solid #fecaca; font-size: 0.9rem; color: #333; line-height: 1.6; background: #fff; }
+        .exam-wrong-item.open .exam-wrong-solution { display: block; }
+        .exam-wrong-answer { color: #dc2626; font-weight: 600; }
+        .exam-wrong-correct { color: #16a34a; }
         .retry-btn { font-family: inherit; font-size: 1rem; padding: 10px 30px; border: 1px solid #000; background: #000; color: #fff; cursor: pointer; border-radius: 3px; margin-top: 20px; display: block; margin-left: auto; margin-right: auto; }
         .retry-btn:hover { background: #333; }
 
@@ -146,19 +153,19 @@
             <div class="rule-box">
                 <h3>Multiplikation</h3>
                 <ul>
-                    <li><strong>(+) · (+) = +</strong> → Plus mal Plus ergibt Plus</li>
-                    <li><strong>(−) · (−) = +</strong> → Minus mal Minus ergibt Plus</li>
-                    <li><strong>(+) · (−) = −</strong> → Plus mal Minus ergibt Minus</li>
-                    <li><strong>(−) · (+) = −</strong> → Minus mal Plus ergibt Minus</li>
+                    <li><strong><span class="math-positive">(+)</span> · <span class="math-positive">(+)</span> = <span class="math-positive">+</span></strong> → Plus mal Plus ergibt Plus</li>
+                    <li><strong><span class="math-negative">(−)</span> · <span class="math-negative">(−)</span> = <span class="math-positive">+</span></strong> → Minus mal Minus ergibt Plus</li>
+                    <li><strong><span class="math-positive">(+)</span> · <span class="math-negative">(−)</span> = <span class="math-negative">−</span></strong> → Plus mal Minus ergibt Minus</li>
+                    <li><strong><span class="math-negative">(−)</span> · <span class="math-positive">(+)</span> = <span class="math-negative">−</span></strong> → Minus mal Plus ergibt Minus</li>
                 </ul>
             </div>
             <div class="rule-box">
                 <h3>Division</h3>
                 <ul>
-                    <li><strong>(+) : (+) = +</strong> → Plus durch Plus ergibt Plus</li>
-                    <li><strong>(−) : (−) = +</strong> → Minus durch Minus ergibt Plus</li>
-                    <li><strong>(+) : (−) = −</strong> → Plus durch Minus ergibt Minus</li>
-                    <li><strong>(−) : (+) = −</strong> → Minus durch Plus ergibt Minus</li>
+                    <li><strong><span class="math-positive">(+)</span> : <span class="math-positive">(+)</span> = <span class="math-positive">+</span></strong> → Plus durch Plus ergibt Plus</li>
+                    <li><strong><span class="math-negative">(−)</span> : <span class="math-negative">(−)</span> = <span class="math-positive">+</span></strong> → Minus durch Minus ergibt Plus</li>
+                    <li><strong><span class="math-positive">(+)</span> : <span class="math-negative">(−)</span> = <span class="math-negative">−</span></strong> → Plus durch Minus ergibt Minus</li>
+                    <li><strong><span class="math-negative">(−)</span> : <span class="math-positive">(+)</span> = <span class="math-negative">−</span></strong> → Minus durch Plus ergibt Minus</li>
                 </ul>
             </div>
         </div>
@@ -349,7 +356,7 @@
         const feedback = document.getElementById('practice-feedback');
         const checkBtn = document.getElementById('practice-check-btn');
 
-        expr.textContent = task.display;
+        expr.innerHTML = task.display;
         feedback.textContent = '';
         feedback.className = 'feedback';
         input.value = '';
@@ -368,37 +375,58 @@
 
     function createTask(level) {
         let a, b, op, answer, display, hint;
+        const colored = (level <= 2);
+
+        // Helper: ensure at least one negative
+        function ensureNegative(x, y) {
+            if (x > 0 && y > 0) {
+                // Randomly make one negative
+                if (Math.random() < 0.5) x = -x;
+                else y = -y;
+            }
+            return [x, y];
+        }
 
         switch (level) {
-            case 1: // Multiplikation, kleine Zahlen, ein negatives
+            case 1: // Multiplikation, kleine Zahlen
                 a = randInt(2, 9) * randSign();
-                b = randInt(2, 9);
-                if (a > 0) { b = -b; } // mindestens eine negative
+                b = randInt(2, 9) * randSign();
+                [a, b] = ensureNegative(a, b);
                 op = '·';
                 answer = a * b;
-                display = formatExpr(a, op, b);
+                display = formatExpr(a, op, b, colored);
                 hint = sameSign(a, b)
                     ? 'Gleiche Vorzeichen → Ergebnis positiv'
                     : 'Verschiedene Vorzeichen → Ergebnis negativ';
                 break;
 
-            case 2: // Multiplikation, grössere Zahlen, beide können negativ sein
+            case 2: // Multiplikation, grössere Zahlen
                 a = randInt(2, 12) * randSign();
                 b = randInt(2, 12) * randSign();
+                [a, b] = ensureNegative(a, b);
                 op = '·';
                 answer = a * b;
-                display = formatExpr(a, op, b);
+                display = formatExpr(a, op, b, colored);
                 hint = sameSign(a, b)
                     ? 'Gleiche Vorzeichen → Ergebnis positiv'
                     : 'Verschiedene Vorzeichen → Ergebnis negativ';
                 break;
 
-            case 3: // Division, saubere Ergebnisse
+            case 3: // Division, kleine saubere Ergebnisse
                 answer = randInt(2, 9) * randSign();
                 b = randInt(2, 9) * randSign();
                 a = answer * b;
+                [a, b] = (function(x, y) {
+                    // For division, recalculate answer if we flip signs
+                    if (x > 0 && y > 0) {
+                        if (Math.random() < 0.5) x = -x;
+                        else y = -y;
+                    }
+                    return [x, y];
+                })(a, b);
+                answer = a / b;
                 op = ':';
-                display = formatExpr(a, op, b);
+                display = formatExpr(a, op, b, false);
                 hint = sameSign(a, b)
                     ? 'Gleiche Vorzeichen → Ergebnis positiv'
                     : 'Verschiedene Vorzeichen → Ergebnis negativ';
@@ -408,48 +436,79 @@
                 answer = randInt(2, 12) * randSign();
                 b = randInt(2, 12) * randSign();
                 a = answer * b;
+                [a, b] = (function(x, y) {
+                    if (x > 0 && y > 0) {
+                        if (Math.random() < 0.5) x = -x;
+                        else y = -y;
+                    }
+                    return [x, y];
+                })(a, b);
+                answer = a / b;
                 op = ':';
-                display = formatExpr(a, op, b);
+                display = formatExpr(a, op, b, false);
                 hint = sameSign(a, b)
                     ? 'Gleiche Vorzeichen → Ergebnis positiv'
                     : 'Verschiedene Vorzeichen → Ergebnis negativ';
                 break;
 
-            case 5: // Gemischt, alles
+            case 5: // Gemischt
                 if (Math.random() < 0.5) {
-                    // Multiplikation
                     a = randInt(2, 12) * randSign();
                     b = randInt(2, 12) * randSign();
+                    [a, b] = ensureNegative(a, b);
                     op = '·';
                     answer = a * b;
                 } else {
-                    // Division
                     answer = randInt(2, 12) * randSign();
                     b = randInt(2, 12) * randSign();
                     a = answer * b;
+                    [a, b] = (function(x, y) {
+                        if (x > 0 && y > 0) {
+                            if (Math.random() < 0.5) x = -x;
+                            else y = -y;
+                        }
+                        return [x, y];
+                    })(a, b);
+                    answer = a / b;
                     op = ':';
                 }
-                display = formatExpr(a, op, b);
+                display = formatExpr(a, op, b, false);
                 hint = sameSign(a, b)
                     ? 'Gleiche Vorzeichen → Ergebnis positiv'
                     : 'Verschiedene Vorzeichen → Ergebnis negativ';
                 break;
         }
 
-        return { a, b, op, answer, display, hint };
+        return { a, b, op, answer, display, plainDisplay: formatExpr(a, op, b, false), hint };
     }
 
     function sameSign(a, b) {
         return (a > 0 && b > 0) || (a < 0 && b < 0);
     }
 
-    function formatNum(n) {
-        if (n >= 0) return '(+' + n + ')';
-        return '(' + n + ')'; // − wird automatisch angezeigt
-    }
+    function formatExpr(a, op, b, colored) {
+        // Positive Zahlen ohne Klammer/Vorzeichen
+        // Negative Zahl am Anfang ohne Klammer
+        // Negative Zahl nach Operator: Klammer nötig
+        let aStr, bStr;
 
-    function formatExpr(a, op, b) {
-        return formatNum(a) + ' ' + op + ' ' + formatNum(b) + ' = ?';
+        if (colored) {
+            if (a < 0) {
+                aStr = '<span class="math-negative">−' + Math.abs(a) + '</span>';
+            } else {
+                aStr = '<span class="math-positive">' + a + '</span>';
+            }
+            if (b < 0) {
+                bStr = '<span class="math-negative">(−' + Math.abs(b) + ')</span>';
+            } else {
+                bStr = '<span class="math-positive">' + b + '</span>';
+            }
+        } else {
+            aStr = a < 0 ? '−' + Math.abs(a) : '' + a;
+            bStr = b < 0 ? '(−' + Math.abs(b) + ')' : '' + b;
+        }
+
+        return aStr + ' ' + op + ' ' + bStr + ' = ?';
     }
 
     // ==================== PRACTICE ====================
@@ -564,7 +623,7 @@
 
     function showExamTask() {
         const task = examState.tasks[examState.currentIndex];
-        document.getElementById('exam-expression').textContent = task.display;
+        document.getElementById('exam-expression').innerHTML = task.plainDisplay;
         document.getElementById('exam-progress').textContent =
             'Aufgabe ' + (examState.currentIndex + 1) + ' / 10';
         const input = document.getElementById('exam-input');
@@ -657,22 +716,48 @@
         // Results list
         const list = document.getElementById('results-list');
         list.innerHTML = '';
+
+        // Collect wrong tasks
+        const wrongTasks = [];
         for (let i = 0; i < 10; i++) {
             const task = examState.tasks[i];
             const userAns = examState.answers[i];
             const isCorrect = userAns === task.answer;
-            const div = document.createElement('div');
-            div.className = 'result-item ' + (isCorrect ? 'correct' : 'wrong');
-
-            const taskText = task.display.replace(' = ?', '');
-            if (isCorrect) {
-                div.innerHTML = taskText + ' = ' + task.answer + ' ✓';
-            } else {
-                const userDisplay = userAns === null ? '–' : userAns;
-                div.innerHTML = taskText + ' = <span style="text-decoration:line-through;">' +
-                    userDisplay + '</span> <span class="result-correction">→ ' + task.answer + '</span>';
+            if (!isCorrect) {
+                wrongTasks.push({ task, userAns, index: i + 1 });
             }
-            list.appendChild(div);
+        }
+
+        if (wrongTasks.length > 0) {
+            const heading = document.createElement('h3');
+            heading.textContent = 'Diese Aufgaben waren falsch:';
+            list.appendChild(heading);
+
+            wrongTasks.forEach(({ task, userAns, index }) => {
+                const taskText = task.plainDisplay.replace(' = ?', '');
+                const userDisplay = userAns === null ? '(keine Antwort)' : userAns;
+                const signRule = sameSign(task.a, task.b)
+                    ? 'Gleiche Vorzeichen → Ergebnis positiv'
+                    : 'Verschiedene Vorzeichen → Ergebnis negativ';
+                const absA = Math.abs(task.a);
+                const absB = Math.abs(task.b);
+                const absResult = Math.abs(task.answer);
+                const calcStr = absA + ' ' + task.op + ' ' + absB + ' = ' + absResult;
+
+                const div = document.createElement('div');
+                div.className = 'exam-wrong-item';
+                div.innerHTML =
+                    '<div class="exam-wrong-header" onclick="this.parentElement.classList.toggle(\'open\')">' +
+                        '<span>Aufgabe ' + index + ': ' + taskText + '</span>' +
+                        '<span class="exam-wrong-toggle">▼</span>' +
+                    '</div>' +
+                    '<div class="exam-wrong-solution">' +
+                        'Deine Antwort: <span class="exam-wrong-answer">' + userDisplay + '</span><br>' +
+                        'Richtige Antwort: <span class="exam-wrong-correct">' + task.answer + '</span><br>' +
+                        '<span style="color:#666;">' + signRule + '<br>' + calcStr + ', also <strong>' + task.answer + '</strong></span>' +
+                    '</div>';
+                list.appendChild(div);
+            });
         }
     }
 
