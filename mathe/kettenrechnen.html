@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kettenrechnen – Präsentation</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1923;
+    --surface: #172a3a;
+    --surface-light: #1e3648;
+    --accent: #00e5a0;
+    --accent-dim: #00e5a022;
+    --accent-glow: #00e5a066;
+    --text: #e8f0f2;
+    --text-dim: #5a8a9d;
+    --gold: #ffd166;
+    --chain-line: #2a4a5e;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Outfit', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .app {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px 24px 40px;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .header h1 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, var(--accent), var(--gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .settings {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .settings select {
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--chain-line);
+    border-radius: 8px;
+    padding: 7px 10px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    outline: none;
+  }
+
+  .settings select:focus { border-color: var(--accent); }
+
+  .ops-toggle { display: flex; gap: 4px; }
+
+  .op-btn {
+    width: 34px; height: 34px;
+    border-radius: 7px;
+    border: 1px solid var(--chain-line);
+    background: var(--surface);
+    color: var(--text-dim);
+    font-family: 'DM Mono', monospace;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .op-btn.active {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+
+  .btn {
+    padding: 8px 18px;
+    border-radius: 8px;
+    border: none;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.25s;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: var(--bg);
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--chain-line);
+    margin-bottom: 20px;
+  }
+
+  .presentation { position: relative; min-height: 300px; }
+
+  /* Big current step display */
+  .current-display {
+    text-align: center;
+    padding: 40px 20px;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .current-step-label {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+    font-weight: 600;
+  }
+
+  .current-expression {
+    font-family: 'DM Mono', monospace;
+    font-size: 9rem;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 16px;
+    line-height: 1.3;
+  }
+
+  .current-expression .op { color: var(--accent); margin: 0 8px; }
+  .current-expression .equals { color: var(--text-dim); margin: 0 8px; }
+
+  .current-expression .question {
+    color: var(--accent);
+    animation: blink 1.2s infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .current-expression .answer {
+    color: var(--accent);
+    text-shadow: 0 0 20px var(--accent-glow);
+  }
+
+  .progress-dots {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 24px;
+  }
+
+  .progress-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--chain-line);
+    transition: all 0.3s;
+  }
+
+  .progress-dot.done { background: var(--accent); }
+  .progress-dot.active {
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent-glow);
+    transform: scale(1.3);
+  }
+
+  .nav-area {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 32px;
+  }
+
+  .nav-btn {
+    padding: 14px 32px;
+    border-radius: 12px;
+    border: 2px solid var(--chain-line);
+    background: var(--surface);
+    color: var(--text);
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.25s;
+  }
+
+  .nav-btn.primary {
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
+  }
+
+  .nav-btn.danger {
+    background: #ff5c6a;
+    color: var(--bg);
+    border-color: #ff5c6a;
+  }
+
+  .nav-hint {
+    text-align: center;
+    margin-top: 12px;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+  }
+
+  kbd {
+    display: inline-block;
+    padding: 2px 6px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    background: var(--surface-light);
+    border: 1px solid var(--chain-line);
+    border-radius: 4px;
+    color: var(--text-dim);
+  }
+
+  /* Overview */
+  .overview { animation: fadeUp 0.4s ease-out; }
+
+  .overview-title {
+    text-align: center;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 20px;
+  }
+
+  .overview-chain { position: relative; padding-left: 20px; }
+
+  .overview-line {
+    position: absolute;
+    left: 14px; top: 0; bottom: 0;
+    width: 2px;
+    background: var(--chain-line);
+  }
+
+  .overview-step {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 4px;
+    position: relative;
+    animation: slideIn 0.3s ease-out both;
+  }
+
+  .overview-step:nth-child(1) { animation-delay: 0.0s; }
+  .overview-step:nth-child(2) { animation-delay: 0.04s; }
+  .overview-step:nth-child(3) { animation-delay: 0.08s; }
+  .overview-step:nth-child(4) { animation-delay: 0.12s; }
+  .overview-step:nth-child(5) { animation-delay: 0.16s; }
+  .overview-step:nth-child(6) { animation-delay: 0.20s; }
+  .overview-step:nth-child(7) { animation-delay: 0.24s; }
+  .overview-step:nth-child(8) { animation-delay: 0.28s; }
+  .overview-step:nth-child(9) { animation-delay: 0.32s; }
+  .overview-step:nth-child(10) { animation-delay: 0.36s; }
+  .overview-step:nth-child(11) { animation-delay: 0.40s; }
+  .overview-step:nth-child(12) { animation-delay: 0.44s; }
+  .overview-step:nth-child(13) { animation-delay: 0.48s; }
+  .overview-step:nth-child(14) { animation-delay: 0.52s; }
+  .overview-step:nth-child(15) { animation-delay: 0.56s; }
+  .overview-step:nth-child(16) { animation-delay: 0.60s; }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(-10px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .overview-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+    z-index: 1;
+  }
+
+  .overview-dot.start {
+    background: var(--gold);
+    box-shadow: 0 0 8px var(--gold);
+  }
+
+  .overview-content {
+    flex: 1;
+    background: var(--surface);
+    border-radius: 10px;
+    padding: 10px 16px;
+    border: 1px solid var(--chain-line);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 1.1rem;
+  }
+
+  .overview-content.start-row {
+    background: linear-gradient(135deg, var(--accent-dim), var(--surface));
+    border-color: var(--accent);
+  }
+
+  .overview-content .op { color: var(--accent); }
+
+  .overview-content .result {
+    margin-left: auto;
+    font-weight: 500;
+  }
+
+  .overview-content .result.hidden { color: var(--text-dim); }
+  .overview-content .result.shown { color: var(--accent); }
+
+  .overview-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 24px;
+  }
+
+  @media (max-width: 600px) {
+    .current-expression { font-size: 5rem; }
+    .header { flex-direction: column; align-items: flex-start; }
+    .nav-btn { padding: 12px 20px; font-size: 0.9rem; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>⛓ Kettenrechnen</h1>
+    <div class="settings">
+      <select id="chainLength">
+        <option value="5">5 Schritte</option>
+        <option value="8">8 Schritte</option>
+        <option value="10" selected>10 Schritte</option>
+        <option value="12">12 Schritte</option>
+        <option value="15">15 Schritte</option>
+      </select>
+      <select id="difficulty">
+        <option value="easy">Leicht</option>
+        <option value="medium" selected>Mittel</option>
+        <option value="hard">Schwer</option>
+      </select>
+      <div class="ops-toggle">
+        <button class="op-btn active" data-op="+" title="Addition">+</button>
+        <button class="op-btn active" data-op="-" title="Subtraktion">−</button>
+        <button class="op-btn active" data-op="*" title="Multiplikation">·</button>
+        <button class="op-btn active" data-op="/" title="Division">÷</button>
+      </div>
+      <button class="btn btn-primary" id="newChain">Neue Kette</button>
+    </div>
+  </div>
+  <div class="divider"></div>
+  <div class="presentation" id="presentation"></div>
+</div>
+
+<script>
+const OP_DISPLAY = { '+': '+', '-': '−', '*': '·', '/': '÷' };
+
+let chain = [];
+let currentStep = 0;
+let solutionRevealed = false;
+let mode = 'walk';
+let overviewSolutionsShown = false;
+
+document.querySelectorAll('.op-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.classList.toggle('active');
+    if (document.querySelectorAll('.op-btn.active').length === 0) btn.classList.add('active');
+  });
+});
+
+function getActiveOps() {
+  return Array.from(document.querySelectorAll('.op-btn.active')).map(b => b.dataset.op);
+}
+
+function randInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function generateChain() {
+  const length = parseInt(document.getElementById('chainLength').value);
+  const diff = document.getElementById('difficulty').value;
+  const ops = getActiveOps();
+
+  let maxNum, multMax, divMax;
+  if (diff === 'easy') { maxNum = 20; multMax = 5; divMax = 5; }
+  else if (diff === 'medium') { maxNum = 40; multMax = 9; divMax = 9; }
+  else { maxNum = 60; multMax = 12; divMax = 12; }
+
+  const steps = [];
+  let current = randInt(2, Math.min(maxNum, 40));
+
+  for (let i = 0; i < length; i++) {
+    let op, operand, result, attempts = 0;
+
+    do {
+      attempts++;
+      op = ops[randInt(0, ops.length - 1)];
+
+      if (op === '+') {
+        operand = randInt(1, maxNum);
+        result = current + operand;
+      } else if (op === '-') {
+        operand = randInt(1, Math.min(current - 1, maxNum));
+        if (operand <= 0) operand = 1;
+        result = current - operand;
+      } else if (op === '*') {
+        operand = randInt(2, multMax);
+        result = current * operand;
+      } else {
+        const divisors = [];
+        for (let d = 2; d <= divMax; d++) {
+          if (current % d === 0 && current / d >= 1) divisors.push(d);
+        }
+        if (divisors.length > 0) {
+          operand = divisors[randInt(0, divisors.length - 1)];
+          result = current / operand;
+        } else { operand = null; result = null; }
+      }
+      if (attempts > 50) { op = '+'; operand = randInt(1, 10); result = current + operand; }
+    } while (
+      (result === null || operand === null || operand <= 0 || result < 1 || result > 80 || !Number.isInteger(result))
+      && attempts <= 50
+    );
+
+    if (result === null || result < 1 || result > 80 || !Number.isInteger(result)) {
+      op = '+'; operand = randInt(1, Math.max(1, 80 - current));
+      if (operand <= 0) operand = 1;
+      result = current + operand;
+    }
+
+    steps.push({ prev: current, op, operand, result });
+    current = result;
+  }
+  return steps;
+}
+
+function render() {
+  if (mode === 'walk') renderWalk();
+  else renderOverview();
+}
+
+function renderWalk() {
+  const el = document.getElementById('presentation');
+  const total = chain.length;
+
+  if (currentStep > total + 1) {
+    mode = 'overview';
+    renderOverview();
+    return;
+  }
+
+  // After all operations: show the final result big
+  if (currentStep === total + 1) {
+    const finalResult = chain[total - 1].result;
+    let html = `<div class="current-display">
+      <div class="current-step-label">Lösung</div>
+      <div class="current-expression"><span class="answer">${finalResult}</span></div>
+      <div class="progress-dots">`;
+    for (let i = 0; i <= total; i++) {
+      html += `<div class="progress-dot done"></div>`;
+    }
+    html += `</div><div class="nav-area">
+      <button class="nav-btn primary" onclick="showOverview()">Alle Schritte einblenden</button>
+      <button class="nav-btn" onclick="newChain()">Neue Kette</button>
+    </div></div>`;
+    el.innerHTML = html;
+    return;
+  }
+
+  const isFirst = currentStep === 0;
+
+  let html = `<div class="current-display">
+    <div class="current-step-label">${isFirst ? 'Startzahl' : `Schritt ${currentStep} von ${total}`}</div>
+    <div class="current-expression">`;
+
+  if (isFirst) {
+    html += `<span class="answer">${chain[0].prev}</span>`;
+  } else {
+    const step = chain[currentStep - 1];
+    html += `<span class="op">${OP_DISPLAY[step.op]}</span> ${step.operand}`;
+  }
+
+  html += `</div><div class="progress-dots">`;
+  for (let i = 0; i <= total; i++) {
+    const cls = i < currentStep ? 'done' : (i === currentStep ? 'active' : '');
+    html += `<div class="progress-dot ${cls}"></div>`;
+  }
+  html += `</div><div class="nav-area">`;
+
+  if (isFirst) {
+    html += `<button class="nav-btn primary" onclick="nextStep()">Start →</button>`;
+  } else {
+    html += `<button class="nav-btn ${currentStep === total ? 'danger' : 'primary'}" onclick="nextStep()">${currentStep === total ? 'Lösung →' : 'Nächster Schritt →'}</button>`;
+  }
+  html += `</div><div class="nav-hint">Tastatur: <kbd>Leertaste</kbd> oder <kbd>→</kbd></div></div>`;
+
+  el.innerHTML = html;
+}
+
+function renderOverview() {
+  const el = document.getElementById('presentation');
+  let html = `<div class="overview"><div class="overview-title">Gesamte Kette</div>
+    <div class="overview-chain"><div class="overview-line"></div>
+    <div class="overview-step">
+      <div class="overview-dot start"></div>
+      <div class="overview-content start-row">
+        <span style="color:var(--gold);font-weight:600;">Start: ${chain[0].prev}</span>
+      </div>
+    </div>`;
+
+  chain.forEach((step) => {
+    html += `<div class="overview-step">
+      <div class="overview-dot"></div>
+      <div class="overview-content">
+        <span>${step.prev} <span class="op">${OP_DISPLAY[step.op]}</span> ${step.operand} =</span>
+        <span class="result shown">${step.result}</span>
+      </div>
+    </div>`;
+  });
+
+  html += `</div><div class="overview-actions">
+    <button class="nav-btn" onclick="newChain()">Neue Kette</button>
+  </div></div>`;
+
+  el.innerHTML = html;
+}
+
+function nextStep() { currentStep++; render(); }
+function showOverview() { mode = 'overview'; overviewSolutionsShown = false; render(); }
+function revealAllSolutions() { overviewSolutionsShown = true; render(); }
+
+function newChain() {
+  chain = generateChain();
+  currentStep = 0;
+  solutionRevealed = false;
+  mode = 'walk';
+  overviewSolutionsShown = false;
+  render();
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === ' ' || e.key === 'ArrowRight') {
+    e.preventDefault();
+    if (mode === 'walk') {
+      nextStep();
+    } else if (!overviewSolutionsShown) {
+      revealAllSolutions();
+    }
+  }
+  if (e.key === 'ArrowLeft') {
+    e.preventDefault();
+    if (mode === 'walk' && currentStep > 0) {
+      currentStep--;
+      render();
+    }
+  }
+});
+
+document.getElementById('newChain').addEventListener('click', newChain);
+newChain();
+</script>
+</body>
+</html>
