@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Energieumwandlungsketten</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0f4f8; display: flex; height: 100vh; overflow: hidden; }
+  #panel { width: 320px; flex-shrink: 0; background: #fff; border-right: 2px solid #dde3ea; display: flex; flex-direction: column; overflow: hidden; transition: transform .28s ease, width .28s ease; position: relative; z-index: 10; }
+  #panel.collapsed { transform: translateX(-100%); width: 0; border-right: none; }
+  #panel-header { background: #2c6e9e; color: #fff; padding: 14px 18px; font-size: 15px; font-weight: 700; letter-spacing: .3px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  #panel-close-btn { background: none; border: none; color: rgba(255,255,255,0.8); font-size: 20px; cursor: pointer; padding: 0 2px; line-height: 1; }
+  #panel-close-btn:hover { color: #fff; }
+  #panel-scroll { flex: 1; overflow-y: auto; padding: 14px; }
+  .wandler-card { background: #f7fafd; border: 1.5px solid #c9d9ea; border-radius: 10px; margin-bottom: 14px; padding: 12px; position: relative; }
+  .wandler-title { font-size: 12px; font-weight: 700; color: #2c6e9e; margin-bottom: 8px; text-transform: uppercase; letter-spacing: .5px; }
+  .field-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .field-row label { font-size: 11px; color: #555; white-space: nowrap; min-width: 60px; }
+  .field-row input[type=text] { flex: 1; min-width: 0; border: 1.5px solid #c0cdd8; border-radius: 6px; padding: 5px 8px; font-size: 12px; outline: none; transition: border-color .2s; }
+  .field-row input[type=text]:focus { border-color: #2c6e9e; }
+  .field-row input[type=number] { width: 64px; border: 1.5px solid #c0cdd8; border-radius: 6px; padding: 5px 6px; font-size: 12px; outline: none; text-align: right; transition: border-color .2s; }
+  .field-row input[type=number]:focus { border-color: #2c6e9e; }
+  .pct-label { font-size: 11px; color: #777; }
+  .out-section { margin-top: 8px; }
+  .out-section-title { font-size: 11px; color: #888; margin-bottom: 5px; font-style: italic; }
+  .out-row { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+  .del-btn { background: #fdecea; border: 1.5px solid #e8b4b0; color: #c0392b; cursor: pointer; font-size: 13px; font-weight: 700; line-height: 1; padding: 3px 7px; border-radius: 5px; transition: background .15s, border-color .15s; flex-shrink: 0; }
+  .del-btn:hover { background: #f9c9c5; border-color: #c0392b; }
+  .add-out-btn { display: flex; align-items: center; gap: 5px; background: none; border: 1.5px dashed #a0b8cc; color: #2c6e9e; border-radius: 7px; padding: 4px 10px; font-size: 11px; cursor: pointer; margin-top: 4px; transition: background .15s; }
+  .add-out-btn:hover { background: #eaf3fb; }
+  .del-wandler-btn { position: absolute; top: 8px; right: 8px; background: none; border: none; color: #bbb; cursor: pointer; font-size: 17px; line-height: 1; border-radius: 4px; padding: 2px 5px; transition: color .15s, background .15s; }
+  .del-wandler-btn:hover { color: #c0392b; background: #fdecea; }
+  .add-wandler-btn { width: 100%; padding: 9px; background: #eaf3fb; border: 2px dashed #7aadce; border-radius: 9px; color: #1a5e8c; font-size: 13px; font-weight: 600; cursor: pointer; transition: background .2s; margin-bottom: 6px; }
+  .add-wandler-btn:hover { background: #d2e9f7; }
+  .pct-sum-hint { font-size: 10px; margin-top: 4px; }
+  .pct-sum-hint.ok { color: #27ae60; }
+  .pct-sum-hint.warn { color: #e67e22; }
+  #preview-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+  #preview-toolbar { background: #fff; border-bottom: 2px solid #dde3ea; padding: 8px 10px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  #menu-toggle { background: #2c6e9e; color: #fff; border: none; border-radius: 7px; padding: 0 10px; height: 32px; font-size: 16px; line-height: 32px; cursor: pointer; flex-shrink: 0; display: inline-flex; align-items: center; transition: background .15s; }
+  #menu-toggle:hover { background: #1a5e8c; }
+  .tb-btn { background: #f0f4f8; border: 1.5px solid #c9d9ea; border-radius: 7px; padding: 0 10px; height: 32px; line-height: 32px; font-size: 13px; cursor: pointer; transition: background .15s; white-space: nowrap; display: inline-flex; align-items: center; }
+  .tb-btn:hover { background: #dde8f2; }
+  .tb-btn.primary { background: #2c6e9e; color: #fff; border-color: #2c6e9e; }
+  .tb-btn.primary:hover { background: #1a5e8c; }
+  #canvas-wrap { flex: 1; overflow: hidden; position: relative; background: radial-gradient(circle, #c8d8e8 1px, transparent 1px); background-size: 24px 24px; background-color: #e8eef4; cursor: grab; }
+  #canvas-wrap.grabbing { cursor: grabbing; }
+  #canvas-inner { position: absolute; transform-origin: 0 0; }
+  #diagram { overflow: visible; }
+  #panel-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 9; }
+  #panel-backdrop.visible { display: block; }
+  .out-arrow-group { cursor: default; }
+  .out-arrow-group .no-export { cursor: grab; }
+  .out-arrow-group .no-export:active { cursor: grabbing; }
+  @media (max-width: 640px) {
+    #panel { position: fixed; top: 0; left: 0; height: 100%; width: 300px; transform: translateX(-100%); transition: transform .28s ease; }
+    #panel.open { transform: translateX(0); }
+    #panel.collapsed { transform: translateX(-100%); width: 300px; border-right: 2px solid #dde3ea; }
+  }
+  @media (min-width: 641px) {
+    #panel-backdrop { display: none !important; }
+    #panel.collapsed { transform: translateX(-100%); width: 0; border-right: none; }
+  }
+</style>
+</head>
+<body>
+<div id="panel-backdrop" onclick="togglePanel()"></div>
+<div id="panel">
+  <div id="panel-header">
+    <span>&#x26A1; Energieumwandlungskette</span>
+    <button id="panel-close-btn" onclick="togglePanel()" title="Menu schliessen">&#x2715;</button>
+  </div>
+  <div id="panel-scroll">
+    <div id="wandler-list"></div>
+    <button class="add-wandler-btn" onclick="addWandler()">&#xFF0B; Energiewandler hinzuf&uuml;gen</button>
+  </div>
+</div>
+<div id="preview-area">
+  <div id="preview-toolbar">
+    <button id="menu-toggle" onclick="togglePanel()" title="Menu ein-/ausblenden">&#x2630;</button>
+    <button class="tb-btn" onclick="zoom(1.15)" title="Vergr&ouml;ssern">&#xFF0B;</button>
+    <button class="tb-btn" onclick="zoom(1/1.15)" title="Verkleinern">&#xFF0D;</button>
+    <button class="tb-btn" onclick="resetView()" title="Grafik zentrieren">&#x25CE;</button>
+    <button class="tb-btn primary" onclick="exportSVG()" title="Als SVG-Vektorgrafik exportieren">&#x2193; SVG</button>
+    <button class="tb-btn primary" onclick="exportPNG()" title="Als PNG exportieren (transparenter Hintergrund)">&#x2193; PNG</button>
+  </div>
+  <div id="canvas-wrap">
+    <div id="canvas-inner">
+      <svg id="diagram" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+  </div>
+</div>
+<script>
+
+// ══════════════════════════════════════════════
+// PANEL TOGGLE
+// ══════════════════════════════════════════════
+function togglePanel() {
+  const panel = document.getElementById('panel');
+  const backdrop = document.getElementById('panel-backdrop');
+  const isMobile = window.innerWidth <= 640;
+
+  if (isMobile) {
+    const isOpen = panel.classList.contains('open');
+    panel.classList.toggle('open', !isOpen);
+    backdrop.classList.toggle('visible', !isOpen);
+  } else {
+    panel.classList.toggle('collapsed');
+    // Re-center diagram after transition
+    setTimeout(() => resetView(), 300);
+  }
+}
+
+// Output colors (matching the image palette)
+const COLOR_BLUE = '#5BC4E5';
+const COLOR_RED  = '#E8845A';
+
+let wandlers = [];
+let idSeq = 0;
+
+function newWandler() {
+  return {
+    id: ++idSeq,
+    name: 'Solarzelle',
+    inputLabel: 'Strahlungsenergie',
+    comment: '',
+    outputs: [
+      { id: ++idSeq, label: 'Elektrische Energie', pct: 100, color: COLOR_BLUE }
+    ]
+  };
+}
+
+// ══════════════════════════════════════════════
+// PANEL RENDERING
+// ══════════════════════════════════════════════
+
+function renderPanel() {
+  const list = document.getElementById('wandler-list');
+  list.innerHTML = '';
+
+  wandlers.forEach((w, wi) => {
+    const card = document.createElement('div');
+    card.className = 'wandler-card';
+
+    // delete wandler button
+    if (wandlers.length > 1) {
+      const db = document.createElement('button');
+      db.className = 'del-wandler-btn';
+      db.title = 'Wandler entfernen';
+      db.textContent = '✕';
+      db.onclick = () => { wandlers.splice(wi, 1); renderPanel(); renderDiagram(); };
+      card.appendChild(db);
+    }
+
+    const title = document.createElement('div');
+    title.className = 'wandler-title';
+    title.textContent = `Energiewandler ${wi + 1}`;
+    card.appendChild(title);
+
+    // Wandler name
+    card.appendChild(makeFieldRow('Name:', 'text', w.name, v => {
+      w.name = v; renderDiagram();
+    }));
+
+    // Input label – only for first wandler
+    if (wi === 0) {
+      card.appendChild(makeFieldRow('Eingehend:', 'text', w.inputLabel, v => {
+        w.inputLabel = v; renderDiagram();
+      }));
+    }
+
+    // Outputs
+    const outSec = document.createElement('div');
+    outSec.className = 'out-section';
+    const outTitle = document.createElement('div');
+    outTitle.className = 'out-section-title';
+    outTitle.textContent = 'Ausgehende Energieformen:';
+    outSec.appendChild(outTitle);
+
+    w.outputs.forEach((o, oi) => {
+      const row = document.createElement('div');
+      row.className = 'out-row';
+
+      // color picker: two buttons
+      const colorWrap = document.createElement('div');
+      colorWrap.style.cssText = 'display:flex;gap:4px;flex-shrink:0;';
+
+      [COLOR_BLUE, COLOR_RED].forEach(c => {
+        const btn = document.createElement('button');
+        btn.style.cssText = `width:20px;height:20px;border-radius:50%;border:2.5px solid ${o.color===c ? '#333' : 'transparent'};background:${c};cursor:pointer;padding:0;flex-shrink:0;transition:border-color .15s;`;
+        btn.title = c === COLOR_BLUE ? 'Blau' : 'Rot';
+        btn.onclick = () => { o.color = c; renderPanel(); renderDiagram(); };
+        colorWrap.appendChild(btn);
+      });
+      row.appendChild(colorWrap);
+
+      // label input — fills remaining space
+      const lbl = document.createElement('input');
+      lbl.type = 'text';
+      lbl.value = o.label;
+      lbl.style.flex = '1';
+      lbl.style.minWidth = '0';
+      lbl.style.fontSize = '12px';
+      lbl.style.border = '1.5px solid #c0cdd8';
+      lbl.style.borderRadius = '6px';
+      lbl.style.padding = '5px 8px';
+      lbl.style.outline = 'none';
+      lbl.oninput = () => { o.label = lbl.value; renderDiagram(); };
+      row.appendChild(lbl);
+
+      // pct input
+      const pct = document.createElement('input');
+      pct.type = 'number';
+      pct.min = 1; pct.max = 100;
+      pct.value = o.pct;
+      pct.style.width = '46px';
+      pct.style.flexShrink = '0';
+      pct.style.border = '1.5px solid #c0cdd8';
+      pct.style.borderRadius = '6px';
+      pct.style.padding = '5px 4px';
+      pct.style.fontSize = '12px';
+      pct.style.textAlign = 'right';
+      pct.style.outline = 'none';
+      pct.oninput = () => { o.pct = parseFloat(pct.value) || 0; updateSumHint(w, hint); renderDiagram(); };
+      row.appendChild(pct);
+
+      const pctL = document.createElement('span');
+      pctL.className = 'pct-label';
+      pctL.textContent = '%';
+      row.appendChild(pctL);
+
+      // delete button — pushed to far right with auto margin
+      if (w.outputs.length > 1) {
+        const db2 = document.createElement('button');
+        db2.className = 'del-btn';
+        db2.textContent = '✕';
+        db2.style.marginLeft = 'auto';
+        db2.onclick = () => { w.outputs.splice(oi, 1); renderPanel(); renderDiagram(); };
+        row.appendChild(db2);
+      }
+
+      outSec.appendChild(row);
+    });
+
+    // sum hint
+    const hint = document.createElement('div');
+    hint.className = 'pct-sum-hint';
+    updateSumHint(w, hint);
+    outSec.appendChild(hint);
+
+    // add output btn
+    const addOut = document.createElement('button');
+    addOut.className = 'add-out-btn';
+    addOut.textContent = '＋ Energieform hinzufügen';
+    addOut.onclick = () => {
+      const newOi = w.outputs.length;
+      const newLabel = 'Thermische Energie';
+      w.outputs.push({ id: ++idSeq, label: newLabel, pct: 0, color: COLOR_RED });
+      setOffset(wi, newOi, { dx: 0, dy: newOi * 80 });
+      renderPanel(); renderDiagram();
+    };
+    outSec.appendChild(addOut);
+
+    card.appendChild(outSec);
+
+    // Comment field
+    const commentRow = document.createElement('div');
+    commentRow.style.cssText = 'margin-top:8px;';
+    const commentLabel = document.createElement('div');
+    commentLabel.style.cssText = 'font-size:11px;color:#888;margin-bottom:4px;font-style:italic;';
+    commentLabel.textContent = 'Kommentar:';
+    const commentArea = document.createElement('textarea');
+    commentArea.value = w.comment || '';
+    commentArea.placeholder = 'Kommentar zum Wandler…';
+    commentArea.style.cssText = 'width:100%;border:1.5px solid #c0cdd8;border-radius:6px;padding:5px 8px;font-size:12px;font-family:inherit;resize:vertical;min-height:48px;outline:none;box-sizing:border-box;transition:border-color .2s;';
+    commentArea.addEventListener('focus', () => commentArea.style.borderColor = '#2c6e9e');
+    commentArea.addEventListener('blur', () => commentArea.style.borderColor = '#c0cdd8');
+    commentArea.oninput = () => { w.comment = commentArea.value; renderDiagram(); };
+    commentRow.appendChild(commentLabel);
+    commentRow.appendChild(commentArea);
+    card.appendChild(commentRow);
+
+    list.appendChild(card);
+  });
+}
+
+function makeFieldRow(labelText, type, value, onChange) {
+  const row = document.createElement('div');
+  row.className = 'field-row';
+  const lbl = document.createElement('label');
+  lbl.textContent = labelText;
+  row.appendChild(lbl);
+  const inp = document.createElement('input');
+  inp.type = type;
+  inp.value = value;
+  inp.style.flex = '1';
+  inp.style.minWidth = '0';
+  inp.oninput = () => onChange(inp.value);
+  row.appendChild(inp);
+  return row;
+}
+
+function updateSumHint(w, el) {
+  const sum = w.outputs.reduce((s, o) => s + (parseFloat(o.pct) || 0), 0);
+  if (Math.abs(sum - 100) < 0.01) {
+    el.textContent = '✓ Summe: 100%';
+    el.className = 'pct-sum-hint ok';
+  } else {
+    el.textContent = `⚠ Summe: ${sum}% (sollte 100% sein)`;
+    el.className = 'pct-sum-hint warn';
+  }
+}
+
+function addWandler() {
+  wandlers.push(newWandler());
+  const prevWi = wandlers.length - 2;
+  if (prevWi >= 0) setOffset(prevWi, 0, { dx: 0, dy: 0 });
+  renderPanel();
+  renderDiagram();
+  requestAnimationFrame(() => resetView());
+}
+
+// ══════════════════════════════════════════════
+// DIAGRAM RENDERING
+// ══════════════════════════════════════════════
+
+const ARROW_H    = 90;    // full-width (100%) arrow height
+const CIRCLE_R   = 65;    // wandler circle radius
+const MIN_IN_W   = 160;   // minimum input arrow width
+const OUT_W      = 200;   // default output arrow length
+const CIRCLE_GAP = 8;     // gap between arrow tip and circle edge
+const MARGIN_H   = 70;    // left/right margin
+const MARGIN_V   = 70;    // top/bottom margin
+const ARROW_GAP  = 10;    // vertical gap between stacked outputs
+const FONT_MAIN  = 13;
+const FONT_SMALL = 13;
+const ARROW_COLOR = '#5BC4E5';
+
+// Estimate text width in pixels for a given string and font size
+function estimateTextW(str, fontSize) {
+  return str.length * fontSize * 0.62;
+}
+
+// Per-output drag offsets: { 'wi-oi': {dx, dy} }
+const outputOffsets = {};
+
+function getOffset(wi, oi) {
+  return outputOffsets[`${wi}-${oi}`] || { dx: 0, dy: 0 };
+}
+function setOffset(wi, oi, val) {
+  outputOffsets[`${wi}-${oi}`] = val;
+}
+
+// Snap targets: { 'wi-oi': { targetWi } }
+const snapTargets = {};
+
+function outputArrowHeights(w) {
+  return w.outputs.map(o => Math.max(18, ARROW_H * (parseFloat(o.pct) || 0) / 100));
+}
+
+function renderDiagram() {
+  const svg = document.getElementById('diagram');
+  const frag = document.createDocumentFragment();
+  const ns = 'http://www.w3.org/2000/svg';
+  const _origAppendChild = svg.appendChild.bind(svg);
+  svg.appendChild = (el) => frag.appendChild(el);
+
+  const n = wandlers.length;
+
+  // ── Compute input arrow widths (dynamic: label-based minimum + user drag) ──
+  const inputWidths = wandlers.map((w, wi) => {
+    const label = wi === 0 ? w.inputLabel : (wandlers[wi-1].outputs[0]?.label || '');
+    const needed = estimateTextW(label, FONT_MAIN) + 100;
+    return Math.max(MIN_IN_W, needed);
+  });
+
+  // ── Compute circle X positions ──────────────────────────────────────────
+  const circleXs = [];
+  let cx0 = MARGIN_H + inputWidths[0] + CIRCLE_R;
+  circleXs.push(cx0);
+  for (let wi = 1; wi < n; wi++) {
+    const prevW = wandlers[wi-1];
+    const primaryLabel = prevW.outputs[0]?.label || '';
+    const tipLen = Math.min(50, OUT_W * 0.28);
+    const minVisLen = estimateTextW(primaryLabel, FONT_SMALL) + tipLen + 30;
+    const off = getOffset(wi-1, 0);
+    const primarySnapped = !!snapTargets[`${wi-1}-0`];
+    const actualLen = minVisLen + (primarySnapped ? 0 : Math.max(0, off.dx));
+    const prevRight = circleXs[wi-1] + CIRCLE_R;
+    circleXs.push(prevRight + CIRCLE_GAP + actualLen + CIRCLE_GAP + CIRCLE_R);
+  }
+
+  // ── Total SVG dimensions ────────────────────────────────────────────────
+  const lastCx = circleXs[n-1];
+
+  // baseCy is FULLY STATIC — only depends on arrow heights, never on drag offsets.
+  // This is the only way to prevent jumps on snap/release.
+  let maxStackH = 0, maxDX = 0;
+  wandlers.forEach((w, wi) => {
+    const ahs = outputArrowHeights(w);
+    const stackH = ahs.reduce((s,h)=>s+h,0) + ARROW_GAP*(w.outputs.length-1);
+    maxStackH = Math.max(maxStackH, stackH);
+    w.outputs.forEach((o, oi) => {
+      if (!snapTargets[`${wi}-${oi}`]) {
+        const off = getOffset(wi, oi);
+        maxDX = Math.max(maxDX, Math.max(0, off.dx));
+      }
+    });
+  });
+
+  // Fixed baseCy — generous top margin so upward drags don't clip
+  const baseCy = 400; // fixed constant — never depends on content, prevents all jumps
+
+  // SVG canvas expands to fit dragged arrows, but baseCy never moves
+  let minY = baseCy - ARROW_H, maxY = baseCy + ARROW_H;
+  wandlers.forEach((w, wi) => {
+    const ahs = outputArrowHeights(w);
+    const stackH = ahs.reduce((s,h)=>s+h,0) + ARROW_GAP*(w.outputs.length-1);
+    let cy0 = baseCy - stackH/2;
+    w.outputs.forEach((o, oi) => {
+      const ah = ahs[oi];
+      if (!snapTargets[`${wi}-${oi}`]) {
+        const off = getOffset(wi, oi);
+        const tipY = cy0 + ah/2 + off.dy;
+        minY = Math.min(minY, tipY - ah/2 - MARGIN_V);
+        maxY = Math.max(maxY, tipY + ah/2 + MARGIN_V);
+      }
+      cy0 += ah + ARROW_GAP;
+    });
+  });
+
+  // totalH/totalW must NOT depend on drag offsets — changing them shifts the
+  // visible diagram because tx/ty are not recalculated on each renderDiagram.
+  const totalH = baseCy * 2;
+  const totalW = lastCx + CIRCLE_R + CIRCLE_GAP + OUT_W + MARGIN_H;
+
+  svg.setAttribute('width', totalW);
+  svg.setAttribute('height', totalH);
+  svg.setAttribute('viewBox', `0 0 ${totalW} ${totalH}`);
+  // Store layout values for in-place arrow updates
+  svg.dataset.baseCy = baseCy;
+  circleXs.forEach((cx, i) => { svg.dataset['cx' + i] = cx; });
+
+  // ── Draw each wandler ───────────────────────────────────────────────────
+  for (let wi = 0; wi < n; wi++) {
+    const w = wandlers[wi];
+    const cx = circleXs[wi];
+    const cy = baseCy;
+    const inW = inputWidths[wi];
+
+    // ── Input arrow — tip touches circle edge exactly
+    const inEndX   = cx - CIRCLE_R;   // tip touches circle
+    const inStartX = cx - CIRCLE_R - inW;
+    const inLabel  = wi === 0 ? w.inputLabel : (wandlers[wi-1].outputs[0]?.label || '');
+    if (wi === 0) {
+      drawChevronArrow(svg, ns, inStartX, cy, inEndX, ARROW_H, ARROW_COLOR, inLabel, FONT_MAIN, '#fff');
+      // Give polygon and text stable IDs for in-place mutation
+      const elems = svg.querySelectorAll('polygon, text');
+      // Tag last polygon as input arrow polygon
+      const polys = svg.querySelectorAll('polygon');
+      if (polys.length) polys[polys.length-1].setAttribute('id', 'in-arrow-poly');
+      const texts = svg.querySelectorAll('text');
+      if (texts.length) texts[texts.length-1].setAttribute('id', 'in-arrow-text');
+
+
+    }
+
+    // ── Circle
+    const circ = document.createElementNS(ns, 'circle');
+    circ.setAttribute('cx', cx); circ.setAttribute('cy', cy);
+    circ.setAttribute('r', CIRCLE_R);
+    circ.setAttribute('fill', '#D9E84E');
+    circ.setAttribute('stroke', '#b5c43a');
+    circ.setAttribute('stroke-width', '2');
+    circ.setAttribute('id', `wandler-circ-${wi}`);
+    svg.appendChild(circ);
+
+    // ── Wandler name inside circle
+    wrapText(svg, ns, w.name, cx, cy, CIRCLE_R * 1.75, 11, '#1a4a6a', 700, `wandler-text-${wi}`);
+
+    // ── Comment below circle
+    if (w.comment) {
+      wrapText(svg, ns, w.comment, cx, cy + CIRCLE_R + 18, CIRCLE_R * 2.5, 10, '#555', 400, `wandler-comment-${wi}`);
+    }
+
+    // ── Output arrows (all start at circle center, each has independent direction)
+    const ahs = outputArrowHeights(w);
+
+    w.outputs.forEach((o, oi) => {
+      const ah = ahs[oi];
+      const off = getOffset(wi, oi);
+      const startX = cx;
+      const startY = cy;
+
+      // Primary output of non-last wandler: tip touches next circle's left edge
+      let endX, endY;
+      if (wi < n - 1 && oi === 0) {
+        endX = circleXs[wi + 1] - CIRCLE_R;
+        endY = cy + off.dy;
+      } else {
+        const snapKey = `${wi}-${oi}`;
+        const snapTarget = snapTargets[snapKey];
+
+        if (snapTarget !== undefined && circleXs[snapTarget.targetWi] !== undefined) {
+          // Tip touches left edge of target circle at target circle's Y
+          endX = circleXs[snapTarget.targetWi] - CIRCLE_R;
+          endY = cy; // target is always at same baseCy
+        } else {
+          const rawEndX = cx + CIRCLE_R + CIRCLE_GAP + OUT_W + off.dx;
+          const rawEndY = cy + off.dy;
+          const tipLen = 50;
+          const minVisLen = estimateTextW(o.label, FONT_SMALL) + tipLen + 20;
+          const minDist = CIRCLE_R + minVisLen;
+          const ddx = rawEndX - cx, ddy = rawEndY - cy;
+          const dist = Math.sqrt(ddx*ddx + ddy*ddy);
+          // Always clamp to exactly minDist — not shorter, not longer
+          const s = minDist / dist;
+          endX = cx + ddx * s;
+          endY = cy + ddy * s;
+        }
+      }
+
+      const color = o.color || COLOR_BLUE;
+
+      const g = document.createElementNS(ns, 'g');
+      g.setAttribute('class', 'out-arrow-group');
+      g.setAttribute('data-wi', wi);
+      g.setAttribute('data-oi', oi);
+      g.setAttribute('id', `arrow-group-${wi}-${oi}`);
+
+      drawDiagonalArrow(g, ns, startX, startY, endX, endY, ah, color, o.label, FONT_SMALL, '#fff');
+
+      // Hint dot at tip — drag handle, not exported
+      const dx2 = endX - startX, dy2 = endY - startY;
+      const dlen = Math.sqrt(dx2*dx2 + dy2*dy2);
+      const ux2 = dx2/dlen, uy2 = dy2/dlen;
+      const dotR = 14; // same size as input dot
+      const dotCx = endX - ux2 * dotR * 0.5;
+      const dotCy = endY - uy2 * dotR * 0.5;
+
+      // Invisible large hit area
+      const hitArea = document.createElementNS(ns, 'circle');
+      hitArea.setAttribute('cx', dotCx.toFixed(1));
+      hitArea.setAttribute('cy', dotCy.toFixed(1));
+      hitArea.setAttribute('r', dotR + 8);
+      hitArea.setAttribute('fill', 'transparent');
+      hitArea.setAttribute('class', 'no-export');
+      g.appendChild(hitArea);
+
+      // Visible dot
+      const hint = document.createElementNS(ns, 'circle');
+      hint.setAttribute('cx', dotCx.toFixed(1));
+      hint.setAttribute('cy', dotCy.toFixed(1));
+      hint.setAttribute('r', dotR);
+      hint.setAttribute('fill', 'rgba(255,255,255,0.55)');
+      hint.setAttribute('stroke', 'rgba(255,255,255,0.9)');
+      hint.setAttribute('stroke-width', '2');
+      hint.setAttribute('class', 'no-export');
+      hint.style.pointerEvents = 'none'; // let hitArea handle events
+      g.appendChild(hint);
+
+      svg.appendChild(g);
+    });
+  }
+
+  // ── Circles on top (re-draw so they cover arrow starts) ─────────────────
+  for (let wi = 0; wi < n; wi++) {
+    const cx = circleXs[wi];
+    const cy = baseCy;
+
+    const circ = document.createElementNS(ns, 'circle');
+    circ.setAttribute('cx', cx); circ.setAttribute('cy', cy);
+    circ.setAttribute('r', CIRCLE_R);
+    circ.setAttribute('fill', '#D9E84E');
+    circ.setAttribute('stroke', '#b5c43a');
+    circ.setAttribute('stroke-width', '2');
+    circ.setAttribute('id', `wandler-circ-top-${wi}`);
+    svg.appendChild(circ);
+
+    wrapText(svg, ns, wandlers[wi].name, cx, cy, CIRCLE_R * 1.75, 11, '#1a4a6a', 700, `wandler-text-top-${wi}`);
+    if (wandlers[wi].comment) {
+      wrapText(svg, ns, wandlers[wi].comment, cx, cy + CIRCLE_R + 18, CIRCLE_R * 2.5, 10, '#555', 400, `wandler-comment-top-${wi}`);
+    }
+  }
+
+  svg.appendChild = _origAppendChild;
+  svg.replaceChildren(frag);
+
+  setupOutputDrag(svg);
+
+  if (!diagramInitialized) {
+    requestAnimationFrame(() => { resetView(); diagramInitialized = true; });
+  } else {
+    applyTransform();
+  }
+}
+
+// Draw straight horizontal input arrows
+function drawChevronArrow(parent, ns, x1, cy, x2, height, color, label, fontSize, textColor) {
+  const len = x2 - x1;
+  if (len < 2) return;
+  const h2 = height / 2, wing = height * 0.28, tipLen = Math.min(50, len * 0.25);
+  const pts = [[x1,cy-h2],[x2-tipLen,cy-h2],[x2-tipLen,cy-h2-wing],[x2,cy],[x2-tipLen,cy+h2+wing],[x2-tipLen,cy+h2],[x1,cy+h2]].map(p=>p.join(',')).join(' ');
+  const poly = document.createElementNS(ns, 'polygon');
+  poly.setAttribute('points', pts); poly.setAttribute('fill', color);
+  parent.appendChild(poly);
+  if (label) {
+    const txt = document.createElementNS(ns, 'text');
+    txt.setAttribute('x', x1 + (len-tipLen)/2); txt.setAttribute('y', cy + fontSize*0.38);
+    txt.setAttribute('text-anchor','middle'); txt.setAttribute('font-family','Segoe UI, system-ui, sans-serif');
+    txt.setAttribute('font-size', fontSize); txt.setAttribute('font-weight','700');
+    txt.setAttribute('fill', textColor||'#fff'); txt.textContent = label;
+    parent.appendChild(txt);
+  }
+}
+
+// Draw diagonal output arrows
+function drawDiagonalArrow(parent, ns, x1, y1, x2, y2, height, color, label, fontSize, textColor) {
+  const dx = x2-x1, dy = y2-y1, len = Math.sqrt(dx*dx+dy*dy);
+  if (len < 2) return;
+  const ux=dx/len, uy=dy/len, px=-uy, py=ux;
+  const h2=height/2, we=height*0.28, tipLen=Math.min(50,len*0.28);
+  const bx=x2-ux*tipLen, by=y2-uy*tipLen;
+  const pts=[
+    [x1+px*h2,y1+py*h2],[bx+px*h2,by+py*h2],[bx+px*(h2+we),by+py*(h2+we)],
+    [x2,y2],[bx-px*(h2+we),by-py*(h2+we)],[bx-px*h2,by-py*h2],[x1-px*h2,y1-py*h2]
+  ].map(p=>p.map(v=>v.toFixed(2)).join(',')).join(' ');
+  const poly = document.createElementNS(ns, 'polygon');
+  poly.setAttribute('points', pts); poly.setAttribute('fill', color);
+  parent.appendChild(poly);
+  if (label && len > 30) {
+    const ex=x1+ux*CIRCLE_R, ey=y1+uy*CIRCLE_R, visLen=len-CIRCLE_R-tipLen;
+    const mx=ex+ux*(visLen/2), my=ey+uy*(visLen/2);
+    let angle=Math.atan2(dy,dx)*180/Math.PI;
+    if (angle>90||angle<-90) angle+=180;
+    const maxChars=Math.max(0,Math.floor(visLen/(fontSize*0.58)));
+    const txt=document.createElementNS(ns,'text');
+    txt.setAttribute('x',mx.toFixed(2)); txt.setAttribute('y',my.toFixed(2));
+    txt.setAttribute('text-anchor','middle'); txt.setAttribute('dominant-baseline','middle');
+    txt.setAttribute('transform',`rotate(${angle.toFixed(1)},${mx.toFixed(2)},${my.toFixed(2)})`);
+    txt.setAttribute('font-family','Segoe UI, system-ui, sans-serif');
+    txt.setAttribute('font-size',fontSize); txt.setAttribute('font-weight','700');
+    txt.setAttribute('fill',textColor||'#fff');
+    txt.textContent = label.length>maxChars&&maxChars>3 ? label.slice(0,maxChars-1)+'…' : label;
+    parent.appendChild(txt);
+  }
+}
+
+// ── Drag logic for output arrows ────────────────────────────────────────────
+let arrowDrag = null;
+
+function setupOutputDrag(svg) {
+  if (svg._dragBound) return; // only bind once ever
+  svg._dragBound = true;
+  svg.addEventListener('mousedown', svgDragStart);
+  svg.addEventListener('touchstart', svgDragStart, { passive: false });
+}
+
+function svgDragStart(e) {
+  if (arrowDrag) return; // ignore second finger
+  const target = e.target;
+  if (!target.classList?.contains('no-export')) return;
+
+  let el = target.parentElement;
+  while (el && !el.classList?.contains('out-arrow-group')) el = el.parentElement;
+  if (!el) return;
+
+  e.stopPropagation();
+  e.preventDefault();
+
+  const wi = parseInt(el.getAttribute('data-wi'));
+  const oi = parseInt(el.getAttribute('data-oi'));
+  const t = e.touches ? e.touches[0] : e;
+  const cur = getOffset(wi, oi);
+
+  // Cancel any canvas pan that wrap.touchstart may have started
+  dragging = false;
+
+  arrowDrag = {
+    wi, oi,
+    group: el,
+    startX: t.clientX, startY: t.clientY,
+    startDx: cur.dx, startDy: cur.dy,
+    pendingRaf: false
+  };
+  // Clear snap target when user starts dragging
+  delete snapTargets[`${wi}-${oi}`];
+
+  window.addEventListener('mousemove', onArrowMove);
+  window.addEventListener('mouseup',   onArrowUp);
+  window.addEventListener('touchmove', onArrowMove, { passive: false });
+  window.addEventListener('touchend',  onArrowUp,   { passive: false });
+}
+
+const SNAP_ANGLE = 18; // degrees — snap if arrow points within this angle toward a circle
+
+// Find nearest snap point by checking if arrow direction points toward any other wandler circle
+function findSnapPoint(wi, oi, startX, startY, endX, endY) {
+  const svg = document.getElementById('diagram');
+  const baseCy = parseFloat(svg.dataset.baseCy);
+  const n = wandlers.length;
+  // Arrow direction
+  const adx = endX - startX, ady = endY - startY;
+  const alen = Math.sqrt(adx*adx + ady*ady);
+  if (alen < 1) return null;
+  const aAngle = Math.atan2(ady, adx);
+
+  let best = null, bestAngleDiff = SNAP_ANGLE * Math.PI / 180;
+  for (let i = 0; i < n; i++) {
+    if (i === wi) continue;
+    const snapX = parseFloat(svg.dataset['cx' + i]); // circle CENTER
+    const snapY = baseCy;
+    const sdx = snapX - startX, sdy = snapY - startY;
+    const sAngle = Math.atan2(sdy, sdx);
+    let diff = Math.abs(aAngle - sAngle);
+    if (diff > Math.PI) diff = 2 * Math.PI - diff;
+    if (diff < bestAngleDiff) {
+      bestAngleDiff = diff;
+      best = { x: snapX, y: snapY, wi: i };
+    }
+  }
+  return best;
+}
+
+function onArrowMove(ev) {
+  const d = arrowDrag;
+  if (!d) return;
+  if (ev.cancelable) ev.preventDefault();
+  const t = ev.touches ? ev.touches[0] : ev;
+  const ddx = (t.clientX - d.startX) / scale;
+  const ddy = (t.clientY - d.startY) / scale;
+  setOffset(d.wi, d.oi, { dx: d.startDx + ddx, dy: d.startDy + ddy });
+
+  // Check snap — compute current tip position
+  const svg = document.getElementById('diagram');
+  const cx = parseFloat(svg.dataset['cx' + d.wi]);
+  const baseCy = parseFloat(svg.dataset.baseCy);
+  const ahs = outputArrowHeights(wandlers[d.wi]);
+  const totalArrowH = ahs.reduce((s,h)=>s+h,0) + ARROW_GAP*(wandlers[d.wi].outputs.length-1);
+  let curY = baseCy - totalArrowH / 2;
+  for (let i = 0; i < d.oi; i++) curY += ahs[i] + ARROW_GAP;
+  const off = getOffset(d.wi, d.oi);
+  const rawEndX = cx + CIRCLE_R + CIRCLE_GAP + OUT_W + off.dx;
+  const rawEndY = (curY + ahs[d.oi] / 2) + off.dy;
+  const snap = findSnapPoint(d.wi, d.oi, cx, baseCy, rawEndX, rawEndY);
+  arrowDrag.snapping = snap ? snap : null;
+
+  if (!d.pendingRaf) {
+    d.pendingRaf = true;
+    requestAnimationFrame(() => {
+      if (arrowDrag) {
+        updateArrowAttrs(arrowDrag.wi, arrowDrag.oi, arrowDrag.group);
+        arrowDrag.pendingRaf = false;
+      }
+    });
+  }
+}
+
+function onArrowUp() {
+  if (!arrowDrag) return;
+  const d = arrowDrag;
+
+  window.removeEventListener('mousemove', onArrowMove);
+  window.removeEventListener('mouseup',   onArrowUp);
+  window.removeEventListener('touchmove', onArrowMove);
+  window.removeEventListener('touchend',  onArrowUp);
+  dragging = false; panTouchId = null;
+  startTx = tx; startTy = ty;
+
+  if (d.snapping) {
+    snapTargets[`${d.wi}-${d.oi}`] = { targetWi: d.snapping.wi };
+    setOffset(d.wi, d.oi, { dx: 0, dy: 0 });
+    arrowDrag = null;
+    updateArrowAttrs(d.wi, d.oi, d.group);
+    document.getElementById('snap-highlight')?.remove();
+  } else {
+    delete snapTargets[`${d.wi}-${d.oi}`];
+    arrowDrag = null;
+    renderDiagram();
+  }
+}
+
+// Mutate only the SVG attributes of an existing arrow group — no DOM rebuild
+function updateArrowAttrs(wi, oi, group) {
+  const svg = document.getElementById('diagram');
+  const baseCy = parseFloat(svg.dataset.baseCy);
+  const cx     = parseFloat(svg.dataset['cx' + wi]);
+  const w = wandlers[wi];
+  const ahs = outputArrowHeights(w);
+  const ah = ahs[oi];
+  const off = getOffset(wi, oi);
+  const startX = cx, startY = baseCy;
+
+  const tipLenA = Math.min(50, OUT_W * 0.28);
+  const minVisLen = estimateTextW(w.outputs[oi].label, FONT_SMALL) + tipLenA + 20;
+  const minDist = CIRCLE_R + minVisLen;
+
+  let endX, endY;
+
+  // Check snap target (persisted or live during drag)
+  const snapKey = `${wi}-${oi}`;
+  const snapData = (arrowDrag?.wi === wi && arrowDrag?.oi === oi && arrowDrag?.snapping)
+    ? (() => {
+        const rawEndX = cx + CIRCLE_R + CIRCLE_GAP + OUT_W + off.dx;
+        const rawEndY = baseCy + off.dy;
+        const ddx = rawEndX - cx, ddy = rawEndY - baseCy;
+        const dist = Math.sqrt(ddx*ddx + ddy*ddy) || 1;
+        return { targetWi: arrowDrag.snapping.wi, nx: ddx/dist, ny: ddy/dist };
+      })()
+    : snapTargets[snapKey];
+
+  if (snapData !== undefined) {
+    const targetCx2 = parseFloat(svg.dataset['cx' + snapData.targetWi]);
+    endX = targetCx2 - CIRCLE_R;
+    endY = baseCy;
+  } else {
+    const rawEndX = cx + CIRCLE_R + CIRCLE_GAP + OUT_W + off.dx;
+    const rawEndY = baseCy + off.dy;
+    const ddx = rawEndX - cx, ddy = rawEndY - baseCy;
+    const dist = Math.sqrt(ddx*ddx + ddy*ddy);
+    if (dist < minDist) {
+      const s = minDist / dist;
+      endX = cx + ddx * s;
+      endY = baseCy + ddy * s;
+    } else {
+      endX = rawEndX;
+      endY = rawEndY;
+    }
+  }
+
+  // Show/hide snap highlight ring
+  const existingSnap = document.getElementById('snap-highlight');
+  if (arrowDrag?.snapping) {
+    const snapCx = parseFloat(svg.dataset['cx' + arrowDrag.snapping.wi]);
+    const snapCy = parseFloat(svg.dataset.baseCy);
+    if (existingSnap) {
+      existingSnap.setAttribute('cx', snapCx);
+      existingSnap.setAttribute('cy', snapCy);
+    } else {
+      const ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      ring.setAttribute('id', 'snap-highlight');
+      ring.setAttribute('cx', snapCx);
+      ring.setAttribute('cy', snapCy);
+      ring.setAttribute('r', CIRCLE_R + 6);
+      ring.setAttribute('fill', 'none');
+      ring.setAttribute('stroke', 'rgba(255,255,255,0.8)');
+      ring.setAttribute('stroke-width', '3');
+      ring.setAttribute('stroke-dasharray', '8 4');
+      ring.setAttribute('class', 'no-export');
+      svg.appendChild(ring);
+    }
+  } else if (existingSnap) {
+    existingSnap.remove();
+  }
+
+  // Recompute polygon points
+  const dx = endX - startX, dy = endY - startY;
+  const len = Math.sqrt(dx*dx + dy*dy);
+  if (len < 2) return;
+  const ux = dx/len, uy = dy/len;
+  const px = -uy, py = ux;
+  const h2 = ah / 2;
+  const wing = ah * 0.28;
+  const tipLen = Math.min(50, len * 0.28);
+  const bx = endX - ux*tipLen, by = endY - uy*tipLen;
+
+  const pts = [
+    [startX+px*h2,  startY+py*h2],
+    [bx+px*h2,      by+py*h2],
+    [bx+px*(h2+wing), by+py*(h2+wing)],
+    [endX, endY],
+    [bx-px*(h2+wing), by-py*(h2+wing)],
+    [bx-px*h2,      by-py*h2],
+    [startX-px*h2,  startY-py*h2],
+  ].map(p => p.map(v=>v.toFixed(2)).join(',')).join(' ');
+
+  const poly = group.querySelector('polygon');
+  if (poly) poly.setAttribute('points', pts);
+
+  // Update label position/rotation
+  const txt = group.querySelector('text');
+  if (txt) {
+    const edgeX = startX + ux * CIRCLE_R;
+    const edgeY = startY + uy * CIRCLE_R;
+    const visLen = len - CIRCLE_R - tipLen;
+    const midX = edgeX + ux * (visLen / 2);
+    const midY = edgeY + uy * (visLen / 2);
+    let angle = Math.atan2(dy, dx) * 180 / Math.PI;
+    if (angle > 90 || angle < -90) angle += 180;
+    txt.setAttribute('x', midX.toFixed(2));
+    txt.setAttribute('y', midY.toFixed(2));
+    txt.setAttribute('transform', `rotate(${angle.toFixed(1)},${midX.toFixed(2)},${midY.toFixed(2)})`);
+  }
+
+  // Update hint dot & hit area
+  const dotR = 14;
+  const dotCx = endX - ux * dotR * 0.5;
+  const dotCy = endY - uy * dotR * 0.5;
+  const circles = group.querySelectorAll('circle');
+  if (circles[0]) { // hit area
+    circles[0].setAttribute('cx', dotCx.toFixed(1));
+    circles[0].setAttribute('cy', dotCy.toFixed(1));
+  }
+  if (circles[1]) { // visible dot
+    circles[1].setAttribute('cx', dotCx.toFixed(1));
+    circles[1].setAttribute('cy', dotCy.toFixed(1));
+  }
+}
+
+function wrapText(svg, ns, text, cx, cy, maxW, fontSize, fill, fontWeight, idPrefix) {
+  const words = text.split(/\s+/);
+  const lineH = fontSize * 1.4;
+  let lines = [];
+  let cur = '';
+  const charsPerLine = Math.floor(maxW / (fontSize * 0.6));
+
+  words.forEach(w => {
+    const test = cur ? cur + ' ' + w : w;
+    if (test.length <= charsPerLine) {
+      cur = test;
+    } else {
+      if (cur) lines.push(cur);
+      cur = w;
+    }
+  });
+  if (cur) lines.push(cur);
+
+  const startY = cy - (lines.length - 1) * lineH / 2;
+  lines.forEach((line, i) => {
+    const t = document.createElementNS(ns, 'text');
+    t.setAttribute('x', cx);
+    t.setAttribute('y', startY + i * lineH);
+    t.setAttribute('text-anchor', 'middle');
+    t.setAttribute('dominant-baseline', 'middle');
+    t.setAttribute('font-family', 'Segoe UI, system-ui, sans-serif');
+    t.setAttribute('font-size', fontSize);
+    t.setAttribute('font-weight', fontWeight || '600');
+    t.setAttribute('fill', fill || '#333');
+    if (idPrefix) t.setAttribute('id', `${idPrefix}-${i}`);
+    t.textContent = line;
+    svg.appendChild(t);
+  });
+}
+
+// ══════════════════════════════════════════════
+// PAN & ZOOM
+// ══════════════════════════════════════════════
+let scale = 1;
+// tx/ty = position of canvas-inner top-left corner within canvas-wrap
+let tx = 0, ty = 0;
+let dragging = false, startX, startY, startTx, startTy;
+
+function getSVGSize() {
+  const svg = document.getElementById('diagram');
+  return {
+    w: parseFloat(svg.getAttribute('width') || 400),
+    h: parseFloat(svg.getAttribute('height') || 300)
+  };
+}
+
+function applyTransform() {
+  const inner = document.getElementById('canvas-inner');
+  inner.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+}
+
+function centerDiagram() {
+  const canvasWrap = document.getElementById('canvas-wrap');
+  const { w: sw, h: sh } = getSVGSize();
+  const ww = canvasWrap.clientWidth;
+  const wh = canvasWrap.clientHeight;
+  // Place top-left of (scaled) SVG so it's centered
+  tx = (ww - sw * scale) / 2;
+  ty = (wh - sh * scale) / 2;
+  applyTransform();
+}
+
+function zoom(factor) {
+  // Zoom toward canvas center
+  const canvasWrap = document.getElementById('canvas-wrap');
+  const ww = canvasWrap.clientWidth;
+  const wh = canvasWrap.clientHeight;
+  const pivotX = ww / 2;
+  const pivotY = wh / 2;
+  // Adjust tx/ty so zoom is centered on pivot
+  tx = pivotX - (pivotX - tx) * factor;
+  ty = pivotY - (pivotY - ty) * factor;
+  scale *= factor;
+  scale = Math.max(0.1, Math.min(5, scale));
+  applyTransform();
+}
+
+function resetView() {
+  const canvasWrap = document.getElementById('canvas-wrap');
+  const svg = document.getElementById('diagram');
+  const ww = canvasWrap.clientWidth;
+  const wh = canvasWrap.clientHeight;
+  const pad = 24;
+  // Measure bbox on a clone without no-export elements for accuracy
+  const clone = svg.cloneNode(true);
+  clone.querySelectorAll('.no-export').forEach(el => el.remove());
+  clone.style.cssText = 'position:absolute;visibility:hidden;overflow:visible;';
+  document.body.appendChild(clone);
+  let bx, by, bw, bh;
+  try {
+    const bb = clone.getBBox();
+    bx = bb.x; by = bb.y; bw = bb.width; bh = bb.height;
+  } catch(e) {
+    bx = 0; by = 0;
+    bw = parseFloat(svg.getAttribute('width') || 400);
+    bh = parseFloat(svg.getAttribute('height') || 300);
+  }
+  document.body.removeChild(clone);
+  if (bw < 1 || bh < 1) return;
+  scale = Math.min((ww - pad * 2) / bw, (wh - pad * 2) / bh);
+  tx = (ww - bw * scale) / 2 - bx * scale;
+  ty = (wh - bh * scale) / 2 - by * scale;
+  applyTransform();
+}
+
+const wrap = document.getElementById('canvas-wrap');
+wrap.addEventListener('mousedown', e => {
+  dragging = true;
+  startX = e.clientX; startY = e.clientY;
+  startTx = tx; startTy = ty;
+  wrap.classList.add('grabbing');
+});
+window.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  tx = startTx + e.clientX - startX;
+  ty = startTy + e.clientY - startY;
+  applyTransform();
+});
+window.addEventListener('mouseup', () => { dragging = false; wrap.classList.remove('grabbing'); });
+wrap.addEventListener('wheel', e => {
+  e.preventDefault();
+  zoom(e.deltaY < 0 ? 1.1 : 1/1.1);
+}, { passive: false });
+
+// Touch — canvas pan only starts if NO arrow/input drag is active
+let lastPinchDist = null;
+let panTouchId = null; // identifier of the touch driving canvas pan
+
+wrap.addEventListener('touchstart', e => {
+  if (arrowDrag) return;
+  if (e.target.classList?.contains('no-export') || e.target.id === 'in-arrow-handle') return;
+  if (e.touches.length === 1 && panTouchId === null) {
+    const t = e.touches[0];
+    panTouchId = t.identifier;
+    dragging = true;
+    startX = t.clientX; startY = t.clientY;
+    startTx = tx; startTy = ty;
+  }
+}, { passive: true });
+
+wrap.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (arrowDrag) { dragging = false; panTouchId = null; return; }
+  if (e.touches.length === 1 && dragging && panTouchId !== null) {
+    // Find our tracked touch
+    let t = null;
+    for (let i = 0; i < e.touches.length; i++) {
+      if (e.touches[i].identifier === panTouchId) { t = e.touches[i]; break; }
+    }
+    if (!t) return;
+    tx = startTx + t.clientX - startX;
+    ty = startTy + t.clientY - startY;
+    applyTransform();
+  } else if (e.touches.length === 2) {
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (lastPinchDist) zoom(dist / lastPinchDist);
+    lastPinchDist = dist;
+  }
+}, { passive: false });
+
+wrap.addEventListener('touchend', e => {
+  let panTouchStillActive = false;
+  for (let i = 0; i < e.touches.length; i++) {
+    if (e.touches[i].identifier === panTouchId) { panTouchStillActive = true; break; }
+  }
+  if (!panTouchStillActive) { dragging = false; panTouchId = null; }
+  lastPinchDist = null;
+});
+
+// ══════════════════════════════════════════════
+// SVG EXPORT
+// ══════════════════════════════════════════════
+function exportSVG() {
+  const svg = document.getElementById('diagram');
+  const clone = svg.cloneNode(true);
+  clone.querySelectorAll('.no-export').forEach(el => el.remove());
+
+  // Compute tight bounding box of actual content
+  // We use the stored layout values to find the real content bounds
+  const pad = 30; // margin around content
+
+  // Get content bounds from SVG bbox (most accurate)
+  // Temporarily attach to DOM to measure
+  clone.style.position = 'absolute';
+  clone.style.visibility = 'hidden';
+  clone.style.overflow = 'visible';
+  document.body.appendChild(clone);
+  let bbox;
+  try { bbox = clone.getBBox(); } catch(e) { bbox = null; }
+  document.body.removeChild(clone);
+
+  const exportClone = svg.cloneNode(true);
+  exportClone.querySelectorAll('.no-export').forEach(el => el.remove());
+
+  if (bbox && bbox.width > 0) {
+    const x = bbox.x - pad;
+    const y = bbox.y - pad;
+    const w = bbox.width + pad * 2;
+    const h = bbox.height + pad * 2;
+    exportClone.setAttribute('viewBox', `${x} ${y} ${w} ${h}`);
+    exportClone.setAttribute('width', w);
+    exportClone.setAttribute('height', h);
+  }
+
+  exportClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+  // White background rect
+  const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  const vb = exportClone.getAttribute('viewBox').split(' ').map(Number);
+  bg.setAttribute('x', vb[0]); bg.setAttribute('y', vb[1]);
+  bg.setAttribute('width', vb[2]); bg.setAttribute('height', vb[3]);
+  bg.setAttribute('fill', '#ffffff');
+  exportClone.insertBefore(bg, exportClone.firstChild);
+
+  const serializer = new XMLSerializer();
+  let src = serializer.serializeToString(exportClone);
+  if (!src.match(/^<\?xml/)) src = '<?xml version="1.0" encoding="UTF-8"?>\n' + src;
+
+  const blob = new Blob([src], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'energiekette.svg';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportPNG() {
+  const svg = document.getElementById('diagram');
+  const clone = svg.cloneNode(true);
+  clone.querySelectorAll('.no-export').forEach(el => el.remove());
+
+  // Measure bounding box
+  clone.style.position = 'absolute';
+  clone.style.visibility = 'hidden';
+  clone.style.overflow = 'visible';
+  document.body.appendChild(clone);
+  let bbox;
+  try { bbox = clone.getBBox(); } catch(e) { bbox = null; }
+  document.body.removeChild(clone);
+
+  const pad = 30;
+  const scale2 = 2; // retina quality
+  let x = 0, y = 0, w, h;
+
+  const exportClone = svg.cloneNode(true);
+  exportClone.querySelectorAll('.no-export').forEach(el => el.remove());
+  exportClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+
+  if (bbox && bbox.width > 0) {
+    x = bbox.x - pad; y = bbox.y - pad;
+    w = bbox.width + pad * 2; h = bbox.height + pad * 2;
+  } else {
+    w = parseFloat(svg.getAttribute('width') || 800);
+    h = parseFloat(svg.getAttribute('height') || 400);
+  }
+
+  exportClone.setAttribute('viewBox', `${x} ${y} ${w} ${h}`);
+  exportClone.setAttribute('width', w * scale2);
+  exportClone.setAttribute('height', h * scale2);
+
+  const serializer = new XMLSerializer();
+  const svgStr = serializer.serializeToString(exportClone);
+  const svgBlob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(svgBlob);
+
+  const img = new Image();
+  img.onload = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width  = w * scale2;
+    canvas.height = h * scale2;
+    const ctx = canvas.getContext('2d');
+    // No background fill → transparent
+    ctx.drawImage(img, 0, 0);
+    URL.revokeObjectURL(url);
+    canvas.toBlob(blob => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'energiekette.png';
+      a.click();
+    }, 'image/png');
+  };
+  img.src = url;
+}
+
+// Re-center on window resize and orientation change
+window.addEventListener('resize', () => resetView());
+window.addEventListener('orientationchange', () => {
+  setTimeout(() => resetView(), 300); // small delay for browser to finish rotation
+});
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+wandlers.push(newWandler());
+let diagramInitialized = false;
+renderPanel();
+renderDiagram();
+
+</script>
+</body>
+</html>
