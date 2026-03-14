@@ -120,13 +120,15 @@ let wandlers = [];
 let idSeq = 0;
 
 function newWandler() {
+  const id1 = ++idSeq, id2 = ++idSeq, id3 = ++idSeq;
   return {
-    id: ++idSeq,
-    name: 'Solarzelle',
+    id: id1,
+    name: 'Solarmodul',
     inputLabel: 'Strahlungsenergie',
     comment: '',
     outputs: [
-      { id: ++idSeq, label: 'Elektrische Energie', pct: 100, color: COLOR_BLUE }
+      { id: id2, label: 'Elektrische Energie', pct: 80, color: COLOR_BLUE },
+      { id: id3, label: 'Thermische Energie',  pct: 20, color: COLOR_RED  }
     ]
   };
 }
@@ -257,7 +259,7 @@ function renderPanel() {
       const newOi = w.outputs.length;
       const newLabel = 'Thermische Energie';
       w.outputs.push({ id: ++idSeq, label: newLabel, pct: 0, color: COLOR_RED });
-      setOffset(wi, newOi, { dx: 0, dy: newOi * 80 });
+      setOffset(wi, newOi, { dx: 0, dy: newOi * 100 });
       renderPanel(); renderDiagram();
     };
     outSec.appendChild(addOut);
@@ -313,9 +315,10 @@ function updateSumHint(w, el) {
 }
 
 function addWandler() {
+  const wi = wandlers.length;
   wandlers.push(newWandler());
-  const prevWi = wandlers.length - 2;
-  if (prevWi >= 0) setOffset(prevWi, 0, { dx: 0, dy: 0 });
+  // Set default downward offset for second output of new wandler
+  setOffset(wi, 1, { dx: 0, dy: 100 });
   renderPanel();
   renderDiagram();
   requestAnimationFrame(() => resetView());
@@ -1012,9 +1015,9 @@ function resetView() {
   }
   document.body.removeChild(clone);
   if (bw < 1 || bh < 1) return;
-  scale = Math.min((ww - pad * 2) / bw, (wh - pad * 2) / bh);
-  tx = (ww - bw * scale) / 2 - bx * scale;
-  ty = (wh - bh * scale) / 2 - by * scale;
+  scale = Math.min((ww - pad * 2) / bw, (wh - pad * 2) / bh, 2);
+  tx = Math.round((ww - bw * scale) / 2 - bx * scale);
+  ty = Math.round((wh - bh * scale) / 2 - by * scale);
   applyTransform();
 }
 
@@ -1209,6 +1212,7 @@ window.addEventListener('orientationchange', () => {
 // INIT
 // ══════════════════════════════════════════════
 wandlers.push(newWandler());
+setOffset(0, 1, { dx: 0, dy: 100 });
 let diagramInitialized = false;
 renderPanel();
 renderDiagram();
