@@ -615,10 +615,15 @@ function drawChevronArrow(parent, ns, x1, cy, x2, height, color, label, fontSize
   parent.appendChild(poly);
   if (label) {
     const txt = document.createElementNS(ns, 'text');
-    txt.setAttribute('x', x1 + (len-tipLen)/2); txt.setAttribute('y', cy + fontSize*0.38);
-    txt.setAttribute('text-anchor','middle'); txt.setAttribute('font-family','Segoe UI, system-ui, sans-serif');
-    txt.setAttribute('font-size', fontSize); txt.setAttribute('font-weight','700');
-    txt.setAttribute('fill', textColor||'#fff'); txt.textContent = label;
+    txt.setAttribute('x', x1 + (len-tipLen)/2);
+    txt.setAttribute('y', cy);
+    txt.setAttribute('text-anchor', 'middle');
+    txt.setAttribute('dominant-baseline', 'middle');
+    txt.setAttribute('font-family', 'Segoe UI, system-ui, sans-serif');
+    txt.setAttribute('font-size', fontSize);
+    txt.setAttribute('font-weight', '700');
+    txt.setAttribute('fill', textColor||'#fff');
+    txt.textContent = label;
     parent.appendChild(txt);
   }
 }
@@ -644,12 +649,15 @@ function drawDiagonalArrow(parent, ns, x1, y1, x2, y2, height, color, label, fon
     if (angle>90||angle<-90) angle+=180;
     const maxChars=Math.max(0,Math.floor(visLen/(fontSize*0.58)));
     const txt=document.createElementNS(ns,'text');
-    txt.setAttribute('x',mx.toFixed(2)); txt.setAttribute('y',my.toFixed(2));
-    txt.setAttribute('text-anchor','middle'); txt.setAttribute('dominant-baseline','middle');
-    txt.setAttribute('transform',`rotate(${angle.toFixed(1)},${mx.toFixed(2)},${my.toFixed(2)})`);
-    txt.setAttribute('font-family','Segoe UI, system-ui, sans-serif');
-    txt.setAttribute('font-size',fontSize); txt.setAttribute('font-weight','700');
-    txt.setAttribute('fill',textColor||'#fff');
+    txt.setAttribute('x', mx.toFixed(2));
+    txt.setAttribute('y', my.toFixed(2));
+    txt.setAttribute('text-anchor', 'middle');
+    txt.setAttribute('dominant-baseline', 'middle');
+    txt.setAttribute('transform', `rotate(${angle.toFixed(1)},${mx.toFixed(2)},${my.toFixed(2)})`);
+    txt.setAttribute('font-family', 'Segoe UI, system-ui, sans-serif');
+    txt.setAttribute('font-size', fontSize);
+    txt.setAttribute('font-weight', '700');
+    txt.setAttribute('fill', textColor||'#fff');
     txt.textContent = label.length>maxChars&&maxChars>3 ? label.slice(0,maxChars-1)+'…' : label;
     parent.appendChild(txt);
   }
@@ -941,6 +949,7 @@ function wrapText(svg, ns, text, cx, cy, maxW, fontSize, fill, fontWeight, idPre
     t.setAttribute('y', startY + i * lineH);
     t.setAttribute('text-anchor', 'middle');
     t.setAttribute('dominant-baseline', 'middle');
+    t.setAttribute('alignment-baseline', 'middle');
     t.setAttribute('font-family', 'Segoe UI, system-ui, sans-serif');
     t.setAttribute('font-size', fontSize);
     t.setAttribute('font-weight', fontWeight || '600');
