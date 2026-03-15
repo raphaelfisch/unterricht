@@ -6,7 +6,7 @@
 <title>Energieumwandlungsketten</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0f4f8; display: flex; height: 100vh; overflow: hidden; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0f4f8; display: flex; height: 100dvh; overflow: hidden; }
   #panel { width: 320px; flex-shrink: 0; background: #fff; border-right: 2px solid #dde3ea; display: flex; flex-direction: column; overflow: hidden; transition: transform .28s ease, width .28s ease; position: relative; z-index: 10; }
   #panel.collapsed { transform: translateX(-100%); width: 0; border-right: none; }
   #panel-header { background: #2c6e9e; color: #fff; padding: 14px 18px; font-size: 15px; font-weight: 700; letter-spacing: .3px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
@@ -53,12 +53,13 @@
   .out-arrow-group { cursor: default; }
   .out-arrow-group .no-export { cursor: grab; }
   .out-arrow-group .no-export:active { cursor: grabbing; }
-  @media (max-width: 640px) {
-    #panel { position: fixed; top: 0; left: 0; height: 100%; width: 300px; transform: translateX(-100%); transition: transform .28s ease; }
+  @media (max-width: 768px) {
+    #panel { position: fixed; top: 0; left: 0; height: 100dvh; width: 300px; transform: translateX(-100%); transition: transform .28s ease; }
     #panel.open { transform: translateX(0); }
     #panel.collapsed { transform: translateX(-100%); width: 300px; border-right: 2px solid #dde3ea; }
+    #panel-scroll { -webkit-overflow-scrolling: touch; }
   }
-  @media (min-width: 641px) {
+  @media (min-width: 769px) {
     #panel-backdrop { display: none !important; }
     #panel.collapsed { transform: translateX(-100%); width: 0; border-right: none; }
   }
@@ -99,7 +100,7 @@
 function togglePanel() {
   const panel = document.getElementById('panel');
   const backdrop = document.getElementById('panel-backdrop');
-  const isMobile = window.innerWidth <= 640;
+  const isMobile = window.innerWidth <= 768;
 
   if (isMobile) {
     const isOpen = panel.classList.contains('open');
@@ -593,7 +594,11 @@ function renderDiagram() {
   setupOutputDrag(svg);
 
   if (!diagramInitialized) {
-    requestAnimationFrame(() => { resetView(); diagramInitialized = true; });
+    // Double RAF ensures layout is fully settled before measuring (important on mobile)
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      resetView();
+      diagramInitialized = true;
+    }));
   } else {
     applyTransform();
   }
@@ -996,8 +1001,10 @@ function zoom(factor) {
 function resetView() {
   const canvasWrap = document.getElementById('canvas-wrap');
   const svg = document.getElementById('diagram');
-  const ww = canvasWrap.clientWidth;
-  const wh = canvasWrap.clientHeight;
+  // Use getBoundingClientRect for accurate dimensions on mobile
+  const rect = canvasWrap.getBoundingClientRect();
+  const ww = rect.width;
+  const wh = rect.height;
   const pad = 24;
   // Measure bbox on a clone without no-export elements for accuracy
   const clone = svg.cloneNode(true);
@@ -1205,7 +1212,7 @@ function exportPNG() {
 // Re-center on window resize and orientation change
 window.addEventListener('resize', () => resetView());
 window.addEventListener('orientationchange', () => {
-  setTimeout(() => resetView(), 300); // small delay for browser to finish rotation
+  setTimeout(() => resetView(), 500);
 });
 
 // ══════════════════════════════════════════════
