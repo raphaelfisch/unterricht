@@ -942,7 +942,7 @@ function wrapText(svg, ns, text, cx, cy, maxW, fontSize, fill, fontWeight, idPre
   });
   if (cur) lines.push(cur);
 
-  const startY = cy - (lines.length - 1) * lineH / 2;
+  const startY = cy - (lines.length - 1) * lineH / 2 - fontSize * 0.05;
   lines.forEach((line, i) => {
     const t = document.createElementNS(ns, 'text');
     t.setAttribute('x', cx);
