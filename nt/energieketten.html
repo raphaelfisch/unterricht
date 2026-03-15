@@ -594,7 +594,6 @@ function renderDiagram() {
   setupOutputDrag(svg);
 
   if (!diagramInitialized) {
-    // Double RAF ensures layout is fully settled before measuring (important on mobile)
     requestAnimationFrame(() => requestAnimationFrame(() => {
       resetView();
       diagramInitialized = true;
@@ -602,6 +601,7 @@ function renderDiagram() {
   } else {
     applyTransform();
   }
+  scheduleSave();
 }
 
 // Draw straight horizontal input arrows
@@ -1209,6 +1209,14 @@ function exportPNG() {
   img.src = url;
 }
 
+// ── Warn before leaving if there's content ─────────────────────────────────
+window.addEventListener('beforeunload', e => {
+  if (wandlers.length > 1 || wandlers[0].outputs.length > 1 || wandlers[0].name !== 'Solarmodul' || wandlers[0].comment) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+
 // Re-center on window resize and orientation change
 window.addEventListener('resize', () => resetView());
 window.addEventListener('orientationchange', () => {
@@ -1216,10 +1224,76 @@ window.addEventListener('orientationchange', () => {
 });
 
 // ══════════════════════════════════════════════
+// STATE → URL & URL → STATE
+// ══════════════════════════════════════════════
+function saveToHash() {
+  const state = {
+    wandlers: wandlers.map((w, wi) => ({
+      name: w.name,
+      inputLabel: w.inputLabel,
+      comment: w.comment || '',
+      outputs: w.outputs.map((o, oi) => ({
+        label: o.label, pct: o.pct, color: o.color,
+        off: getOffset(wi, oi),
+        snap: snapTargets[`${wi}-${oi}`] || null
+      }))
+    }))
+  };
+  const json = JSON.stringify(state);
+  const encoded = btoa(unescape(encodeURIComponent(json)));
+  try { history.replaceState(null, '', '#' + encoded); } catch(e) {}
+}
+
+function loadFromHash() {
+  const hash = location.hash.slice(1);
+  if (!hash) return false;
+  try {
+    const json = decodeURIComponent(escape(atob(hash)));
+    const state = JSON.parse(json);
+    if (!state.wandlers?.length) return false;
+    idSeq = 0;
+    wandlers = state.wandlers.map((w, wi) => {
+      const outputs = w.outputs.map((o, oi) => {
+        const out = { id: ++idSeq, label: o.label, pct: o.pct, color: o.color };
+        if (o.off) outputOffsets[`${wi}-${oi}`] = o.off;
+        if (o.snap) snapTargets[`${wi}-${oi}`] = o.snap;
+        return out;
+      });
+      return { id: ++idSeq, name: w.name, inputLabel: w.inputLabel, comment: w.comment || '', outputs };
+    });
+    return true;
+  } catch(e) { return false; }
+}
+
+// Save state on any change — debounced
+let _saveTimer = null;
+function scheduleSave() {
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(saveToHash, 600);
+}
+
+// Add share button to toolbar
+const tbShare = document.createElement('button');
+tbShare.className = 'tb-btn';
+tbShare.title = 'Link kopieren';
+tbShare.innerHTML = '&#x1F517;';
+tbShare.onclick = () => {
+  saveToHash();
+  navigator.clipboard.writeText(location.href).then(() => {
+    tbShare.innerHTML = '&#x2713;';
+    setTimeout(() => tbShare.innerHTML = '&#x1F517;', 2000);
+  });
+};
+document.getElementById('preview-toolbar').appendChild(tbShare);
+
+// ══════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════
-wandlers.push(newWandler());
-setOffset(0, 1, { dx: 0, dy: 100 });
+const loaded = loadFromHash();
+if (!loaded) {
+  wandlers.push(newWandler());
+  setOffset(0, 1, { dx: 0, dy: 100 });
+}
 let diagramInitialized = false;
 renderPanel();
 renderDiagram();
