@@ -1127,6 +1127,13 @@ function exportSVG() {
 
   const exportClone = svg.cloneNode(true);
   exportClone.querySelectorAll('.no-export').forEach(el => el.remove());
+  // Fix text vertical centering for SVG viewers that ignore dominant-baseline
+  exportClone.querySelectorAll('text[dominant-baseline="middle"]').forEach(t => {
+    t.removeAttribute('dominant-baseline');
+    const fs = parseFloat(t.getAttribute('font-size') || '13');
+    const curY = parseFloat(t.getAttribute('y') || '0');
+    t.setAttribute('y', (curY + fs * 0.35).toFixed(2));
+  });
 
   if (bbox && bbox.width > 0) {
     const x = bbox.x - pad;
@@ -1181,6 +1188,13 @@ function exportPNG() {
   const exportClone = svg.cloneNode(true);
   exportClone.querySelectorAll('.no-export').forEach(el => el.remove());
   exportClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+  // Fix text vertical centering for SVG viewers that ignore dominant-baseline
+  exportClone.querySelectorAll('text[dominant-baseline="middle"]').forEach(t => {
+    t.removeAttribute('dominant-baseline');
+    const fs = parseFloat(t.getAttribute('font-size') || '13');
+    const curY = parseFloat(t.getAttribute('y') || '0');
+    t.setAttribute('y', (curY + fs * 0.35).toFixed(2));
+  });
 
   if (bbox && bbox.width > 0) {
     x = bbox.x - pad; y = bbox.y - pad;
