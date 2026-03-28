@@ -1,1 +1,204 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unterricht – Ägelsee</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
 
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f5f4f0;
+      --surface: #ffffff;
+      --border: #e0ddd6;
+      --text: #1a1916;
+      --muted: #7a7872;
+      --mathe: #2d5a8e;
+      --mathe-bg: #eef3fa;
+      --mathe-accent: #4a7fc1;
+      --nt: #2e7a4f;
+      --nt-bg: #edf6f1;
+      --nt-accent: #48a970;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem 1rem 4rem;
+    }
+
+    header {
+      max-width: 760px;
+      margin: 0 auto 3rem;
+      border-bottom: 1.5px solid var(--border);
+      padding-bottom: 1.25rem;
+    }
+
+    header h1 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .subjects {
+      max-width: 760px;
+      margin: 0 auto;
+      display: grid;
+      gap: 2rem;
+    }
+
+    .subject {
+      background: var(--surface);
+      border-radius: 12px;
+      border: 1.5px solid var(--border);
+      overflow: hidden;
+    }
+
+    .subject-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1rem 1.4rem;
+      border-bottom: 1.5px solid var(--border);
+    }
+
+    .subject.mathe .subject-header { background: var(--mathe-bg); }
+    .subject.nt .subject-header { background: var(--nt-bg); }
+
+    .subject-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      font-weight: 600;
+      font-family: 'DM Mono', monospace;
+      flex-shrink: 0;
+    }
+
+    .subject.mathe .subject-icon { background: var(--mathe); color: white; }
+    .subject.nt .subject-icon { background: var(--nt); color: white; }
+
+    .subject-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+
+    .subject.mathe .subject-title { color: var(--mathe); }
+    .subject.nt .subject-title { color: var(--nt); }
+
+    .tool-list {
+      list-style: none;
+      padding: 0.5rem 0;
+    }
+
+    .tool-list li a {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.65rem 1.4rem;
+      text-decoration: none;
+      color: var(--text);
+      font-size: 0.9rem;
+      transition: background 0.15s;
+      gap: 0.5rem;
+    }
+
+    .tool-list li a:hover {
+      background: var(--bg);
+    }
+
+    .tool-list li a .tool-name {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .tool-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .subject.mathe .tool-dot { background: var(--mathe-accent); }
+    .subject.nt .tool-dot { background: var(--nt-accent); }
+
+    .arrow {
+      color: var(--border);
+      font-size: 0.8rem;
+      transition: color 0.15s, transform 0.15s;
+    }
+
+    .tool-list li a:hover .arrow {
+      color: var(--muted);
+      transform: translateX(3px);
+    }
+
+    .tool-list li:not(:last-child) a {
+      border-bottom: 1px solid var(--border);
+    }
+
+    footer {
+      max-width: 760px;
+      margin: 3rem auto 0;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Unterricht</h1>
+  </header>
+
+  <main class="subjects">
+
+    <section class="subject mathe">
+      <div class="subject-header">
+        <div class="subject-icon">M</div>
+        <span class="subject-title">Mathematik</span>
+      </div>
+      <ul class="tool-list">
+        <li><a href="mathe/formel-champion.html"><span class="tool-name"><span class="tool-dot"></span>Formel-Champion</span><span class="arrow">→</span></a></li>
+        <li><a href="mathe/formel-waage.html"><span class="tool-name"><span class="tool-dot"></span>Formel-Waage</span><span class="arrow">→</span></a></li>
+        <li><a href="mathe/ganzzahlen-multiplikation-division.html"><span class="tool-name"><span class="tool-dot"></span>Ganzzahlen: Multiplikation & Division</span><span class="arrow">→</span></a></li>
+        <li><a href="mathe/kettenrechnen.html"><span class="tool-name"><span class="tool-dot"></span>Kettenrechnen</span><span class="arrow">→</span></a></li>
+        <li><a href="mathe/koerper-im-wuerfel.html"><span class="tool-name"><span class="tool-dot"></span>Körper im Würfel</span><span class="arrow">→</span></a></li>
+        <li><a href="mathe/primfaktorzerlegung.html"><span class="tool-name"><span class="tool-dot"></span>Primfaktorzerlegung</span><span class="arrow">→</span></a></li>
+        <li><a href="mathe/rundungs-trainer.html"><span class="tool-name"><span class="tool-dot"></span>Rundungs-Trainer</span><span class="arrow">→</span></a></li>
+        <li><a href="mathe/zinsrechnung.html"><span class="tool-name"><span class="tool-dot"></span>Zinsrechnung</span><span class="arrow">→</span></a></li>
+      </ul>
+    </section>
+
+    <section class="subject nt">
+      <div class="subject-header">
+        <div class="subject-icon">NT</div>
+        <span class="subject-title">Natur & Technik</span>
+      </div>
+      <ul class="tool-list">
+        <li><a href="nt/energieketten.html"><span class="tool-name"><span class="tool-dot"></span>Energieketten</span><span class="arrow">→</span></a></li>
+        <li><a href="nt/linsen-experiment.html"><span class="tool-name"><span class="tool-dot"></span>Linsen-Experiment</span><span class="arrow">→</span></a></li>
+        <li><a href="nt/reflexreaktion.html"><span class="tool-name"><span class="tool-dot"></span>Reflexreaktion</span><span class="arrow">→</span></a></li>
+        <li><a href="nt/reiz-reaktions-schema.html"><span class="tool-name"><span class="tool-dot"></span>Reiz-Reaktions-Schema</span><span class="arrow">→</span></a></li>
+        <li><a href="nt/schallausbreitung.html"><span class="tool-name"><span class="tool-dot"></span>Schallausbreitung</span><span class="arrow">→</span></a></li>
+      </ul>
+    </section>
+
+  </main>
+
+  <footer>© Raphael Fisch</footer>
+
+</body>
+</html>
