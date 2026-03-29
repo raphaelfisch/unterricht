@@ -674,29 +674,23 @@ document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
 function startCam() {
   stopCam();
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    toast('getUserMedia nicht verfügbar', 4000); return;
+    toast('Kamera nicht verfügbar', 3000); return;
   }
   var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   var constraints = isMobile
     ? { video: { facingMode: camFace, width: { ideal: 1920 }, height: { ideal: 1080 } } }
     : { video: true };
-  toast('Kamera wird gestartet…', 2000);
   navigator.mediaDevices.getUserMedia(constraints).then(function(s) {
-    toast('Kamera bereit', 2000);
-    stream = s; vid.srcObject = s;
-    vid.play().then(function() {
-      toast('Video läuft', 2000);
-    }).catch(function(e) {
-      toast('play() Fehler: ' + e.message, 4000);
-    });
+    stream = s; vid.srcObject = s; vid.play();
     vid.addEventListener('loadedmetadata', function() {
-      bgW = vid.videoWidth; bgH = vid.videoHeight;
-      toast('Video: ' + bgW + '×' + bgH, 2000);
-      fitImg();
+      bgW = vid.videoWidth; bgH = vid.videoHeight; fitImg();
     }, { once: true });
     drawAll();
   }).catch(function(e) {
-    toast(e.name + ': ' + e.message, 5000);
+    var msg = e.name === 'NotAllowedError' ? 'Kamera-Zugriff verweigert.'
+            : e.name === 'NotFoundError'   ? 'Keine Kamera gefunden.'
+            : 'Kamera: ' + e.message;
+    toast(msg, 4000);
   });
 }
 function stopCam() {
@@ -1459,7 +1453,8 @@ function exportImg(fmt) {
     var it=items[i];
     if(it.kind==='phi') {
       lnOnCtx(ec,{x1:(it.x1-offX)*sb,y1:(it.y1-offY)*sb,
-        x2:(it.x2-offX)*sb,y2:(it.y2-offY)*sb,color:it.color,opacity:it.opacity});
+        x2:(it.x2-offX)*sb,y2:(it.y2-offY)*sb,color:it.color,opacity:it.opacity,
+        showLabels:it.showLabels,showMeasure:it.showMeasure});
     } else {
       ec.save();
       var ix=(it.x-offX)*sb,iy=(it.y-offY)*sb,iw=it.w*sb,ih=it.h*sb;
@@ -1477,8 +1472,9 @@ function lnOnCtx(c,ln) {
   c.save(); c.globalAlpha=ln.opacity; c.lineCap='round';
   c.strokeStyle=ln.color; c.lineWidth=3;
   c.beginPath(); c.moveTo(ln.x1,ln.y1); c.lineTo(ln.x2,ln.y2); c.stroke();
-  // Segment labels
-  if(len>60) {
+
+  // Segment labels a / b
+  if(ln.showLabels !== false && len>60) {
     var angle=Math.atan2(ln.y2-ln.y1,ln.x2-ln.x1);
     var nx=-Math.sin(angle)*18, ny=Math.cos(angle)*18;
     c.font='bold 14px sans-serif'; c.textAlign='center'; c.textBaseline='middle';
@@ -1486,18 +1482,33 @@ function lnOnCtx(c,ln) {
     c.fillText('a',(ln.x1+pp.x)/2+nx,(ln.y1+pp.y)/2+ny);
     c.fillText('b',(pp.x+ln.x2)/2+nx,(pp.y+ln.y2)/2+ny);
   }
-  // Start
+
+  // Start point
   c.beginPath(); c.arc(ln.x1,ln.y1,10,0,Math.PI*2);
   c.fillStyle='#fff'; c.fill(); c.strokeStyle=ln.color; c.lineWidth=2.5; c.stroke();
-  // φ
+  // φ point
   c.beginPath(); c.arc(pp.x,pp.y,20,0,Math.PI*2);
   c.fillStyle=ln.color; c.fill(); c.strokeStyle=ln.color; c.lineWidth=2; c.stroke();
   c.fillStyle='#fff'; c.font='bold 16px sans-serif';
   c.textAlign='center'; c.textBaseline='middle'; c.globalAlpha=1;
   c.fillText('φ',pp.x,pp.y); c.globalAlpha=ln.opacity;
-  // End
+  // End point
   c.beginPath(); c.arc(ln.x2,ln.y2,10,0,Math.PI*2);
   c.fillStyle='#fff'; c.fill(); c.strokeStyle=ln.color; c.lineWidth=2.5; c.stroke();
+
+  // Measure annotation above φ
+  if(ln.showMeasure !== false && len>80) {
+    var a=(len/PHI).toFixed(0), b=(len-len/PHI).toFixed(0);
+    var txt='a: '+a+' px  ·  b: '+b+' px  ·  a/b ≈ φ';
+    c.font='13px sans-serif'; c.textAlign='center';
+    var tw=c.measureText(txt).width;
+    var ax=pp.x, ay=pp.y-20-8-10;
+    c.globalAlpha=ln.opacity*0.95;
+    c.fillStyle='rgba(255,253,250,0.95)'; c.strokeStyle=ln.color; c.lineWidth=1.5;
+    rrect(c,ax-tw/2-10,ay-10,tw+20,20,5); c.fill(); c.stroke();
+    c.fillStyle=ln.color; c.textBaseline='middle'; c.globalAlpha=1;
+    c.fillText(txt,ax,ay);
+  }
   c.restore();
 }
 function ovOnCtx(c,type,hw,hh,col) {
