@@ -190,17 +190,7 @@ input[type=range]::-webkit-slider-thumb {
 #confirm-ok2 { background:var(--text); color:var(--white); border-color:var(--text); }
 
 /* Detect panel */
-#dp {
-  position:absolute; top:10px; right:10px;
-  background:rgba(255,253,250,0.94); border:1px solid var(--border);
-  border-radius:12px; padding:12px 14px; font-size:11px; color:var(--muted);
-  min-width:160px; display:none; backdrop-filter:blur(10px);
-}
-#dp h4 { font-size:11px; font-weight:600; color:var(--text); margin-bottom:8px; }
-.dp-r { display:flex; justify-content:space-between; margin-bottom:4px; gap:10px; }
-.dp-v { color:var(--gold); font-weight:500; }
-#dp-q { margin-top:7px; font-size:10px; color:var(--gold); }
-#dp-hint { font-size:9px; opacity:0.45; margin-top:4px; line-height:1.5; }
+
 
 #fi { display:none; }
 </style>
@@ -228,13 +218,6 @@ input[type=range]::-webkit-slider-thumb {
     <p>Foto laden oder hierher ziehen</p>
   </div>
 
-  <div id="dp">
-    <h4>Auto-Erkennung</h4>
-    <div class="dp-r"><span>Kanten</span><span class="dp-v" id="dp-k">—</span></div>
-    <div class="dp-r"><span>φ-Treffer</span><span class="dp-v" id="dp-t">—</span></div>
-    <div id="dp-q">—</div>
-    <div id="dp-hint">Gelb = φ-Paar · Rot = Teilungslinie · Toleranz ±8%</div>
-  </div>
 
   <!-- Color popup -->
   <div class="color-popup popup" id="pop-color">
@@ -379,10 +362,6 @@ input[type=range]::-webkit-slider-thumb {
 
   <!-- Camera -->
   <div class="vr" id="cam-vr" style="display:none"></div>
-  <button class="btn" id="btn-det" style="display:none" onclick="toggleDetect()">
-    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    Erkennung
-  </button>
   <button class="btn" id="btn-flip" style="display:none" onclick="flipCam()">
     <svg viewBox="0 0 24 24"><path d="M4 8h16M4 8l3-3M4 8l3 3"/><path d="M20 16H4M20 16l-3-3M20 16l-3 3"/></svg>
     Wechseln
@@ -411,7 +390,7 @@ var color = '#C00000', opacity = 1.0;
 var drag = null, drawingLine = null, drawingShape = null;
 var lastTap = 0;
 var stream = null, camFace = 'environment';
-var autoDetect = false, detTimer = null, detSegs = [];
+
 
 // Long-press
 var longPressStartX = 0, longPressStartY = 0;
@@ -467,7 +446,7 @@ function applyMode(m) {
   document.getElementById('bP').classList.toggle('on', m === 'photo');
   document.getElementById('bC').classList.toggle('on', m === 'camera');
   document.getElementById('btn-shutter').style.display = m === 'camera' ? '' : 'none';
-  var camIds = ['btn-det','btn-flip','cam-vr'];
+  var camIds = ['btn-flip','cam-vr'];
   for (var i = 0; i < camIds.length; i++)
     document.getElementById(camIds[i]).style.display = m === 'camera' ? '' : 'none';
   // Hide flip button on desktop
@@ -479,7 +458,7 @@ function applyMode(m) {
   if (m === 'camera') {
     startCam();
     vid.style.display = 'block';
-  } else { stopCam(); vid.style.display = 'none'; stopDetect(); }
+  } else { stopCam(); vid.style.display = 'none'; }
   drawAll();
 }
 
@@ -711,75 +690,6 @@ function captureFrame() {
 }
 
 // ── Auto-detect ────────────────────────────────────────────────────────────
-function toggleDetect() {
-  autoDetect = !autoDetect;
-  document.getElementById('btn-det').classList.toggle('on', autoDetect);
-  document.getElementById('dp').style.display = autoDetect ? 'block' : 'none';
-  if (autoDetect) schedDet(); else stopDetect();
-}
-function stopDetect() {
-  autoDetect = false;
-  document.getElementById('btn-det').classList.remove('on');
-  document.getElementById('dp').style.display = 'none';
-  detSegs = []; clearTimeout(detTimer);
-}
-function schedDet() { if (!autoDetect) return; runDet(); detTimer = setTimeout(schedDet, 350); }
-function runDet() {
-  if (!bgW || !stream) return;
-  var W = 200, H = Math.round(200 * bgH / bgW);
-  var tmp = document.createElement('canvas'); tmp.width = W; tmp.height = H;
-  var tc = tmp.getContext('2d'); tc.drawImage(vid, 0, 0, W, H);
-  var id = tc.getImageData(0, 0, W, H);
-  var gr = toGray(id), ed = sobel(gr, W, H);
-  var hp = new Float32Array(H), vp = new Float32Array(W);
-  for (var y = 0; y < H; y++) for (var x = 0; x < W; x++) { hp[y] += ed[y*W+x]; vp[x] += ed[y*W+x]; }
-  var hpk = pkFind(hp, H, 0.28), vpk = pkFind(vp, W, 0.28);
-  var segs = [], hits = 0;
-  function chk(pk, axis) {
-    for (var i = 0; i < pk.length; i++) for (var j = i+1; j < pk.length; j++) for (var k = j+1; k < pk.length; k++) {
-      var a = pk[j]-pk[i], b = pk[k]-pk[j]; if (a<=0||b<=0) continue;
-      var r = (a+b)/a;
-      if (Math.abs(r - PHI) < 0.08) {
-        hits++;
-        var sc = axis==='h' ? bgH*cvScale/H : bgW*cvScale/W;
-        var of = axis==='h' ? offY : offX;
-        segs.push({ axis:axis, p0:pk[i]*sc+of, p1:pk[j]*sc+of, p2:pk[k]*sc+of, r:r.toFixed(2) });
-      }
-    }
-  }
-  chk(hpk,'h'); chk(vpk,'v');
-  detSegs = segs;
-  var tot = hpk.length + vpk.length;
-  document.getElementById('dp-k').textContent = tot;
-  document.getElementById('dp-t').textContent = hits;
-  var qel = document.getElementById('dp-q');
-  if (hits===0) qel.textContent = 'Keine φ-Verhältnisse erkannt';
-  else if (hits<=2) qel.textContent = hits + ' Treffer — wenig eindeutig';
-  else if (hits<=5) qel.textContent = hits + ' Treffer — interessant!';
-  else qel.textContent = hits + ' Treffer — reiches Bild!';
-}
-function toGray(d) {
-  var a=d.data,n=d.width*d.height,g=new Float32Array(n);
-  for(var i=0;i<n;i++) g[i]=0.299*a[i*4]+0.587*a[i*4+1]+0.114*a[i*4+2]; return g;
-}
-function sobel(g,W,H) {
-  var o=new Float32Array(W*H);
-  for(var y=1;y<H-1;y++) for(var x=1;x<W-1;x++) {
-    var gx=-g[(y-1)*W+x-1]+g[(y-1)*W+x+1]-2*g[y*W+x-1]+2*g[y*W+x+1]-g[(y+1)*W+x-1]+g[(y+1)*W+x+1];
-    var gy=-g[(y-1)*W+x-1]-2*g[(y-1)*W+x]-g[(y-1)*W+x+1]+g[(y+1)*W+x-1]+2*g[(y+1)*W+x]+g[(y+1)*W+x+1];
-    o[y*W+x]=Math.sqrt(gx*gx+gy*gy);
-  }
-  var mx=0; for(var i=0;i<o.length;i++) if(o[i]>mx) mx=o[i];
-  if(mx) for(var i=0;i<o.length;i++) o[i]/=mx; return o;
-}
-function pkFind(pr,len,thr) {
-  var mx=0; for(var i=0;i<len;i++) if(pr[i]>mx) mx=pr[i];
-  var res=[],md=Math.max(3,Math.round(len*0.04));
-  for(var i=1;i<len-1;i++)
-    if(pr[i]/mx>=thr&&pr[i]>pr[i-1]&&pr[i]>pr[i+1])
-      if(!res.length||i-res[res.length-1]>=md) res.push(i);
-  return res;
-}
 
 // ── File load ──────────────────────────────────────────────────────────────
 function triggerUpload() { document.getElementById('fi').click(); }
@@ -980,7 +890,6 @@ function drawAll() {
     } else if (stream && vid.readyState >= 2) {
       ctx.drawImage(vid, 0, 0, cssW(), cssH());
     }
-    if(autoDetect) drawDet();
   }
 
   for(var i=0;i<items.length;i++) drawItem(items[i], i===selIdx);
@@ -994,26 +903,7 @@ function drawAll() {
   } else { camRaf=null; }
 }
 
-function drawDet() {
-  for(var s=0;s<detSegs.length;s++) {
-    var seg=detSegs[s];
-    ctx.save();
-    ctx.globalAlpha=0.5; ctx.strokeStyle='#C8A94E'; ctx.lineWidth=1.5; ctx.setLineDash([5,4]);
-    var pArr=[seg.p0,seg.p2];
-    for(var pi=0;pi<pArr.length;pi++) {
-      var p=pArr[pi]; ctx.beginPath();
-      if(seg.axis==='h'){ctx.moveTo(offX,p);ctx.lineTo(offX+bgW*cvScale,p);}
-      else{ctx.moveTo(p,offY);ctx.lineTo(p,offY+bgH*cvScale);}
-      ctx.stroke();
-    }
-    ctx.globalAlpha=0.7; ctx.strokeStyle='#C0392B'; ctx.lineWidth=1.8; ctx.setLineDash([]);
-    ctx.beginPath();
-    if(seg.axis==='h'){ctx.moveTo(offX,seg.p1);ctx.lineTo(offX+bgW*cvScale,seg.p1);}
-    else{ctx.moveTo(seg.p1,offY);ctx.lineTo(seg.p1,offY+bgH*cvScale);}
-    ctx.stroke();
-    ctx.restore();
-  }
-}
+
 
 function drawItem(it, sel) {
   if (it.kind==='phi') drawPhi(it,sel);
