@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>φ Gesicht &amp; Goldener Schnitt</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;1,400&family=Inter:wght@300;400;500&display=swap');
+
+:root {
+  --gold: #B8963E;
+  --gold-hi: #D4AF5A;
+  --gold-bg: rgba(184,150,62,0.12);
+  --gold-border: rgba(184,150,62,0.35);
+  --bg: #F7F5F1;
+  --bg2: #EFECE6;
+  --border: #D8D3CA;
+  --text: #2A2722;
+  --muted: #8A8178;
+  --white: #FFFFFF;
+  --green: #4CAF82;
+  --green-bg: rgba(76,175,130,0.12);
+  --red: #C0392B;
+  --red-bg: rgba(192,57,43,0.10);
+  --hit: 48px;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html, body { height:100%; overflow:hidden; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: 'Inter', system-ui, sans-serif; font-size:13px;
+  display:flex; flex-direction:column;
+}
+
+/* ── Header ── */
+header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 16px; height:50px;
+  background:var(--white); border-bottom:1px solid var(--border);
+  flex-shrink:0; gap:12px; z-index:10;
+}
+.logo {
+  font-family:'Playfair Display',serif; font-size:17px; color:var(--gold);
+  display:flex; align-items:center; gap:8px; white-space:nowrap;
+}
+.logo-sub { font-family:'Inter',sans-serif; font-size:10px; font-weight:500;
+  color:var(--muted); letter-spacing:0.08em; text-transform:uppercase; }
+
+.seg { display:flex; background:var(--bg2); border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+.seg button {
+  padding:0 14px; height:34px; border:none; background:transparent;
+  color:var(--muted); font-family:'Inter',sans-serif; font-size:12px; font-weight:500;
+  cursor:pointer; min-width:var(--hit); transition:background 0.15s, color 0.15s;
+}
+.seg button.on { background:var(--white); color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,0.08); }
+
+/* ── Canvas area ── */
+.canvas-wrap {
+  flex:1; position:relative; overflow:hidden; background:#1A1714;
+}
+video {
+  position:absolute; top:0; left:0; width:100%; height:100%;
+  object-fit:cover; display:block;
+}
+#overlay {
+  position:absolute; top:0; left:0; width:100%; height:100%;
+  pointer-events:none;
+}
+
+/* ── Status badge ── */
+#status {
+  position:absolute; top:12px; left:50%; transform:translateX(-50%);
+  background:rgba(10,8,6,0.72); backdrop-filter:blur(8px);
+  color:#fff; font-size:11px; font-weight:500; letter-spacing:0.04em;
+  padding:5px 14px; border-radius:20px; white-space:nowrap;
+  border:1px solid rgba(255,255,255,0.08);
+  transition:opacity 0.3s;
+}
+
+/* ── Start screen ── */
+#start-screen {
+  position:absolute; inset:0; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:14px;
+  background:#1A1714;
+}
+.phi-big {
+  font-family:'Playfair Display',serif; font-size:80px; color:var(--gold);
+  opacity:0.25; line-height:1;
+}
+#start-screen p { color:rgba(255,255,255,0.45); font-size:14px; }
+#btn-start {
+  margin-top:8px;
+  background:var(--gold); color:#fff;
+  border:none; border-radius:12px;
+  padding:0 28px; height:46px;
+  font-family:'Inter',sans-serif; font-size:14px; font-weight:500;
+  cursor:pointer; transition:background 0.15s;
+}
+#btn-start:active { background:var(--gold-hi); }
+
+/* ── Bottom panel ── */
+.bar {
+  background:var(--white); border-top:1px solid var(--border);
+  flex-shrink:0;
+}
+
+/* Ratio cards */
+#ratio-panel {
+  padding:8px 12px 4px;
+  display:flex; gap:8px; overflow-x:auto;
+  scrollbar-width:none;
+}
+#ratio-panel::-webkit-scrollbar { display:none; }
+
+.ratio-card {
+  flex-shrink:0; border-radius:10px; border:1px solid var(--border);
+  padding:7px 12px; background:var(--bg2);
+  display:flex; flex-direction:column; gap:2px;
+  transition:border-color 0.2s, background 0.2s;
+  cursor:default; min-width:110px;
+}
+.ratio-card.phi-match {
+  border-color:var(--gold-border); background:var(--gold-bg);
+}
+.ratio-card .rc-label {
+  font-size:9px; font-weight:500; text-transform:uppercase; letter-spacing:0.06em;
+  color:var(--muted);
+}
+.ratio-card.phi-match .rc-label { color:var(--gold); }
+.ratio-card .rc-val {
+  font-family:'Playfair Display',serif; font-size:18px; color:var(--text); line-height:1;
+}
+.ratio-card.phi-match .rc-val { color:var(--gold); }
+.ratio-card .rc-diff {
+  font-size:9px; color:var(--muted); display:flex; align-items:center; gap:4px;
+}
+.ratio-badge {
+  display:inline-block; padding:1px 6px; border-radius:10px;
+  font-size:8px; font-weight:600; letter-spacing:0.05em; text-transform:uppercase;
+}
+.ratio-badge.close { background:var(--green-bg); color:var(--green); }
+.ratio-badge.far { background:rgba(0,0,0,0.06); color:var(--muted); }
+
+/* Bottom action strip */
+.bar-strip {
+  display:flex; align-items:stretch; padding:0 8px 2px; gap:2px;
+}
+.btn {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:3px; min-width:54px; height:var(--hit); padding:4px 8px;
+  border:none; border-radius:8px; background:transparent;
+  color:var(--muted); font-family:'Inter',sans-serif;
+  font-size:9px; font-weight:500; letter-spacing:0.04em; text-transform:uppercase;
+  cursor:pointer; flex-shrink:0; transition:background 0.1s, color 0.1s;
+}
+.btn svg { width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
+.btn:active { background:var(--bg2); }
+.btn.on { background:var(--gold-bg); color:var(--gold); }
+
+.vr { width:1px; background:var(--border); margin:10px 4px; flex-shrink:0; }
+
+/* ── Loading overlay ── */
+#loading {
+  position:absolute; inset:0;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:16px; background:#1A1714;
+}
+#loading.hidden { display:none; }
+.spinner {
+  width:36px; height:36px; border:2.5px solid rgba(184,150,62,0.2);
+  border-top-color:var(--gold); border-radius:50%;
+  animation:spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+#loading p { color:rgba(255,255,255,0.45); font-size:12px; }
+
+/* ── Toast ── */
+#toast {
+  position:absolute; bottom:16px; left:50%; transform:translateX(-50%);
+  background:rgba(42,39,34,0.88); color:#fff; font-size:12px;
+  padding:8px 18px; border-radius:20px; pointer-events:none;
+  opacity:0; transition:opacity 0.25s; white-space:nowrap; z-index:200;
+}
+#toast.show { opacity:1; }
+
+/* ── No face info ── */
+#no-face {
+  position:absolute; inset:0; display:none;
+  align-items:center; justify-content:center;
+}
+#no-face span {
+  background:rgba(10,8,6,0.55); color:rgba(255,255,255,0.5);
+  padding:8px 20px; border-radius:20px; font-size:13px;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    φ Goldener Schnitt
+    <span class="logo-sub">Gesicht</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <div class="seg">
+      <button id="bFront" class="on" onclick="setCam('user')">Vorne</button>
+      <button id="bBack" onclick="setCam('environment')">Hinten</button>
+    </div>
+  </div>
+</header>
+
+<div class="canvas-wrap" id="wrap">
+  <video id="vid" autoplay playsinline muted></video>
+  <canvas id="overlay"></canvas>
+
+  <div id="loading">
+    <div class="spinner"></div>
+    <p>Modelle laden…</p>
+  </div>
+
+  <div id="start-screen" style="display:none;">
+    <div class="phi-big">φ</div>
+    <p>Kamera für Gesichtserkennung starten</p>
+    <button id="btn-start" onclick="startCamera()">Kamera starten</button>
+  </div>
+
+  <div id="no-face"><span>Kein Gesicht erkannt</span></div>
+
+  <div id="status">Modelle laden…</div>
+  <div id="toast"></div>
+</div>
+
+<div class="bar">
+  <div id="ratio-panel">
+    <!-- ratio cards inserted by JS -->
+    <div class="ratio-card" style="min-width:auto;border:none;background:none;padding-top:4px;padding-bottom:0;">
+      <div class="rc-label" style="font-size:10px;color:var(--muted);white-space:nowrap;padding-top:3px;">φ = 1.618</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:2px;white-space:nowrap;">≤ 3% Abw. = φ-nah</div>
+    </div>
+  </div>
+  <div class="bar-strip">
+    <button class="btn on" id="btn-landmarks" onclick="toggleLayer('landmarks')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><circle cx="5" cy="17" r="2"/><circle cx="19" cy="17" r="2"/><circle cx="12" cy="20" r="2"/></svg>
+      Punkte
+    </button>
+    <button class="btn on" id="btn-lines" onclick="toggleLayer('lines')">
+      <svg viewBox="0 0 24 24"><line x1="4" y1="12" x2="20" y2="12"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+      Linien
+    </button>
+    <button class="btn on" id="btn-ratios" onclick="toggleLayer('ratios')">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M3 9h6M3 15h6"/></svg>
+      Labels
+    </button>
+    <div class="vr"></div>
+    <button class="btn on" id="btn-face-box" onclick="toggleLayer('facebox')">
+      <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" stroke-dasharray="3 2"/></svg>
+      Rahmen
+    </button>
+    <div class="vr"></div>
+    <button class="btn" id="btn-freeze" onclick="toggleFreeze()">
+      <svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="20" rx="1"/><rect x="2" y="9" width="20" height="6" rx="1"/></svg>
+      Einfrieren
+    </button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// Dynamically load face-api.js, trying multiple CDNs in sequence
+(function() {
+  const SOURCES = [
+    'https://cdnjs.cloudflare.com/ajax/libs/face-api.js/0.22.2/face-api.min.js',
+    'https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js',
+    'https://unpkg.com/face-api.js@0.22.2/dist/face-api.min.js',
+  ];
+  function tryNext(i) {
+    if (i >= SOURCES.length) {
+      document.getElementById('loading').querySelector('p').innerHTML =
+        'face-api.js konnte nicht geladen werden.<br><small style="opacity:0.5">Internetverbindung prüfen</small>';
+      return;
+    }
+    const s = document.createElement('script');
+    s.src = SOURCES[i];
+    s.onload = () => { if (typeof faceapi !== 'undefined') { initApp(); } else { tryNext(i+1); } };
+    s.onerror = () => tryNext(i + 1);
+    document.head.appendChild(s);
+  }
+  tryNext(0);
+})();
+</script>
+<script>
+'use strict';
+function initApp() {
+
+const PHI = 1.6180339887;
+const PHI_TOL = 0.05; // ±5% = close to φ
+
+const vid = document.getElementById('vid');
+const canvas = document.getElementById('overlay');
+const ctx = canvas.getContext('2d');
+const wrap = document.getElementById('wrap');
+const statusEl = document.getElementById('status');
+const loadingEl = document.getElementById('loading');
+const startScreen = document.getElementById('start-screen');
+const noFaceEl = document.getElementById('no-face');
+const ratioPanel = document.getElementById('ratio-panel');
+
+let stream = null;
+let camFacing = 'user';
+let rafId = null;
+let frozen = false;
+let frozenDetection = null;
+let modelsLoaded = false;
+
+const layers = {
+  landmarks: true,
+  lines: true,
+  ratios: true,
+  facebox: true,
+};
+
+// ── Model loading ──────────────────────────────────────────────────
+const MODEL_URL = 'https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights';
+
+async function loadModels() {
+  setStatus('Modelle laden…');
+  const FALLBACK_URL = 'https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights';
+
+  async function tryLoad(url) {
+    await faceapi.nets.tinyFaceDetector.loadFromUri(url);
+    await faceapi.nets.faceLandmark68TinyNet.loadFromUri(url);
+  }
+
+  try {
+    loadingEl.querySelector('p').textContent = 'Modelle laden…';
+    await tryLoad(MODEL_URL);
+    modelsLoaded = true;
+    loadingEl.classList.add('hidden');
+    startScreen.style.display = 'flex';
+    setStatus('Bereit');
+  } catch(e) {
+    console.warn('Primary URL failed, trying fallback…', e);
+    loadingEl.querySelector('p').textContent = 'Lade von Fallback-Quelle…';
+    try {
+      await tryLoad(FALLBACK_URL);
+      modelsLoaded = true;
+      loadingEl.classList.add('hidden');
+      startScreen.style.display = 'flex';
+      setStatus('Bereit');
+    } catch(e2) {
+      console.error('Both model sources failed:', e2);
+      setStatus('Modelle nicht ladbar');
+      loadingEl.querySelector('p').innerHTML = 'Modelle konnten nicht geladen werden.<br><small style="opacity:0.5">Internetverbindung prüfen</small>';
+    }
+  }
+}
+
+// ── Camera ────────────────────────────────────────────────────────
+async function startCamera() {
+  startScreen.style.display = 'none';
+  loadingEl.classList.remove('hidden');
+  loadingEl.querySelector('p').textContent = 'Kamera wird gestartet…';
+
+  try {
+    if (stream) { stream.getTracks().forEach(t => t.stop()); }
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: camFacing, width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: false
+    });
+    vid.srcObject = stream;
+    await new Promise(r => vid.onloadedmetadata = r);
+    await vid.play();
+    loadingEl.classList.add('hidden');
+    setStatus('Gesicht wird gesucht…');
+    frozen = false;
+    frozenDetection = null;
+    document.getElementById('btn-freeze').classList.remove('on');
+    startLoop();
+  } catch(e) {
+    loadingEl.querySelector('p').textContent = 'Kamerazugriff verweigert.';
+    setStatus('Kein Kamerazugriff');
+    toast('Kamerazugriff verweigert');
+  }
+}
+
+function setCam(facing) {
+  camFacing = facing;
+  document.getElementById('bFront').classList.toggle('on', facing === 'user');
+  document.getElementById('bBack').classList.toggle('on', facing === 'environment');
+  if (stream) startCamera();
+}
+
+// ── Detection loop ────────────────────────────────────────────────
+function startLoop() {
+  if (rafId) cancelAnimationFrame(rafId);
+  let lastDetect = 0;
+  const DETECT_INTERVAL = 120; // ms between detections
+
+  async function tick(ts) {
+    rafId = requestAnimationFrame(tick);
+    resizeCanvas();
+
+    let detection = frozen ? frozenDetection : null;
+
+    if (!frozen && ts - lastDetect > DETECT_INTERVAL && modelsLoaded && vid.readyState >= 2) {
+      lastDetect = ts;
+      try {
+        detection = await faceapi
+          .detectSingleFace(vid, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.4 }))
+          .withFaceLandmarks(true);
+      } catch(e) { /* ignore */ }
+    }
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (detection) {
+      noFaceEl.style.display = 'none';
+      drawDetection(detection);
+      setStatus('Gesicht erkannt');
+    } else if (!frozen) {
+      noFaceEl.style.display = 'flex';
+      clearRatioCards();
+      if (modelsLoaded && stream) setStatus('Kein Gesicht erkannt');
+    }
+  }
+  rafId = requestAnimationFrame(tick);
+}
+
+function resizeCanvas() {
+  if (canvas.width !== wrap.clientWidth || canvas.height !== wrap.clientHeight) {
+    canvas.width = wrap.clientWidth;
+    canvas.height = wrap.clientHeight;
+  }
+}
+
+// ── Drawing ───────────────────────────────────────────────────────
+function videoToCanvas(pt) {
+  // Map from video coordinate space to canvas coordinate space
+  const vw = vid.videoWidth, vh = vid.videoHeight;
+  const cw = canvas.width, ch = canvas.height;
+  const scale = Math.min(cw / vw, ch / vh);
+  const ox = (cw - vw * scale) / 2;
+  const oy = (ch - vh * scale) / 2;
+  // If front cam, video is mirrored via CSS? No — we mirror manually
+  let x = pt.x * scale + ox;
+  if (camFacing === 'user') x = cw - x; // mirror for selfie cam
+  const y = pt.y * scale + oy;
+  return { x, y };
+}
+
+function drawDetection(det) {
+  const lm = det.landmarks;
+  const pts = lm.positions; // array of {x,y} in video coords
+
+  // Named landmark groups (68-point model)
+  const jaw      = pts.slice(0, 17);
+  const leftBrow = pts.slice(17, 22);
+  const rightBrow= pts.slice(22, 27);
+  const nose     = pts.slice(27, 36);
+  const leftEye  = pts.slice(36, 42);
+  const rightEye = pts.slice(42, 48);
+  const outerLip = pts.slice(48, 60);
+  const innerLip = pts.slice(60, 68);
+
+  // Helper: convert array of pts
+  const tc = p => videoToCanvas(p);
+  const tcArr = arr => arr.map(tc);
+
+  const jawC  = tcArr(jaw);
+  const leC   = tcArr(leftEye);
+  const reC   = tcArr(rightEye);
+  const nlC   = tcArr(nose);
+  const olC   = tcArr(outerLip);
+  const ilC   = tcArr(innerLip);
+  const lbC   = tcArr(leftBrow);
+  const rbC   = tcArr(rightBrow);
+
+  // Key points for ratio computation
+  const faceLeft  = jawC[0];
+  const faceRight = jawC[16];
+  const faceChin  = jawC[8];
+  const faceTop   = midpoint(lbC[0], rbC[4]); // approx top = midpoint of outer brows projected up
+
+  // Eyes
+  const lEyeLeft  = leC[0], lEyeRight = leC[3];
+  const rEyeLeft  = reC[0], rEyeRight = reC[3];
+  const lEyeCenter = midpoint(lEyeLeft, lEyeRight);
+  const rEyeCenter = midpoint(rEyeLeft, rEyeRight);
+  const eyeLineY   = midpoint(lEyeCenter, rEyeCenter);
+
+  // Nose
+  const noseTip  = nlC[6];
+  const noseBase = midpoint(nlC[0], nlC[4]);
+
+  // Mouth
+  const mouthLeft  = olC[0];
+  const mouthRight = olC[6];
+  const mouthTop   = olC[3];
+  const mouthBot   = olC[9];
+  const mouthCenter= midpoint(mouthLeft, mouthRight);
+
+  // ── Compute ratios ──────────────────────────────────────────────
+  const faceWidth     = dist(faceLeft, faceRight);
+  const eyeSpan       = dist(lEyeLeft, rEyeRight);     // outer eye corners
+  const eyeWidth_L    = dist(lEyeLeft, lEyeRight);
+  const eyeWidth_R    = dist(rEyeLeft, rEyeRight);
+  const eyeSpacing    = dist(lEyeRight, rEyeLeft);     // inner corners
+  const mouthWidth    = dist(mouthLeft, mouthRight);
+  const noseWidth     = dist(nlC[0], nlC[4]);
+
+  // Vertical distances
+  const browToEye     = Math.abs(eyeLineY.y - faceTop.y);
+  const eyeToNose     = Math.abs(noseTip.y - eyeLineY.y);
+  const eyeToMouth    = Math.abs(mouthTop.y - eyeLineY.y);
+  const noseToChin    = Math.abs(faceChin.y - noseTip.y);
+  const mouthToChin   = Math.abs(faceChin.y - mouthBot.y);
+  const faceHeight    = Math.abs(faceChin.y - faceTop.y);
+  const eyeToBottom   = Math.abs(faceChin.y - eyeLineY.y);
+
+  const ratios = [
+    {
+      label: 'Gesicht B/H',
+      a: faceWidth, b: faceHeight,
+      ratio: faceWidth / faceHeight,
+      aLabel: 'Breite', bLabel: 'Höhe',
+      draw: () => {
+        if (!layers.lines) return;
+        drawSegment(faceLeft, faceRight, '#4A9EFF', 'Breite', 0.5, true);
+        drawVSegment(faceTop, faceChin, '#FF7B4A', 'Höhe', 0.5, true);
+      }
+    },
+    {
+      label: 'Augen-Span / Breite',
+      a: faceWidth, b: eyeSpan,
+      ratio: faceWidth / eyeSpan,
+      aLabel: 'Gesicht', bLabel: 'Augen-Span',
+      draw: () => {
+        if (!layers.lines) return;
+        drawSegment(faceLeft, faceRight, '#4A9EFF', '', 0.25, false);
+        drawSegment(lEyeLeft, rEyeRight, '#FFD700', '', 0.35, false);
+      }
+    },
+    {
+      label: 'Augen-Span / Mund',
+      a: eyeSpan, b: mouthWidth,
+      ratio: eyeSpan / mouthWidth,
+      aLabel: 'Augen-Span', bLabel: 'Mundbreite',
+      draw: () => {
+        if (!layers.lines) return;
+        drawSegment(lEyeLeft, rEyeRight, '#FFD700', '', 0.38, false);
+        drawSegment(mouthLeft, mouthRight, '#FF7B4A', '', 0.48, false);
+      }
+    },
+    {
+      label: 'Nase / Mund',
+      a: mouthWidth, b: noseWidth,
+      ratio: mouthWidth / noseWidth,
+      aLabel: 'Mund', bLabel: 'Nase',
+      draw: () => {
+        if (!layers.lines) return;
+        drawSegment(mouthLeft, mouthRight, '#FF7B4A', '', 0.52, false);
+        drawSegment(nlC[0], nlC[4], '#C98BFF', '', 0.60, false);
+      }
+    },
+    {
+      label: 'Auge-Nase / Nase-Kinn',
+      a: eyeToNose, b: noseToChin,
+      ratio: eyeToNose / noseToChin,
+      aLabel: 'Auge→Nase', bLabel: 'Nase→Kinn',
+      draw: () => {
+        if (!layers.lines) return;
+        const mx = (faceLeft.x + faceRight.x) / 2 + 12;
+        drawVBar(mx, eyeLineY.y, noseTip.y, '#FFD700', 'A→N');
+        drawVBar(mx + 22, noseTip.y, faceChin.y, '#4A9EFF', 'N→K');
+      }
+    },
+    {
+      label: 'Auge-Mund / Mund-Kinn',
+      a: eyeToMouth, b: mouthToChin,
+      ratio: eyeToMouth / mouthToChin,
+      aLabel: 'Auge→Mund', bLabel: 'Mund→Kinn',
+      draw: () => {
+        if (!layers.lines) return;
+        const mx = (faceLeft.x + faceRight.x) / 2 - 12;
+        drawVBar(mx, eyeLineY.y, mouthTop.y, '#C98BFF', 'A→M');
+        drawVBar(mx - 22, mouthBot.y, faceChin.y, '#FF7B4A', 'M→K');
+      }
+    },
+    {
+      label: 'Auge / Innen-Abst.',
+      a: eyeWidth_L + eyeWidth_R, b: eyeSpacing,
+      ratio: (eyeWidth_L + eyeWidth_R) / 2 / eyeSpacing,
+      aLabel: 'Ø Augenbreite', bLabel: 'Innen-Abstand',
+      draw: () => {
+        if (!layers.lines) return;
+        drawSegment(lEyeLeft, lEyeRight, '#4A9EFF', '', 0.15, false);
+        drawSegment(rEyeLeft, rEyeRight, '#4A9EFF', '', 0.15, false);
+        drawSegment(lEyeRight, rEyeLeft, '#FF7B4A', '', 0.22, false);
+      }
+    },
+  ];
+
+  // ── Face bounding box ──
+  if (layers.facebox) {
+    const box = det.detection.box;
+    const tl = videoToCanvas({ x: box.x, y: box.y });
+    const br = videoToCanvas({ x: box.x + box.width, y: box.y + box.height });
+    let bx = Math.min(tl.x, br.x), by = Math.min(tl.y, br.y);
+    let bw = Math.abs(br.x - tl.x), bh = Math.abs(br.y - tl.y);
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(184,150,62,0.55)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 5]);
+    ctx.strokeRect(bx, by, bw, bh);
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+
+  // ── Draw ratio lines ──
+  ratios.forEach(r => {
+    if (isFinite(r.ratio) && r.ratio > 0) r.draw();
+  });
+
+  // ── Landmarks ──
+  if (layers.landmarks) {
+    const allPts = [
+      { pts: jawC,   color: 'rgba(255,255,255,0.35)' },
+      { pts: lbC,    color: 'rgba(255,214,0,0.6)' },
+      { pts: rbC,    color: 'rgba(255,214,0,0.6)' },
+      { pts: nlC,    color: 'rgba(201,139,255,0.6)' },
+      { pts: leC,    color: 'rgba(74,158,255,0.8)' },
+      { pts: reC,    color: 'rgba(74,158,255,0.8)' },
+      { pts: olC,    color: 'rgba(255,123,74,0.7)' },
+      { pts: ilC,    color: 'rgba(255,123,74,0.5)' },
+    ];
+    allPts.forEach(g => {
+      g.pts.forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 2.2, 0, Math.PI * 2);
+        ctx.fillStyle = g.color;
+        ctx.fill();
+      });
+    });
+  }
+
+  // ── Update ratio cards ──
+  updateRatioCards(ratios);
+}
+
+// ── Drawing helpers ───────────────────────────────────────────────
+function dist(a, b) {
+  return Math.sqrt((b.x-a.x)**2 + (b.y-a.y)**2);
+}
+function midpoint(a, b) {
+  return { x: (a.x+b.x)/2, y: (a.y+b.y)/2 };
+}
+function phiClose(r) {
+  return Math.abs(r - PHI) / PHI <= PHI_TOL;
+}
+
+function drawSegment(a, b, color, label, yOffset, showLen) {
+  ctx.save();
+  const isGold = phiClose(/* this is called per ratio, color signals it */ 0);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(a.x, a.y);
+  ctx.lineTo(b.x, b.y);
+  ctx.stroke();
+
+  if (layers.ratios && label) {
+    const mx = (a.x + b.x) / 2;
+    const my = (a.y + b.y) / 2 - 8;
+    ctx.fillStyle = '#fff';
+    ctx.font = '10px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(label, mx, my);
+  }
+  ctx.restore();
+}
+
+function drawVSegment(a, b, color, label, xOffset) {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(a.x, a.y);
+  ctx.lineTo(b.x, b.y);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawVBar(x, y1, y2, color, label) {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x, y1);
+  ctx.lineTo(x, y2);
+  ctx.stroke();
+  // tick marks
+  ctx.beginPath();
+  ctx.moveTo(x - 4, y1); ctx.lineTo(x + 4, y1);
+  ctx.moveTo(x - 4, y2); ctx.lineTo(x + 4, y2);
+  ctx.stroke();
+  if (layers.ratios) {
+    const my = (y1 + y2) / 2;
+    ctx.fillStyle = color;
+    ctx.font = 'bold 9px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(label, x, my);
+  }
+  ctx.restore();
+}
+
+function drawPhiLabel(ratio, px, py, isClose) {
+  if (!layers.ratios) return;
+  ctx.save();
+  const text = ratio.toFixed(3);
+  const color = isClose ? '#D4AF5A' : 'rgba(255,255,255,0.7)';
+  ctx.font = `bold 11px 'Playfair Display', serif`;
+  ctx.fillStyle = color;
+  ctx.textAlign = 'center';
+  ctx.fillText(text, px, py);
+  ctx.restore();
+}
+
+// ── Ratio cards ───────────────────────────────────────────────────
+const infoCard = ratioPanel.firstElementChild; // the legend card
+
+function clearRatioCards() {
+  // remove all except info card
+  while (ratioPanel.children.length > 1) {
+    ratioPanel.removeChild(ratioPanel.lastChild);
+  }
+}
+
+function updateRatioCards(ratios) {
+  // Remove old cards
+  while (ratioPanel.children.length > 1) {
+    ratioPanel.removeChild(ratioPanel.lastChild);
+  }
+
+  ratios.forEach(r => {
+    if (!isFinite(r.ratio) || r.ratio <= 0) return;
+    const close = phiClose(r.ratio);
+    const diff = ((r.ratio - PHI) / PHI * 100);
+    const diffStr = (diff >= 0 ? '+' : '') + diff.toFixed(1) + '%';
+
+    const card = document.createElement('div');
+    card.className = 'ratio-card' + (close ? ' phi-match' : '');
+    card.innerHTML = `
+      <div class="rc-label">${r.label}</div>
+      <div class="rc-val">${r.ratio.toFixed(3)}</div>
+      <div class="rc-diff">
+        <span>${diffStr} zu φ</span>
+        <span class="ratio-badge ${close ? 'close' : 'far'}">${close ? 'φ-nah' : 'fern'}</span>
+      </div>`;
+    ratioPanel.appendChild(card);
+
+    // Draw phi label on canvas at approx face center if close
+    if (close && r.ratio) {
+      // Label drawn per ratio in drawDetection already
+    }
+  });
+}
+
+// ── UI helpers ────────────────────────────────────────────────────
+function toggleLayer(name) {
+  layers[name] = !layers[name];
+  const id = 'btn-' + (name === 'landmarks' ? 'landmarks' : name === 'lines' ? 'lines' : name === 'ratios' ? 'ratios' : 'face-box');
+  document.getElementById(id)?.classList.toggle('on', layers[name]);
+}
+
+function toggleFreeze() {
+  frozen = !frozen;
+  document.getElementById('btn-freeze').classList.toggle('on', frozen);
+  if (frozen) {
+    toast('Eingefroren');
+    setStatus('Eingefroren');
+  } else {
+    frozenDetection = null;
+    setStatus('Live');
+  }
+}
+
+// Store last detection for freeze
+const origDetect = faceapi.detectSingleFace;
+// We capture detection result in the loop:
+function setStatus(msg) {
+  statusEl.textContent = msg;
+}
+
+function toast(msg, dur = 1800) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), dur);
+}
+
+// ── Init ──────────────────────────────────────────────────────────
+loadModels();
+
+// When freeze is on, capture the current detection
+// We override the loop slightly: store detection each frame
+const _startLoop = startLoop;
+// (already handled in the tick function above via frozenDetection)
+
+// Patch: when unfreezing, we restart detection
+// The tick function already handles this.
+
+// Allow clicking the video to freeze/unfreeze
+wrap.addEventListener('click', (e) => {
+  // only if camera is running and not clicking UI
+  if (stream && modelsLoaded && !e.target.closest('button')) {
+    toggleFreeze();
+  }
+});
+
+// Store last valid detection for freezing
+let _lastDetection = null;
+// Patch tick to store
+// We need to store the result — patch startLoop
+function startLoopPatched() {
+  if (rafId) cancelAnimationFrame(rafId);
+  let lastDetect = 0;
+  const DETECT_INTERVAL = 120;
+
+  async function tick(ts) {
+    rafId = requestAnimationFrame(tick);
+    resizeCanvas();
+
+    if (frozen) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (_lastDetection) {
+        noFaceEl.style.display = 'none';
+        drawDetection(_lastDetection);
+      }
+      return;
+    }
+
+    let detection = null;
+    if (ts - lastDetect > DETECT_INTERVAL && modelsLoaded && vid.readyState >= 2) {
+      lastDetect = ts;
+      try {
+        detection = await faceapi
+          .detectSingleFace(vid, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.4 }))
+          .withFaceLandmarks(true);
+        if (detection) _lastDetection = detection;
+      } catch(e) { /* ignore */ }
+    } else {
+      detection = _lastDetection;
+    }
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (detection) {
+      noFaceEl.style.display = 'none';
+      drawDetection(detection);
+      setStatus('Gesicht erkannt');
+    } else {
+      noFaceEl.style.display = 'flex';
+      clearRatioCards();
+      setStatus('Kein Gesicht erkannt');
+    }
+  }
+  rafId = requestAnimationFrame(tick);
+}
+
+// Override startCamera to use patched loop
+async function startCamera() {
+  startScreen.style.display = 'none';
+  loadingEl.classList.remove('hidden');
+  loadingEl.querySelector('p').textContent = 'Kamera wird gestartet…';
+  _lastDetection = null;
+
+  try {
+    if (stream) { stream.getTracks().forEach(t => t.stop()); }
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: camFacing, width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: false
+    });
+    vid.srcObject = stream;
+    await new Promise(r => vid.onloadedmetadata = r);
+    await vid.play();
+    loadingEl.classList.add('hidden');
+    setStatus('Gesicht wird gesucht…');
+    frozen = false;
+    document.getElementById('btn-freeze').classList.remove('on');
+    startLoopPatched();
+  } catch(e) {
+    loadingEl.querySelector('p').textContent = 'Kamerazugriff verweigert.';
+    setStatus('Kein Kamerazugriff');
+    toast('Kamerazugriff verweigert');
+  }
+}
+
+// Re-bind start button (override inline onclick)
+document.getElementById('btn-start').onclick = startCamera;
+
+// Start model loading
+loadModels();
+} // end initApp
+</script>
+</body>
+</html>
