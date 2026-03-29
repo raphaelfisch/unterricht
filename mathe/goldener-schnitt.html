@@ -94,27 +94,45 @@ video { position:absolute; top:0; left:0; width:100%; height:100%; object-fit:co
   position:absolute; bottom:calc(var(--hit) + 12px); left:50%; transform:translateX(-50%);
   background:var(--white); border:1px solid var(--border); border-radius:14px;
   box-shadow:0 8px 32px rgba(0,0,0,0.1); display:none; z-index:100; overflow:hidden;
+  max-width:calc(100vw - 24px);
 }
 .popup.show { display:block; }
 
-.color-popup { padding:14px 16px; flex-direction:column; gap:8px; }
-.color-popup.show { display:flex; }
-.swatch-row { display:flex; gap:10px; }
-.swatch { width:34px; height:34px; border-radius:50%; border:3px solid transparent; cursor:pointer; transition:transform 0.12s; }
-.swatch.on { border-color:var(--text); transform:scale(1.12); }
+.color-popup { padding:12px 14px; }
+.color-popup.show { display:block; }
+.swatch-grid {
+  display:grid;
+  grid-template-columns: repeat(12, 28px);
+  gap:8px;
+}
+/* On narrow screens: 2 rows of 6 */
+@media (max-width: 480px) {
+  .swatch-grid { grid-template-columns: repeat(6, 28px); }
+}
+/* On very narrow screens: 3 rows of 4 */
+@media (max-width: 280px) {
+  .swatch-grid { grid-template-columns: repeat(4, 28px); }
+}
+.swatch { width:28px; height:28px; border-radius:50%; border:3px solid transparent; cursor:pointer; transition:transform 0.12s; }
+.swatch.on { border-color:var(--text); transform:scale(1.15); }
 
-.opac-popup { padding:14px 18px; align-items:center; gap:12px; }
+.opac-popup { padding:14px 18px; flex-direction:column; align-items:center; gap:8px; }
 .opac-popup.show { display:flex; }
+/* Single row if enough space */
+@media (min-width: 380px) {
+  .opac-popup { flex-direction:row; flex-wrap:nowrap; }
+}
 .opac-popup label { font-size:11px; color:var(--muted); white-space:nowrap; }
 input[type=range] {
   -webkit-appearance:none; width:130px; height:4px;
   border-radius:2px; background:var(--border); outline:none;
+  max-width:calc(100vw - 120px);
 }
 input[type=range]::-webkit-slider-thumb {
   -webkit-appearance:none; width:22px; height:22px;
   border-radius:50%; background:var(--gold); cursor:pointer;
 }
-.opac-popup span { font-size:11px; color:var(--gold); width:32px; }
+.opac-popup span { font-size:11px; color:var(--gold); width:32px; text-align:center; }
 
 /* Context menu */
 #ctx-menu {
@@ -162,9 +180,14 @@ input[type=range]::-webkit-slider-thumb {
 
 <header>
   <div class="logo">φ Goldener Schnitt</div>
-  <div class="seg">
-    <button id="bP" class="on" onclick="setMode('photo')">Foto</button>
-    <button id="bC" onclick="setMode('camera')">Kamera</button>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <button id="btn-shutter" onclick="captureFrame()" style="display:none;width:40px;height:40px;border-radius:50%;border:3px solid var(--border);background:var(--white);cursor:pointer;padding:0;position:relative;flex-shrink:0;" title="Einfrieren">
+      <span style="display:block;width:26px;height:26px;border-radius:50%;background:var(--text);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);"></span>
+    </button>
+    <div class="seg">
+      <button id="bP" class="on" onclick="setMode('photo')">Foto</button>
+      <button id="bC" onclick="setMode('camera')">Kamera</button>
+    </div>
   </div>
 </header>
 
@@ -187,20 +210,27 @@ input[type=range]::-webkit-slider-thumb {
 
   <!-- Color popup -->
   <div class="color-popup popup" id="pop-color">
-    <div class="swatch-row">
-      <div class="swatch on"  style="background:#B8963E" onclick="pickColor('#B8963E',this)"></div>
-      <div class="swatch"     style="background:#2A2722" onclick="pickColor('#2A2722',this)"></div>
+    <div class="swatch-grid">
+      <div class="swatch on"  style="background:#C00000" onclick="pickColor('#C00000',this)"></div>
+      <div class="swatch"     style="background:#FF0000" onclick="pickColor('#FF0000',this)"></div>
+      <div class="swatch"     style="background:#FFC000" onclick="pickColor('#FFC000',this)"></div>
+      <div class="swatch"     style="background:#FFFF00" onclick="pickColor('#FFFF00',this)"></div>
+      <div class="swatch"     style="background:#92D050" onclick="pickColor('#92D050',this)"></div>
+      <div class="swatch"     style="background:#00B050" onclick="pickColor('#00B050',this)"></div>
+      <div class="swatch"     style="background:#00B0F0" onclick="pickColor('#00B0F0',this)"></div>
+      <div class="swatch"     style="background:#0070C0" onclick="pickColor('#0070C0',this)"></div>
+      <div class="swatch"     style="background:#002060" onclick="pickColor('#002060',this)"></div>
+      <div class="swatch"     style="background:#7030A0" onclick="pickColor('#7030A0',this)"></div>
+      <div class="swatch"     style="background:#000000" onclick="pickColor('#000000',this)"></div>
       <div class="swatch"     style="background:#FFFFFF;border-color:var(--border)" onclick="pickColor('#FFFFFF',this)"></div>
-      <div class="swatch"     style="background:#C0392B" onclick="pickColor('#C0392B',this)"></div>
-      <div class="swatch"     style="background:#2471A3" onclick="pickColor('#2471A3',this)"></div>
     </div>
   </div>
 
   <!-- Opacity popup -->
   <div class="opac-popup popup" id="pop-opac">
     <label>Transparenz</label>
-    <input type="range" id="sl-opac" min="10" max="100" value="80" oninput="opacChange()">
-    <span id="sl-val">80%</span>
+    <input type="range" id="sl-opac" min="0" max="90" value="0" oninput="opacChange()">
+    <span id="sl-val">0%</span>
   </div>
 
   <!-- Context menu -->
@@ -236,7 +266,7 @@ input[type=range]::-webkit-slider-thumb {
   <div class="vr"></div>
 
   <!-- Tools — all equal -->
-  <button class="btn on" id="tool-phi" onclick="setTool('phi')">
+  <button class="btn" id="tool-phi" onclick="setTool('phi')">
     <svg viewBox="0 0 24 24"><line x1="4" y1="20" x2="20" y2="4"/><circle cx="9.7" cy="14.3" r="2.8"/></svg>
     φ-Linie
   </button>
@@ -248,21 +278,9 @@ input[type=range]::-webkit-slider-thumb {
     <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="1"/><line x1="14.1" y1="3" x2="14.1" y2="21"/><line x1="3" y1="14.1" x2="21" y2="14.1"/></svg>
     Gitter
   </button>
-  <button class="btn" id="tool-diag" onclick="setTool('diag')">
-    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="1"/><line x1="3" y1="3" x2="21" y2="21"/><line x1="21" y1="3" x2="3" y2="21"/></svg>
-    Diagonale
-  </button>
   <button class="btn" id="tool-spiral" onclick="setTool('spiral')">
     <svg viewBox="0 0 24 24"><path d="M12 12c0-2.2 1.8-4 4-4s4 1.8 4 4a8 8 0 0 1-8 8 12 12 0 0 1-12-12C0 3.6 5.4-1 12 0"/></svg>
     Spirale
-  </button>
-
-  <div class="vr"></div>
-
-  <!-- Add -->
-  <button class="btn gold" onclick="addItem()">
-    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-    Hinzufügen
   </button>
 
   <div class="vr"></div>
@@ -273,7 +291,17 @@ input[type=range]::-webkit-slider-thumb {
     Farbe
   </button>
   <button class="btn" onclick="togglePop('pop-opac')">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h9"/></svg>
+    <svg viewBox="0 0 24 24" fill="none">
+      <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="1.6"/>
+      <rect x="3" y="3" width="4.5" height="4.5" fill="currentColor"/>
+      <rect x="12" y="3" width="4.5" height="4.5" fill="currentColor"/>
+      <rect x="7.5" y="7.5" width="4.5" height="4.5" fill="currentColor"/>
+      <rect x="16.5" y="7.5" width="4.5" height="4.5" fill="currentColor"/>
+      <rect x="3" y="12" width="4.5" height="4.5" fill="currentColor"/>
+      <rect x="12" y="12" width="4.5" height="4.5" fill="currentColor"/>
+      <rect x="7.5" y="16.5" width="4.5" height="4.5" fill="currentColor"/>
+      <rect x="16.5" y="16.5" width="4.5" height="4.5" fill="currentColor"/>
+    </svg>
     Transparenz
   </button>
 
@@ -315,10 +343,6 @@ input[type=range]::-webkit-slider-thumb {
     <svg viewBox="0 0 24 24"><path d="M1 4v6h6"/><path d="M3.5 15A9 9 0 1 0 4 5"/></svg>
     Kamera
   </button>
-  <button class="btn gold" id="btn-snap" style="display:none" onclick="captureFrame()">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="4"/><path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-4l-1-2H9L8 3z"/></svg>
-    Aufnehmen
-  </button>
 
  </div><!-- /.bar-inner -->
 </div>
@@ -332,15 +356,15 @@ var wrap = document.getElementById('wrap');
 var vid = document.getElementById('vid');
 
 // State
-var mode = 'photo', tool = 'phi';
+var mode = 'photo', tool = '';
 var bgImage = null, bgW = 0, bgH = 0;
 var cvScale = 1, offX = 0, offY = 0;
 var viewZoom = 1, viewPanX = 0, viewPanY = 0;
 var items = []; // all elements: {kind, ...}
 var redoStack = []; // for redo
 var selIdx = -1;
-var color = '#B8963E', opacity = 0.8;
-var drag = null, drawingLine = null;
+var color = '#C00000', opacity = 1.0;
+var drag = null, drawingLine = null, drawingShape = null;
 var lastTap = 0;
 var stream = null, camFace = 'environment';
 var autoDetect = false, detTimer = null, detSegs = [];
@@ -367,6 +391,7 @@ function setMode(m) {
   mode = m;
   document.getElementById('bP').classList.toggle('on', m === 'photo');
   document.getElementById('bC').classList.toggle('on', m === 'camera');
+  document.getElementById('btn-shutter').style.display = m === 'camera' ? '' : 'none';
   var camIds = ['btn-det','btn-flip','btn-snap','cam-vr'];
   for (var i = 0; i < camIds.length; i++)
     document.getElementById(camIds[i]).style.display = m === 'camera' ? '' : 'none';
@@ -378,7 +403,7 @@ function setMode(m) {
 }
 
 // ── Tool ───────────────────────────────────────────────────────────────────
-var TOOLS = ['phi','rect','lines','diag','spiral'];
+var TOOLS = ['phi','rect','lines','spiral'];
 function setTool(t) {
   tool = t;
   for (var i = 0; i < TOOLS.length; i++) {
@@ -407,7 +432,7 @@ function pickColor(c, el) {
 }
 function opacChange() {
   var v = parseInt(document.getElementById('sl-opac').value);
-  opacity = v / 100;
+  opacity = 1 - v / 100;
   document.getElementById('sl-val').textContent = v + '%';
   if (selIdx >= 0) { items[selIdx].opacity = opacity; drawAll(); }
 }
@@ -719,6 +744,7 @@ function drawAll() {
 
   for(var i=0;i<items.length;i++) drawItem(items[i], i===selIdx);
   if(drawingLine) drawLinePrev(drawingLine);
+  if(drawingShape) drawShapePrev(drawingShape);
 
   ctx.restore();
   if(mode==='camera') {
@@ -775,15 +801,17 @@ function drawPhi(it, sel) {
     ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.globalAlpha=1;
     ctx.fillText(h.lb,h.p.x,h.p.y); ctx.globalAlpha=it.opacity;
   }
+  // Annotation: centred above φ point, moves with it
   if(sel&&len>80) {
     var la=(len/PHI).toFixed(0), lb=(len-len/PHI).toFixed(0);
-    var mx=(it.x1+it.x2)/2, my=(it.y1+it.y2)/2-22;
-    var txt='A: '+la+'  ·  B: '+lb+'  ·  A/B ≈ φ';
+    var txt='A: '+la+' px  ·  B: '+lb+' px  ·  A/B ≈ φ';
     ctx.globalAlpha=0.93; ctx.font='10px Inter,sans-serif'; ctx.textAlign='center';
     var tw=ctx.measureText(txt).width;
-    ctx.fillStyle='rgba(255,253,250,0.92)'; ctx.strokeStyle=it.color; ctx.lineWidth=1;
-    rrect(ctx,mx-tw/2-8,my-9,tw+16,18,5); ctx.fill(); ctx.stroke();
-    ctx.fillStyle=it.color; ctx.textBaseline='middle'; ctx.fillText(txt,mx,my);
+    // Position above the φ handle (r=16), with 8px gap
+    var ax=pp.x, ay=pp.y-16-8-9; // 16=handle radius, 8=gap, 9=half label height
+    ctx.fillStyle='rgba(255,253,250,0.95)'; ctx.strokeStyle=it.color; ctx.lineWidth=1;
+    rrect(ctx,ax-tw/2-8,ay-9,tw+16,18,5); ctx.fill(); ctx.stroke();
+    ctx.fillStyle=it.color; ctx.textBaseline='middle'; ctx.fillText(txt,ax,ay);
   }
   ctx.restore();
 }
@@ -805,6 +833,24 @@ function drawLinePrev(dl) {
     ctx.textAlign='center';ctx.textBaseline='middle';ctx.globalAlpha=0.9;
     ctx.fillText(h.lb,h.p.x,h.p.y);ctx.globalAlpha=0.55;
   }
+  ctx.restore();
+}
+
+function drawShapePrev(ds) {
+  // ds = {x1,y1,x2,y2,kind} — x1/y1=mousedown, x2/y2=current
+  var x=Math.min(ds.x1,ds.x2), y=Math.min(ds.y1,ds.y2);
+  var w=Math.abs(ds.x2-ds.x1);
+  // Maintain φ ratio: height = width/φ
+  var h=w/PHI;
+  if(w<10) return;
+  ctx.save();
+  ctx.globalAlpha=0.5;
+  ctx.translate(x+w/2,y+h/2);
+  var hw=w/2,hh=h/2;
+  if(ds.kind==='spiral') drSpiral(hw,hh,color,false);
+  else if(ds.kind==='rect') drRect(hw,hh,color);
+  else if(ds.kind==='lines') drLines(hw,hh,color);
+  else drDiag(hw,hh,color);
   ctx.restore();
 }
 
@@ -838,39 +884,48 @@ function drawShape(it, sel) {
 function drSpiral(hw,hh,c,s) {
   ctx.strokeStyle=c; ctx.lineWidth=s?2:1.6;
   ctx.strokeRect(-hw,-hh,hw*2,hh*2);
-  var x=-hw,y=-hh,rw=hw*2,rh=hh*2;
-  ctx.beginPath(); var first=true;
-  for(var i=0;i<8;i++) {
-    if(!rw||!rh||Math.min(rw,rh)<2) break;
-    var aX,aY,r,sa,ea,q=i%4;
-    if(rw>rh) {
-      ctx.strokeRect(x,y,rh,rh); r=rh;
-      if(q===0){aX=x+rh;aY=y+rh;sa=Math.PI;ea=1.5*Math.PI;}
-      else if(q===1){aX=x+rw;aY=y;sa=.5*Math.PI;ea=Math.PI;}
-      else if(q===2){aX=x+rw-rh;aY=y;sa=0;ea=.5*Math.PI;}
-      else{aX=x;aY=y+rh;sa=-.5*Math.PI;ea=0;}
-      if(first){ctx.moveTo(aX+r*Math.cos(sa),aY+r*Math.sin(sa));first=false;}
-      ctx.arc(aX,aY,r,sa,ea); x+=rh; rw-=rh;
+
+  // Track the remaining rectangle, cutting squares in 4-cycle: left, top, right, bottom
+  var x=-hw, y=-hh, w=hw*2, h=hh*2;
+  ctx.beginPath();
+  var started=false;
+  for(var i=0;i<9;i++){
+    if(Math.min(w,h)<1.5) break;
+    var side=i%4, aX,aY,r,sa,ea;
+    if(side===0){
+      // Cut square of size h from LEFT → arc center = bottom-right corner of that square
+      r=h; aX=x+r; aY=y+r; sa=Math.PI; ea=1.5*Math.PI;
+      ctx.strokeRect(x,y,r,r);
+      x+=r; w-=r;
+    } else if(side===1){
+      // Cut square of size w from TOP → arc center = bottom-left corner of that square
+      r=w; aX=x; aY=y+r; sa=1.5*Math.PI; ea=2*Math.PI;
+      ctx.strokeRect(x,y,r,r);
+      y+=r; h-=r;
+    } else if(side===2){
+      // Cut square of size h from RIGHT → arc center = top-left corner of that square
+      r=h; aX=x+w-r; aY=y; sa=0; ea=0.5*Math.PI;
+      ctx.strokeRect(x+w-r,y,r,r);
+      w-=r;
     } else {
-      ctx.strokeRect(x,y,rw,rw); r=rw;
-      if(q===0){aX=x+rw;aY=y+rw;sa=-.5*Math.PI;ea=0;}
-      else if(q===1){aX=x;aY=y+rh;sa=0;ea=.5*Math.PI;}
-      else if(q===2){aX=x;aY=y+rh-rw;sa=.5*Math.PI;ea=Math.PI;}
-      else{aX=x+rw;aY=y;sa=Math.PI;ea=1.5*Math.PI;}
-      if(first){ctx.moveTo(aX+r*Math.cos(sa),aY+r*Math.sin(sa));first=false;}
-      ctx.arc(aX,aY,r,sa,ea); y+=rw; rh-=rw;
+      // Cut square of size w from BOTTOM → arc center = top-right corner of that square
+      r=w; aX=x+w; aY=y+h-r; sa=0.5*Math.PI; ea=Math.PI;
+      ctx.strokeRect(x,y+h-r,r,r);
+      h-=r;
     }
+    if(!started){ ctx.moveTo(aX+r*Math.cos(sa), aY+r*Math.sin(sa)); started=true; }
+    ctx.arc(aX,aY,r,sa,ea,false);
   }
   ctx.stroke();
 }
+
 function drRect(hw,hh,c) {
   ctx.strokeStyle=c; ctx.lineWidth=1.6;
   ctx.strokeRect(-hw,-hh,hw*2,hh*2);
   var x=-hw+hw*2/PHI;
   ctx.beginPath(); ctx.moveTo(x,-hh); ctx.lineTo(x,hh); ctx.stroke();
-  ctx.fillStyle=c; ctx.font='italic 11px Playfair Display,serif';
-  ctx.textAlign='left'; ctx.textBaseline='top'; ctx.fillText('φ',x+4,-hh+4);
 }
+
 function drLines(hw,hh,c) {
   ctx.strokeStyle=c; ctx.lineWidth=1.2;
   var w=hw*2,h=hh*2,x1=-hw+w/PHI,x2=hw-w/PHI,y1=-hh+h/PHI,y2=hh-h/PHI;
@@ -881,12 +936,18 @@ function drLines(hw,hh,c) {
   [[x1,y1],[x1,y2],[x2,y1],[x2,y2]].forEach(function(p){
     ctx.beginPath();ctx.arc(p[0],p[1],4,0,Math.PI*2);ctx.fill();});
 }
+
 function drDiag(hw,hh,c) {
   ctx.strokeStyle=c; ctx.lineWidth=1.6;
   ctx.strokeRect(-hw,-hh,hw*2,hh*2);
-  ctx.beginPath();ctx.moveTo(-hw,-hh);ctx.lineTo(hw,hh);ctx.moveTo(hw,-hh);ctx.lineTo(-hw,hh);ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(-hw,-hh); ctx.lineTo(hw,hh);
+  ctx.moveTo( hw,-hh); ctx.lineTo(-hw,hh);
+  ctx.stroke();
+  // φ divider: at 1/φ of total width from left edge
+  var x=-hw+hw*2/PHI;
   ctx.setLineDash([5,4]);
-  var x=-hw+hw*2/PHI; ctx.beginPath();ctx.moveTo(x,-hh);ctx.lineTo(x,hh);ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x,-hh); ctx.lineTo(x,hh); ctx.stroke();
   ctx.setLineDash([]);
 }
 function rrect(ctx,x,y,w,h,r) {
@@ -967,7 +1028,7 @@ function onDown(e) {
     drawingLine={x1:px,y1:py,x2:px,y2:py}; selIdx=-1; return;
   }
 
-  // Shape tools: hit test existing shapes of same kind OR any shape
+  // Shape tools: hit test existing shapes
   for(var i=items.length-1;i>=0;i--) {
     var it=items[i];
     if(it.kind==='phi') continue;
@@ -987,7 +1048,9 @@ function onDown(e) {
       drawAll(); return;
     }
   }
-  selIdx=-1; drawAll();
+  // Nothing hit → start drawing a new shape by dragging
+  drawingShape={x1:px,y1:py,x2:px,y2:py,kind:tool};
+  selIdx=-1;
 }
 
 function onMove(e) {
@@ -1017,6 +1080,10 @@ function onMove(e) {
   if(tool==='phi'&&drawingLine) {
     cancelLongPress();
     drawingLine.x2=px; drawingLine.y2=py; drawAll(); return;
+  }
+  if(drawingShape) {
+    cancelLongPress();
+    drawingShape.x2=px; drawingShape.y2=py; drawAll(); return;
   }
   if(!drag) return;
   cancelLongPress();
@@ -1051,9 +1118,21 @@ function onUp(e) {
     if(len>20) {
       var it=makeItem('phi');
       it.x1=drawingLine.x1;it.y1=drawingLine.y1;it.x2=drawingLine.x2;it.y2=drawingLine.y2;
-      items.push(it); selIdx=items.length-1;
+      items.push(it); selIdx=items.length-1; redoStack=[]; updateUndoRedo();
     }
     drawingLine=null; drawAll();
+  }
+  if(drawingShape) {
+    var w=Math.abs(drawingShape.x2-drawingShape.x1);
+    if(w>20) {
+      var x=Math.min(drawingShape.x1,drawingShape.x2);
+      var y=Math.min(drawingShape.y1,drawingShape.y2);
+      var h=w/PHI;
+      var it=makeItem(drawingShape.kind);
+      it.x=x; it.y=y; it.w=w; it.h=h;
+      items.push(it); selIdx=items.length-1; redoStack=[]; updateUndoRedo();
+    }
+    drawingShape=null; drawAll();
   }
   drag=null;
 }
@@ -1086,7 +1165,7 @@ cv.addEventListener('touchstart',onDown,{passive:false});
 cv.addEventListener('touchmove', onMove,{passive:false});
 cv.addEventListener('touchend',  onUp,  {passive:false});
 cv.addEventListener('mousedown', onDown);
-cv.addEventListener('mousemove', function(e){if(drag||drawingLine)onMove(e);});
+cv.addEventListener('mousemove', function(e){if(drag||drawingLine||drawingShape)onMove(e);});
 cv.addEventListener('mouseup',   onUp);
 cv.addEventListener('wheel', function(e) {
   e.preventDefault();
@@ -1150,9 +1229,6 @@ function ovOnCtx(c,type,hw,hh,col) {
     [y1,y2].forEach(function(y){c.beginPath();c.moveTo(-hw,y);c.lineTo(hw,y);c.stroke();});
     c.fillStyle=col; [[x1,y1],[x1,y2],[x2,y1],[x2,y2]].forEach(function(p){
       c.beginPath();c.arc(p[0],p[1],6,0,Math.PI*2);c.fill();});
-  } else if(type==='diag') {
-    c.strokeRect(-hw,-hh,hw*2,hh*2);
-    c.beginPath();c.moveTo(-hw,-hh);c.lineTo(hw,hh);c.moveTo(hw,-hh);c.lineTo(-hw,hh);c.stroke();
   } else {
     c.strokeRect(-hw,-hh,hw*2,hh*2);
     var x=-hw,y=-hh,rw=hw*2,rh=hh*2; c.beginPath();
