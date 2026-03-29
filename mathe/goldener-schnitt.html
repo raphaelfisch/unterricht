@@ -470,14 +470,16 @@ function applyMode(m) {
   var camIds = ['btn-det','btn-flip','cam-vr'];
   for (var i = 0; i < camIds.length; i++)
     document.getElementById(camIds[i]).style.display = m === 'camera' ? '' : 'none';
-  // Hide flip button on desktop (no touch support = no front/back camera)
-  var isMobile = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
-  if (!isMobile) document.getElementById('btn-flip').style.display = 'none';
+  // Hide flip button on desktop
+  var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  document.getElementById('btn-flip').style.display = (m === 'camera' && isMobile) ? '' : 'none';
   document.getElementById('btn-load').style.display = m === 'photo' ? '' : 'none';
   document.getElementById('load-vr').style.display = m === 'photo' ? '' : 'none';
   document.getElementById('empty').style.display = m === 'photo' && !bgImage ? '' : 'none';
-  if (m === 'camera') { startCam(); vid.style.display = 'block'; }
-  else { stopCam(); vid.style.display = 'none'; stopDetect(); }
+  if (m === 'camera') {
+    startCam();
+    vid.style.display = 'block';
+  } else { stopCam(); vid.style.display = 'none'; stopDetect(); }
   drawAll();
 }
 
@@ -672,16 +674,15 @@ document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
 function startCam() {
   stopCam();
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    toast('Kamera nicht verfügbar (kein HTTPS?)', 3000); return;
+    toast('Kamera nicht verfügbar', 3000); return;
   }
   navigator.mediaDevices.getUserMedia({
     video: { facingMode: camFace, width: { ideal: 1920 }, height: { ideal: 1080 } }
   }).then(function(s) {
     stream = s; vid.srcObject = s; vid.play();
     vid.addEventListener('loadedmetadata', function() {
-      bgW = vid.videoWidth; bgH = vid.videoHeight; fitImg();
+      bgW = vid.videoWidth; bgH = vid.videoHeight; fitImg(); drawAll();
     }, { once: true });
-    if (!camRaf) camRaf = requestAnimationFrame(drawAll);
   }).catch(function(e) {
     var msg = e.name === 'NotAllowedError' ? 'Kamera-Zugriff verweigert.'
             : e.name === 'NotFoundError'   ? 'Keine Kamera gefunden.'
@@ -911,6 +912,19 @@ function hitPhi(it,px,py) {
   if(d2(px,py,it.x1,it.y1)<HR) return 'start';
   if(d2(px,py,pp.x,pp.y)<HR) return 'mid';
   if(d2(px,py,it.x2,it.y2)<HR) return 'end';
+  // Measure box hit — treat as mid handle
+  if(it.showMeasure !== false) {
+    var len=itemLen(it);
+    if(len>80) {
+      var a=(len/PHI).toFixed(0), b=(len-len/PHI).toFixed(0);
+      var txt='a: '+a+' px  ·  b: '+b+' px  ·  a/b ≈ φ';
+      ctx.font='10px Inter,sans-serif';
+      var tw=ctx.measureText(txt).width;
+      var ax=pp.x, ay=pp.y-33;
+      var bx1=ax-tw/2-8, by1=ay-9, bw=tw+16, bh=18;
+      if(px>=bx1&&px<=bx1+bw&&py>=by1&&py<=by1+bh) return 'mid';
+    }
+  }
   if(dSeg(px,py,it.x1,it.y1,it.x2,it.y2)<14) return 'body';
   return null;
 }
@@ -958,9 +972,9 @@ function drawAll() {
     ctx.restore();
   }
   else if (mode==='camera') {
-    if (bgW) {
+    if (stream && bgW) {
       ctx.drawImage(vid, offX, offY, bgW*cvScale, bgH*cvScale);
-    } else if (stream) {
+    } else if (stream && vid.readyState >= 2) {
       ctx.drawImage(vid, 0, 0, cssW(), cssH());
     }
     if(autoDetect) drawDet();
@@ -1045,7 +1059,7 @@ function drawPhi(it, sel) {
   ctx.strokeStyle=it.color; ctx.lineWidth=2; ctx.stroke();
 
   // Annotation above φ: a · b · a/b ≈ φ
-  if(it.showMeasure !== false && sel&&len>80) {
+  if(it.showMeasure !== false && len>80) {
     var a=(len/PHI).toFixed(0), b=(len-len/PHI).toFixed(0);
     var txt='a: '+a+' px  ·  b: '+b+' px  ·  a/b ≈ φ';
     ctx.globalAlpha=0.93; ctx.font='10px Inter,sans-serif'; ctx.textAlign='center';
@@ -1211,7 +1225,10 @@ function startLongPress(idx, clientX, clientY) {
   var cx=clientX, cy=clientY;
   longPressTimer = setTimeout(function() {
     longPressTimer = null;
-    if(idx>=0) { selIdx=idx; drawAll(); showCtxMenu(cx,cy,idx); }
+    if(idx>=0) {
+      drag = null; drawingLine = null; drawingShape = null; // cancel any drag
+      selIdx=idx; drawAll(); showCtxMenu(cx,cy,idx);
+    }
   }, 600);
 }
 function cancelLongPress() {
@@ -1238,17 +1255,9 @@ function onDown(e) {
   var pt=cvPt(src.clientX,src.clientY);
   var px=pt.x, py=pt.y;
 
-  // Double-tap
-  var now=Date.now();
-  if(now-lastTap<320) {
-    cancelLongPress();
-    handleDoubleTap(px,py); lastTap=0; return;
-  }
-  lastTap=now;
-
-  // Long press on existing item
+  // Long press on existing item — start timer, don't cancel on hit
   var hIdx=hitAny(px,py);
-  startLongPress(hIdx, src.clientX, src.clientY);
+  if(hIdx>=0) startLongPress(hIdx, src.clientX, src.clientY);
 
   // Hit test ALL items regardless of active tool — editing always works
   // φ-lines
@@ -1256,7 +1265,6 @@ function onDown(e) {
     if(items[i].kind!=='phi') continue;
     var hit=hitPhi(items[i],px,py);
     if(hit) {
-      cancelLongPress();
       selIdx=i;
       drag={type:'phi-'+hit,idx:i,sx:px,sy:py,
         snap:{x1:items[i].x1,y1:items[i].y1,x2:items[i].x2,y2:items[i].y2}};
@@ -1268,16 +1276,13 @@ function onDown(e) {
     var it=items[i];
     if(it.kind==='phi') continue;
     if(selIdx===i&&hitRot(it,px,py)) {
-      cancelLongPress();
       drag={type:'rot',idx:i,cx:it.x+it.w/2,cy:it.y+it.h/2}; return;
     }
     var co=selIdx===i?hitCorner(it,px,py):-1;
     if(co>=0) {
-      cancelLongPress();
       drag={type:'res',idx:i,co:co,sx:px,sy:py,sov:{x:it.x,y:it.y,w:it.w,h:it.h}}; return;
     }
     if(hitBox(it,px,py)) {
-      cancelLongPress();
       selIdx=i;
       drag={type:'mov',idx:i,sx:px,sy:py,ox:it.x,oy:it.y};
       drawAll(); return;
@@ -1314,9 +1319,14 @@ function onMove(e) {
 
   if(!touches.length) return;
   var src=touches[0];
-  // Cancel long press if moved significantly
   var pt=cvPt(src.clientX,src.clientY);
   var px=pt.x,py=pt.y;
+
+  // Cancel long press only if finger moved significantly
+  if(drag && longPressTimer) {
+    var dragDist = Math.hypot(src.clientX - (drag.sx||0), src.clientY - (drag.sy||0));
+    if(dragDist > 8) cancelLongPress();
+  }
 
   if(tool==='phi'&&drawingLine) {
     cancelLongPress();
@@ -1376,6 +1386,14 @@ function onUp(e) {
     drawingShape=null; drawAll();
   }
   drag=null;
+  drawAll();
+}
+
+function handleDoubleTap(px,py) {
+  // Reset zoom on double-tap empty area
+  if(viewZoom!==1||viewPanX!==0||viewPanY!==0) {
+    viewZoom=1;viewPanX=0;viewPanY=0;toast('Zoom zurückgesetzt');drawAll();
+  }
 }
 
 function handleDoubleTap(px,py) {
