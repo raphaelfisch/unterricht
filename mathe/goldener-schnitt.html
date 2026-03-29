@@ -414,7 +414,7 @@ var stream = null, camFace = 'environment';
 var autoDetect = false, detTimer = null, detSegs = [];
 
 // Long-press
-var longPressTimer = null;
+var longPressStartX = 0, longPressStartY = 0;
 var longPressItem = -1;
 
 // Context menu target
@@ -674,20 +674,29 @@ document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
 function startCam() {
   stopCam();
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    toast('Kamera nicht verfügbar', 3000); return;
+    toast('getUserMedia nicht verfügbar', 4000); return;
   }
-  navigator.mediaDevices.getUserMedia({
-    video: { facingMode: camFace, width: { ideal: 1920 }, height: { ideal: 1080 } }
-  }).then(function(s) {
-    stream = s; vid.srcObject = s; vid.play();
+  var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  var constraints = isMobile
+    ? { video: { facingMode: camFace, width: { ideal: 1920 }, height: { ideal: 1080 } } }
+    : { video: true };
+  toast('Kamera wird gestartet…', 2000);
+  navigator.mediaDevices.getUserMedia(constraints).then(function(s) {
+    toast('Kamera bereit', 2000);
+    stream = s; vid.srcObject = s;
+    vid.play().then(function() {
+      toast('Video läuft', 2000);
+    }).catch(function(e) {
+      toast('play() Fehler: ' + e.message, 4000);
+    });
     vid.addEventListener('loadedmetadata', function() {
-      bgW = vid.videoWidth; bgH = vid.videoHeight; fitImg(); drawAll();
+      bgW = vid.videoWidth; bgH = vid.videoHeight;
+      toast('Video: ' + bgW + '×' + bgH, 2000);
+      fitImg();
     }, { once: true });
+    drawAll();
   }).catch(function(e) {
-    var msg = e.name === 'NotAllowedError' ? 'Kamera-Zugriff verweigert.'
-            : e.name === 'NotFoundError'   ? 'Keine Kamera gefunden.'
-            : 'Kamera: ' + e.message;
-    toast(msg, 4000);
+    toast(e.name + ': ' + e.message, 5000);
   });
 }
 function stopCam() {
@@ -1220,13 +1229,17 @@ function cvPt(clientX, clientY) {
   return { x:(clientX-r.left-viewPanX)/viewZoom, y:(clientY-r.top-viewPanY)/viewZoom };
 }
 
+var longPressTimer = null;
+
 function startLongPress(idx, clientX, clientY) {
   cancelLongPress();
+  longPressStartX = clientX;
+  longPressStartY = clientY;
   var cx=clientX, cy=clientY;
   longPressTimer = setTimeout(function() {
     longPressTimer = null;
     if(idx>=0) {
-      drag = null; drawingLine = null; drawingShape = null; // cancel any drag
+      drag = null; drawingLine = null; drawingShape = null;
       selIdx=idx; drawAll(); showCtxMenu(cx,cy,idx);
     }
   }, 600);
@@ -1322,22 +1335,19 @@ function onMove(e) {
   var pt=cvPt(src.clientX,src.clientY);
   var px=pt.x,py=pt.y;
 
-  // Cancel long press only if finger moved significantly
-  if(drag && longPressTimer) {
-    var dragDist = Math.hypot(src.clientX - (drag.sx||0), src.clientY - (drag.sy||0));
-    if(dragDist > 8) cancelLongPress();
+  // Cancel long press only if finger moved more than 10px from start
+  if(longPressTimer) {
+    var dist = Math.hypot(src.clientX - longPressStartX, src.clientY - longPressStartY);
+    if(dist > 10) cancelLongPress();
   }
 
   if(tool==='phi'&&drawingLine) {
-    cancelLongPress();
     drawingLine.x2=px; drawingLine.y2=py; drawAll(); return;
   }
   if(drawingShape) {
-    cancelLongPress();
     drawingShape.x2=px; drawingShape.y2=py; drawAll(); return;
   }
   if(!drag) return;
-  cancelLongPress();
 
   var type=drag.type,idx=drag.idx;
   if(type==='phi-start'){items[idx].x1=px;items[idx].y1=py;}
