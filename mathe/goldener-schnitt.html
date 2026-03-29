@@ -347,7 +347,7 @@ input[type=range]::-webkit-slider-thumb {
     <svg viewBox="0 0 24 24"><path d="M21 10H9a6 6 0 0 0 0 12h6"/><polyline points="21 6 21 10 17 10"/></svg>
     Wiederholen
   </button>
-  <button class="btn" onclick="clearAll()">
+  <button class="btn" id="btn-clear" onclick="clearAll()">
     <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     Löschen
   </button>
@@ -684,7 +684,7 @@ function captureFrame() {
   var img = new Image();
   img.onload = function() {
     bgImage = img; bgW = img.width; bgH = img.height; bgOpacity = 1.0;
-    applyMode('photo'); fitImg(); drawAll(); toast(bgW + '×' + bgH + ' aufgenommen');
+    applyMode('photo'); fitImg(); drawAll(); updateUndoRedo(); toast(bgW + '×' + bgH + ' aufgenommen');
   };
   img.src = tmp.toDataURL();
 }
@@ -710,7 +710,7 @@ function loadFile(f) {
     img.onload = function() {
       bgImage=img; bgW=img.width; bgH=img.height; bgOpacity=1.0;
       document.getElementById('empty').style.display = 'none';
-      fitImg(); drawAll(); toast(f.name + ' — ' + bgW + '×' + bgH);
+      fitImg(); drawAll(); updateUndoRedo(); toast(f.name + ' — ' + bgW + '×' + bgH);
     };
     img.src = e.target.result;
   };
@@ -780,7 +780,7 @@ function clearAll() {
         // Delete photo only
         bgImage = null; bgW = 0; bgH = 0;
         document.getElementById('empty').style.display = mode === 'photo' ? '' : 'none';
-        drawAll();
+        updateUndoRedo(); drawAll();
       } else if (val === 'ok2') {
         // Delete overlays only
         redoStack = redoStack.concat(items.slice().reverse());
@@ -807,6 +807,10 @@ function clearAll() {
 function updateUndoRedo() {
   document.getElementById('btn-undo').style.opacity = items.length ? '1' : '0.35';
   document.getElementById('btn-redo').style.opacity = redoStack.length ? '1' : '0.35';
+  var hasContent = items.length > 0 || (bgImage !== null && mode === 'photo');
+  var btn = document.getElementById('btn-clear');
+  btn.style.opacity = hasContent ? '1' : '0.35';
+  btn.style.pointerEvents = hasContent ? '' : 'none';
 }
 
 // ── Geometry helpers ───────────────────────────────────────────────────────
