@@ -160,6 +160,26 @@ input[type=range]::-webkit-slider-thumb {
 }
 #toast.show { opacity:1; }
 
+/* Confirm dialog */
+#confirm-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0.35);
+  display:none; align-items:center; justify-content:center; z-index:500;
+}
+#confirm-overlay.show { display:flex; }
+#confirm-box {
+  background:var(--white); border:1px solid var(--border);
+  border-radius:16px; padding:24px 24px 18px; max-width:300px; width:calc(100% - 40px);
+  box-shadow:0 12px 40px rgba(0,0,0,0.15); text-align:center;
+}
+#confirm-box p { font-size:14px; color:var(--text); line-height:1.5; margin-bottom:18px; }
+#confirm-btns { display:flex; gap:8px; }
+#confirm-btns button {
+  flex:1; height:42px; border-radius:10px; border:1px solid var(--border);
+  font-family:'Inter',sans-serif; font-size:13px; font-weight:500; cursor:pointer;
+}
+#confirm-cancel { background:var(--bg2); color:var(--muted); }
+#confirm-ok { background:var(--text); color:var(--white); border-color:var(--text); }
+
 /* Detect panel */
 #dp {
   position:absolute; top:10px; right:10px;
@@ -196,8 +216,7 @@ input[type=range]::-webkit-slider-thumb {
   <canvas id="cv"></canvas>
   <div class="empty" id="empty">
     <div class="phi-big">φ</div>
-    <p>Foto laden</p>
-    <small>Tippen oder Datei ziehen</small>
+    <p>Foto laden oder hierher ziehen</p>
   </div>
 
   <div id="dp">
@@ -250,6 +269,17 @@ input[type=range]::-webkit-slider-thumb {
   </div>
 
   <div id="toast"></div>
+</div>
+
+<!-- Confirm dialog (outside canvas wrap, covers full screen) -->
+<div id="confirm-overlay">
+  <div id="confirm-box">
+    <p id="confirm-msg"></p>
+    <div id="confirm-btns">
+      <button id="confirm-cancel" onclick="confirmResolve(false)">Abbrechen</button>
+      <button id="confirm-ok" onclick="confirmResolve(true)">Ja, löschen</button>
+    </div>
+  </div>
 </div>
 
 <!-- Bottom bar: all tools + actions -->
@@ -387,12 +417,12 @@ window.addEventListener('resize', resize);
 resize();
 
 // ── Mode ───────────────────────────────────────────────────────────────────
-function setMode(m) {
+function applyMode(m) {
   mode = m;
   document.getElementById('bP').classList.toggle('on', m === 'photo');
   document.getElementById('bC').classList.toggle('on', m === 'camera');
   document.getElementById('btn-shutter').style.display = m === 'camera' ? '' : 'none';
-  var camIds = ['btn-det','btn-flip','btn-snap','cam-vr'];
+  var camIds = ['btn-det','btn-flip','cam-vr'];
   for (var i = 0; i < camIds.length; i++)
     document.getElementById(camIds[i]).style.display = m === 'camera' ? '' : 'none';
   document.getElementById('btn-load').style.display = m === 'photo' ? '' : 'none';
@@ -402,13 +432,31 @@ function setMode(m) {
   drawAll();
 }
 
+function setMode(m) {
+  if (m === mode) return;
+  var hasContent = items.length > 0 || bgImage !== null;
+  if (hasContent) {
+    var msg = 'Beim Moduswechsel gehen alle Overlays' + (bgImage ? ' und das Foto' : '') + ' verloren. Fortfahren?';
+    showConfirm(msg, 'Ja, wechseln', function(ok) {
+      if (!ok) return;
+      items = []; redoStack = []; selIdx = -1;
+      bgImage = null; bgW = 0; bgH = 0;
+      drawingLine = null; drawingShape = null; drag = null;
+      updateUndoRedo();
+      applyMode(m);
+    });
+  } else {
+    applyMode(m);
+  }
+}
+
 // ── Tool ───────────────────────────────────────────────────────────────────
 var TOOLS = ['phi','rect','lines','spiral'];
 function setTool(t) {
-  tool = t;
+  tool = (tool === t) ? '' : t;
   for (var i = 0; i < TOOLS.length; i++) {
     var el = document.getElementById('tool-' + TOOLS[i]);
-    if (el) el.classList.toggle('on', TOOLS[i] === t);
+    if (el) el.classList.toggle('on', TOOLS[i] === tool);
   }
   closeAllPops();
 }
@@ -443,6 +491,19 @@ wrap.addEventListener('touchstart', function(e) {
 
 // ── Toast ──────────────────────────────────────────────────────────────────
 var toastTimer = null;
+
+// ── Confirm dialog ─────────────────────────────────────────────────────────
+var confirmCallback = null;
+function showConfirm(msg, okLabel, callback) {
+  document.getElementById('confirm-msg').textContent = msg;
+  document.getElementById('confirm-ok').textContent = okLabel || 'Ja, löschen';
+  document.getElementById('confirm-overlay').classList.add('show');
+  confirmCallback = callback;
+}
+function confirmResolve(ok) {
+  document.getElementById('confirm-overlay').classList.remove('show');
+  if (confirmCallback) { confirmCallback(ok); confirmCallback = null; }
+}
 function toast(msg, dur) {
   dur = dur || 1800;
   var el = document.getElementById('toast');
@@ -521,7 +582,7 @@ function captureFrame() {
   var img = new Image();
   img.onload = function() {
     bgImage = img; bgW = img.width; bgH = img.height;
-    setMode('photo'); fitImg(); drawAll(); toast(bgW + '×' + bgH + ' aufgenommen');
+    applyMode('photo'); fitImg(); drawAll(); toast(bgW + '×' + bgH + ' aufgenommen');
   };
   img.src = tmp.toDataURL();
 }
@@ -669,9 +730,18 @@ function redoLast() {
   updateUndoRedo(); drawAll();
 }
 function clearAll() {
-  redoStack = redoStack.concat(items.reverse()); // push all onto redo
-  items = []; selIdx = -1;
-  updateUndoRedo(); drawAll();
+  var hasContent = items.length > 0 || bgImage !== null;
+  if (!hasContent) return;
+  var msg = bgImage && items.length > 0 ? 'Foto und alle Overlays löschen?'
+    : bgImage ? 'Foto löschen?' : 'Alle Overlays löschen?';
+  showConfirm(msg, 'Ja, löschen', function(ok) {
+    if (!ok) return;
+    redoStack = redoStack.concat(items.slice().reverse());
+    items = []; selIdx = -1;
+    bgImage = null; bgW = 0; bgH = 0;
+    document.getElementById('empty').style.display = mode === 'photo' ? '' : 'none';
+    updateUndoRedo(); drawAll();
+  });
 }
 function updateUndoRedo() {
   document.getElementById('btn-undo').style.opacity = items.length ? '1' : '0.35';
@@ -1010,25 +1080,20 @@ function onDown(e) {
   var hIdx=hitAny(px,py);
   startLongPress(hIdx, src.clientX, src.clientY);
 
-  // φ-line draw
-  if(tool==='phi') {
-    // Check hit on existing phi lines first
-    for(var i=items.length-1;i>=0;i--) {
-      if(items[i].kind!=='phi') continue;
-      var hit=hitPhi(items[i],px,py);
-      if(hit) {
-        cancelLongPress();
-        selIdx=i;
-        drag={type:'phi-'+hit,idx:i,sx:px,sy:py,
-          snap:{x1:items[i].x1,y1:items[i].y1,x2:items[i].x2,y2:items[i].y2}};
-        drawAll(); return;
-      }
+  // Hit test ALL items regardless of active tool — editing always works
+  // φ-lines
+  for(var i=items.length-1;i>=0;i--) {
+    if(items[i].kind!=='phi') continue;
+    var hit=hitPhi(items[i],px,py);
+    if(hit) {
+      cancelLongPress();
+      selIdx=i;
+      drag={type:'phi-'+hit,idx:i,sx:px,sy:py,
+        snap:{x1:items[i].x1,y1:items[i].y1,x2:items[i].x2,y2:items[i].y2}};
+      drawAll(); return;
     }
-    // Start new line
-    drawingLine={x1:px,y1:py,x2:px,y2:py}; selIdx=-1; return;
   }
-
-  // Shape tools: hit test existing shapes
+  // Shapes
   for(var i=items.length-1;i>=0;i--) {
     var it=items[i];
     if(it.kind==='phi') continue;
@@ -1048,9 +1113,15 @@ function onDown(e) {
       drawAll(); return;
     }
   }
-  // Nothing hit → start drawing a new shape by dragging
-  drawingShape={x1:px,y1:py,x2:px,y2:py,kind:tool};
-  selIdx=-1;
+
+  // Nothing hit → start drawing only if a tool is active
+  if(tool==='phi') {
+    drawingLine={x1:px,y1:py,x2:px,y2:py}; selIdx=-1; return;
+  }
+  if(tool && tool!=='phi') {
+    drawingShape={x1:px,y1:py,x2:px,y2:py,kind:tool};
+  }
+  selIdx=-1; drawAll();
 }
 
 function onMove(e) {
@@ -1294,6 +1365,14 @@ updateUndoRedo();
     }
   }, true);
 })();
+
+// ── Unload warning ─────────────────────────────────────────────────────────
+window.addEventListener('beforeunload', function(e) {
+  if (items.length > 0 || bgImage !== null) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
 </script>
 </body>
 </html>
