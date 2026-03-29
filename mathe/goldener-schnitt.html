@@ -149,6 +149,14 @@ input[type=range]::-webkit-slider-thumb {
 .ctx-item:last-child { border-bottom:none; }
 .ctx-item:active { background:var(--bg2); }
 .ctx-item.danger { color:#C0392B; }
+.ctx-item.toggle { justify-content:space-between; }
+.ctx-item.toggle .ctx-check {
+  width:18px; height:18px; border-radius:4px; border:1.5px solid var(--border);
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  transition:all 0.15s;
+}
+.ctx-item.toggle.on .ctx-check { background:var(--text); border-color:var(--text); }
+.ctx-item.toggle.on .ctx-check::after { content:'✓'; color:#fff; font-size:11px; line-height:1; }
 .ctx-item svg { width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:1.6; stroke-linecap:round; flex-shrink:0; }
 
 /* Toast */
@@ -179,6 +187,7 @@ input[type=range]::-webkit-slider-thumb {
 }
 #confirm-cancel { background:var(--bg2); color:var(--muted); }
 #confirm-ok { background:var(--text); color:var(--white); border-color:var(--text); }
+#confirm-ok2 { background:var(--text); color:var(--white); border-color:var(--text); }
 
 /* Detect panel */
 #dp {
@@ -247,16 +256,26 @@ input[type=range]::-webkit-slider-thumb {
 
   <!-- Opacity popup -->
   <div class="opac-popup popup" id="pop-opac">
-    <label>Transparenz</label>
+    <label id="sl-label">Transparenz</label>
     <input type="range" id="sl-opac" min="0" max="90" value="0" oninput="opacChange()">
     <span id="sl-val">0%</span>
   </div>
 
   <!-- Context menu -->
   <div id="ctx-menu">
-    <div class="ctx-item" id="ctx-flip" onclick="ctxFlip()">
-      <svg viewBox="0 0 24 24"><path d="M7 16V4m0 0L3 8m4-4 4 4"/><path d="M17 8v12m0 0 4-4m-4 4-4-4"/></svg>
-      Spiegeln
+    <div class="ctx-item" id="ctx-flip-h" onclick="ctxFlipH()">
+      <svg viewBox="0 0 24 24"><path d="M3 12h18"/><path d="M7 8l-4 4 4 4"/><path d="M17 8l4 4-4 4"/></svg>
+      Horizontal spiegeln
+    </div>
+    <div class="ctx-item" id="ctx-flip-v" onclick="ctxFlipV()">
+      <svg viewBox="0 0 24 24"><path d="M12 3v18"/><path d="M8 7l4-4 4 4"/><path d="M8 17l4 4 4-4"/></svg>
+      Vertikal spiegeln
+    </div>
+    <div class="ctx-item toggle on" id="ctx-show-labels" onclick="ctxToggleLabels()">
+      <span>a / b anzeigen</span><span class="ctx-check"></span>
+    </div>
+    <div class="ctx-item toggle on" id="ctx-show-measure" onclick="ctxToggleMeasure()">
+      <span>Masse anzeigen</span><span class="ctx-check"></span>
     </div>
     <div class="ctx-item" id="ctx-dup" onclick="ctxDuplicate()">
       <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="1"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -276,8 +295,9 @@ input[type=range]::-webkit-slider-thumb {
   <div id="confirm-box">
     <p id="confirm-msg"></p>
     <div id="confirm-btns">
-      <button id="confirm-cancel" onclick="confirmResolve(false)">Abbrechen</button>
-      <button id="confirm-ok" onclick="confirmResolve(true)">Ja, löschen</button>
+      <button id="confirm-cancel" onclick="confirmResolve(null)">Abbrechen</button>
+      <button id="confirm-ok" onclick="confirmResolve('ok')">Ja, löschen</button>
+      <button id="confirm-ok2" onclick="confirmResolve('ok2')" style="display:none">—</button>
     </div>
   </div>
 </div>
@@ -287,15 +307,13 @@ input[type=range]::-webkit-slider-thumb {
  <div class="bar-inner">
 
   <!-- Load -->
-  <button class="btn gold" id="btn-load" onclick="triggerUpload()">
+  <button class="btn" id="btn-load" onclick="triggerUpload()">
     <svg viewBox="0 0 24 24"><path d="M12 15V3m0 0L8 7m4-4 4 4"/><path d="M4 20h16"/></svg>
     Laden
   </button>
   <input type="file" id="fi" accept="image/*">
 
-  <div class="vr"></div>
-
-  <!-- Tools — all equal -->
+  <div class="vr" id="load-vr"></div>
   <button class="btn" id="tool-phi" onclick="setTool('phi')">
     <svg viewBox="0 0 24 24"><line x1="4" y1="20" x2="20" y2="4"/><circle cx="9.7" cy="14.3" r="2.8"/></svg>
     φ-Linie
@@ -348,19 +366,15 @@ input[type=range]::-webkit-slider-thumb {
   </button>
   <button class="btn" onclick="clearAll()">
     <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-    Alles löschen
+    Löschen
   </button>
 
   <div class="vr"></div>
 
   <!-- Export -->
-  <button class="btn gold" onclick="exportImg('png')">
+  <button class="btn" onclick="exportImg('png')">
     <svg viewBox="0 0 24 24"><path d="M12 4v12m0 0-4-4m4 4 4-4"/><path d="M4 20h16"/></svg>
-    PNG
-  </button>
-  <button class="btn" onclick="exportImg('jpg')">
-    <svg viewBox="0 0 24 24"><path d="M12 4v12m0 0-4-4m4 4 4-4"/><path d="M4 20h16"/></svg>
-    JPG
+    Exportieren
   </button>
 
   <!-- Camera -->
@@ -370,8 +384,8 @@ input[type=range]::-webkit-slider-thumb {
     Erkennung
   </button>
   <button class="btn" id="btn-flip" style="display:none" onclick="flipCam()">
-    <svg viewBox="0 0 24 24"><path d="M1 4v6h6"/><path d="M3.5 15A9 9 0 1 0 4 5"/></svg>
-    Kamera
+    <svg viewBox="0 0 24 24"><path d="M4 8h16M4 8l3-3M4 8l3 3"/><path d="M20 16H4M20 16l-3-3M20 16l-3 3"/></svg>
+    Wechseln
   </button>
 
  </div><!-- /.bar-inner -->
@@ -387,7 +401,7 @@ var vid = document.getElementById('vid');
 
 // State
 var mode = 'photo', tool = '';
-var bgImage = null, bgW = 0, bgH = 0;
+var bgImage = null, bgW = 0, bgH = 0, bgOpacity = 1.0;
 var cvScale = 1, offX = 0, offY = 0;
 var viewZoom = 1, viewPanX = 0, viewPanY = 0;
 var items = []; // all elements: {kind, ...}
@@ -409,8 +423,39 @@ var ctxTarget = -1;
 // ── Resize ─────────────────────────────────────────────────────────────────
 function resize() {
   var r = wrap.getBoundingClientRect();
-  cv.width = r.width; cv.height = r.height;
-  if (bgW) fitImg();
+  var dpr = window.devicePixelRatio || 1;
+  cv.width  = r.width  * dpr;
+  cv.height = r.height * dpr;
+  cv.style.width  = r.width  + 'px';
+  cv.style.height = r.height + 'px';
+  ctx.scale(dpr, dpr);
+
+  if (bgW) {
+    var oldScale = cvScale, oldOffX = offX, oldOffY = offY;
+    fitImg();
+    var newScale = cvScale, newOffX = offX, newOffY = offY;
+    var scaleChanged = oldScale && oldScale !== newScale;
+    var offsetChanged = oldOffX !== newOffX || oldOffY !== newOffY;
+
+    if (oldScale && (scaleChanged || offsetChanged)) {
+      var f = newScale / oldScale;
+      for (var i = 0; i < items.length; i++) {
+        var it = items[i];
+        if (it.kind === 'phi') {
+          // Scale around old image origin, then shift to new origin
+          it.x1 = newOffX + (it.x1 - oldOffX) * f;
+          it.y1 = newOffY + (it.y1 - oldOffY) * f;
+          it.x2 = newOffX + (it.x2 - oldOffX) * f;
+          it.y2 = newOffY + (it.y2 - oldOffY) * f;
+        } else {
+          it.x = newOffX + (it.x - oldOffX) * f;
+          it.y = newOffY + (it.y - oldOffY) * f;
+          it.w = it.w * f;
+          it.h = it.h * f;
+        }
+      }
+    }
+  }
   drawAll();
 }
 window.addEventListener('resize', resize);
@@ -425,7 +470,11 @@ function applyMode(m) {
   var camIds = ['btn-det','btn-flip','cam-vr'];
   for (var i = 0; i < camIds.length; i++)
     document.getElementById(camIds[i]).style.display = m === 'camera' ? '' : 'none';
+  // Hide flip button on desktop (no touch support = no front/back camera)
+  var isMobile = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+  if (!isMobile) document.getElementById('btn-flip').style.display = 'none';
   document.getElementById('btn-load').style.display = m === 'photo' ? '' : 'none';
+  document.getElementById('load-vr').style.display = m === 'photo' ? '' : 'none';
   document.getElementById('empty').style.display = m === 'photo' && !bgImage ? '' : 'none';
   if (m === 'camera') { startCam(); vid.style.display = 'block'; }
   else { stopCam(); vid.style.display = 'none'; stopDetect(); }
@@ -437,8 +486,8 @@ function setMode(m) {
   var hasContent = items.length > 0 || bgImage !== null;
   if (hasContent) {
     var msg = 'Beim Moduswechsel gehen alle Overlays' + (bgImage ? ' und das Foto' : '') + ' verloren. Fortfahren?';
-    showConfirm(msg, 'Ja, wechseln', function(ok) {
-      if (!ok) return;
+    showConfirm(msg, 'Ja, wechseln', function(val) {
+      if (!val) return;
       items = []; redoStack = []; selIdx = -1;
       bgImage = null; bgW = 0; bgH = 0;
       drawingLine = null; drawingShape = null; drag = null;
@@ -469,7 +518,28 @@ function togglePop(id) {
   var el = document.getElementById(id);
   var was = el.classList.contains('show');
   closeAllPops();
-  if (!was) el.classList.add('show');
+  if (!was) {
+    if (id === 'pop-opac') syncOpacSlider();
+    el.classList.add('show');
+  }
+}
+function syncOpacSlider() {
+  var hasSelection = selIdx >= 0;
+  var label = document.getElementById('sl-label');
+  var slider = document.getElementById('sl-opac');
+  var valEl = document.getElementById('sl-val');
+  if (hasSelection) {
+    label.textContent = 'Overlay';
+    var v = Math.round((1 - items[selIdx].opacity) * 100);
+    slider.value = v; valEl.textContent = v + '%';
+  } else if (bgImage) {
+    label.textContent = 'Foto';
+    var v = Math.round((1 - bgOpacity) * 100);
+    slider.value = v; valEl.textContent = v + '%';
+  } else {
+    label.textContent = 'Transparenz';
+    slider.value = 0; valEl.textContent = '0%';
+  }
 }
 function pickColor(c, el) {
   color = c;
@@ -480,9 +550,14 @@ function pickColor(c, el) {
 }
 function opacChange() {
   var v = parseInt(document.getElementById('sl-opac').value);
-  opacity = 1 - v / 100;
   document.getElementById('sl-val').textContent = v + '%';
-  if (selIdx >= 0) { items[selIdx].opacity = opacity; drawAll(); }
+  if (selIdx >= 0) {
+    items[selIdx].opacity = 1 - v / 100;
+    opacity = items[selIdx].opacity;
+  } else if (bgImage) {
+    bgOpacity = 1 - v / 100;
+  }
+  drawAll();
 }
 
 wrap.addEventListener('touchstart', function(e) {
@@ -494,15 +569,18 @@ var toastTimer = null;
 
 // ── Confirm dialog ─────────────────────────────────────────────────────────
 var confirmCallback = null;
-function showConfirm(msg, okLabel, callback) {
+function showConfirm(msg, okLabel, callback, ok2Label) {
   document.getElementById('confirm-msg').textContent = msg;
   document.getElementById('confirm-ok').textContent = okLabel || 'Ja, löschen';
+  var btn2 = document.getElementById('confirm-ok2');
+  if (ok2Label) { btn2.textContent = ok2Label; btn2.style.display = ''; }
+  else { btn2.style.display = 'none'; }
   document.getElementById('confirm-overlay').classList.add('show');
   confirmCallback = callback;
 }
-function confirmResolve(ok) {
+function confirmResolve(val) {
   document.getElementById('confirm-overlay').classList.remove('show');
-  if (confirmCallback) { confirmCallback(ok); confirmCallback = null; }
+  if (confirmCallback) { confirmCallback(val); confirmCallback = null; }
 }
 function toast(msg, dur) {
   dur = dur || 1800;
@@ -515,26 +593,58 @@ function toast(msg, dur) {
 // ── Context menu ───────────────────────────────────────────────────────────
 function showCtxMenu(x, y, idx) {
   ctxTarget = idx;
-  var isPhi = items[idx] && items[idx].kind === 'phi';
-  document.getElementById('ctx-flip').style.display = isPhi ? 'none' : '';
+  var it = items[idx];
+  var isPhi = it && it.kind === 'phi';
+  var isLines = it && it.kind === 'lines';
+  var isSpiral = it && it.kind === 'spiral';
+  var isRect = it && it.kind === 'rect';
+  // Flip options
+  document.getElementById('ctx-flip-h').style.display = (!isPhi && !isLines) ? '' : 'none';
+  document.getElementById('ctx-flip-v').style.display = isSpiral ? '' : 'none';
+  document.getElementById('ctx-show-labels').style.display = isPhi ? '' : 'none';
+  document.getElementById('ctx-show-measure').style.display = isPhi ? '' : 'none';
+  if (isPhi) {
+    document.getElementById('ctx-show-labels').classList.toggle('on', it.showLabels !== false);
+    document.getElementById('ctx-show-measure').classList.toggle('on', it.showMeasure !== false);
+  }
   var menu = document.getElementById('ctx-menu');
   menu.classList.add('show');
-  // Position: keep inside window
-  var mw = 160, mh = 132;
-  var wx = window.innerWidth, wy = window.innerHeight;
-  var mx = Math.min(x, wx - mw - 8);
-  var my = Math.min(y, wy - mh - 8);
-  menu.style.left = Math.max(8, mx) + 'px';
-  menu.style.top  = Math.max(8, my) + 'px';
+  // Let the menu size itself, then position
+  setTimeout(function() {
+    var mw = menu.offsetWidth + 16, mh = menu.offsetHeight + 16;
+    var wx = window.innerWidth, wy = window.innerHeight;
+    menu.style.left = Math.max(8, Math.min(x, wx - mw)) + 'px';
+    menu.style.top  = Math.max(8, Math.min(y, wy - mh)) + 'px';
+  }, 0);
 }
 function hideCtxMenu() {
   document.getElementById('ctx-menu').classList.remove('show');
   ctxTarget = -1;
 }
-function ctxFlip() {
+function ctxToggleLabels() {
+  if (ctxTarget < 0) return;
+  var it = items[ctxTarget];
+  it.showLabels = it.showLabels === false ? true : false;
+  document.getElementById('ctx-show-labels').classList.toggle('on', it.showLabels);
+  drawAll();
+}
+function ctxToggleMeasure() {
+  if (ctxTarget < 0) return;
+  var it = items[ctxTarget];
+  it.showMeasure = it.showMeasure === false ? true : false;
+  document.getElementById('ctx-show-measure').classList.toggle('on', it.showMeasure);
+  drawAll();
+}
+function ctxFlipH() {
   if (ctxTarget < 0) return;
   var it = items[ctxTarget];
   if (it) { it.flipH = !it.flipH; drawAll(); }
+  hideCtxMenu();
+}
+function ctxFlipV() {
+  if (ctxTarget < 0) return;
+  var it = items[ctxTarget];
+  if (it) { it.flipV = !it.flipV; drawAll(); }
   hideCtxMenu();
 }
 function ctxDuplicate() {
@@ -561,14 +671,23 @@ document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
 // ── Camera ─────────────────────────────────────────────────────────────────
 function startCam() {
   stopCam();
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    toast('Kamera nicht verfügbar (kein HTTPS?)', 3000); return;
+  }
   navigator.mediaDevices.getUserMedia({
     video: { facingMode: camFace, width: { ideal: 1920 }, height: { ideal: 1080 } }
   }).then(function(s) {
     stream = s; vid.srcObject = s; vid.play();
     vid.addEventListener('loadedmetadata', function() {
-      bgW = vid.videoWidth; bgH = vid.videoHeight; fitImg(); drawAll();
+      bgW = vid.videoWidth; bgH = vid.videoHeight; fitImg();
     }, { once: true });
-  }).catch(function(e) { toast('Kamera: ' + e.message, 3000); });
+    if (!camRaf) camRaf = requestAnimationFrame(drawAll);
+  }).catch(function(e) {
+    var msg = e.name === 'NotAllowedError' ? 'Kamera-Zugriff verweigert.'
+            : e.name === 'NotFoundError'   ? 'Keine Kamera gefunden.'
+            : 'Kamera: ' + e.message;
+    toast(msg, 4000);
+  });
 }
 function stopCam() {
   if (stream) { stream.getTracks().forEach(function(t) { t.stop(); }); stream = null; }
@@ -581,7 +700,7 @@ function captureFrame() {
   tmp.getContext('2d').drawImage(vid, 0, 0);
   var img = new Image();
   img.onload = function() {
-    bgImage = img; bgW = img.width; bgH = img.height;
+    bgImage = img; bgW = img.width; bgH = img.height; bgOpacity = 1.0;
     applyMode('photo'); fitImg(); drawAll(); toast(bgW + '×' + bgH + ' aufgenommen');
   };
   img.src = tmp.toDataURL();
@@ -675,7 +794,7 @@ function loadFile(f) {
   r.onload = function(e) {
     var img = new Image();
     img.onload = function() {
-      bgImage=img; bgW=img.width; bgH=img.height;
+      bgImage=img; bgW=img.width; bgH=img.height; bgOpacity=1.0;
       document.getElementById('empty').style.display = 'none';
       fitImg(); drawAll(); toast(f.name + ' — ' + bgW + '×' + bgH);
     };
@@ -683,23 +802,28 @@ function loadFile(f) {
   };
   r.readAsDataURL(f);
 }
+function cssW() { return cv.width / (window.devicePixelRatio || 1); }
+function cssH() { return cv.height / (window.devicePixelRatio || 1); }
+
 function fitImg() {
-  cvScale = Math.min(cv.width/bgW, cv.height/bgH);
-  offX = (cv.width  - bgW*cvScale) / 2;
-  offY = (cv.height - bgH*cvScale) / 2;
+  var cw = cssW(), ch = cssH();
+  cvScale = Math.min(cw/bgW, ch/bgH);
+  offX = (cw - bgW*cvScale) / 2;
+  offY = (ch - bgH*cvScale) / 2;
   viewZoom=1; viewPanX=0; viewPanY=0;
 }
 
 // ── Item factory ───────────────────────────────────────────────────────────
 function makeItem(kind) {
-  var iw = (bgW || cv.width)  * cvScale;
-  var ih = (bgH || cv.height) * cvScale;
-  var base = { kind:kind, color:color, opacity:opacity };
+  var iw = (bgW || cssW())  * cvScale;
+  var ih = (bgH || cssH()) * cvScale;
+  var base = { kind:kind, color:color, opacity:1.0 };
 
   if (kind === 'phi') {
     var cx = offX + iw*0.5, cy = offY + ih*0.5;
     var hw = iw * 0.22;
-    return Object.assign(base, { x1:cx-hw, y1:cy, x2:cx+hw, y2:cy });
+    return Object.assign(base, { x1:cx-hw, y1:cy, x2:cx+hw, y2:cy,
+      showLabels:true, showMeasure:true });
   } else {
     var w = iw*0.42, h = w/PHI;
     return Object.assign(base, {
@@ -730,18 +854,41 @@ function redoLast() {
   updateUndoRedo(); drawAll();
 }
 function clearAll() {
-  var hasContent = items.length > 0 || bgImage !== null;
-  if (!hasContent) return;
-  var msg = bgImage && items.length > 0 ? 'Foto und alle Overlays löschen?'
-    : bgImage ? 'Foto löschen?' : 'Alle Overlays löschen?';
-  showConfirm(msg, 'Ja, löschen', function(ok) {
-    if (!ok) return;
-    redoStack = redoStack.concat(items.slice().reverse());
-    items = []; selIdx = -1;
-    bgImage = null; bgW = 0; bgH = 0;
-    document.getElementById('empty').style.display = mode === 'photo' ? '' : 'none';
-    updateUndoRedo(); drawAll();
-  });
+  var hasImage = bgImage !== null && mode === 'photo';
+  var hasItems = items.length > 0;
+  if (!hasImage && !hasItems) return;
+
+  if (hasImage && hasItems) {
+    // Both present — offer two separate buttons
+    showConfirm('Was soll gelöscht werden?', 'Foto löschen', function(val) {
+      if (val === null) return;
+      if (val === 'ok') {
+        // Delete photo only
+        bgImage = null; bgW = 0; bgH = 0;
+        document.getElementById('empty').style.display = mode === 'photo' ? '' : 'none';
+        drawAll();
+      } else if (val === 'ok2') {
+        // Delete overlays only
+        redoStack = redoStack.concat(items.slice().reverse());
+        items = []; selIdx = -1;
+        updateUndoRedo(); drawAll();
+      }
+    }, 'Overlays löschen');
+  } else if (hasImage) {
+    showConfirm('Foto löschen?', 'Ja, löschen', function(val) {
+      if (!val) return;
+      bgImage = null; bgW = 0; bgH = 0;
+      document.getElementById('empty').style.display = mode === 'photo' ? '' : 'none';
+      drawAll();
+    });
+  } else {
+    showConfirm('Alle Overlays löschen?', 'Ja, löschen', function(val) {
+      if (!val) return;
+      redoStack = redoStack.concat(items.slice().reverse());
+      items = []; selIdx = -1;
+      updateUndoRedo(); drawAll();
+    });
+  }
 }
 function updateUndoRedo() {
   document.getElementById('btn-undo').style.opacity = items.length ? '1' : '0.35';
@@ -800,15 +947,22 @@ function hitAny(px,py) {
 // ── Draw ───────────────────────────────────────────────────────────────────
 var camRaf = null;
 function drawAll() {
-  ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.clearRect(0,0,cssW(),cssH());
   ctx.save();
   ctx.translate(viewPanX,viewPanY);
   ctx.scale(viewZoom,viewZoom);
 
-  if (mode==='photo'&&bgImage)
+  if (mode==='photo'&&bgImage) {
+    ctx.save(); ctx.globalAlpha=bgOpacity;
     ctx.drawImage(bgImage,offX,offY,bgW*cvScale,bgH*cvScale);
-  else if (mode==='camera'&&bgW) {
-    ctx.drawImage(vid,offX,offY,bgW*cvScale,bgH*cvScale);
+    ctx.restore();
+  }
+  else if (mode==='camera') {
+    if (bgW) {
+      ctx.drawImage(vid, offX, offY, bgW*cvScale, bgH*cvScale);
+    } else if (stream) {
+      ctx.drawImage(vid, 0, 0, cssW(), cssH());
+    }
     if(autoDetect) drawDet();
   }
 
@@ -852,33 +1006,51 @@ function drawItem(it, sel) {
 function drawPhi(it, sel) {
   var pp=phiPt(it), len=itemLen(it);
   ctx.save(); ctx.lineCap='round'; ctx.globalAlpha=it.opacity;
-  ctx.strokeStyle=it.color; ctx.lineWidth=sel?2.5:2; ctx.setLineDash([]);
+  ctx.strokeStyle=it.color; ctx.lineWidth=1.6; ctx.setLineDash([]);
   ctx.beginPath(); ctx.moveTo(it.x1,it.y1); ctx.lineTo(it.x2,it.y2); ctx.stroke();
-  ctx.lineWidth=1; ctx.globalAlpha=it.opacity*0.3; ctx.setLineDash([4,4]);
-  ctx.beginPath(); ctx.moveTo(pp.x,pp.y); ctx.lineTo(it.x2,it.y2); ctx.stroke();
   ctx.setLineDash([]); ctx.globalAlpha=it.opacity;
-  var hs=[
-    {p:{x:it.x1,y:it.y1},lb:'A',r:13,bg:'#fff',fg:it.color},
-    {p:pp,lb:'φ',r:16,bg:it.color,fg:'#fff'},
-    {p:{x:it.x2,y:it.y2},lb:'B',r:13,bg:'#fff',fg:it.color}
-  ];
-  for(var i=0;i<hs.length;i++) {
-    var h=hs[i];
-    ctx.beginPath(); ctx.arc(h.p.x,h.p.y,h.r,0,Math.PI*2);
-    ctx.fillStyle=h.bg; ctx.fill();
-    ctx.strokeStyle=it.color; ctx.lineWidth=1.8; ctx.stroke();
-    ctx.fillStyle=h.fg; ctx.font='bold '+(h.r-1)+'px Inter,sans-serif';
-    ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.globalAlpha=1;
-    ctx.fillText(h.lb,h.p.x,h.p.y); ctx.globalAlpha=it.opacity;
+
+  // Segment labels a and b — centred on each half, offset perpendicular to line
+  if(it.showLabels !== false && len>60) {
+    var angle=Math.atan2(it.y2-it.y1,it.x2-it.x1);
+    var nx=-Math.sin(angle)*14, ny=Math.cos(angle)*14; // perpendicular offset
+    // midpoint of a (start→φ)
+    var maxA={x:(it.x1+pp.x)/2+nx, y:(it.y1+pp.y)/2+ny};
+    // midpoint of b (φ→end)
+    var maxB={x:(pp.x+it.x2)/2+nx, y:(pp.y+it.y2)/2+ny};
+    ctx.globalAlpha=it.opacity;
+    ctx.font='bold 11px Inter,sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillStyle=it.color;
+    ctx.fillText('a', maxA.x, maxA.y);
+    ctx.fillText('b', maxB.x, maxB.y);
   }
-  // Annotation: centred above φ point, moves with it
-  if(sel&&len>80) {
-    var la=(len/PHI).toFixed(0), lb=(len-len/PHI).toFixed(0);
-    var txt='A: '+la+' px  ·  B: '+lb+' px  ·  A/B ≈ φ';
+
+  // Start point — plain circle
+  ctx.beginPath(); ctx.arc(it.x1,it.y1,8,0,Math.PI*2);
+  ctx.fillStyle='#fff'; ctx.fill();
+  ctx.strokeStyle=it.color; ctx.lineWidth=2; ctx.stroke();
+
+  // φ point — filled with label
+  ctx.beginPath(); ctx.arc(pp.x,pp.y,16,0,Math.PI*2);
+  ctx.fillStyle=it.color; ctx.fill();
+  ctx.strokeStyle=it.color; ctx.lineWidth=1.8; ctx.stroke();
+  ctx.fillStyle='#fff'; ctx.font='bold 13px Inter,sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.globalAlpha=1;
+  ctx.fillText('φ',pp.x,pp.y); ctx.globalAlpha=it.opacity;
+
+  // End point — plain circle
+  ctx.beginPath(); ctx.arc(it.x2,it.y2,8,0,Math.PI*2);
+  ctx.fillStyle='#fff'; ctx.fill();
+  ctx.strokeStyle=it.color; ctx.lineWidth=2; ctx.stroke();
+
+  // Annotation above φ: a · b · a/b ≈ φ
+  if(it.showMeasure !== false && sel&&len>80) {
+    var a=(len/PHI).toFixed(0), b=(len-len/PHI).toFixed(0);
+    var txt='a: '+a+' px  ·  b: '+b+' px  ·  a/b ≈ φ';
     ctx.globalAlpha=0.93; ctx.font='10px Inter,sans-serif'; ctx.textAlign='center';
     var tw=ctx.measureText(txt).width;
-    // Position above the φ handle (r=16), with 8px gap
-    var ax=pp.x, ay=pp.y-16-8-9; // 16=handle radius, 8=gap, 9=half label height
+    var ax=pp.x, ay=pp.y-16-8-9;
     ctx.fillStyle='rgba(255,253,250,0.95)'; ctx.strokeStyle=it.color; ctx.lineWidth=1;
     rrect(ctx,ax-tw/2-8,ay-9,tw+16,18,5); ctx.fill(); ctx.stroke();
     ctx.fillStyle=it.color; ctx.textBaseline='middle'; ctx.fillText(txt,ax,ay);
@@ -889,20 +1061,20 @@ function drawPhi(it, sel) {
 function drawLinePrev(dl) {
   var pp={x:dl.x1+(dl.x2-dl.x1)/PHI,y:dl.y1+(dl.y2-dl.y1)/PHI};
   ctx.save(); ctx.globalAlpha=0.55; ctx.lineCap='round';
-  ctx.strokeStyle=color; ctx.lineWidth=2; ctx.setLineDash([6,4]);
+  ctx.strokeStyle=color; ctx.lineWidth=1.6; ctx.setLineDash([]);
   ctx.beginPath(); ctx.moveTo(dl.x1,dl.y1); ctx.lineTo(dl.x2,dl.y2); ctx.stroke();
-  ctx.setLineDash([]);
-  var hs=[{p:{x:dl.x1,y:dl.y1},lb:'A',r:13,bg:'#fff',fg:color},
-          {p:pp,lb:'φ',r:16,bg:color,fg:'#fff'},
-          {p:{x:dl.x2,y:dl.y2},lb:'B',r:13,bg:'#fff',fg:color}];
-  for(var i=0;i<hs.length;i++) {
-    var h=hs[i];
-    ctx.beginPath();ctx.arc(h.p.x,h.p.y,h.r,0,Math.PI*2);
-    ctx.fillStyle=h.bg;ctx.fill();ctx.strokeStyle=color;ctx.lineWidth=1.8;ctx.stroke();
-    ctx.fillStyle=h.fg;ctx.font='bold '+(h.r-1)+'px Inter,sans-serif';
-    ctx.textAlign='center';ctx.textBaseline='middle';ctx.globalAlpha=0.9;
-    ctx.fillText(h.lb,h.p.x,h.p.y);ctx.globalAlpha=0.55;
-  }
+  // Start
+  ctx.beginPath(); ctx.arc(dl.x1,dl.y1,8,0,Math.PI*2);
+  ctx.fillStyle='#fff'; ctx.fill(); ctx.strokeStyle=color; ctx.lineWidth=2; ctx.stroke();
+  // φ
+  ctx.beginPath(); ctx.arc(pp.x,pp.y,16,0,Math.PI*2);
+  ctx.fillStyle=color; ctx.fill(); ctx.strokeStyle=color; ctx.lineWidth=1.8; ctx.stroke();
+  ctx.fillStyle='#fff'; ctx.font='bold 13px Inter,sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.globalAlpha=0.9;
+  ctx.fillText('φ',pp.x,pp.y); ctx.globalAlpha=0.55;
+  // End
+  ctx.beginPath(); ctx.arc(dl.x2,dl.y2,8,0,Math.PI*2);
+  ctx.fillStyle='#fff'; ctx.fill(); ctx.strokeStyle=color; ctx.lineWidth=2; ctx.stroke();
   ctx.restore();
 }
 
@@ -917,7 +1089,7 @@ function drawShapePrev(ds) {
   ctx.globalAlpha=0.5;
   ctx.translate(x+w/2,y+h/2);
   var hw=w/2,hh=h/2;
-  if(ds.kind==='spiral') drSpiral(hw,hh,color,false);
+  if(ds.kind==='spiral') drSpiral(hw,hh,color);
   else if(ds.kind==='rect') drRect(hw,hh,color);
   else if(ds.kind==='lines') drLines(hw,hh,color);
   else drDiag(hw,hh,color);
@@ -930,15 +1102,13 @@ function drawShape(it, sel) {
   ctx.rotate(it.angle);
   ctx.scale(it.flipH?-1:1, it.flipV?-1:1);
   ctx.globalAlpha=it.opacity;
+  ctx.setLineDash([]); // always reset dash before drawing
   var hw=it.w/2, hh=it.h/2;
-  if(it.kind==='spiral') drSpiral(hw,hh,it.color,sel);
+  if(it.kind==='spiral') drSpiral(hw,hh,it.color);
   else if(it.kind==='rect') drRect(hw,hh,it.color);
-  else if(it.kind==='lines') drLines(hw,hh,it.color);
-  else drDiag(hw,hh,it.color);
+  else drLines(hw,hh,it.color);
   if(sel) {
     ctx.globalAlpha=1;
-    ctx.strokeStyle='rgba(0,0,0,0.25)'; ctx.lineWidth=1.5;
-    ctx.setLineDash([4,3]); ctx.strokeRect(-hw,-hh,it.w,it.h); ctx.setLineDash([]);
     var cs=[[-hw,-hh],[hw,-hh],[hw,hh],[-hw,hh]];
     for(var i=0;i<cs.length;i++) {
       ctx.fillStyle='#fff'; ctx.strokeStyle=it.color; ctx.lineWidth=1.5;
@@ -951,8 +1121,8 @@ function drawShape(it, sel) {
   ctx.restore();
 }
 
-function drSpiral(hw,hh,c,s) {
-  ctx.strokeStyle=c; ctx.lineWidth=s?2:1.6;
+function drSpiral(hw,hh,c) {
+  ctx.strokeStyle=c; ctx.lineWidth=1.6; ctx.setLineDash([]);
   ctx.strokeRect(-hw,-hh,hw*2,hh*2);
 
   // Track the remaining rectangle, cutting squares in 4-cycle: left, top, right, bottom
@@ -990,14 +1160,14 @@ function drSpiral(hw,hh,c,s) {
 }
 
 function drRect(hw,hh,c) {
-  ctx.strokeStyle=c; ctx.lineWidth=1.6;
+  ctx.strokeStyle=c; ctx.lineWidth=1.6; ctx.setLineDash([]);
   ctx.strokeRect(-hw,-hh,hw*2,hh*2);
   var x=-hw+hw*2/PHI;
   ctx.beginPath(); ctx.moveTo(x,-hh); ctx.lineTo(x,hh); ctx.stroke();
 }
 
 function drLines(hw,hh,c) {
-  ctx.strokeStyle=c; ctx.lineWidth=1.2;
+  ctx.strokeStyle=c; ctx.lineWidth=1.6; ctx.setLineDash([]);
   var w=hw*2,h=hh*2,x1=-hw+w/PHI,x2=hw-w/PHI,y1=-hh+h/PHI,y2=hh-h/PHI;
   ctx.strokeRect(-hw,-hh,w,h);
   [x1,x2].forEach(function(x){ctx.beginPath();ctx.moveTo(x,-hh);ctx.lineTo(x,hh);ctx.stroke();});
@@ -1216,7 +1386,9 @@ function handleDoubleTap(px,py) {
       toast('Gelöscht'); drawAll(); return;
     }
     if(it.kind!=='phi'&&hitBox(it,px,py)) {
-      selIdx=i; it.flipH=!it.flipH; toast('Gespiegelt'); drawAll(); return;
+      selIdx=i;
+      if(it.kind!=='lines') { it.flipH=!it.flipH; toast('Gespiegelt'); }
+      drawAll(); return;
     }
   }
   if(viewZoom!==1||viewPanX!==0||viewPanY!==0) {
@@ -1273,19 +1445,31 @@ function exportImg(fmt) {
 }
 function lnOnCtx(c,ln) {
   var pp={x:ln.x1+(ln.x2-ln.x1)/PHI,y:ln.y1+(ln.y2-ln.y1)/PHI};
+  var len=Math.sqrt((ln.x2-ln.x1)*(ln.x2-ln.x1)+(ln.y2-ln.y1)*(ln.y2-ln.y1));
   c.save(); c.globalAlpha=ln.opacity; c.lineCap='round';
   c.strokeStyle=ln.color; c.lineWidth=3;
   c.beginPath(); c.moveTo(ln.x1,ln.y1); c.lineTo(ln.x2,ln.y2); c.stroke();
-  var hs=[{p:{x:ln.x1,y:ln.y1},lb:'A',r:16,bg:'#fff',fg:ln.color},
-          {p:pp,lb:'φ',r:20,bg:ln.color,fg:'#fff'},
-          {p:{x:ln.x2,y:ln.y2},lb:'B',r:16,bg:'#fff',fg:ln.color}];
-  for(var i=0;i<hs.length;i++) {
-    var h=hs[i]; c.beginPath(); c.arc(h.p.x,h.p.y,h.r,0,Math.PI*2);
-    c.fillStyle=h.bg; c.fill(); c.strokeStyle=ln.color; c.lineWidth=2; c.stroke();
-    c.fillStyle=h.fg; c.font='bold '+(h.r+2)+'px sans-serif';
-    c.textAlign='center'; c.textBaseline='middle'; c.globalAlpha=1;
-    c.fillText(h.lb,h.p.x,h.p.y); c.globalAlpha=ln.opacity;
+  // Segment labels
+  if(len>60) {
+    var angle=Math.atan2(ln.y2-ln.y1,ln.x2-ln.x1);
+    var nx=-Math.sin(angle)*18, ny=Math.cos(angle)*18;
+    c.font='bold 14px sans-serif'; c.textAlign='center'; c.textBaseline='middle';
+    c.fillStyle=ln.color;
+    c.fillText('a',(ln.x1+pp.x)/2+nx,(ln.y1+pp.y)/2+ny);
+    c.fillText('b',(pp.x+ln.x2)/2+nx,(pp.y+ln.y2)/2+ny);
   }
+  // Start
+  c.beginPath(); c.arc(ln.x1,ln.y1,10,0,Math.PI*2);
+  c.fillStyle='#fff'; c.fill(); c.strokeStyle=ln.color; c.lineWidth=2.5; c.stroke();
+  // φ
+  c.beginPath(); c.arc(pp.x,pp.y,20,0,Math.PI*2);
+  c.fillStyle=ln.color; c.fill(); c.strokeStyle=ln.color; c.lineWidth=2; c.stroke();
+  c.fillStyle='#fff'; c.font='bold 16px sans-serif';
+  c.textAlign='center'; c.textBaseline='middle'; c.globalAlpha=1;
+  c.fillText('φ',pp.x,pp.y); c.globalAlpha=ln.opacity;
+  // End
+  c.beginPath(); c.arc(ln.x2,ln.y2,10,0,Math.PI*2);
+  c.fillStyle='#fff'; c.fill(); c.strokeStyle=ln.color; c.lineWidth=2.5; c.stroke();
   c.restore();
 }
 function ovOnCtx(c,type,hw,hh,col) {
