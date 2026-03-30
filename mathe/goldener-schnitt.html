@@ -942,13 +942,11 @@ function drawPhi(it, sel) {
   ctx.fillStyle='#fff'; ctx.fill();
   ctx.strokeStyle=it.color; ctx.lineWidth=2; ctx.stroke();
 
-  // φ point — filled with label
-  ctx.beginPath(); ctx.arc(pp.x,pp.y,16,0,Math.PI*2);
-  ctx.fillStyle=it.color; ctx.fill();
-  ctx.strokeStyle=it.color; ctx.lineWidth=1.8; ctx.stroke();
-  ctx.fillStyle='#fff'; ctx.font='bold 13px Inter,sans-serif';
-  ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.globalAlpha=1;
-  ctx.fillText('φ',pp.x,pp.y); ctx.globalAlpha=it.opacity;
+  // φ point — perpendicular tick mark
+  var angle = Math.atan2(it.y2-it.y1, it.x2-it.x1);
+  var nx = Math.sin(angle)*10, ny = -Math.cos(angle)*10;
+  ctx.strokeStyle=it.color; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(pp.x-nx,pp.y-ny); ctx.lineTo(pp.x+nx,pp.y+ny); ctx.stroke();
 
   // End point — plain circle
   ctx.beginPath(); ctx.arc(it.x2,it.y2,8,0,Math.PI*2);
@@ -977,12 +975,11 @@ function drawLinePrev(dl) {
   // Start
   ctx.beginPath(); ctx.arc(dl.x1,dl.y1,8,0,Math.PI*2);
   ctx.fillStyle='#fff'; ctx.fill(); ctx.strokeStyle=color; ctx.lineWidth=2; ctx.stroke();
-  // φ
-  ctx.beginPath(); ctx.arc(pp.x,pp.y,16,0,Math.PI*2);
-  ctx.fillStyle=color; ctx.fill(); ctx.strokeStyle=color; ctx.lineWidth=1.8; ctx.stroke();
-  ctx.fillStyle='#fff'; ctx.font='bold 13px Inter,sans-serif';
-  ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.globalAlpha=0.9;
-  ctx.fillText('φ',pp.x,pp.y); ctx.globalAlpha=0.55;
+  // φ point — tick
+  var angle2 = Math.atan2(dl.y2-dl.y1, dl.x2-dl.x1);
+  var nx2 = Math.sin(angle2)*10, ny2 = -Math.cos(angle2)*10;
+  ctx.strokeStyle=color; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(pp.x-nx2,pp.y-ny2); ctx.lineTo(pp.x+nx2,pp.y+ny2); ctx.stroke();
   // End
   ctx.beginPath(); ctx.arc(dl.x2,dl.y2,8,0,Math.PI*2);
   ctx.fillStyle='#fff'; ctx.fill(); ctx.strokeStyle=color; ctx.lineWidth=2; ctx.stroke();
@@ -1380,12 +1377,11 @@ function lnOnCtx(c,ln) {
   // Start point
   c.beginPath(); c.arc(ln.x1,ln.y1,10,0,Math.PI*2);
   c.fillStyle='#fff'; c.fill(); c.strokeStyle=ln.color; c.lineWidth=2.5; c.stroke();
-  // φ point
-  c.beginPath(); c.arc(pp.x,pp.y,20,0,Math.PI*2);
-  c.fillStyle=ln.color; c.fill(); c.strokeStyle=ln.color; c.lineWidth=2; c.stroke();
-  c.fillStyle='#fff'; c.font='bold 16px sans-serif';
-  c.textAlign='center'; c.textBaseline='middle'; c.globalAlpha=1;
-  c.fillText('φ',pp.x,pp.y); c.globalAlpha=ln.opacity;
+  // φ point — tick
+  var ang = Math.atan2(ln.y2-ln.y1, ln.x2-ln.x1);
+  var tnx = Math.sin(ang)*14, tny = -Math.cos(ang)*14;
+  c.strokeStyle=ln.color; c.lineWidth=3;
+  c.beginPath(); c.moveTo(pp.x-tnx,pp.y-tny); c.lineTo(pp.x+tnx,pp.y+tny); c.stroke();
   // End point
   c.beginPath(); c.arc(ln.x2,ln.y2,10,0,Math.PI*2);
   c.fillStyle='#fff'; c.fill(); c.strokeStyle=ln.color; c.lineWidth=2.5; c.stroke();
