@@ -486,7 +486,7 @@ function renderDiagram() {
       g.setAttribute('data-oi', oi);
       g.setAttribute('id', `arrow-group-${wi}-${oi}`);
 
-      drawDiagonalArrow(g, ns, startX, startY, endX, endY, ah, color, o.label, FONT_SMALL, '#fff');
+      drawDiagonalArrow(g, ns, startX, startY, endX, endY, ah, color, o.label, FONT_SMALL, '#fff', ah * 0.9 / 2);
 
       // Hint dot at tip — drag handle, not exported
       const dx2 = endX - startX, dy2 = endY - startY;
@@ -571,7 +571,7 @@ function renderDiagram() {
     g.setAttribute('data-wi', wi);
     g.setAttribute('data-oi', oi);
     g.setAttribute('id', `arrow-group-${wi}-${oi}`);
-    drawDiagonalArrow(g, ns, startX, startY, endX, endY, ah, color, o.label, FONT_SMALL, '#fff', 8);
+    drawDiagonalArrow(g, ns, startX, startY, endX, endY, ah, color, o.label, FONT_SMALL, '#fff', ah * 0.9 / 2);
     const dx2 = endX-startX, dy2 = endY-startY;
     const dlen = Math.sqrt(dx2*dx2+dy2*dy2);
     const ux2 = dx2/dlen, uy2 = dy2/dlen;
@@ -893,7 +893,7 @@ function updateArrowAttrs(wi, oi, group) {
   const ux = dx/len, uy = dy/len;
   const px = -uy, py = ux;
   const h2 = ah / 2;
-  const wing = (oi === 0) ? h2 * 0.9 : 8; // primary scales with height, secondary=8
+  const wing = h2 * 0.9; // scales with arrow height for all outputs
   const tipLen = Math.round(CIRCLE_R * 1.05); // same as chevron tip
   const bx = endX - ux*tipLen, by = endY - uy*tipLen;
 
