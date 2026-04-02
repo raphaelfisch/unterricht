@@ -274,9 +274,10 @@ function renderPanel() {
     commentLabel.style.cssText = 'font-size:11px;color:#888;margin-bottom:4px;font-style:italic;';
     commentLabel.textContent = 'Kommentar:';
     const commentArea = document.createElement('textarea');
+    commentArea.rows = 1;
     commentArea.value = w.comment || '';
     commentArea.placeholder = 'Kommentar zum Wandler…';
-    commentArea.style.cssText = 'width:100%;border:1.5px solid #c0cdd8;border-radius:6px;padding:5px 8px;font-size:12px;font-family:inherit;resize:vertical;min-height:48px;outline:none;box-sizing:border-box;transition:border-color .2s;';
+    commentArea.style.cssText = 'width:100%;border:1.5px solid #c0cdd8;border-radius:6px;padding:5px 8px;font-size:12px;outline:none;font-family:inherit;resize:vertical;min-height:28px;';
     commentArea.addEventListener('focus', () => commentArea.style.borderColor = '#2c6e9e');
     commentArea.addEventListener('blur', () => commentArea.style.borderColor = '#c0cdd8');
     commentArea.oninput = () => { w.comment = commentArea.value; renderDiagram(); };
@@ -319,7 +320,7 @@ function addWandler() {
   const wi = wandlers.length;
   wandlers.push(newWandler());
   // Set default downward offset for second output of new wandler
-  setOffset(wi, 1, { dx: 0, dy: 100 });
+  setOffset(wi, 1, { dx: 0, dy: 160 });
   renderPanel();
   renderDiagram();
   requestAnimationFrame(() => resetView());
@@ -332,7 +333,7 @@ function addWandler() {
 const ARROW_H    = 90;    // full-width (100%) arrow height
 const CIRCLE_R   = 65;    // wandler circle radius
 const MIN_IN_W   = 160;   // minimum input arrow width
-const OUT_W      = 200;   // default output arrow length
+const OUT_W      = 230;   // default output arrow length
 const CIRCLE_GAP = 8;     // gap between arrow tip and circle edge
 const MARGIN_H   = 70;    // left/right margin
 const MARGIN_V   = 70;    // top/bottom margin
@@ -356,8 +357,7 @@ function setOffset(wi, oi, val) {
   outputOffsets[`${wi}-${oi}`] = val;
 }
 
-// Snap targets: { 'wi-oi': { targetWi } }
-const snapTargets = {};
+const snapTargets = {}; // snap removed — kept as empty stub
 
 function outputArrowHeights(w) {
   return w.outputs.map(o => Math.max(18, ARROW_H * (parseFloat(o.pct) || 0) / 100));
@@ -386,11 +386,10 @@ function renderDiagram() {
   for (let wi = 1; wi < n; wi++) {
     const prevW = wandlers[wi-1];
     const primaryLabel = prevW.outputs[0]?.label || '';
-    const tipLen = Math.min(50, OUT_W * 0.28);
-    const minVisLen = estimateTextW(primaryLabel, FONT_SMALL) + tipLen + 30;
+    // gap from prevRight to cx_next so body text fits and tip starts at cx - CIRCLE_R*1.7
+    const minVisLen = estimateTextW(primaryLabel, FONT_SMALL) + Math.round(CIRCLE_R * 0.7);
     const off = getOffset(wi-1, 0);
-    const primarySnapped = !!snapTargets[`${wi-1}-0`];
-    const actualLen = minVisLen + (primarySnapped ? 0 : Math.max(0, off.dx));
+    const actualLen = minVisLen + Math.max(0, off.dx);
     const prevRight = circleXs[wi-1] + CIRCLE_R;
     circleXs.push(prevRight + CIRCLE_GAP + actualLen + CIRCLE_GAP + CIRCLE_R);
   }
@@ -437,7 +436,9 @@ function renderDiagram() {
   // totalH/totalW must NOT depend on drag offsets — changing them shifts the
   // visible diagram because tx/ty are not recalculated on each renderDiagram.
   const totalH = baseCy * 2;
-  const totalW = lastCx + CIRCLE_R + CIRCLE_GAP + OUT_W + MARGIN_H;
+  const lastOutLabel = wandlers[n-1].outputs[0]?.label || '';
+  const lastOutLen = (CIRCLE_R + 20) + estimateTextW(lastOutLabel, FONT_SMALL) + 50 + 10;
+  const totalW = lastCx + lastOutLen + MARGIN_H;
 
   svg.setAttribute('width', totalW);
   svg.setAttribute('height', totalH);
@@ -446,83 +447,35 @@ function renderDiagram() {
   svg.dataset.baseCy = baseCy;
   circleXs.forEach((cx, i) => { svg.dataset['cx' + i] = cx; });
 
-  // ── Draw each wandler ───────────────────────────────────────────────────
+  // ── Draw order: bodies → sec.outputs → circles → texts → tips ─────────────
+
+  // Pass 1: Primary output arrows oi=0 only (bottom layer, becomes input arrow for next)
+  // Pass 4 (after input arrows): secondary output arrows oi>=1 (top layer)
+  if (!svg._secOutputs) svg._secOutputs = [];
+
   for (let wi = 0; wi < n; wi++) {
     const w = wandlers[wi];
     const cx = circleXs[wi];
     const cy = baseCy;
-    const inW = inputWidths[wi];
-
-    // ── Input arrow — tip touches circle edge exactly
-    const inEndX   = cx - CIRCLE_R;   // tip touches circle
-    const inStartX = cx - CIRCLE_R - inW;
-    const inLabel  = wi === 0 ? w.inputLabel : (wandlers[wi-1].outputs[0]?.label || '');
-    if (wi === 0) {
-      drawChevronArrow(svg, ns, inStartX, cy, inEndX, ARROW_H, ARROW_COLOR, inLabel, FONT_MAIN, '#fff');
-      // Give polygon and text stable IDs for in-place mutation
-      const elems = svg.querySelectorAll('polygon, text');
-      // Tag last polygon as input arrow polygon
-      const polys = svg.querySelectorAll('polygon');
-      if (polys.length) polys[polys.length-1].setAttribute('id', 'in-arrow-poly');
-      const texts = svg.querySelectorAll('text');
-      if (texts.length) texts[texts.length-1].setAttribute('id', 'in-arrow-text');
-
-
-    }
-
-    // ── Circle
-    const circ = document.createElementNS(ns, 'circle');
-    circ.setAttribute('cx', cx); circ.setAttribute('cy', cy);
-    circ.setAttribute('r', CIRCLE_R);
-    circ.setAttribute('fill', '#D9E84E');
-    circ.setAttribute('stroke', '#b5c43a');
-    circ.setAttribute('stroke-width', '2');
-    circ.setAttribute('id', `wandler-circ-${wi}`);
-    svg.appendChild(circ);
-
-    // ── Wandler name inside circle
-    wrapText(svg, ns, w.name, cx, cy, CIRCLE_R * 1.75, 11, '#1a4a6a', 700, `wandler-text-${wi}`);
-
-    // ── Comment below circle
-    if (w.comment) {
-      wrapText(svg, ns, w.comment, cx, cy + CIRCLE_R + 18, CIRCLE_R * 2.5, 10, '#555', 400, `wandler-comment-${wi}`);
-    }
-
-    // ── Output arrows (all start at circle center, each has independent direction)
     const ahs = outputArrowHeights(w);
-
     w.outputs.forEach((o, oi) => {
       const ah = ahs[oi];
       const off = getOffset(wi, oi);
       const startX = cx;
       const startY = cy;
 
-      // Primary output of non-last wandler: tip touches next circle's left edge
-      let endX, endY;
-      if (wi < n - 1 && oi === 0) {
-        endX = circleXs[wi + 1] - CIRCLE_R;
-        endY = cy + off.dy;
-      } else {
-        const snapKey = `${wi}-${oi}`;
-        const snapTarget = snapTargets[snapKey];
+      // Primary output of non-last wandler is shown as the next wandler's input arrow
+      if (wi < n - 1 && oi === 0) return;
 
-        if (snapTarget !== undefined && circleXs[snapTarget.targetWi] !== undefined) {
-          // Tip touches left edge of target circle at target circle's Y
-          endX = circleXs[snapTarget.targetWi] - CIRCLE_R;
-          endY = cy; // target is always at same baseCy
-        } else {
-          const rawEndX = cx + CIRCLE_R + CIRCLE_GAP + OUT_W + off.dx;
-          const rawEndY = cy + off.dy;
-          const tipLen = 50;
-          const minVisLen = estimateTextW(o.label, FONT_SMALL) + tipLen + 20;
-          const minDist = CIRCLE_R + minVisLen;
-          const ddx = rawEndX - cx, ddy = rawEndY - cy;
-          const dist = Math.sqrt(ddx*ddx + ddy*ddy);
-          // Always clamp to exactly minDist — not shorter, not longer
-          const s = minDist / dist;
-          endX = cx + ddx * s;
-          endY = cy + ddy * s;
-        }
+      // Secondary outputs (oi>=1) drawn on top — collect for later
+      if (oi >= 1) { svg._secOutputs.push({ wi, oi, o, ah, off, startX, startY, cx, cy }); return; }
+
+      let endX, endY;
+      {
+        const textLen0 = estimateTextW(o.label, FONT_SMALL);
+          const minLen0 = (CIRCLE_R + 20) + textLen0 + Math.round(CIRCLE_R * 1.05) + 10;
+          endX = cx + minLen0 + off.dx;
+          endY = cy + off.dy;
       }
 
       const color = o.color || COLOR_BLUE;
@@ -568,40 +521,163 @@ function renderDiagram() {
     });
   }
 
-  // ── Circles on top (re-draw so they cover arrow starts) ─────────────────
+  // Pass 2: Input arrow bodies
+  // Tips collected for Pass 5 (drawn above everything including circle texts)
+  if (!svg._inTips) svg._inTips = [];
+  for (let wi = 0; wi < n; wi++) {
+    const w = wandlers[wi];
+    const cx = circleXs[wi];
+    const cy = baseCy;
+    const inTipX = cx - CIRCLE_R * 0.65;
+    const inBodyX = cx - CIRCLE_R * 1.7;
+
+    if (wi === 0) {
+      // Body: rectangle from start to circle edge
+      const inStartX = inTipX - inputWidths[wi];
+      drawChevronBody(svg, ns, inStartX, inBodyX + 8, cy, ARROW_H, ARROW_COLOR, w.inputLabel, FONT_MAIN, '#fff');
+      const polys = svg.querySelectorAll('polygon');
+      if (polys.length) polys[polys.length-1].setAttribute('id', 'in-arrow-poly');
+      const texts = svg.querySelectorAll('text');
+      if (texts.length) texts[texts.length-1].setAttribute('id', 'in-arrow-text');
+    } else {
+      // Connecting arrow body: from prev circle center, shorter than first arrow
+      const prevCx = circleXs[wi-1];
+      const prevOutput = wandlers[wi-1].outputs[0];
+      const pct = parseFloat(prevOutput?.pct) || 100;
+      const h = Math.max(18, ARROW_H * pct / 100);
+      const label = prevOutput?.label || '';
+      const connBodyX = prevCx + CIRCLE_R + 20 + estimateTextW(label, FONT_SMALL);
+      drawChevronBody(svg, ns, prevCx, connBodyX, cy, h, ARROW_COLOR, label, FONT_SMALL, '#fff', prevCx + CIRCLE_R + 20);
+    }
+    // Collect tip for later (drawn above circle)
+    svg._inTips.push({ cx, cy, inTipX, inBodyX, wi });
+  }
+
+  // Pass 4: Secondary output arrows (oi>=1)
+  (svg._secOutputs || []).forEach(({ wi, oi, o, ah, off, startX, startY, cx, cy }) => {
+    let endX, endY;
+    {
+      const fixedLen4 = (CIRCLE_R + 20) + estimateTextW(o.label, FONT_SMALL) + Math.round(CIRCLE_R * 1.05) + 10;
+      const curEndX4 = cx + CIRCLE_R + CIRCLE_GAP + OUT_W + off.dx;
+      const curEndY4 = cy + off.dy;
+      const dir4X = curEndX4 - cx, dir4Y = curEndY4 - cy;
+      const dir4Len = Math.sqrt(dir4X*dir4X + dir4Y*dir4Y) || 1;
+      endX = cx + (dir4X/dir4Len) * fixedLen4;
+      endY = cy + (dir4Y/dir4Len) * fixedLen4;
+    }
+    const color = o.color || COLOR_BLUE;
+    const g = document.createElementNS(ns, 'g');
+    g.setAttribute('class', 'out-arrow-group');
+    g.setAttribute('data-wi', wi);
+    g.setAttribute('data-oi', oi);
+    g.setAttribute('id', `arrow-group-${wi}-${oi}`);
+    drawDiagonalArrow(g, ns, startX, startY, endX, endY, ah, color, o.label, FONT_SMALL, '#fff', 8);
+    const dx2 = endX-startX, dy2 = endY-startY;
+    const dlen = Math.sqrt(dx2*dx2+dy2*dy2);
+    const ux2 = dx2/dlen, uy2 = dy2/dlen;
+    const dotR = 14;
+    const dotCx = endX - ux2*dotR*0.5;
+    const dotCy = endY - uy2*dotR*0.5;
+    const hitArea = document.createElementNS(ns, 'circle');
+    hitArea.setAttribute('cx', dotCx.toFixed(1)); hitArea.setAttribute('cy', dotCy.toFixed(1));
+    hitArea.setAttribute('r', dotR+8); hitArea.setAttribute('fill', 'transparent');
+    hitArea.setAttribute('class', 'no-export'); g.appendChild(hitArea);
+    const hint = document.createElementNS(ns, 'circle');
+    hint.setAttribute('cx', dotCx.toFixed(1)); hint.setAttribute('cy', dotCy.toFixed(1));
+    hint.setAttribute('r', dotR); hint.setAttribute('fill', 'rgba(255,255,255,0.55)');
+    hint.setAttribute('stroke', 'rgba(255,255,255,0.9)'); hint.setAttribute('stroke-width', '2');
+    hint.setAttribute('class', 'no-export'); hint.style.pointerEvents = 'none';
+    g.appendChild(hint);
+    svg.appendChild(g);
+  });
+  svg._secOutputs = null;
+
+  // Pass 4b: Circles (second highest — above everything except tips)
   for (let wi = 0; wi < n; wi++) {
     const cx = circleXs[wi];
     const cy = baseCy;
-
     const circ = document.createElementNS(ns, 'circle');
     circ.setAttribute('cx', cx); circ.setAttribute('cy', cy);
     circ.setAttribute('r', CIRCLE_R);
     circ.setAttribute('fill', '#D9E84E');
     circ.setAttribute('stroke', '#b5c43a');
     circ.setAttribute('stroke-width', '2');
-    circ.setAttribute('id', `wandler-circ-top-${wi}`);
     svg.appendChild(circ);
+  }
 
-    wrapText(svg, ns, wandlers[wi].name, cx, cy, CIRCLE_R * 1.75, 11, '#1a4a6a', 700, `wandler-text-top-${wi}`);
-    if (wandlers[wi].comment) {
-      wrapText(svg, ns, wandlers[wi].comment, cx, cy + CIRCLE_R + 18, CIRCLE_R * 2.5, 10, '#555', 400, `wandler-comment-top-${wi}`);
+  // ── Circle texts ──────────────────────────────────────────────────────────
+  for (let wi = 0; wi < n; wi++) {
+    const cx = circleXs[wi];
+    const cy = baseCy;
+    const w = wandlers[wi];
+    wrapText(svg, ns, w.name, cx, cy, CIRCLE_R * 1.75, 11, '#1a4a6a', 700, `wandler-text-top-${wi}`);
+    if (w.comment) {
+      wrapText(svg, ns, w.comment, cx, cy + CIRCLE_R + 18, CIRCLE_R * 2.5, 10, '#555', 400, `wandler-comment-top-${wi}`);
     }
   }
+
+  // Pass 5: Input arrow tips (above circles and texts)
+  (svg._inTips || []).forEach(({ cx, cy, inTipX, inBodyX: tipBodyX, wi }) => {
+    let h = ARROW_H;
+    if (wi > 0) {
+      const pct = parseFloat(wandlers[wi-1].outputs[0]?.pct) || 100;
+      h = Math.max(18, ARROW_H * pct / 100);
+    }
+    drawChevronTip(svg, ns, tipBodyX, inTipX, cy, h, ARROW_COLOR);
+  });
+  svg._inTips = null;
 
   svg.appendChild = _origAppendChild;
   svg.replaceChildren(frag);
 
   setupOutputDrag(svg);
 
-  if (!diagramInitialized) {
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      resetView();
-      diagramInitialized = true;
-    }));
-  } else {
-    applyTransform();
-  }
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    resetView();
+    diagramInitialized = true;
+  }));
   scheduleSave();
+}
+
+// Draw only the rectangle body of an input arrow (no arrowhead)
+// Extends slightly past x2 to overlap under the tip (no gap)
+function drawChevronBody(parent, ns, x1, x2, cy, height, color, label, fontSize, textColor, textX) {
+  const h2 = height / 2;
+  const overlap = 0; // no overlap
+  const pts = [[x1,cy-h2],[x2+overlap,cy-h2],[x2+overlap,cy+h2],[x1,cy+h2]].map(p=>p.join(',')).join(' ');
+  const poly = document.createElementNS(ns, 'polygon');
+  poly.setAttribute('points', pts);
+  poly.setAttribute('fill', color);
+  parent.appendChild(poly);
+  if (label) {
+    const txt = document.createElementNS(ns, 'text');
+    txt.setAttribute('x', textX !== undefined ? textX.toFixed(1) : ((x1+x2)/2).toFixed(1));
+    txt.setAttribute('y', cy);
+    txt.setAttribute('text-anchor', textX !== undefined ? 'start' : 'middle');
+    txt.setAttribute('dominant-baseline', 'middle');
+    txt.setAttribute('font-family', 'Segoe UI, system-ui, sans-serif');
+    txt.setAttribute('font-size', fontSize);
+    txt.setAttribute('font-weight', '700');
+    txt.setAttribute('fill', textColor||'#fff');
+    txt.textContent = label;
+    parent.appendChild(txt);
+  }
+}
+
+// Draw only the triangle tip of an input arrow (wing-style like other arrows)
+function drawChevronTip(parent, ns, x1, x2, cy, height, color) {
+  const h2 = height / 2, wing = h2 * 0.9; // scales with arrow height
+  const pts = [
+    [x1, cy-h2],
+    [x1, cy-h2-wing],
+    [x2, cy],
+    [x1, cy+h2+wing],
+    [x1, cy+h2]
+  ].map(p=>p.join(',')).join(' ');
+  const poly = document.createElementNS(ns, 'polygon');
+  poly.setAttribute('points', pts);
+  poly.setAttribute('fill', color);
+  parent.appendChild(poly);
 }
 
 // Draw straight horizontal input arrows
@@ -629,11 +705,13 @@ function drawChevronArrow(parent, ns, x1, cy, x2, height, color, label, fontSize
 }
 
 // Draw diagonal output arrows
-function drawDiagonalArrow(parent, ns, x1, y1, x2, y2, height, color, label, fontSize, textColor) {
+function drawDiagonalArrow(parent, ns, x1, y1, x2, y2, height, color, label, fontSize, textColor, wing=34) {
   const dx = x2-x1, dy = y2-y1, len = Math.sqrt(dx*dx+dy*dy);
   if (len < 2) return;
   const ux=dx/len, uy=dy/len, px=-uy, py=ux;
-  const h2=height/2, we=height*0.28, tipLen=Math.min(50,len*0.28);
+  const tipLen = Math.round(CIRCLE_R * 1.05); // same as chevron tip
+  const we = wing;   // passed in: 34 for primary, 8 for secondary
+  const h2 = height/2;
   const bx=x2-ux*tipLen, by=y2-uy*tipLen;
   const pts=[
     [x1+px*h2,y1+py*h2],[bx+px*h2,by+py*h2],[bx+px*(h2+we),by+py*(h2+we)],
@@ -643,22 +721,22 @@ function drawDiagonalArrow(parent, ns, x1, y1, x2, y2, height, color, label, fon
   poly.setAttribute('points', pts); poly.setAttribute('fill', color);
   parent.appendChild(poly);
   if (label && len > 30) {
-    const ex=x1+ux*CIRCLE_R, ey=y1+uy*CIRCLE_R, visLen=len-CIRCLE_R-tipLen;
-    const mx=ex+ux*(visLen/2), my=ey+uy*(visLen/2);
     let angle=Math.atan2(dy,dx)*180/Math.PI;
     if (angle>90||angle<-90) angle+=180;
-    const maxChars=Math.max(0,Math.floor(visLen/(fontSize*0.58)));
     const txt=document.createElementNS(ns,'text');
+    // Centered in visible body (after circle edge, before tip)
+    const mx = x1 + ux*CIRCLE_R + ux*(len - CIRCLE_R - 50)/2;
+    const my = y1 + uy*CIRCLE_R + uy*(len - CIRCLE_R - 50)/2;
     txt.setAttribute('x', mx.toFixed(2));
     txt.setAttribute('y', my.toFixed(2));
     txt.setAttribute('text-anchor', 'middle');
-    txt.setAttribute('dominant-baseline', 'middle');
     txt.setAttribute('transform', `rotate(${angle.toFixed(1)},${mx.toFixed(2)},${my.toFixed(2)})`);
+    txt.setAttribute('dominant-baseline', 'middle');
     txt.setAttribute('font-family', 'Segoe UI, system-ui, sans-serif');
     txt.setAttribute('font-size', fontSize);
     txt.setAttribute('font-weight', '700');
     txt.setAttribute('fill', textColor||'#fff');
-    txt.textContent = label.length>maxChars&&maxChars>3 ? label.slice(0,maxChars-1)+'…' : label;
+    txt.textContent = label;
     parent.appendChild(txt);
   }
 }
@@ -698,45 +776,15 @@ function svgDragStart(e) {
     group: el,
     startX: t.clientX, startY: t.clientY,
     startDx: cur.dx, startDy: cur.dy,
-    pendingRaf: false
+    pendingRaf: false,
+    hasMoved: false
   };
-  // Clear snap target when user starts dragging
-  delete snapTargets[`${wi}-${oi}`];
+  // Snap target cleared only when user actually moves (in onArrowMove)
 
   window.addEventListener('mousemove', onArrowMove);
   window.addEventListener('mouseup',   onArrowUp);
   window.addEventListener('touchmove', onArrowMove, { passive: false });
   window.addEventListener('touchend',  onArrowUp,   { passive: false });
-}
-
-const SNAP_ANGLE = 18; // degrees — snap if arrow points within this angle toward a circle
-
-// Find nearest snap point by checking if arrow direction points toward any other wandler circle
-function findSnapPoint(wi, oi, startX, startY, endX, endY) {
-  const svg = document.getElementById('diagram');
-  const baseCy = parseFloat(svg.dataset.baseCy);
-  const n = wandlers.length;
-  // Arrow direction
-  const adx = endX - startX, ady = endY - startY;
-  const alen = Math.sqrt(adx*adx + ady*ady);
-  if (alen < 1) return null;
-  const aAngle = Math.atan2(ady, adx);
-
-  let best = null, bestAngleDiff = SNAP_ANGLE * Math.PI / 180;
-  for (let i = 0; i < n; i++) {
-    if (i === wi) continue;
-    const snapX = parseFloat(svg.dataset['cx' + i]); // circle CENTER
-    const snapY = baseCy;
-    const sdx = snapX - startX, sdy = snapY - startY;
-    const sAngle = Math.atan2(sdy, sdx);
-    let diff = Math.abs(aAngle - sAngle);
-    if (diff > Math.PI) diff = 2 * Math.PI - diff;
-    if (diff < bestAngleDiff) {
-      bestAngleDiff = diff;
-      best = { x: snapX, y: snapY, wi: i };
-    }
-  }
-  return best;
 }
 
 function onArrowMove(ev) {
@@ -746,26 +794,37 @@ function onArrowMove(ev) {
   const t = ev.touches ? ev.touches[0] : ev;
   const ddx = (t.clientX - d.startX) / scale;
   const ddy = (t.clientY - d.startY) / scale;
-  setOffset(d.wi, d.oi, { dx: d.startDx + ddx, dy: d.startDy + ddy });
-
-  // Check snap — compute current tip position
+  let newDx = d.startDx + ddx;
+  let newDy = d.startDy + ddy;
+  // Clear snap only when user actually moves
+  if (Math.sqrt(ddx*ddx + ddy*ddy) > 8) {
+    delete snapTargets[`${d.wi}-${d.oi}`];
+  }
+  // Enforce minimum arrow length (text must always be visible)
   const svg = document.getElementById('diagram');
   const cx = parseFloat(svg.dataset['cx' + d.wi]);
   const baseCy = parseFloat(svg.dataset.baseCy);
-  const ahs = outputArrowHeights(wandlers[d.wi]);
-  const totalArrowH = ahs.reduce((s,h)=>s+h,0) + ARROW_GAP*(wandlers[d.wi].outputs.length-1);
-  let curY = baseCy - totalArrowH / 2;
-  for (let i = 0; i < d.oi; i++) curY += ahs[i] + ARROW_GAP;
-  const off = getOffset(d.wi, d.oi);
-  const rawEndX = cx + CIRCLE_R + CIRCLE_GAP + OUT_W + off.dx;
-  const rawEndY = (curY + ahs[d.oi] / 2) + off.dy;
-  const snap = findSnapPoint(d.wi, d.oi, cx, baseCy, rawEndX, rawEndY);
-  arrowDrag.snapping = snap ? snap : null;
+  const label = wandlers[d.wi].outputs[d.oi].label;
+  const minVisLen = estimateTextW(label, FONT_SMALL) + Math.round(CIRCLE_R * 1.05) + 30;
+  const minDist = CIRCLE_R + minVisLen;
+  const rawEndX0 = cx + CIRCLE_R + CIRCLE_GAP + OUT_W + newDx;
+  const rawEndY0 = baseCy + newDy;
+  const dist0 = Math.sqrt((rawEndX0-cx)**2 + (rawEndY0-baseCy)**2);
+  if (dist0 < minDist) {
+    const s = minDist / dist0;
+    newDx = (cx + (rawEndX0-cx)*s) - (cx + CIRCLE_R + CIRCLE_GAP + OUT_W);
+    newDy = (baseCy + (rawEndY0-baseCy)*s) - baseCy;
+  }
+  setOffset(d.wi, d.oi, { dx: newDx, dy: newDy });
 
+
+  const moveDist = Math.sqrt(((t.clientX - d.startX)/scale)**2 + ((t.clientY - d.startY)/scale)**2);
+  if (moveDist < 8) return; // ignore tiny movements
+  d.hasMoved = true;
   if (!d.pendingRaf) {
     d.pendingRaf = true;
     requestAnimationFrame(() => {
-      if (arrowDrag) {
+      if (arrowDrag && arrowDrag.hasMoved) {
         updateArrowAttrs(arrowDrag.wi, arrowDrag.oi, arrowDrag.group);
         arrowDrag.pendingRaf = false;
       }
@@ -784,17 +843,22 @@ function onArrowUp() {
   dragging = false; panTouchId = null;
   startTx = tx; startTy = ty;
 
-  if (d.snapping) {
-    snapTargets[`${d.wi}-${d.oi}`] = { targetWi: d.snapping.wi };
-    setOffset(d.wi, d.oi, { dx: 0, dy: 0 });
+  // Check if actually moved (ignore taps)
+  const movedDx = getOffset(d.wi, d.oi).dx - d.startDx;
+  const movedDy = getOffset(d.wi, d.oi).dy - d.startDy;
+  const moved = Math.sqrt(movedDx*movedDx + movedDy*movedDy) > 4;
+
+  if (!moved) {
+    // Tap without drag: restore original offset, do nothing
+    setOffset(d.wi, d.oi, { dx: d.startDx, dy: d.startDy });
     arrowDrag = null;
-    updateArrowAttrs(d.wi, d.oi, d.group);
-    document.getElementById('snap-highlight')?.remove();
-  } else {
-    delete snapTargets[`${d.wi}-${d.oi}`];
-    arrowDrag = null;
-    renderDiagram();
+    return;
   }
+
+  delete snapTargets[`${d.wi}-${d.oi}`];
+  arrowDrag = null;
+  updateArrowAttrs(d.wi, d.oi, d.group);
+  scheduleSave();
 }
 
 // Mutate only the SVG attributes of an existing arrow group — no DOM rebuild
@@ -808,67 +872,19 @@ function updateArrowAttrs(wi, oi, group) {
   const off = getOffset(wi, oi);
   const startX = cx, startY = baseCy;
 
-  const tipLenA = Math.min(50, OUT_W * 0.28);
-  const minVisLen = estimateTextW(w.outputs[oi].label, FONT_SMALL) + tipLenA + 20;
-  const minDist = CIRCLE_R + minVisLen;
+  // Recompute endX/endY exactly as renderDiagram does
+  const fixedLen = (CIRCLE_R + 20) + estimateTextW(w.outputs[oi].label, FONT_SMALL) + Math.round(CIRCLE_R * 1.05) + 10;
+  // Direction: use stored offset from cx
+  const curEndX = cx + CIRCLE_R + CIRCLE_GAP + OUT_W + off.dx;
+  const curEndY = baseCy + off.dy;
+  const dirX = curEndX - cx, dirY = curEndY - baseCy;
+  const dirLen = Math.sqrt(dirX*dirX + dirY*dirY) || 1;
+  const dux = dirX/dirLen, duy = dirY/dirLen;
 
   let endX, endY;
+  endX = cx + dux * fixedLen;
+  endY = baseCy + duy * fixedLen;
 
-  // Check snap target (persisted or live during drag)
-  const snapKey = `${wi}-${oi}`;
-  const snapData = (arrowDrag?.wi === wi && arrowDrag?.oi === oi && arrowDrag?.snapping)
-    ? (() => {
-        const rawEndX = cx + CIRCLE_R + CIRCLE_GAP + OUT_W + off.dx;
-        const rawEndY = baseCy + off.dy;
-        const ddx = rawEndX - cx, ddy = rawEndY - baseCy;
-        const dist = Math.sqrt(ddx*ddx + ddy*ddy) || 1;
-        return { targetWi: arrowDrag.snapping.wi, nx: ddx/dist, ny: ddy/dist };
-      })()
-    : snapTargets[snapKey];
-
-  if (snapData !== undefined) {
-    const targetCx2 = parseFloat(svg.dataset['cx' + snapData.targetWi]);
-    endX = targetCx2 - CIRCLE_R;
-    endY = baseCy;
-  } else {
-    const rawEndX = cx + CIRCLE_R + CIRCLE_GAP + OUT_W + off.dx;
-    const rawEndY = baseCy + off.dy;
-    const ddx = rawEndX - cx, ddy = rawEndY - baseCy;
-    const dist = Math.sqrt(ddx*ddx + ddy*ddy);
-    if (dist < minDist) {
-      const s = minDist / dist;
-      endX = cx + ddx * s;
-      endY = baseCy + ddy * s;
-    } else {
-      endX = rawEndX;
-      endY = rawEndY;
-    }
-  }
-
-  // Show/hide snap highlight ring
-  const existingSnap = document.getElementById('snap-highlight');
-  if (arrowDrag?.snapping) {
-    const snapCx = parseFloat(svg.dataset['cx' + arrowDrag.snapping.wi]);
-    const snapCy = parseFloat(svg.dataset.baseCy);
-    if (existingSnap) {
-      existingSnap.setAttribute('cx', snapCx);
-      existingSnap.setAttribute('cy', snapCy);
-    } else {
-      const ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-      ring.setAttribute('id', 'snap-highlight');
-      ring.setAttribute('cx', snapCx);
-      ring.setAttribute('cy', snapCy);
-      ring.setAttribute('r', CIRCLE_R + 6);
-      ring.setAttribute('fill', 'none');
-      ring.setAttribute('stroke', 'rgba(255,255,255,0.8)');
-      ring.setAttribute('stroke-width', '3');
-      ring.setAttribute('stroke-dasharray', '8 4');
-      ring.setAttribute('class', 'no-export');
-      svg.appendChild(ring);
-    }
-  } else if (existingSnap) {
-    existingSnap.remove();
-  }
 
   // Recompute polygon points
   const dx = endX - startX, dy = endY - startY;
@@ -877,36 +893,34 @@ function updateArrowAttrs(wi, oi, group) {
   const ux = dx/len, uy = dy/len;
   const px = -uy, py = ux;
   const h2 = ah / 2;
-  const wing = ah * 0.28;
-  const tipLen = Math.min(50, len * 0.28);
+  const wing = (oi === 0) ? h2 * 0.9 : 8; // primary scales with height, secondary=8
+  const tipLen = Math.round(CIRCLE_R * 1.05); // same as chevron tip
   const bx = endX - ux*tipLen, by = endY - uy*tipLen;
 
   const pts = [
-    [startX+px*h2,  startY+py*h2],
-    [bx+px*h2,      by+py*h2],
-    [bx+px*(h2+wing), by+py*(h2+wing)],
-    [endX, endY],
-    [bx-px*(h2+wing), by-py*(h2+wing)],
-    [bx-px*h2,      by-py*h2],
-    [startX-px*h2,  startY-py*h2],
+    [startX+px*h2,      startY+py*h2      ],
+    [bx+px*h2,          by+py*h2          ],
+    [bx+px*(h2+wing),   by+py*(h2+wing)   ],
+    [endX,              endY              ],
+    [bx-px*(h2+wing),   by-py*(h2+wing)   ],
+    [bx-px*h2,          by-py*h2          ],
+    [startX-px*h2,      startY-py*h2      ],
   ].map(p => p.map(v=>v.toFixed(2)).join(',')).join(' ');
 
   const poly = group.querySelector('polygon');
   if (poly) poly.setAttribute('points', pts);
 
-  // Update label position/rotation
+  // Update label — match drawDiagonalArrow logic
   const txt = group.querySelector('text');
   if (txt) {
-    const edgeX = startX + ux * CIRCLE_R;
-    const edgeY = startY + uy * CIRCLE_R;
-    const visLen = len - CIRCLE_R - tipLen;
-    const midX = edgeX + ux * (visLen / 2);
-    const midY = edgeY + uy * (visLen / 2);
     let angle = Math.atan2(dy, dx) * 180 / Math.PI;
     if (angle > 90 || angle < -90) angle += 180;
-    txt.setAttribute('x', midX.toFixed(2));
-    txt.setAttribute('y', midY.toFixed(2));
-    txt.setAttribute('transform', `rotate(${angle.toFixed(1)},${midX.toFixed(2)},${midY.toFixed(2)})`);
+    const mx = startX + ux*CIRCLE_R + ux*(len - CIRCLE_R - 50)/2;
+    const my = startY + uy*CIRCLE_R + uy*(len - CIRCLE_R - 50)/2;
+    txt.setAttribute('x', mx.toFixed(2));
+    txt.setAttribute('y', my.toFixed(2));
+    txt.setAttribute('text-anchor', 'middle');
+    txt.setAttribute('transform', `rotate(${angle.toFixed(1)},${mx.toFixed(2)},${my.toFixed(2)})`);
   }
 
   // Update hint dot & hit area
@@ -924,7 +938,7 @@ function updateArrowAttrs(wi, oi, group) {
   }
 }
 
-function wrapText(svg, ns, text, cx, cy, maxW, fontSize, fill, fontWeight, idPrefix) {
+function wrapText(svg, ns, text, cx, cy, maxW, fontSize, fill, fontWeight, idPrefix, maxLines) {
   const words = text.split(/\s+/);
   const lineH = fontSize * 1.4;
   let lines = [];
@@ -937,12 +951,14 @@ function wrapText(svg, ns, text, cx, cy, maxW, fontSize, fill, fontWeight, idPre
       cur = test;
     } else {
       if (cur) lines.push(cur);
+
       cur = w;
     }
   });
   if (cur) lines.push(cur);
 
-  const startY = cy - (lines.length - 1) * lineH / 2 - fontSize * 0.15;
+
+  const startY = cy - (lines.length - 1) * lineH / 2;
   lines.forEach((line, i) => {
     const t = document.createElementNS(ns, 'text');
     t.setAttribute('x', cx);
@@ -1257,8 +1273,7 @@ function saveToHash() {
       comment: w.comment || '',
       outputs: w.outputs.map((o, oi) => ({
         label: o.label, pct: o.pct, color: o.color,
-        off: getOffset(wi, oi),
-        snap: snapTargets[`${wi}-${oi}`] || null
+        off: getOffset(wi, oi)
       }))
     }))
   };
@@ -1279,7 +1294,6 @@ function loadFromHash() {
       const outputs = w.outputs.map((o, oi) => {
         const out = { id: ++idSeq, label: o.label, pct: o.pct, color: o.color };
         if (o.off) outputOffsets[`${wi}-${oi}`] = o.off;
-        if (o.snap) snapTargets[`${wi}-${oi}`] = o.snap;
         return out;
       });
       return { id: ++idSeq, name: w.name, inputLabel: w.inputLabel, comment: w.comment || '', outputs };
@@ -1315,7 +1329,7 @@ document.getElementById('preview-toolbar').appendChild(tbShare);
 const loaded = loadFromHash();
 if (!loaded) {
   wandlers.push(newWandler());
-  setOffset(0, 1, { dx: 0, dy: 100 });
+  setOffset(0, 1, { dx: 0, dy: 160 });
 }
 let diagramInitialized = false;
 renderPanel();
