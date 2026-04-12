@@ -103,6 +103,12 @@
   }
   .stoff-btn:hover { border-color: var(--text3); color: var(--text); }
   .stoff-btn.active { background: var(--text); color: #fff; border-color: var(--text); }
+  .stoff-btn.played-good  { background: var(--liquid-bg); color: var(--liquid); border-color: #a3dfd0; }
+  .stoff-btn.played-close { background: #faeeda; color: #854f0b; border-color: #FAC775; }
+  .stoff-btn.played-bad   { background: var(--gas-bg); color: var(--gas); border-color: #f5c4af; }
+  .stoff-btn.played-good.active  { background: var(--liquid); color: #fff; border-color: var(--liquid); }
+  .stoff-btn.played-close.active { background: #BA7517; color: #fff; border-color: #BA7517; }
+  .stoff-btn.played-bad.active   { background: var(--gas); color: #fff; border-color: var(--gas); }
 
   /* OVERVIEW BAR */
   .overview-wrap { margin-bottom: 8px; }
@@ -301,8 +307,9 @@
     display: none;
   }
   .result-panel.show { display: block; }
-  .result-panel.correct { background: var(--liquid-bg); border: 1px solid #a3dfd0; }
-  .result-panel.wrong   { background: var(--gas-bg);    border: 1px solid #f5c4af; }
+  .result-panel.correct      { background: var(--liquid-bg); border: 1px solid #a3dfd0; }
+  .result-panel.close-result { background: #faeeda; border: 1px solid #FAC775; }
+  .result-panel.wrong        { background: var(--gas-bg); border: 1px solid #f5c4af; }
   .result-panel h3 { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
   .result-panel p  { font-size: 13px; color: var(--text2); line-height: 1.6; }
 
@@ -434,6 +441,10 @@
       <div class="score-bar" style="margin-bottom:16px;">
         <span>Punkte:</span>
         <span class="score-val" id="score-display">0 / 0</span>
+        <button class="btn btn-secondary" onclick="resetQuiz()" style="margin-left:auto;font-size:12px;padding:5px 12px;">Neu starten</button>
+      </div>
+      <div id="quiz-complete" style="display:none;background:var(--liquid-bg);border:1px solid #a3dfd0;border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:16px;font-size:14px;">
+        🎉 Alle Stoffe abgeschlossen! <strong id="quiz-final-score"></strong>
       </div>
 
       <div class="quiz-task" id="quiz-task"></div>
@@ -520,6 +531,7 @@ function showTab(id) {
   document.getElementById("tab-erkunden").style.display = id==="erkunden" ? "" : "none";
   document.getElementById("tab-quiz").style.display     = id==="quiz"     ? "" : "none";
   document.querySelectorAll(".tab").forEach((t,i) => t.classList.toggle("active", (i===0) === (id==="erkunden")));
+  try { history.replaceState(null, "", "#" + id); } catch(e) {}
 }
 
 /* ── EXPLORE ──────────────────────────────────────── */
@@ -867,6 +879,8 @@ function renderExplore() {
 /* ── QUIZ ─────────────────────────────────────────── */
 let quizStoff = null;
 let quizScore = 0, quizTotal = 0;
+let playedStoffe = new Set();
+let stoffResults = {}; // name -> "good"|"close"|"bad"
 let mpFrac = 0.3, spFrac = 0.7;
 const QUIZ_LO = -300, QUIZ_HI = 3000, QUIZ_RANGE = QUIZ_HI - QUIZ_LO;
 let dragging = null;
@@ -889,9 +903,13 @@ function buildQuizButtons() {
 function startQuiz() {
   if (!quizStoff) return;
   const s = quizStoff;
+  const alreadyPlayed = playedStoffe.has(s.name);
+
   document.getElementById("quiz-panel").style.display = "";
   document.getElementById("result-panel").classList.remove("show");
-  const btnNext = document.getElementById("btn-next"); if (btnNext) btnNext.style.display = "none";
+  const btnNext = document.getElementById("btn-next");
+  const notAllDone = playedStoffe.size < STOFFE_ALPHA.length;
+  if (btnNext) btnNext.style.display = (alreadyPlayed && notAllDone) ? "" : "none";
 
   document.getElementById("quiz-task").innerHTML =
     `<p>Schiebe die Markierung für den <strong>Schmelzpunkt</strong> (S) und die Markierung für den <strong>Siedepunkt</strong> (K) von <strong>${s.name}</strong> an die richtige Stelle.</p>`;
@@ -899,6 +917,10 @@ function startQuiz() {
   // Place handles at 30% / 70% to start
   mpFrac = 0.3; spFrac = 0.7;
   updateHandlePositions();
+  // Lock handles if stoff already played
+  document.getElementById("handle-mp").style.pointerEvents = alreadyPlayed ? "none" : "";
+  document.getElementById("handle-sp").style.pointerEvents = alreadyPlayed ? "none" : "";
+  document.querySelector("button[onclick='checkQuiz()']").style.display = alreadyPlayed ? "none" : "";
   buildDragTicks();
 }
 
@@ -1012,11 +1034,26 @@ function checkQuiz() {
 
   quizTotal++;
   if (allOk) quizScore++;
+  playedStoffe.add(s.name);
+  const resultQuality = allOk ? "good" : (diffMP <= tolClose && diffSP <= tolClose) ? "close" : "bad";
+  stoffResults[s.name] = resultQuality;
   document.getElementById("score-display").textContent = `${quizScore} / ${quizTotal}`;
+  // Mark button with result color
+  document.querySelectorAll("#quiz-stoff-grid .stoff-btn").forEach((b, i) => {
+    if (STOFFE_ALPHA[i].name === s.name) {
+      b.classList.remove("played-good","played-close","played-bad");
+      b.classList.add("played-" + resultQuality);
+    }
+  });
+  // Lock handles
+  document.getElementById("handle-mp").style.pointerEvents = "none";
+  document.getElementById("handle-sp").style.pointerEvents = "none";
 
   const rp = document.getElementById("result-panel");
-  rp.classList.remove("correct","wrong");
-  rp.classList.add(allOk ? "correct" : "wrong");
+  rp.classList.remove("correct","wrong","close-result");
+  if (allOk) rp.classList.add("correct");
+  else if (diffMP <= tolClose && diffSP <= tolClose) rp.classList.add("close-result");
+  else rp.classList.add("wrong");
   rp.classList.add("show");
 
   // Differentiated title
@@ -1078,14 +1115,35 @@ function checkQuiz() {
 
 function nextQuiz() {
   document.getElementById("result-panel").classList.remove("show");
-  document.getElementById("btn-next").style.display = "none";
+  document.getElementById("quiz-complete").style.display = "none";
+  // Check if all stoffe have been played
+  if (playedStoffe.size >= STOFFE_ALPHA.length) {
+    document.getElementById("quiz-complete").style.display = "";
+    document.getElementById("quiz-final-score").textContent = `${quizScore} von ${quizTotal} richtig.`;
+    return;
+  }
+  // Find next unplayed stoff
   const idx = STOFFE_ALPHA.indexOf(quizStoff);
-  quizStoff = STOFFE_ALPHA[(idx + 1) % STOFFE_ALPHA.length];
-  // update active button
+  let nextIdx = (idx + 1) % STOFFE_ALPHA.length;
+  while (playedStoffe.has(STOFFE_ALPHA[nextIdx].name)) {
+    nextIdx = (nextIdx + 1) % STOFFE_ALPHA.length;
+  }
+  quizStoff = STOFFE_ALPHA[nextIdx];
   document.querySelectorAll("#quiz-stoff-grid .stoff-btn").forEach((b, i) => {
     b.classList.toggle("active", STOFFE_ALPHA[i] === quizStoff);
   });
   startQuiz();
+}
+
+function resetQuiz() {
+  quizScore = 0; quizTotal = 0;
+  playedStoffe = new Set();
+  stoffResults = {};
+  quizStoff = null;
+  document.getElementById("score-display").textContent = "0 / 0";
+  document.getElementById("quiz-panel").style.display = "none";
+  document.getElementById("quiz-complete").style.display = "none";
+  document.querySelectorAll("#quiz-stoff-grid .stoff-btn").forEach(b => { b.classList.remove("active","played-good","played-close","played-bad"); });
 }
 
 /* ── OVERVIEW HOVER ──────────────────────────────── */
@@ -1185,6 +1243,9 @@ setupZoomHover();
 buildQuizButtons();
 renderExplore();
 setupDrag();
+// Open tab from URL hash
+const initHash = location.hash.replace("#", "");
+if (initHash === "quiz" || initHash === "erkunden") showTab(initHash);
 </script>
 </body>
 </html>
