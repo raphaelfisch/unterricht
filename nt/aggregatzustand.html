@@ -436,7 +436,7 @@
 
       <div class="quiz-task" id="quiz-task"></div>
 
-      <div class="card-title">Schiebe die Marker auf die richtige Position</div>
+      <div class="card-title">Schiebe die Marker so nah wie möglich — innerhalb von ±20 °C gilt es als richtig.</div>
       <div class="legend" style="margin-bottom:10px;">
         <span class="line-toggle" style="cursor:default;pointer-events:none;background:var(--solid);color:#fff;border-color:var(--solid);">fest</span>
         <span class="line-toggle" style="cursor:default;pointer-events:none;background:var(--liquid);color:#fff;border-color:var(--liquid);">flüssig</span>
@@ -869,10 +869,13 @@ function checkQuiz() {
   const s = quizStoff;
   const guessMP = fracToTemp(mpFrac);
   const guessSP = fracToTemp(spFrac);
-  const tol = QUIZ_RANGE * 0.04; // 4% tolerance
+  const tolExact = 20;  // ±20°C = richtig
+  const tolClose = 100; // ±100°C = knapp daneben
 
-  const mpOk = Math.abs(guessMP - s.schmelz) <= tol;
-  const spOk = Math.abs(guessSP - s.siede)   <= tol;
+  const diffMP = Math.abs(guessMP - s.schmelz);
+  const diffSP = Math.abs(guessSP - s.siede);
+  const mpOk = diffMP <= tolExact;
+  const spOk = diffSP <= tolExact;
   const allOk = mpOk && spOk;
 
   quizTotal++;
@@ -884,16 +887,31 @@ function checkQuiz() {
   rp.classList.add(allOk ? "correct" : "wrong");
   rp.classList.add("show");
 
-  document.getElementById("result-title").textContent = allOk
-    ? "✓ Richtig! Gut gemacht."
-    : "Noch nicht ganz — so sieht es aus:";
+  // Differentiated title
+  let title;
+  if (allOk) {
+    title = "✓ Sehr gut!";
+  } else if (mpOk || spOk) {
+    title = "Fast — einer von beiden stimmt:";
+  } else if (diffMP <= tolClose && diffSP <= tolClose) {
+    title = "Knapp daneben:";
+  } else {
+    title = "Noch weit daneben:";
+  }
+  document.getElementById("result-title").textContent = title;
 
-  const mpGuessStr = !mpOk ? ` (du hast ${guessMP} °C geschätzt)` : "";
-  const spGuessStr = !spOk ? ` (du hast ${guessSP} °C geschätzt)` : "";
+  // Always show guess
+  function feedback(diff, guess, correct) {
+    const diff_str = guess > correct ? `+${diff}` : `-${diff}`;
+    if (diff <= tolExact) return `<strong>${correct} °C</strong> ✓ (du hast ${guess} °C geschätzt)`;
+    if (diff <= tolClose) return `<strong>${correct} °C</strong> — knapp daneben (du hast ${guess} °C geschätzt)`;
+    return `<strong>${correct} °C</strong> — weit daneben (du hast ${guess} °C geschätzt)`;
+  }
+
   const txt = `
-    <span style="display:grid;grid-template-columns:max-content 1fr;gap:2px 8px;">
-      <span>Schmelzpunkt von ${s.name}:</span><span><strong>${s.schmelz} °C</strong>${mpGuessStr}.</span>
-      <span>Siedepunkt von ${s.name}:</span><span><strong>${s.siede} °C</strong>${spGuessStr}.</span>
+    <span style="display:grid;grid-template-columns:max-content 1fr;gap:4px 10px;">
+      <span>Schmelzpunkt von ${s.name}:</span><span>${feedback(diffMP, guessMP, s.schmelz)}.</span>
+      <span>Siedepunkt von ${s.name}:</span><span>${feedback(diffSP, guessSP, s.siede)}.</span>
     </span>
   `;
   document.getElementById("result-text").innerHTML = txt;
