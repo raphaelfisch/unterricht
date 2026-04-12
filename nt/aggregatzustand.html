@@ -391,7 +391,7 @@
         <div id="overview-bars"></div>
         <div id="overview-vlines" style="position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;"></div>
         <div id="overview-hover-line" style="display:none;position:absolute;top:0;bottom:0;width:1.5px;background:#1a1916;opacity:0.6;pointer-events:none;transform:translateX(-50%);"></div>
-        <div id="overview-hover-label" style="display:none;position:absolute;top:4px;left:4px;font-size:11px;font-family:'DM Sans',sans-serif;font-weight:500;color:var(--text);white-space:nowrap;pointer-events:none;background:rgba(255,255,255,0.85);padding:1px 4px;border-radius:3px;"></div>
+        <div id="overview-hover-label" style="display:none;position:fixed;font-size:11px;font-family:'DM Sans',sans-serif;font-weight:500;color:var(--text);white-space:nowrap;pointer-events:none;background:rgba(255,255,255,0.88);padding:1px 5px;border-radius:3px;border:0.5px solid var(--border);z-index:100;"></div>
       </div>
       <div style="height:20px;"></div>
 
@@ -408,7 +408,7 @@
           <div id="zoom-vlines"></div>
           <div id="zoom-labels-above"></div>
           <div id="zoom-hover-line" style="display:none;position:absolute;top:0;bottom:0;width:1.5px;background:#1a1916;opacity:0.6;pointer-events:none;transform:translateX(-50%);"></div>
-          <div id="zoom-hover-label" style="display:none;position:absolute;font-size:11px;font-family:'DM Sans',sans-serif;font-weight:500;color:var(--text);white-space:nowrap;pointer-events:none;background:rgba(255,255,255,0.88);padding:1px 5px;border-radius:3px;border:0.5px solid var(--border);z-index:10;"></div>
+          <div id="zoom-hover-label" style="display:none;position:fixed;font-size:11px;font-family:'DM Sans',sans-serif;font-weight:500;color:var(--text);white-space:nowrap;pointer-events:none;background:rgba(255,255,255,0.88);padding:1px 5px;border-radius:3px;border:0.5px solid var(--border);z-index:100;"></div>
         </div>
         <div class="zoom-tick-row" id="zoom-ticks"></div>
       </div>
@@ -973,15 +973,12 @@ function setupHover(outer, hline, hlabel, getTemp) {
     hlabel.style.display = "block";
     const labelW = hlabel.offsetWidth || 58;
     if (isTouch) {
-      // On touch: show label above the touch point, centered on line
-      const offsetX = x + labelW / 2 > rect.width ? -(labelW + 4) : -(labelW / 2);
-      hlabel.style.left = (x + offsetX) + "px";
-      hlabel.style.top = Math.max(2, y - 60) + "px";
+      hlabel.style.left = (clientX - labelW / 2) + "px";
+      hlabel.style.top = (clientY - 60) + "px";
     } else {
-      // On mouse: offset to the right of cursor
       const offsetX = x + labelW + 12 > rect.width ? -(labelW + 6) : 8;
-      hlabel.style.left = (x + offsetX) + "px";
-      hlabel.style.top = Math.max(2, y - 22) + "px";
+      hlabel.style.left = (clientX + (offsetX > 0 ? 8 : -(labelW + 6))) + "px";
+      hlabel.style.top = (clientY - 22) + "px";
     }
   }
   function hide() {
