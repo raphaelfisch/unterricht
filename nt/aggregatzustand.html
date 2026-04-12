@@ -959,64 +959,62 @@ function nextQuiz() {
 }
 
 /* ── OVERVIEW HOVER ──────────────────────────────── */
-function setupOverviewHover() {
-  const outer = document.getElementById("overview-wrap-outer");
-  const hline = document.getElementById("overview-hover-line");
-  const hlabel = document.getElementById("overview-hover-label");
-
-  outer.addEventListener("mousemove", e => {
+function setupHover(outer, hline, hlabel, getTemp) {
+  function show(clientX, clientY) {
     const rect = outer.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const frac = Math.max(0, Math.min(1, x / rect.width));
-    const temp = Math.round(OV_LO + frac * OV_RANGE);
-
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    if (x < 0 || x > rect.width) { hide(); return; }
+    const f = Math.max(0, Math.min(1, x / rect.width));
+    const temp = getTemp(f);
     hline.style.display = "block";
-    hline.style.left = (frac * 100) + "%";
-
+    hline.style.left = (f * 100) + "%";
     hlabel.textContent = temp + " °C";
     hlabel.style.display = "block";
     const labelW = hlabel.offsetWidth || 58;
     const offsetX = x + labelW + 12 > rect.width ? -(labelW + 6) : 8;
     hlabel.style.left = (x + offsetX) + "px";
     hlabel.style.top = Math.max(2, y - 22) + "px";
-  });
-
-  outer.addEventListener("mouseleave", () => {
+  }
+  function hide() {
     hline.style.display = "none";
     hlabel.style.display = "none";
-  });
+  }
+  outer.addEventListener("mousemove", e => show(e.clientX, e.clientY));
+  outer.addEventListener("mouseleave", hide);
+  let touchStartX = 0, touchStartY = 0, touchDir = null;
+  outer.addEventListener("touchstart", e => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    touchDir = null;
+  }, { passive: true });
+  outer.addEventListener("touchmove", e => {
+    const dx = Math.abs(e.touches[0].clientX - touchStartX);
+    const dy = Math.abs(e.touches[0].clientY - touchStartY);
+    if (!touchDir) touchDir = dx > dy ? "h" : "v";
+    if (touchDir === "h") show(e.touches[0].clientX, e.touches[0].clientY);
+    else hide();
+  }, { passive: true });
+  outer.addEventListener("touchend", hide);
+  outer.addEventListener("touchcancel", hide);
+}
+
+function setupOverviewHover() {
+  setupHover(
+    document.getElementById("overview-wrap-outer"),
+    document.getElementById("overview-hover-line"),
+    document.getElementById("overview-hover-label"),
+    f => Math.round(OV_LO + f * OV_RANGE)
+  );
 }
 
 function setupZoomHover() {
-  const outer = document.getElementById("zoom-bar-outer");
-  const hline = document.getElementById("zoom-hover-line");
-  const hlabel = document.getElementById("zoom-hover-label");
-
-  outer.addEventListener("mousemove", e => {
-    const rect = outer.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const f = Math.max(0, Math.min(1, x / rect.width));
-    const lo = window._zoomLo || 0;
-    const hi = window._zoomHi || 100;
-    const temp = Math.round(lo + f * (hi - lo));
-
-    hline.style.display = "block";
-    hline.style.left = (f * 100) + "%";
-
-    hlabel.textContent = temp + " °C";
-    hlabel.style.display = "block";
-    const labelW = hlabel.offsetWidth || 58;
-    const offsetX = x + labelW + 12 > rect.width ? -(labelW + 6) : 8;
-    hlabel.style.left = (x + offsetX) + "px";
-    hlabel.style.top = Math.max(2, y - 22) + "px";
-  });
-
-  outer.addEventListener("mouseleave", () => {
-    hline.style.display = "none";
-    hlabel.style.display = "none";
-  });
+  setupHover(
+    document.getElementById("zoom-bar-outer"),
+    document.getElementById("zoom-hover-line"),
+    document.getElementById("zoom-hover-label"),
+    f => Math.round((window._zoomLo || 0) + f * ((window._zoomHi || 100) - (window._zoomLo || 0)))
+  );
 }
 
 /* ── TOGGLE LINES ────────────────────────────────── */
