@@ -960,7 +960,7 @@ function nextQuiz() {
 
 /* ── OVERVIEW HOVER ──────────────────────────────── */
 function setupHover(outer, hline, hlabel, getTemp) {
-  function show(clientX, clientY) {
+  function show(clientX, clientY, isTouch) {
     const rect = outer.getBoundingClientRect();
     const x = clientX - rect.left;
     const y = clientY - rect.top;
@@ -972,15 +972,23 @@ function setupHover(outer, hline, hlabel, getTemp) {
     hlabel.textContent = temp + " °C";
     hlabel.style.display = "block";
     const labelW = hlabel.offsetWidth || 58;
-    const offsetX = x + labelW + 12 > rect.width ? -(labelW + 6) : 8;
-    hlabel.style.left = (x + offsetX) + "px";
-    hlabel.style.top = Math.max(2, y - 22) + "px";
+    if (isTouch) {
+      // On touch: show label above the touch point, centered on line
+      const offsetX = x + labelW / 2 > rect.width ? -(labelW + 4) : -(labelW / 2);
+      hlabel.style.left = (x + offsetX) + "px";
+      hlabel.style.top = Math.max(2, y - 60) + "px";
+    } else {
+      // On mouse: offset to the right of cursor
+      const offsetX = x + labelW + 12 > rect.width ? -(labelW + 6) : 8;
+      hlabel.style.left = (x + offsetX) + "px";
+      hlabel.style.top = Math.max(2, y - 22) + "px";
+    }
   }
   function hide() {
     hline.style.display = "none";
     hlabel.style.display = "none";
   }
-  outer.addEventListener("mousemove", e => show(e.clientX, e.clientY));
+  outer.addEventListener("mousemove", e => show(e.clientX, e.clientY, false));
   outer.addEventListener("mouseleave", hide);
   let touchStartX = 0, touchStartY = 0, touchDir = null;
   outer.addEventListener("touchstart", e => {
@@ -992,7 +1000,7 @@ function setupHover(outer, hline, hlabel, getTemp) {
     const dx = Math.abs(e.touches[0].clientX - touchStartX);
     const dy = Math.abs(e.touches[0].clientY - touchStartY);
     if (!touchDir) touchDir = dx > dy ? "h" : "v";
-    if (touchDir === "h") show(e.touches[0].clientX, e.touches[0].clientY);
+    if (touchDir === "h") show(e.touches[0].clientX, e.touches[0].clientY, true);
     else hide();
   }, { passive: true });
   outer.addEventListener("touchend", hide);
