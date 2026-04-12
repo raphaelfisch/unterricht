@@ -380,10 +380,10 @@
         <div class="legend-row">
           <span class="legend-label">Temperaturen einblenden:</span>
           <div class="legend-items">
-            <button class="line-toggle" data-idx="0" onclick="toggleLine(0)">0 °C</button>
-            <button class="line-toggle" data-idx="1" onclick="toggleLine(1)">−18 °C (Tiefkühler)</button>
-            <button class="line-toggle" data-idx="2" onclick="toggleLine(2)">25 °C (Raumtemp.)</button>
-            <button class="line-toggle" data-idx="3" onclick="toggleLine(3)">200 °C (Backofen)</button>
+            <button class="line-toggle" onclick="toggleZeroLine(this)">0 °C</button>
+            <button class="line-toggle" data-idx="0" onclick="toggleLine(0)">−18 °C (Tiefkühler)</button>
+            <button class="line-toggle" data-idx="1" onclick="toggleLine(1)">25 °C (Raumtemp.)</button>
+            <button class="line-toggle" data-idx="2" onclick="toggleLine(2)">200 °C (Backofen)</button>
           </div>
         </div>
       </div>
@@ -561,21 +561,22 @@ function renderOverviewBars() {
     vlinesEl.innerHTML = "";
 
     const lines = [
-      { t: 0,   dashed: false },
-      { t: -18, dashed: true  },
-      { t: 25,  dashed: true  },
-      { t: 200, dashed: true  },
+      { t: 0,   dashed: false, key: "zero",  active: () => window._ovZero },
+      { t: -18, dashed: true,  key: "0",     active: () => window._ovLines[0] },
+      { t: 25,  dashed: true,  key: "1",     active: () => window._ovLines[1] },
+      { t: 200, dashed: true,  key: "2",     active: () => window._ovLines[2] },
     ];
 
-    window._ovLines = window._ovLines || [false, false, false, false];
+    window._ovLines = window._ovLines || [false, false, false];
+    window._ovZero  = window._ovZero  || false;
 
-    lines.forEach((m, i) => {
+    lines.forEach(m => {
       const leftPct = frac(m.t, OV_LO, OV_HI) * 100;
       const color = "#1a1916";
       const dashBg = `repeating-linear-gradient(to bottom,${color} 0,${color} 4px,transparent 4px,transparent 8px)`;
       const el = document.createElement("div");
-      el.dataset.lineIdx = i;
-      el.style.cssText = `position:absolute;left:${leftPct}%;top:0;bottom:0;width:2px;transform:translateX(-50%);${m.dashed?`background:${dashBg}`:`background:${color}`};opacity:0.35;display:${window._ovLines[i]?"block":"none"};`;
+      el.dataset.lineIdx = m.key;
+      el.style.cssText = `position:absolute;left:${leftPct}%;top:0;bottom:0;width:2px;transform:translateX(-50%);${m.dashed?`background:${dashBg}`:`background:${color}`};opacity:0.35;display:${m.active()?"block":"none"};`;
       vlinesEl.appendChild(el);
     });
 
@@ -606,6 +607,7 @@ function renderZoom() {
     const btn = document.createElement("button");
     btn.className = "line-toggle" + (active ? " active" : "");
     btn.textContent = m.label.split("\n").join(" ");
+    btn.dataset.zoomIdx = i;
     btn.onclick = () => {
       window._ovLines[i] = !window._ovLines[i];
       btn.classList.toggle("active", window._ovLines[i]);
@@ -1018,7 +1020,16 @@ function setupZoomHover() {
 }
 
 /* ── TOGGLE LINES ────────────────────────────────── */
-window._ovLines = [false, false, false, false];
+window._ovLines = [false, false, false];
+window._ovZero = false;
+
+function toggleZeroLine(btn) {
+  window._ovZero = !window._ovZero;
+  btn.classList.toggle("active", window._ovZero);
+  document.querySelectorAll(`#overview-vlines [data-line-idx="zero"]`).forEach(el => {
+    el.style.display = window._ovZero ? "block" : "none";
+  });
+}
 
 function toggleLine(idx) {
   window._ovLines[idx] = !window._ovLines[idx];
@@ -1027,6 +1038,15 @@ function toggleLine(idx) {
   document.querySelectorAll(`#overview-vlines [data-line-idx="${idx}"]`).forEach(el => {
     el.style.display = window._ovLines[idx] ? "block" : "none";
   });
+  // Sync zoom buttons
+  const zoomBtn = document.querySelector(`#zoom-toggles .line-toggle[data-zoom-idx="${idx}"]`);
+  if (zoomBtn) zoomBtn.classList.toggle("active", window._ovLines[idx]);
+  // Re-render zoom markers
+  if (activeStoff && window._zoomLo !== undefined) {
+    const lo = window._zoomLo, hi = window._zoomHi;
+    const visibleCheckTemps = CHECK_TEMPS.filter(m => m.t >= lo && m.t <= hi);
+    renderZoomMarkers(activeStoff, lo, hi, visibleCheckTemps);
+  }
 }
 
 /* ── INIT ─────────────────────────────────────────── */
