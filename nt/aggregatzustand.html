@@ -380,7 +380,6 @@
         <div class="legend-row">
           <span class="legend-label">Temperaturen einblenden:</span>
           <div class="legend-items">
-            <button class="line-toggle" onclick="toggleZeroLine(this)">0 °C</button>
             <button class="line-toggle" data-idx="0" onclick="toggleLine(0)">−18 °C (Tiefkühler)</button>
             <button class="line-toggle" data-idx="1" onclick="toggleLine(1)">25 °C (Raumtemp.)</button>
             <button class="line-toggle" data-idx="2" onclick="toggleLine(2)">200 °C (Backofen)</button>
@@ -388,6 +387,8 @@
         </div>
       </div>
       <div style="position:relative;cursor:crosshair;" id="overview-wrap-outer">
+        <div id="overview-labels" style="position:relative;height:0;transition:height .2s;"></div>
+        <svg id="overview-callouts" style="position:absolute;left:0;right:0;width:100%;overflow:visible;pointer-events:none;z-index:2;"></svg>
         <div id="overview-bars"></div>
         <div id="overview-vlines" style="position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;"></div>
         <div id="overview-hover-line" style="display:none;position:absolute;top:0;bottom:0;width:1.5px;background:#1a1916;opacity:0.6;pointer-events:none;transform:translateX(-50%);"></div>
@@ -406,6 +407,7 @@
         <div class="zoom-bar-rel" style="cursor:crosshair;" id="zoom-bar-outer">
           <div class="zoom-bar" id="zoom-bar"></div>
           <div id="zoom-vlines"></div>
+          <svg id="zoom-callouts" style="position:absolute;left:0;top:0;right:0;bottom:0;width:100%;overflow:visible;pointer-events:none;"></svg>
           <div id="zoom-labels-above"></div>
           <div id="zoom-hover-line" style="display:none;position:absolute;top:0;bottom:0;width:1.5px;background:#1a1916;opacity:0.6;pointer-events:none;transform:translateX(-50%);"></div>
           <div id="zoom-hover-label" style="display:none;position:fixed;font-size:11px;font-family:'DM Sans',sans-serif;font-weight:500;color:var(--text);white-space:nowrap;pointer-events:none;background:rgba(255,255,255,0.88);padding:1px 5px;border-radius:3px;border:0.5px solid var(--border);z-index:100;"></div>
@@ -561,25 +563,87 @@ function renderOverviewBars() {
     vlinesEl.innerHTML = "";
 
     const lines = [
-      { t: 0,   dashed: false, key: "zero",  active: () => window._ovZero },
       { t: -18, dashed: true,  key: "0",     active: () => window._ovLines[0] },
       { t: 25,  dashed: true,  key: "1",     active: () => window._ovLines[1] },
       { t: 200, dashed: true,  key: "2",     active: () => window._ovLines[2] },
     ];
 
     window._ovLines = window._ovLines || [false, false, false];
-    window._ovZero  = window._ovZero  || false;
-
+    
     lines.forEach(m => {
       const leftPct = frac(m.t, OV_LO, OV_HI) * 100;
       const color = "#1a1916";
       const dashBg = `repeating-linear-gradient(to bottom,${color} 0,${color} 4px,transparent 4px,transparent 8px)`;
       const el = document.createElement("div");
       el.dataset.lineIdx = m.key;
-      el.style.cssText = `position:absolute;left:${leftPct}%;top:0;bottom:0;width:2px;transform:translateX(-50%);${m.dashed?`background:${dashBg}`:`background:${color}`};opacity:0.35;display:${m.active()?"block":"none"};`;
+      el.style.cssText = `position:absolute;left:${leftPct}%;top:52px;bottom:0;width:2px;transform:translateX(-50%);${m.dashed?`background:${dashBg}`:`background:${color}`};opacity:0.35;display:${m.active()?"block":"none"};`;
       vlinesEl.appendChild(el);
     });
 
+    // Labels above with force-push placement + callout lines
+    renderOverviewLabels(lines);
+  });
+}
+
+function renderOverviewLabels(lines) {
+  const labelsEl = document.getElementById("overview-labels");
+  const svg      = document.getElementById("overview-callouts");
+  labelsEl.innerHTML = "";
+  svg.innerHTML = "";
+
+  const outerW = document.getElementById("overview-bars").offsetWidth || 600;
+  const LABEL_W = 90, LABEL_H = 32, STEM_H = 20, half = LABEL_W / 2, gap = 8;
+
+  // Only active lines get a label
+  const active = lines.filter(m => m.active());
+  labelsEl.style.height = active.length > 0 ? "52px" : "0";
+  svg.style.display = active.length > 0 ? "" : "none";
+  if (active.length === 0) return;
+  active.forEach(m => { m.anchorPx = frac(m.t, OV_LO, OV_HI) * outerW; m.labelPx = m.anchorPx; });
+  active.sort((a, b) => a.anchorPx - b.anchorPx);
+
+  // Relaxation — many passes with large movement allowed
+  for (let pass = 0; pass < 50; pass++) {
+    for (let i = 1; i < active.length; i++) {
+      const overlap = (active[i-1].labelPx + half + gap) - (active[i].labelPx - half);
+      if (overlap > 0) { active[i-1].labelPx -= overlap / 2; active[i].labelPx += overlap / 2; }
+    }
+    for (let i = active.length - 2; i >= 0; i--) {
+      const overlap = (active[i].labelPx + half + gap) - (active[i+1].labelPx - half);
+      if (overlap > 0) { active[i].labelPx -= overlap / 2; active[i+1].labelPx += overlap / 2; }
+    }
+    // Clamp edges each pass
+    active.forEach(m => { m.labelPx = Math.max(half, Math.min(outerW - half, m.labelPx)); });
+  }
+
+  // SVG sits between labels and bars, covers the stem lines going down
+  svg.setAttribute("viewBox", `0 0 ${outerW} ${STEM_H}`);
+  svg.style.top = LABEL_H + "px";
+  svg.style.height = STEM_H + "px";
+
+  const labels = {
+    "0":    ["Tiefkühler", "−18 °C"],
+    "1":    ["Raumtemp.", "25 °C"],
+    "2":    ["Backofen", "200 °C"]
+  };
+
+  active.forEach(m => {
+    const lbl = labels[m.key] || ["", ""];
+    // Callout line: from bottom-center of label to anchor on bar
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line.setAttribute("x1", m.labelPx);  line.setAttribute("y1", 0);
+    line.setAttribute("x2", m.anchorPx); line.setAttribute("y2", STEM_H);
+    line.setAttribute("stroke", "#1a1916"); line.setAttribute("stroke-width", "1");
+    line.setAttribute("opacity", "0.4");
+    if (m.dashed) line.setAttribute("stroke-dasharray", "3 2");
+    svg.appendChild(line);
+
+    // Label — same style as zoom pin-text
+    const pin = document.createElement("div");
+    pin.className = "zoom-label-pin";
+    pin.style.cssText = `left:${(m.labelPx/outerW*100).toFixed(2)}%;top:0;`;
+    pin.innerHTML = `<div class="pin-text" style="color:var(--text2);background:var(--card);padding:1px 3px;border-radius:2px;">${lbl[0]}${lbl[1] ? `<br><strong>${lbl[1]}</strong>` : ""}</div>`;
+    labelsEl.appendChild(pin);
   });
 }
 
@@ -697,6 +761,7 @@ function renderZoomMarkers(s, lo, hi, visibleCheckTemps) {
   const STEM_H  = 16;
   const LABEL_H = 32;
   const TOTAL_H = LABEL_H + STEM_H + 4;
+  const LABEL_W = 90; // estimated label width in px
 
   const labelsEl = document.getElementById("zoom-labels-above");
   labelsEl.innerHTML = "";
@@ -705,24 +770,89 @@ function renderZoomMarkers(s, lo, hi, visibleCheckTemps) {
   const vlinesEl = document.getElementById("zoom-vlines");
   vlinesEl.innerHTML = "";
 
-  // Render fixed first, then check temps on top
-  [...fixedMarkers, ...checkMarkers].forEach(m => {
-    const leftPct  = frac(m.t, lo, hi) * 100;
-    const dashedBg = `repeating-linear-gradient(to bottom,${m.color} 0,${m.color} 3px,transparent 3px,transparent 6px)`;
+  const barW = document.getElementById("zoom-bar").offsetWidth || 600;
+
+  const svg = document.getElementById("zoom-callouts");
+  svg.innerHTML = "";
+  const barH = 28;
+  svg.setAttribute("viewBox", `0 ${-TOTAL_H} ${barW} ${TOTAL_H + barH}`);
+  svg.style.top = (-TOTAL_H) + "px";
+  svg.style.height = (TOTAL_H + barH) + "px";
+
+  const allMarkers = [...fixedMarkers, ...checkMarkers];
+
+  // Compute anchor positions in px
+  allMarkers.forEach(m => { m.anchorPx = frac(m.t, lo, hi) * barW; });
+
+  // Sort by anchor position
+  allMarkers.sort((a, b) => a.anchorPx - b.anchorPx);
+
+  // Start each label centered on its anchor
+  allMarkers.forEach(m => { m.labelPx = m.anchorPx; });
+  const half = LABEL_W / 2;
+  const gap = 8;
+
+  // Multiple relaxation passes: push apart in both directions
+  for (let pass = 0; pass < 50; pass++) {
+    // Left to right: push right
+    for (let i = 1; i < allMarkers.length; i++) {
+      const prev = allMarkers[i-1], curr = allMarkers[i];
+      const overlap = (prev.labelPx + half + gap) - (curr.labelPx - half);
+      if (overlap > 0) {
+        prev.labelPx -= overlap / 2;
+        curr.labelPx += overlap / 2;
+      }
+    }
+    // Right to left: push left
+    for (let i = allMarkers.length - 2; i >= 0; i--) {
+      const curr = allMarkers[i], next = allMarkers[i+1];
+      const overlap = (curr.labelPx + half + gap) - (next.labelPx - half);
+      if (overlap > 0) {
+        curr.labelPx -= overlap / 2;
+        next.labelPx += overlap / 2;
+      }
+    }
+    // Clamp each pass
+    allMarkers.forEach(m => { m.labelPx = Math.max(half, Math.min(barW - half, m.labelPx)); });
+  }
+
+  // Render: SVG callout line from label-center-bottom to anchor on bar, label at computed position
+  allMarkers.forEach(m => {
+    const anchorPct = (m.anchorPx / barW * 100).toFixed(3) + "%";
+    const labelPct  = (m.labelPx  / barW * 100).toFixed(3) + "%";
+    const dashedBg  = `repeating-linear-gradient(to bottom,${m.color} 0,${m.color} 3px,transparent 3px,transparent 6px)`;
+
+    // Callout line from label-center-bottom to anchor top of bar
+    const x1 = m.labelPx;
+    const y1 = -STEM_H;
+    const x2 = m.anchorPx;
+    const y2 = 0;
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line.setAttribute("x1", x1); line.setAttribute("y1", y1);
+    line.setAttribute("x2", x2); line.setAttribute("y2", y2);
+    line.setAttribute("stroke", m.color);
+    line.setAttribute("stroke-width", "1.5");
+    line.setAttribute("opacity", m.dashed ? "0.6" : "0.85");
+    if (m.dashed) line.setAttribute("stroke-dasharray", "4 3");
+    svg.appendChild(line);
+
+    // Vertical tick line on the bar
+    const tick = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    tick.setAttribute("x1", m.anchorPx); tick.setAttribute("y1", 0);
+    tick.setAttribute("x2", m.anchorPx); tick.setAttribute("y2", barH);
+    tick.setAttribute("stroke", m.color);
+    tick.setAttribute("stroke-width", "1.5");
+    tick.setAttribute("opacity", m.dashed ? "0.5" : "0.85");
+    if (m.dashed) tick.setAttribute("stroke-dasharray", "4 3");
+    svg.appendChild(tick);
 
     const pin = document.createElement("div");
     pin.className = "zoom-label-pin";
-    pin.style.cssText = `left:${leftPct}%;top:0;z-index:${m.z};`;
+    pin.style.cssText = `left:${labelPct};top:0;z-index:${m.z};`;
     pin.innerHTML = `
       <div class="pin-text" style="color:${m.color};margin-bottom:2px;background:var(--card);padding:1px 3px;border-radius:2px;">${m.text[0]}<br><strong>${m.text[1]}</strong></div>
-      <div class="pin-line" style="height:${STEM_H}px;${m.dashed?`background:${dashedBg}`:`background:${m.color}`};opacity:${m.dashed?0.65:0.9}"></div>
     `;
     labelsEl.appendChild(pin);
-
-    const vl = document.createElement("div");
-    vl.className = "zoom-vline";
-    vl.style.cssText = `left:${leftPct}%;z-index:${m.z};opacity:${m.dashed?0.5:0.85};${m.dashed?`background:${dashedBg}`:`background:${m.color}`}`;
-    vlinesEl.appendChild(vl);
   });
 }
 
@@ -1024,15 +1154,6 @@ function setupZoomHover() {
 
 /* ── TOGGLE LINES ────────────────────────────────── */
 window._ovLines = [false, false, false];
-window._ovZero = false;
-
-function toggleZeroLine(btn) {
-  window._ovZero = !window._ovZero;
-  btn.classList.toggle("active", window._ovZero);
-  document.querySelectorAll(`#overview-vlines [data-line-idx="zero"]`).forEach(el => {
-    el.style.display = window._ovZero ? "block" : "none";
-  });
-}
 
 function toggleLine(idx) {
   window._ovLines[idx] = !window._ovLines[idx];
@@ -1050,6 +1171,12 @@ function toggleLine(idx) {
     const visibleCheckTemps = CHECK_TEMPS.filter(m => m.t >= lo && m.t <= hi);
     renderZoomMarkers(activeStoff, lo, hi, visibleCheckTemps);
   }
+  const lines = [
+    { t: -18, dashed: true,  key: "0",    active: () => window._ovLines[0] },
+    { t: 25,  dashed: true,  key: "1",    active: () => window._ovLines[1] },
+    { t: 200, dashed: true,  key: "2",    active: () => window._ovLines[2] },
+  ];
+  renderOverviewLabels(lines);
 }
 
 /* ── INIT ─────────────────────────────────────────── */
