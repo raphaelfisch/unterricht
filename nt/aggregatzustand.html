@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aggregatzustände</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f3ee;
+    --card: #ffffff;
+    --text: #1a1916;
+    --text2: #6b6a65;
+    --text3: #a8a7a2;
+    --border: #e2e0da;
+    --solid: #2e6fad;
+    --liquid: #1a8f6a;
+    --gas: #c94c1e;
+    --solid-bg: #ddeaf7;
+    --liquid-bg: #d3f0e7;
+    --gas-bg: #fae0d6;
+    --accent: #f0a500;
+    --marker-a: #6b3fc2;
+    --marker-b: #c44b8a;
+    --marker-c: #b85c00;
+    --quiz-mp: #2e6fad;
+    --quiz-sp: #c94c1e;
+    --radius: 12px;
+    --radius-sm: 7px;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 24px 16px 48px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  header h1 {
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+  }
+  header p {
+    font-size: 14px;
+    color: var(--text2);
+    margin-top: 4px;
+  }
+
+  .container { max-width: 820px; margin: 0 auto; }
+
+  /* TABS */
+  .tabs {
+    display: flex; gap: 4px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 4px;
+    margin-bottom: 20px;
+  }
+  .tab {
+    flex: 1; padding: 9px 8px;
+    border: none; background: none;
+    border-radius: calc(var(--radius) - 3px);
+    font-family: inherit; font-size: 14px; font-weight: 500;
+    color: var(--text2); cursor: pointer;
+    transition: all .18s;
+  }
+  .tab.active { background: var(--text); color: #fff; }
+
+  /* CARD */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .card-title {
+    font-size: 12px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .08em;
+    color: var(--text3); margin-bottom: 14px;
+  }
+
+  /* STOFF SELECTOR */
+  .stoff-grid {
+    display: flex; flex-wrap: wrap; gap: 6px;
+  }
+  .stoff-btn {
+    font-family: inherit; font-size: 13px; font-weight: 500;
+    padding: 5px 13px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: var(--bg); color: var(--text2);
+    cursor: pointer; transition: all .15s;
+  }
+  .stoff-btn:hover { border-color: var(--text3); color: var(--text); }
+  .stoff-btn.active { background: var(--text); color: #fff; border-color: var(--text); }
+
+  /* OVERVIEW BAR */
+  .overview-wrap { margin-bottom: 8px; }
+  .overview-label {
+    font-size: 11px; color: var(--text3);
+    font-family: 'DM Sans', sans-serif;
+    display: flex; justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .overview-bar {
+    height: 18px; border-radius: 4px;
+    background: var(--border);
+    position: relative; overflow: hidden;
+  }
+  .ov-solid  { position: absolute; height: 100%; background: var(--solid);  opacity: .85; }
+  .ov-liquid { position: absolute; height: 100%; background: var(--liquid); opacity: .85; }
+  .ov-gas    { position: absolute; height: 100%; background: var(--gas);    opacity: .85; }
+  .ov-marker {
+    position: absolute; top: 0; width: 2px; height: 100%;
+    transform: translateX(-50%);
+  }
+  .ov-name {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    font-size: 10px; font-weight: 600; color: #fff;
+    white-space: nowrap; pointer-events: none; padding-left: 3px;
+  }
+
+  /* ZOOM BAR */
+  .zoom-section { margin-top: 6px; }
+  /* outer container gives room for labels above + ticks below */
+  .zoom-bar-wrap {
+    position: relative;
+    margin: 8px 0 8px;
+  }
+  /* labels row above the bar */
+  #zoom-labels-above {
+    position: absolute; bottom: 100%; left: 0; right: 0;
+    pointer-events: none;
+  }
+  .zoom-label-pin {
+    position: absolute;
+    transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center;
+    pointer-events: none;
+  }
+  .zoom-label-pin .pin-text {
+    font-size: 10px; font-family: 'DM Sans', sans-serif;
+    font-weight: 500; white-space: nowrap;
+    text-align: center; line-height: 1.35;
+    background: var(--card);
+    padding: 1px 4px; border-radius: 3px;
+  }
+  .zoom-label-pin .pin-line {
+    width: 1.5px; min-height: 4px;
+    border-radius: 1px;
+  }
+  /* the bar itself */
+  .zoom-bar {
+    width: 100%; height: 28px;
+    border-radius: 6px; overflow: hidden;
+    display: flex; position: relative;
+  }
+  .z-solid  { height: 100%; background: var(--solid);  opacity: .9; }
+  .z-liquid { height: 100%; background: var(--liquid); opacity: .9; }
+  .z-gas    { height: 100%; background: var(--gas);    opacity: .9; }
+  /* vertical lines over bar */
+  .zoom-vline {
+    position: absolute; top: 0; bottom: 0;
+    width: 2px; transform: translateX(-50%);
+    border-radius: 1px; pointer-events: none;
+  }
+  .zoom-bar-rel { position: relative; margin-top: 56px; }
+  #zoom-vlines { position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; }
+  .zoom-tick-row {
+    position: relative; height: 48px;
+    font-size: 11px; font-family: 'DM Sans', sans-serif;
+    color: var(--text3); margin-top: 4px;
+  }
+  .zoom-tick-row span {
+    position: absolute;
+    transform: translateX(-50%) rotate(90deg);
+    transform-origin: center top;
+    white-space: nowrap;
+  }
+
+  /* STATE CARDS */
+  .state-cards { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-top: 4px; }
+  .state-card {
+    border-radius: var(--radius-sm);
+    padding: 12px 10px; text-align: center;
+    border: 1px solid transparent;
+  }
+  .state-card .sc-temp { font-size: 11px; color: var(--text2); line-height: 1.4; margin-bottom: 6px; }
+  .state-card .sc-icon { font-size: 26px; line-height: 1; margin-bottom: 4px; }
+  .state-card .sc-name { font-size: 14px; font-weight: 600; }
+  .sc-fest     { background: var(--solid-bg);  color: var(--solid);  border-color: #b8d4f0; }
+  .sc-flüssig  { background: var(--liquid-bg); color: var(--liquid); border-color: #a3dfd0; }
+  .sc-gasförmig{ background: var(--gas-bg);    color: var(--gas);    border-color: #f5c4af; }
+
+  .points-row {
+    display: flex; gap: 16px; flex-wrap: wrap;
+    font-size: 12px; color: var(--text2);
+    margin-top: 12px; padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+
+  /* LEGEND */
+  .legend-block { margin-bottom: 14px; }
+  .legend-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
+  .legend-row:last-child { margin-bottom: 0; }
+  .legend-label { font-size: 12px; color: var(--text2); white-space: nowrap; width: 170px; flex-shrink: 0; }
+  .legend-items { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text2); }
+  .legend-letter { font-size: 12px; font-weight: 700; color: var(--text); min-width: 10px; text-align: center; }
+  .legend-swatch { width: 28px; height: 10px; border-radius: 3px; }
+
+  /* ===== QUIZ ===== */
+  .quiz-stoff-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+
+  .quiz-task {
+    background: var(--bg); border-radius: var(--radius-sm);
+    padding: 14px 16px; margin-bottom: 16px;
+    border-left: 3px solid var(--accent);
+  }
+  .quiz-task p { font-size: 14px; line-height: 1.6; }
+  .quiz-task strong { font-weight: 600; }
+
+  /* Drag bar */
+  .drag-wrap {
+    position: relative; margin: 40px 0 20px;
+    user-select: none;
+  }
+  .drag-axis {
+    height: 28px; border-radius: 6px;
+    background: var(--border);
+    position: relative; overflow: visible;
+  }
+  .drag-seg {
+    position: absolute; top: 0; height: 100%;
+    pointer-events: none; border-radius: 0;
+  }
+  .drag-seg-solid  { background: var(--solid);  border-radius: 6px 0 0 6px; left: 0; }
+  .drag-seg-liquid { background: var(--liquid); }
+  .drag-seg-gas    { background: var(--gas);    border-radius: 0 6px 6px 0; right: 0; }
+  .drag-tick-row {
+    display: flex; justify-content: space-between;
+    font-size: 11px; font-family: 'DM Sans', sans-serif;
+    color: var(--text3); margin-top: 5px;
+  }
+  .drag-handle {
+    position: absolute; top: 50%; transform: translate(-50%, -50%);
+    width: 26px; height: 26px;
+    border-radius: 50%; border: 2px solid #fff;
+    box-shadow: 0 1px 6px rgba(0,0,0,.25);
+    cursor: ew-resize; touch-action: none;
+    transition: box-shadow .12s;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 600; color: #fff;
+    z-index: 2;
+  }
+  .drag-handle:hover { box-shadow: 0 2px 10px rgba(0,0,0,.3); }
+  .drag-handle.mp { background: var(--text); }
+  .drag-handle.sp { background: var(--text); }
+  .drag-label {
+    position: absolute; top: -24px; left: 50%; transform: translateX(-50%);
+    font-size: 11px; font-family: 'DM Sans', sans-serif;
+    font-weight: 500; white-space: nowrap;
+  }
+  .drag-label.mp { color: var(--text); }
+  .drag-label.sp { color: var(--text); }
+  .drag-legend {
+    display: flex; gap: 16px; font-size: 12px; color: var(--text2);
+    margin-bottom: 8px;
+  }
+  .dl-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
+
+  .btn {
+    font-family: inherit; font-size: 14px; font-weight: 600;
+    padding: 10px 22px; border-radius: var(--radius-sm);
+    border: none; cursor: pointer; transition: all .15s;
+  }
+  .btn-primary { background: var(--text); color: #fff; }
+  .btn-primary:hover { opacity: .88; }
+  .btn-secondary {
+    background: none; color: var(--text2);
+    border: 1px solid var(--border);
+    margin-left: 10px;
+  }
+  .btn-secondary:hover { border-color: var(--text3); color: var(--text); }
+
+  /* Result panel */
+  .result-panel {
+    border-radius: var(--radius-sm);
+    padding: 14px 16px; margin-top: 14px;
+    display: none;
+  }
+  .result-panel.show { display: block; }
+  .result-panel.correct { background: var(--liquid-bg); border: 1px solid #a3dfd0; }
+  .result-panel.wrong   { background: var(--gas-bg);    border: 1px solid #f5c4af; }
+  .result-panel h3 { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+  .result-panel p  { font-size: 13px; color: var(--text2); line-height: 1.6; }
+
+  .result-bar-wrap { margin: 12px 0 4px; position: relative; height: 28px; }
+  .result-bar { position: absolute; top: 0; left: 0; right: 0; height: 100%; border-radius: 5px; overflow: hidden; display: flex; }
+  .result-marker {
+    position: absolute; top: 0; bottom: 0;
+    width: 2px; transform: translateX(-50%);
+    border-radius: 1px;
+  }
+  .result-handle {
+    position: absolute; top: 50%; width: 14px; height: 14px;
+    border-radius: 50%; border: 2px solid #fff;
+    transform: translate(-50%, -50%);
+  }
+  .result-tick-row {
+    display: flex; justify-content: space-between;
+    font-size: 11px; font-family: 'DM Sans', sans-serif;
+    color: var(--text3);
+  }
+
+  /* Score */
+  .score-bar {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13px; color: var(--text2);
+  }
+  .score-val { font-size: 18px; font-weight: 600; color: var(--text); font-family: 'DM Sans', sans-serif; }
+
+  .line-toggle {
+    font-family: 'DM Sans', sans-serif; font-size: 12px;
+    padding: 4px 10px; border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--bg); color: var(--text2);
+    cursor: pointer; transition: all .15s;
+  }
+  .line-toggle.active {
+    background: var(--text); color: #fff; border-color: var(--text);
+  }
+  .line-toggle:hover:not(.active) { border-color: var(--text3); color: var(--text); }
+
+  @media (max-width: 540px) {
+    .state-cards { grid-template-columns: 1fr; }
+    .state-card { display: flex; align-items: center; gap: 12px; text-align: left; }
+    .state-card .sc-icon { font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>Aggregatzustände</h1>
+    <p>Schmelzpunkt und Siedepunkt</p>
+
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('erkunden')">🔍 Erkunden</button>
+    <button class="tab" onclick="showTab('quiz')">✏️ Aufgabe</button>
+  </div>
+
+  <!-- ===== ERKUNDEN ===== -->
+  <div id="tab-erkunden">
+
+    <div class="card" id="explore-panel" style="display:none">
+      <div class="card-title">Überblick — alle Stoffe (−300 °C bis 3000 °C)</div>
+      <div class="legend-block">
+        <div class="legend-row">
+          <span class="legend-label">Aggregatzustand:</span>
+          <div class="legend-items">
+            <span class="line-toggle" style="cursor:default;pointer-events:none;background:var(--solid);color:#fff;border-color:var(--solid);">fest</span>
+            <span class="line-toggle" style="cursor:default;pointer-events:none;background:var(--liquid);color:#fff;border-color:var(--liquid);">flüssig</span>
+            <span class="line-toggle" style="cursor:default;pointer-events:none;background:var(--gas);color:#fff;border-color:var(--gas);">gasförmig</span>
+          </div>
+        </div>
+        <div class="legend-row">
+          <span class="legend-label">Temperaturen einblenden:</span>
+          <div class="legend-items">
+            <button class="line-toggle" data-idx="0" onclick="toggleLine(0)">0 °C</button>
+            <button class="line-toggle" data-idx="1" onclick="toggleLine(1)">−18 °C (Tiefkühler)</button>
+            <button class="line-toggle" data-idx="2" onclick="toggleLine(2)">25 °C (Raumtemp.)</button>
+            <button class="line-toggle" data-idx="3" onclick="toggleLine(3)">200 °C (Backofen)</button>
+          </div>
+        </div>
+      </div>
+      <div style="position:relative;cursor:crosshair;" id="overview-wrap-outer">
+        <div id="overview-bars"></div>
+        <div id="overview-vlines" style="position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;"></div>
+        <div id="overview-hover-line" style="display:none;position:absolute;top:0;bottom:0;width:1.5px;background:#1a1916;opacity:0.6;pointer-events:none;transform:translateX(-50%);"></div>
+        <div id="overview-hover-label" style="display:none;position:absolute;top:4px;left:4px;font-size:11px;font-family:'DM Sans',sans-serif;font-weight:500;color:var(--text);white-space:nowrap;pointer-events:none;background:rgba(255,255,255,0.85);padding:1px 4px;border-radius:3px;"></div>
+      </div>
+      <div style="height:20px;"></div>
+
+    </div>
+
+    <div class="card" id="zoom-card" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px;min-height:30px;">
+        <div class="card-title" style="margin-bottom:0;" id="zoom-label">Zoom: —</div>
+        <div id="zoom-toggles" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+      </div>
+      <div class="zoom-bar-wrap">
+        <div class="zoom-bar-rel" style="cursor:crosshair;" id="zoom-bar-outer">
+          <div class="zoom-bar" id="zoom-bar"></div>
+          <div id="zoom-vlines"></div>
+          <div id="zoom-labels-above"></div>
+          <div id="zoom-hover-line" style="display:none;position:absolute;top:0;bottom:0;width:1.5px;background:#1a1916;opacity:0.6;pointer-events:none;transform:translateX(-50%);"></div>
+          <div id="zoom-hover-label" style="display:none;position:absolute;font-size:11px;font-family:'DM Sans',sans-serif;font-weight:500;color:var(--text);white-space:nowrap;pointer-events:none;background:rgba(255,255,255,0.88);padding:1px 5px;border-radius:3px;border:0.5px solid var(--border);z-index:10;"></div>
+        </div>
+        <div class="zoom-tick-row" id="zoom-ticks"></div>
+      </div>
+    </div>
+
+    <div class="card" id="state-card" style="display:none">
+      <div class="card-title" id="state-card-title">Aggregatzustand bei ausgesuchten Temperaturen</div>
+      <div class="state-cards" id="state-cards"></div>
+      <div class="points-row" id="points-row"></div>
+    </div>
+  </div>
+
+  <!-- ===== QUIZ ===== -->
+  <div id="tab-quiz" style="display:none">
+    <div class="card">
+      <div class="card-title">Stoff für die Aufgabe wählen</div>
+      <div class="quiz-stoff-grid" id="quiz-stoff-grid"></div>
+    </div>
+
+    <div class="card" id="quiz-panel" style="display:none">
+      <div class="score-bar" style="margin-bottom:16px;">
+        <span>Punkte:</span>
+        <span class="score-val" id="score-display">0 / 0</span>
+      </div>
+
+      <div class="quiz-task" id="quiz-task"></div>
+
+      <div class="card-title">Schiebe die Marker auf die richtige Position</div>
+      <div class="legend" style="margin-bottom:10px;">
+        <span class="line-toggle" style="cursor:default;pointer-events:none;background:var(--solid);color:#fff;border-color:var(--solid);">fest</span>
+        <span class="line-toggle" style="cursor:default;pointer-events:none;background:var(--liquid);color:#fff;border-color:var(--liquid);">flüssig</span>
+        <span class="line-toggle" style="cursor:default;pointer-events:none;background:var(--gas);color:#fff;border-color:var(--gas);">gasförmig</span>
+      </div>
+      <div class="drag-wrap" id="drag-wrap">
+        <div class="drag-axis" id="drag-axis">
+          <div class="drag-seg drag-seg-solid"  id="seg-solid"></div>
+          <div class="drag-seg drag-seg-liquid" id="seg-liquid"></div>
+          <div class="drag-seg drag-seg-gas"    id="seg-gas"></div>
+          <div class="drag-handle mp" id="handle-mp" title="Schmelzpunkt">S</div>
+          <div class="drag-handle sp" id="handle-sp" title="Siedepunkt">K</div>
+        </div>
+        <div class="drag-tick-row" id="drag-ticks"></div>
+      </div>
+
+      <div style="display:flex; align-items:center; margin-top:8px;">
+        <button class="btn btn-primary" onclick="checkQuiz()">Überprüfen</button>
+        <button class="btn btn-secondary" id="btn-next" onclick="nextQuiz()" style="display:none">Nächster Stoff →</button>
+      </div>
+
+      <div class="result-panel" id="result-panel">
+        <h3 id="result-title"></h3>
+        <p id="result-text"></p>
+        <div class="result-bar-wrap" id="result-bar-wrap" style="display:none">
+          <div class="result-bar" id="result-bar"></div>
+        </div>
+        <div class="result-tick-row" id="result-ticks"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const STOFFE = [
+  { name:"Helium",      schmelz:-272, siede:-269 },
+  { name:"Wasserstoff", schmelz:-259, siede:-252 },
+  { name:"Sauerstoff",  schmelz:-218, siede:-183 },
+  { name:"Propan",      schmelz:-188, siede:-42  },
+  { name:"Ethanol",     schmelz:-115, siede:78   },
+  { name:"Quecksilber", schmelz:-39,  siede:357  },
+  { name:"Olivenöl",    schmelz:-7,   siede:300  },
+  { name:"Wasser",      schmelz:0,    siede:100  },
+  { name:"Kerzenwachs", schmelz:60,   siede:250  },
+  { name:"Blei",        schmelz:327,  siede:1751 },
+  { name:"Aluminium",   schmelz:660,  siede:2519 },
+  { name:"Kochsalz",    schmelz:801,  siede:1461 },
+  { name:"Silber",      schmelz:962,  siede:2210 },
+  { name:"Gold",        schmelz:1064, siede:2836 },
+  { name:"Kupfer",      schmelz:1084, siede:2595 },
+  { name:"Eisen",       schmelz:1535, siede:2861 },
+];
+
+const STOFFE_ALPHA = [...STOFFE].sort((a,b) => a.name.localeCompare(b.name, 'de'));
+
+const CHECK_TEMPS = [
+  { t:-18,  label:"Tiefkühler\n−18 °C",       color:"#6b3fc2" },
+  { t:25,   label:"Raumtemperatur\n25 °C",     color:"#1a8f6a" },
+  { t:200,  label:"Backofen\n200 °C",          color:"#b85c00" },
+];
+
+const OV_LO = -300, OV_HI = 3000;
+const OV_RANGE = OV_HI - OV_LO;
+
+function frac(t, lo, hi) { return Math.max(0, Math.min(1, (t - lo) / (hi - lo))); }
+function pct(t, lo, hi)  { return (frac(t, lo, hi) * 100).toFixed(3) + "%"; }
+
+function getState(s, t) {
+  if (t < s.schmelz) return "fest";
+  if (t < s.siede)   return "flüssig";
+  return "gasförmig";
+}
+
+const STATE_ICON  = { fest:"🧊", flüssig:"💧", gasförmig:"💨" };
+const STATE_CLASS = { fest:"sc-fest", flüssig:"sc-flüssig", gasförmig:"sc-gasförmig" };
+
+/* ── TABS ─────────────────────────────────────────── */
+function showTab(id) {
+  document.getElementById("tab-erkunden").style.display = id==="erkunden" ? "" : "none";
+  document.getElementById("tab-quiz").style.display     = id==="quiz"     ? "" : "none";
+  document.querySelectorAll(".tab").forEach((t,i) => t.classList.toggle("active", (i===0) === (id==="erkunden")));
+}
+
+/* ── EXPLORE ──────────────────────────────────────── */
+let activeStoff = STOFFE[7];
+
+function renderOverviewBars() {
+  const container = document.getElementById("overview-bars");
+  container.innerHTML = "";
+  STOFFE.forEach(s => {
+    const isActive = s === activeStoff;
+    const wrap = document.createElement("div");
+    wrap.className = "overview-wrap";
+    wrap.style.opacity = isActive ? "1" : "0.55";
+    wrap.style.transition = "opacity .2s";
+    wrap.style.cursor = "crosshair";
+    wrap.onclick = () => {
+      activeStoff = s;
+      renderExplore();
+    };
+
+    const solidL  = frac(s.schmelz, OV_LO, OV_HI) * 100;
+    const liquidL = frac(s.siede,   OV_LO, OV_HI) * 100;
+
+    wrap.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
+        <span style="font-size:11px;font-weight:${isActive?600:400};color:${isActive?"var(--text)":"var(--text2)"};">${s.name}</span>
+        <span style="font-size:10px;font-family:'DM Sans',sans-serif;color:var(--text3);">${s.schmelz}°C / ${s.siede}°C</span>
+      </div>
+      <div class="overview-bar">
+        <div class="ov-solid"  style="left:0;width:${solidL}%"></div>
+        <div class="ov-liquid" style="left:${solidL}%;width:${liquidL-solidL}%"></div>
+        <div class="ov-gas"    style="left:${liquidL}%;width:${100-liquidL}%"></div>
+      </div>
+    `;
+    container.appendChild(wrap);
+  });
+
+  // Full-height overlay lines across all bars
+  requestAnimationFrame(() => {
+    const vlinesEl = document.getElementById("overview-vlines");
+    vlinesEl.innerHTML = "";
+
+    const lines = [
+      { t: 0,   dashed: false },
+      { t: -18, dashed: true  },
+      { t: 25,  dashed: true  },
+      { t: 200, dashed: true  },
+    ];
+
+    window._ovLines = window._ovLines || [false, false, false, false];
+
+    lines.forEach((m, i) => {
+      const leftPct = frac(m.t, OV_LO, OV_HI) * 100;
+      const color = "#1a1916";
+      const dashBg = `repeating-linear-gradient(to bottom,${color} 0,${color} 4px,transparent 4px,transparent 8px)`;
+      const el = document.createElement("div");
+      el.dataset.lineIdx = i;
+      el.style.cssText = `position:absolute;left:${leftPct}%;top:0;bottom:0;width:2px;transform:translateX(-50%);${m.dashed?`background:${dashBg}`:`background:${color}`};opacity:0.35;display:${window._ovLines[i]?"block":"none"};`;
+      vlinesEl.appendChild(el);
+    });
+
+  });
+}
+
+function renderZoom() {
+  const s = activeStoff;
+  document.getElementById("zoom-label").textContent = `Zoom: ${s.name}`;
+
+  // Range: pad around schmelz..siede only — never influenced by check temps
+  const range = Math.max(s.siede - s.schmelz, 10);
+  const pad = Math.max(range * 0.3, 40);
+  let lo = Math.floor((s.schmelz - pad) / 100) * 100;
+  let hi = Math.ceil((s.siede + pad)   / 100) * 100;
+  window._zoomLo = lo; window._zoomHi = hi;
+
+  // Which check temps fall inside range?
+  const visibleCheckTemps = CHECK_TEMPS.filter(m => m.t >= lo && m.t <= hi);
+
+  // Sync toggle buttons with overview state (_ovLines), only show available ones
+  const togglesEl = document.getElementById("zoom-toggles");
+  togglesEl.innerHTML = "";
+  CHECK_TEMPS.forEach((m, i) => {
+    const inRange = m.t >= lo && m.t <= hi;
+    if (!inRange) return;
+    const active = window._ovLines[i];
+    const btn = document.createElement("button");
+    btn.className = "line-toggle" + (active ? " active" : "");
+    btn.textContent = m.label.split("\n").join(" ");
+    btn.onclick = () => {
+      window._ovLines[i] = !window._ovLines[i];
+      btn.classList.toggle("active", window._ovLines[i]);
+      // sync overview button too
+      const ovBtn = document.querySelector(`.line-toggle[data-idx="${i}"]`);
+      if (ovBtn) ovBtn.classList.toggle("active", window._ovLines[i]);
+      // re-sync overview lines
+      document.querySelectorAll(`#overview-vlines [data-line-idx="${i}"]`).forEach(el => {
+        el.style.display = window._ovLines[i] ? "block" : "none";
+      });
+      renderZoomMarkers(s, lo, hi, visibleCheckTemps);
+    };
+    togglesEl.appendChild(btn);
+  });
+
+  // Bar segments
+  const solidW  = frac(s.schmelz, lo, hi) * 100;
+  const liquidW = (frac(s.siede, lo, hi) - frac(s.schmelz, lo, hi)) * 100;
+  const gasW    = 100 - solidW - liquidW;
+  const bar = document.getElementById("zoom-bar");
+  bar.innerHTML = `
+    <div class="z-solid"  style="flex:${solidW}"></div>
+    <div class="z-liquid" style="flex:${Math.max(0,liquidW)}"></div>
+    <div class="z-gas"    style="flex:${Math.max(0,gasW)}"></div>
+  `;
+
+  // Tick marks: only round 100s within range
+  const tickStep = 100;
+  const firstTick = Math.ceil(lo / tickStep) * tickStep;
+  const ticks = [];
+  for (let t = firstTick; t <= hi; t += tickStep) ticks.push(t);
+
+  // Tick lines on bar
+  bar.querySelectorAll(".zoom-tick-line").forEach(el => el.remove());
+  ticks.forEach(t => {
+    const l = frac(t, lo, hi) * 100;
+    const line = document.createElement("div");
+    line.className = "zoom-tick-line";
+    line.style.cssText = `position:absolute;left:${l}%;top:0;bottom:0;width:1px;background:rgba(255,255,255,0.5);transform:translateX(-50%);pointer-events:none;z-index:1;`;
+    bar.appendChild(line);
+  });
+
+  const tickRow = document.getElementById("zoom-ticks");
+  tickRow.style.position = "relative";
+  tickRow.style.height = "52px";
+  tickRow.innerHTML = ticks.map(t => {
+    const l = frac(t, lo, hi) * 100;
+    return `<span style="position:absolute;left:${l}%;top:52px;transform:translateX(-6px) rotate(-90deg);transform-origin:0 0;white-space:nowrap;display:inline-block;will-change:transform;backface-visibility:hidden;-webkit-font-smoothing:antialiased;">${t}\u00a0°C</span>`;
+  }).join("");
+
+  renderZoomMarkers(s, lo, hi, visibleCheckTemps);
+
+  // State cards
+  const sc = document.getElementById("state-cards");
+  sc.innerHTML = CHECK_TEMPS.map(m => {
+    const st = getState(s, m.t);
+    const [line1, line2] = m.label.split("\n");
+    return `<div class="state-card ${STATE_CLASS[st]}">
+      <div class="sc-temp">${line1}<br><strong>${line2}</strong></div>
+      <div class="sc-icon">${STATE_ICON[st]}</div>
+      <div class="sc-name">${st}</div>
+    </div>`;
+  }).join("");
+
+  document.getElementById("points-row").innerHTML =
+    `<span><span class="dot" style="background:var(--quiz-mp)"></span>Schmelzpunkt: ${s.schmelz} °C</span>
+     <span><span class="dot" style="background:var(--quiz-sp)"></span>Siedepunkt: ${s.siede} °C</span>`;
+  document.getElementById("state-card-title").textContent = `Aggregatzustand von ${s.name} bei ausgesuchten Temperaturen`;
+}
+
+function renderZoomMarkers(s, lo, hi, visibleCheckTemps) {
+  const activeCheckTemps = visibleCheckTemps.filter((m) => {
+    const i = CHECK_TEMPS.indexOf(m);
+    return window._ovLines[i];
+  });
+
+  const fixedMarkers = [
+    { t: s.schmelz, text: ["Schmelzpunkt", s.schmelz+" °C"], color: "#2e6fad", dashed: false, z: 1 },
+    { t: s.siede,   text: ["Siedepunkt",   s.siede+" °C"],   color: "#c94c1e", dashed: false, z: 1 },
+  ];
+  const checkMarkers = activeCheckTemps.map(m => ({
+    t: m.t,
+    text: [m.label.split("\n")[0], m.label.split("\n")[1]],
+    color: "#1a1916", dashed: true, z: 2
+  }));
+
+  const STEM_H  = 16;
+  const LABEL_H = 32;
+  const TOTAL_H = LABEL_H + STEM_H + 4;
+
+  const labelsEl = document.getElementById("zoom-labels-above");
+  labelsEl.innerHTML = "";
+  labelsEl.style.height = TOTAL_H + "px";
+
+  const vlinesEl = document.getElementById("zoom-vlines");
+  vlinesEl.innerHTML = "";
+
+  // Render fixed first, then check temps on top
+  [...fixedMarkers, ...checkMarkers].forEach(m => {
+    const leftPct  = frac(m.t, lo, hi) * 100;
+    const dashedBg = `repeating-linear-gradient(to bottom,${m.color} 0,${m.color} 3px,transparent 3px,transparent 6px)`;
+
+    const pin = document.createElement("div");
+    pin.className = "zoom-label-pin";
+    pin.style.cssText = `left:${leftPct}%;top:0;z-index:${m.z};`;
+    pin.innerHTML = `
+      <div class="pin-text" style="color:${m.color};margin-bottom:2px;background:var(--card);padding:1px 3px;border-radius:2px;">${m.text[0]}<br><strong>${m.text[1]}</strong></div>
+      <div class="pin-line" style="height:${STEM_H}px;${m.dashed?`background:${dashedBg}`:`background:${m.color}`};opacity:${m.dashed?0.65:0.9}"></div>
+    `;
+    labelsEl.appendChild(pin);
+
+    const vl = document.createElement("div");
+    vl.className = "zoom-vline";
+    vl.style.cssText = `left:${leftPct}%;z-index:${m.z};opacity:${m.dashed?0.5:0.85};${m.dashed?`background:${dashedBg}`:`background:${m.color}`}`;
+    vlinesEl.appendChild(vl);
+  });
+}
+
+function renderExplore() {
+  document.getElementById("explore-panel").style.display = "";
+  document.getElementById("zoom-card").style.display = "";
+  document.getElementById("state-card").style.display = "";
+  renderOverviewBars();
+  renderZoom();
+}
+
+/* ── QUIZ ─────────────────────────────────────────── */
+let quizStoff = null;
+let quizScore = 0, quizTotal = 0;
+let mpFrac = 0.3, spFrac = 0.7;
+const QUIZ_LO = -300, QUIZ_HI = 3000, QUIZ_RANGE = QUIZ_HI - QUIZ_LO;
+let dragging = null;
+
+function buildQuizButtons() {
+  const grid = document.getElementById("quiz-stoff-grid");
+  STOFFE_ALPHA.forEach(s => {
+    const b = document.createElement("button");
+    b.className = "stoff-btn";
+    b.textContent = s.name;
+    b.onclick = () => {
+      quizStoff = s; startQuiz();
+      grid.querySelectorAll(".stoff-btn").forEach(x=>x.classList.remove("active"));
+      b.classList.add("active");
+    };
+    grid.appendChild(b);
+  });
+}
+
+function startQuiz() {
+  if (!quizStoff) return;
+  const s = quizStoff;
+  document.getElementById("quiz-panel").style.display = "";
+  document.getElementById("result-panel").classList.remove("show");
+  const btnNext = document.getElementById("btn-next"); if (btnNext) btnNext.style.display = "none";
+
+  document.getElementById("quiz-task").innerHTML =
+    `<p>Schiebe die Markierung für den <strong>Schmelzpunkt</strong> (S) und die Markierung für den <strong>Siedepunkt</strong> (K) von <strong>${s.name}</strong> an die richtige Stelle.</p>`;
+
+  // Place handles at 30% / 70% to start
+  mpFrac = 0.3; spFrac = 0.7;
+  updateHandlePositions();
+  buildDragTicks();
+}
+
+function buildDragTicks() {
+  const ticks = [-300, -200, -100, 0, 100, 200, 500, 1000, 1500, 2000, 2500, 3000];
+  // Tick lines on bar
+  const axis = document.getElementById("drag-axis");
+  axis.querySelectorAll(".drag-tick-line").forEach(el => el.remove());
+  ticks.forEach(t => {
+    const l = frac(t, QUIZ_LO, QUIZ_HI) * 100;
+    const line = document.createElement("div");
+    line.className = "drag-tick-line";
+    line.style.cssText = `position:absolute;left:${l}%;top:0;bottom:0;width:1px;background:rgba(255,255,255,0.5);transform:translateX(-50%);pointer-events:none;z-index:1;`;
+    axis.appendChild(line);
+  });
+  // Labels below
+  const row = document.getElementById("drag-ticks");
+  row.style.position = "relative";
+  row.style.height = "52px";
+  row.innerHTML = ticks.map(t => {
+    const l = frac(t, QUIZ_LO, QUIZ_HI) * 100;
+    return `<span style="position:absolute;left:${l}%;top:52px;transform:translateX(-6px) rotate(-90deg);transform-origin:0 0;white-space:nowrap;display:inline-block;will-change:transform;backface-visibility:hidden;-webkit-font-smoothing:antialiased;">${t} °C</span>`;
+  }).join("");
+}
+
+function fracToTemp(f) { return Math.round(QUIZ_LO + f * QUIZ_RANGE); }
+
+function updateHandlePositions() {
+  const axis = document.getElementById("drag-axis");
+  const W = axis.offsetWidth || 600;
+
+  const hmp = document.getElementById("handle-mp");
+  const hsp = document.getElementById("handle-sp");
+
+  hmp.style.left = (mpFrac * 100) + "%";
+  hsp.style.left = (spFrac * 100) + "%";
+
+  // Color segments
+  document.getElementById("seg-solid").style.width  = (mpFrac * 100) + "%";
+  document.getElementById("seg-liquid").style.left  = (mpFrac * 100) + "%";
+  document.getElementById("seg-liquid").style.width = ((spFrac - mpFrac) * 100) + "%";
+  document.getElementById("seg-gas").style.width    = ((1 - spFrac) * 100) + "%";
+  document.getElementById("seg-gas").style.left     = (spFrac * 100) + "%";
+
+  // Labels
+  let lmp = hmp.querySelector(".drag-label");
+  if (!lmp) { lmp = document.createElement("div"); lmp.className = "drag-label mp"; hmp.appendChild(lmp); }
+  lmp.textContent = fracToTemp(mpFrac) + " °C";
+
+  let lsp = hsp.querySelector(".drag-label");
+  if (!lsp) { lsp = document.createElement("div"); lsp.className = "drag-label sp"; hsp.appendChild(lsp); }
+  lsp.textContent = fracToTemp(spFrac) + " °C";
+}
+
+function setupDrag() {
+  ["mp","sp"].forEach(id => {
+    const h = document.getElementById("handle-"+id);
+    h.addEventListener("mousedown",  e => { startDrag(e, id); h.focus(); });
+    h.addEventListener("touchstart", e => startDrag(e, id), { passive: true });
+    h.setAttribute("tabindex", "0");
+    h.addEventListener("keydown", e => {
+      if (!["ArrowLeft","ArrowRight"].includes(e.key)) return;
+      e.preventDefault();
+      const step = 1 / QUIZ_RANGE;
+      if (id === "mp") {
+        mpFrac = Math.max(0, Math.min(spFrac - step, mpFrac + (e.key === "ArrowRight" ? step : -step)));
+      } else {
+        spFrac = Math.max(mpFrac + step, Math.min(1, spFrac + (e.key === "ArrowRight" ? step : -step)));
+      }
+      updateHandlePositions();
+    });
+  });
+  document.addEventListener("mousemove",  onDrag);
+  document.addEventListener("touchmove",  onDrag, { passive: false });
+  document.addEventListener("mouseup",    endDrag);
+  document.addEventListener("touchend",   endDrag);
+}
+
+function startDrag(e, id) {
+  dragging = id;
+  e.preventDefault && e.preventDefault();
+}
+
+function onDrag(e) {
+  if (!dragging) return;
+  e.preventDefault && e.preventDefault();
+  const axis = document.getElementById("drag-axis");
+  const rect = axis.getBoundingClientRect();
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const f = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+  if (dragging === "mp") mpFrac = Math.min(f, spFrac - 0.01);
+  if (dragging === "sp") spFrac = Math.max(f, mpFrac + 0.01);
+  updateHandlePositions();
+}
+
+function endDrag() { dragging = null; }
+
+function checkQuiz() {
+  if (!quizStoff) return;
+  const s = quizStoff;
+  const guessMP = fracToTemp(mpFrac);
+  const guessSP = fracToTemp(spFrac);
+  const tol = QUIZ_RANGE * 0.04; // 4% tolerance
+
+  const mpOk = Math.abs(guessMP - s.schmelz) <= tol;
+  const spOk = Math.abs(guessSP - s.siede)   <= tol;
+  const allOk = mpOk && spOk;
+
+  quizTotal++;
+  if (allOk) quizScore++;
+  document.getElementById("score-display").textContent = `${quizScore} / ${quizTotal}`;
+
+  const rp = document.getElementById("result-panel");
+  rp.classList.remove("correct","wrong");
+  rp.classList.add(allOk ? "correct" : "wrong");
+  rp.classList.add("show");
+
+  document.getElementById("result-title").textContent = allOk
+    ? "✓ Richtig! Gut gemacht."
+    : "Noch nicht ganz — so sieht es aus:";
+
+  const mpGuessStr = !mpOk ? ` (du hast ${guessMP} °C geschätzt)` : "";
+  const spGuessStr = !spOk ? ` (du hast ${guessSP} °C geschätzt)` : "";
+  const txt = `
+    <span style="display:grid;grid-template-columns:max-content 1fr;gap:2px 8px;">
+      <span>Schmelzpunkt von ${s.name}:</span><span><strong>${s.schmelz} °C</strong>${mpGuessStr}.</span>
+      <span>Siedepunkt von ${s.name}:</span><span><strong>${s.siede} °C</strong>${spGuessStr}.</span>
+    </span>
+  `;
+  document.getElementById("result-text").innerHTML = txt;
+
+  // Result bar
+  const lo = QUIZ_LO, hi = QUIZ_HI; // dynamic per stoff
+  const solidL  = frac(s.schmelz, lo, hi) * 100;
+  const liquidL = frac(s.siede,   lo, hi) * 100;
+  const rb = document.getElementById("result-bar");
+  rb.innerHTML = `
+    <div style="flex:${solidL};background:var(--solid);opacity:.8"></div>
+    <div style="flex:${liquidL-solidL};background:var(--liquid);opacity:.8"></div>
+    <div style="flex:${100-liquidL};background:var(--gas);opacity:.8"></div>
+  `;
+  // Guess markers
+  const rbw = document.getElementById("result-bar-wrap");
+  rbw.querySelectorAll(".result-marker,.result-handle").forEach(x=>x.remove());
+  rbw.style.display = "";
+
+  [[mpFrac,"mp"],[spFrac,"sp"]].forEach(([f,id]) => {
+    const m = document.createElement("div");
+    m.className = "result-handle";
+    m.style.cssText = `left:${f*100}%;background:var(--text);border-color:#fff;`;
+    rbw.appendChild(m);
+  });
+
+  // Tick
+  document.getElementById("result-ticks").innerHTML =
+    `<span>${lo} °C</span><span style="margin-left:auto">${hi} °C</span>`;
+  document.getElementById("btn-next").style.display = "";
+}
+
+function nextQuiz() {
+  document.getElementById("result-panel").classList.remove("show");
+  document.getElementById("btn-next").style.display = "none";
+  const idx = STOFFE_ALPHA.indexOf(quizStoff);
+  quizStoff = STOFFE_ALPHA[(idx + 1) % STOFFE_ALPHA.length];
+  // update active button
+  document.querySelectorAll("#quiz-stoff-grid .stoff-btn").forEach((b, i) => {
+    b.classList.toggle("active", STOFFE_ALPHA[i] === quizStoff);
+  });
+  startQuiz();
+}
+
+/* ── OVERVIEW HOVER ──────────────────────────────── */
+function setupOverviewHover() {
+  const outer = document.getElementById("overview-wrap-outer");
+  const hline = document.getElementById("overview-hover-line");
+  const hlabel = document.getElementById("overview-hover-label");
+
+  outer.addEventListener("mousemove", e => {
+    const rect = outer.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const frac = Math.max(0, Math.min(1, x / rect.width));
+    const temp = Math.round(OV_LO + frac * OV_RANGE);
+
+    hline.style.display = "block";
+    hline.style.left = (frac * 100) + "%";
+
+    hlabel.textContent = temp + " °C";
+    hlabel.style.display = "block";
+    const labelW = hlabel.offsetWidth || 58;
+    const offsetX = x + labelW + 12 > rect.width ? -(labelW + 6) : 8;
+    hlabel.style.left = (x + offsetX) + "px";
+    hlabel.style.top = Math.max(2, y - 22) + "px";
+  });
+
+  outer.addEventListener("mouseleave", () => {
+    hline.style.display = "none";
+    hlabel.style.display = "none";
+  });
+}
+
+function setupZoomHover() {
+  const outer = document.getElementById("zoom-bar-outer");
+  const hline = document.getElementById("zoom-hover-line");
+  const hlabel = document.getElementById("zoom-hover-label");
+
+  outer.addEventListener("mousemove", e => {
+    const rect = outer.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const f = Math.max(0, Math.min(1, x / rect.width));
+    const lo = window._zoomLo || 0;
+    const hi = window._zoomHi || 100;
+    const temp = Math.round(lo + f * (hi - lo));
+
+    hline.style.display = "block";
+    hline.style.left = (f * 100) + "%";
+
+    hlabel.textContent = temp + " °C";
+    hlabel.style.display = "block";
+    const labelW = hlabel.offsetWidth || 58;
+    const offsetX = x + labelW + 12 > rect.width ? -(labelW + 6) : 8;
+    hlabel.style.left = (x + offsetX) + "px";
+    hlabel.style.top = Math.max(2, y - 22) + "px";
+  });
+
+  outer.addEventListener("mouseleave", () => {
+    hline.style.display = "none";
+    hlabel.style.display = "none";
+  });
+}
+
+/* ── TOGGLE LINES ────────────────────────────────── */
+window._ovLines = [false, false, false, false];
+
+function toggleLine(idx) {
+  window._ovLines[idx] = !window._ovLines[idx];
+  const btn = document.querySelector(`.line-toggle[data-idx="${idx}"]`);
+  btn.classList.toggle("active", window._ovLines[idx]);
+  document.querySelectorAll(`#overview-vlines [data-line-idx="${idx}"]`).forEach(el => {
+    el.style.display = window._ovLines[idx] ? "block" : "none";
+  });
+}
+
+/* ── INIT ─────────────────────────────────────────── */
+setupOverviewHover();
+setupZoomHover();
+buildQuizButtons();
+renderExplore();
+setupDrag();
+</script>
+</body>
+</html>
