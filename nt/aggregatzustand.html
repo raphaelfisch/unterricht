@@ -909,7 +909,20 @@ function startQuiz() {
   const alreadyPlayed = playedStoffe.has(s.name);
 
   document.getElementById("quiz-panel").style.display = "";
-  document.getElementById("result-panel").classList.remove("show");
+  const rp = document.getElementById("result-panel");
+  if (alreadyPlayed && stoffResults[s.name]) {
+    const r = stoffResults[s.name];
+    rp.classList.remove("correct","wrong","close-result");
+    rp.classList.add(r.quality === "good" ? "correct" : r.quality === "close" ? "close-result" : "wrong");
+    document.getElementById("result-title").textContent = r.title;
+    document.getElementById("result-text").innerHTML = r.text;
+    document.getElementById("result-bar").innerHTML = r.barHtml;
+    document.getElementById("result-bar-wrap").style.display = r.showBar ? "" : "none";
+    document.getElementById("result-ticks").innerHTML = r.ticks;
+    rp.classList.add("show");
+  } else {
+    rp.classList.remove("show");
+  }
   const btnNext = document.getElementById("btn-next");
   const notAllDone = playedStoffe.size < STOFFE_ALPHA.length;
   if (btnNext) btnNext.style.display = (alreadyPlayed && notAllDone) ? "" : "none";
@@ -1083,7 +1096,6 @@ function checkQuiz() {
   if (allOk) quizScore++;
   playedStoffe.add(s.name);
   const resultQuality = allOk ? "good" : (diffMP <= tolClose && diffSP <= tolClose) ? "close" : "bad";
-  stoffResults[s.name] = resultQuality;
   document.getElementById("score-display").textContent = `${quizScore} / ${quizTotal}`;
   // Mark button with result color
   document.querySelectorAll("#quiz-stoff-grid .stoff-btn").forEach((b, i) => {
@@ -1158,6 +1170,16 @@ function checkQuiz() {
   document.getElementById("result-ticks").innerHTML =
     `<span>${lo} °C</span><span style="margin-left:auto">${hi} °C</span>`;
   document.getElementById("btn-next").style.display = "";
+
+  // Save result state for this stoff
+  stoffResults[s.name] = {
+    quality: resultQuality,
+    title: title,
+    text: txt,
+    barHtml: rb.innerHTML,
+    showBar: true,
+    ticks: `<span>${lo} °C</span><span style="margin-left:auto">${hi} °C</span>`,
+  };
 }
 
 function nextQuiz() {
