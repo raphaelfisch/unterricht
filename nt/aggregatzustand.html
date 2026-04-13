@@ -531,6 +531,9 @@ const STATE_CLASS = { fest:"sc-fest", flüssig:"sc-flüssig", gasförmig:"sc-gas
 
 /* ── TABS ─────────────────────────────────────────── */
 function showTab(id) {
+  if (id === "erkunden" && quizTotal > 0 && playedStoffe.size < STOFFE_ALPHA.length) {
+    if (!confirm("Das Quiz ist noch nicht abgeschlossen. Trotzdem zu Erkunden wechseln?")) return;
+  }
   document.getElementById("tab-erkunden").style.display = id==="erkunden" ? "" : "none";
   document.getElementById("tab-quiz").style.display     = id==="quiz"     ? "" : "none";
   document.querySelectorAll(".tab").forEach((t,i) => t.classList.toggle("active", (i===0) === (id==="erkunden")));
@@ -1312,6 +1315,14 @@ setupZoomHover();
 buildQuizButtons();
 renderExplore();
 setupDrag();
+// Warn before leaving if quiz is in progress
+window.addEventListener("beforeunload", e => {
+  if (quizTotal > 0 && playedStoffe.size < STOFFE_ALPHA.length) {
+    e.preventDefault();
+    e.returnValue = "";
+  }
+});
+
 // Open tab from URL hash
 const initHash = location.hash.replace("#", "");
 if (initHash === "quiz" || initHash === "erkunden") showTab(initHash);
