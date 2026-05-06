@@ -359,12 +359,12 @@
         <div class="view-grid" id="view-front"></div>
       </div>
       <div class="view-box">
-        <div class="view-title">von oben</div>
-        <div class="view-grid" id="view-top"></div>
-      </div>
-      <div class="view-box">
         <div class="view-title">von rechts</div>
         <div class="view-grid" id="view-right"></div>
+      </div>
+      <div class="view-box">
+        <div class="view-title">von oben</div>
+        <div class="view-grid" id="view-top"></div>
       </div>
     </div>
   </div>
@@ -383,8 +383,8 @@
       <label class="cb"><input type="checkbox" id="cfg-show-dots"> Punktraster (unten links)</label>
       <label class="cb"><input type="checkbox" id="cfg-show-grid"> Häuschenpapier (unten rechts)</label>
       <label class="cb"><input type="checkbox" id="cfg-show-front"> Seitenansicht „von vorne"</label>
-      <label class="cb"><input type="checkbox" id="cfg-show-top"> Seitenansicht „von oben"</label>
       <label class="cb"><input type="checkbox" id="cfg-show-right"> Seitenansicht „von rechts"</label>
+      <label class="cb"><input type="checkbox" id="cfg-show-top"> Seitenansicht „von oben"</label>
     </div>
 
     <div class="dialog-section">
@@ -1219,8 +1219,8 @@ function exportPDF(config) {
 
   const sideViews = [
     { key: 'front', label: 'von vorne', show: config.showFront || isSolution },
-    { key: 'top',   label: 'von oben',  show: config.showTop || isSolution },
-    { key: 'right', label: 'von rechts', show: config.showRight || isSolution }
+    { key: 'right', label: 'von rechts', show: config.showRight || isSolution },
+    { key: 'top',   label: 'von oben',  show: config.showTop || isSolution }
   ];
 
   const svSize = 42;
