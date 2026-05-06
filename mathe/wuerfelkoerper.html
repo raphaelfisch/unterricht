@@ -6,6 +6,9 @@
 <title>Würfelkörper</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    overflow-x: hidden;
+  }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     background: #f5f5f0;
@@ -39,18 +42,20 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
   }
   .toolbar label { font-size: 14px; color: #444441; }
   button {
     font-family: inherit;
     font-size: 14px;
-    padding: 8px 14px;
+    padding: 10px 14px;
+    min-height: 40px;
     border: 1px solid #b4b2a9;
     border-radius: 8px;
     background: white;
     cursor: pointer;
     transition: all 0.15s;
+    touch-action: manipulation;
   }
   button:hover { background: #f1efe8; border-color: #888780; }
   button.primary {
@@ -115,6 +120,7 @@
     border: 1px solid #d3d1c7;
     cursor: grab;
     display: block;
+    touch-action: none;
   }
   #bauplan-canvas:active { cursor: grabbing; }
 
@@ -126,6 +132,7 @@
     border-radius: 8px;
     border: 1px solid #d3d1c7;
     cursor: grab;
+    touch-action: none;
   }
   #threed-container:active { cursor: grabbing; }
 
@@ -159,7 +166,7 @@
     justify-items: center;
   }
   @media (max-width: 600px) {
-    .views-container { grid-template-columns: 1fr; }
+    .views-container { gap: 10px; }
   }
   .view-box { text-align: center; }
   .view-box .view-title {
@@ -182,6 +189,18 @@
   }
   .view-cell.filled { background: #534ab7; }
   .view-cell.empty { background: transparent; border: 1px solid #d3d1c7; }
+
+  @media (max-width: 700px) {
+    .view-cell { width: 28px; height: 28px; }
+    .view-grid { padding: 4px; }
+  }
+  @media (max-width: 480px) {
+    .view-cell { width: 22px; height: 22px; }
+    .view-grid { padding: 3px; gap: 1px; }
+  }
+  @media (max-width: 380px) {
+    .view-cell { width: 18px; height: 18px; }
+  }
 
   /* Dialog */
   .dialog-overlay {
@@ -242,6 +261,48 @@
     gap: 8px;
     justify-content: flex-end;
     margin-top: 16px;
+  }
+
+  /* Mobile-Optimierungen */
+  @media (max-width: 700px) {
+    body { padding: 10px; }
+    header { padding: 6px 12px; margin-bottom: 8px; }
+    h1 { font-size: 16px; }
+
+    .toolbar {
+      padding: 10px 12px;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .toolbar-group { gap: 6px; }
+    button {
+      font-size: 13px;
+      padding: 10px 12px;
+    }
+
+    .container { gap: 12px; }
+    .panel { padding: 14px; }
+    .panel h2 { font-size: 15px; }
+
+    #bauplan-canvas, #threed-container {
+      height: 320px;
+    }
+
+    .views-container { gap: 8px; }
+    .view-box .view-title { font-size: 11px; }
+
+    .dialog {
+      padding: 16px;
+      max-width: calc(100vw - 24px);
+    }
+  }
+
+  @media (max-width: 420px) {
+    body { padding: 8px; }
+    .toolbar { padding: 8px; gap: 6px; }
+    button { font-size: 12px; padding: 9px 10px; }
+    #bauplan-canvas, #threed-container { height: 280px; }
+    .panel { padding: 12px; }
   }
 </style>
 </head>
