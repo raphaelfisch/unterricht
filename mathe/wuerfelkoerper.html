@@ -882,11 +882,25 @@ function init3D() {
     drawBauplan();
   }, { passive: false });
 
-  window.addEventListener('resize', () => {
+  function handleResize() {
     renderer.setSize(container.clientWidth, container.clientHeight);
     updateCameraPosition();
     drawBauplan();
+  }
+
+  window.addEventListener('resize', handleResize);
+  window.addEventListener('orientationchange', () => {
+    // Beim Drehen kommt das resize-Event manchmal verzögert oder gar nicht
+    setTimeout(handleResize, 50);
+    setTimeout(handleResize, 200);
+    setTimeout(handleResize, 500);
   });
+  // ResizeObserver erfasst auch CSS-bedingte Größenänderungen sofort
+  if (typeof ResizeObserver !== 'undefined') {
+    const ro = new ResizeObserver(() => handleResize());
+    ro.observe(container);
+    if (bauplanCanvas) ro.observe(bauplanCanvas);
+  }
 
   animate();
 }
