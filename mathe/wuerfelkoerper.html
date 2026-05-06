@@ -1997,6 +1997,16 @@ function updateAll() {
   renderView('view-right', 'right');
   drawBauplan();
   if (cubeGroup) build3D();
+  // URL-Hash aktualisieren, damit sie immer den aktuellen Würfelkörper widerspiegelt
+  // (kann in sandboxed iframes fehlschlagen — dann einfach ignorieren)
+  try {
+    const newHash = '#p=' + encodePlanToHash(plan);
+    if (window.location.hash !== newHash) {
+      history.replaceState(null, '', newHash);
+    }
+  } catch (e) {
+    // sandboxed iframe oder andere Sicherheitseinschränkungen — kein Problem
+  }
 }
 
 init3D();
