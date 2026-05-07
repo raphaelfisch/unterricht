@@ -1248,7 +1248,8 @@ function exportPDF(config) {
     drawPdfSideView(pdf, x, cursorY + 5, svSize, sv.key, sv.show);
   }
 
-  pdf.save(isSolution ? 'wuerfelkoerper-loesung.pdf' : 'wuerfelkoerper-aufgabe.pdf');
+  const planCode = encodePlanToHash(plan);
+  pdf.save(isSolution ? `wuerfelkoerper-${planCode}-loesung.pdf` : `wuerfelkoerper-${planCode}.pdf`);
 }
 
 // Hilfsfunktion: Titel einer Grid-Zelle
@@ -1841,7 +1842,7 @@ function exportBauplanPNG() {
   ctx.fillText('rechts', right.x, right.y);
 
   const link = document.createElement('a');
-  link.download = 'bauplan.png';
+  link.download = `bauplan-${encodePlanToHash(plan)}.png`;
   link.href = canvas.toDataURL('image/png');
   link.click();
 }
@@ -1990,7 +1991,7 @@ function exportPhoto() {
   // Bild speichern
   const dataURL = renderer.domElement.toDataURL('image/png');
   const link = document.createElement('a');
-  link.download = 'wuerfelkoerper-foto.png';
+  link.download = `wuerfelkoerper-${encodePlanToHash(plan)}-foto.png`;
   link.href = dataURL;
   link.click();
 
