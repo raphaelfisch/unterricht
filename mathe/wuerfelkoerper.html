@@ -903,7 +903,15 @@ function init3D() {
   });
   // ResizeObserver erfasst auch CSS-bedingte Größenänderungen sofort
   if (typeof ResizeObserver !== 'undefined') {
-    const ro = new ResizeObserver(() => handleResize());
+    let resizeFrame = null;
+    const ro = new ResizeObserver(() => {
+      // In requestAnimationFrame ausführen, um Loop-Notifications zu vermeiden
+      if (resizeFrame) cancelAnimationFrame(resizeFrame);
+      resizeFrame = requestAnimationFrame(() => {
+        resizeFrame = null;
+        handleResize();
+      });
+    });
     ro.observe(container);
     if (bauplanCanvas) ro.observe(bauplanCanvas);
   }
