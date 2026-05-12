@@ -299,6 +299,39 @@
     margin-top: 16px;
   }
 
+  /* Dropdown menu */
+  .dropdown {
+    position: relative;
+    display: inline-block;
+  }
+  .dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 4px;
+    background: white;
+    border: 1px solid #b4b2a9;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    z-index: 50;
+    min-width: 200px;
+    padding: 4px;
+  }
+  .dropdown.open .dropdown-menu { display: block; }
+  .dropdown-menu button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    min-height: 0;
+    color: #2c2c2a;
+  }
+  .dropdown-menu button:hover { background: #f1efe8; }
+
   /* Mobile-Optimierungen */
   @media (max-width: 700px) {
     body { padding: 10px; }
@@ -361,8 +394,16 @@
   </div>
   <div class="toolbar-group">
     <button id="btn-export-pdf" class="success">📄 Aufgabe als PDF</button>
-    <button id="btn-export-bauplan-png" class="success">🗺️ Bauplan als PNG</button>
-    <button id="btn-export-photo" class="success">📷 3D-Foto</button>
+    <div class="dropdown">
+      <button id="btn-export-menu" class="success">📥 PNG-Export ▾</button>
+      <div class="dropdown-menu" id="export-menu">
+        <button data-export="bauplan">🗺️ Bauplan</button>
+        <button data-export="photo">📷 3D-Foto</button>
+        <button data-export="dots">⋮⋮ Punktraster-Skizze</button>
+        <button data-export="grid">▦ Häuschen-Skizze</button>
+        <button data-export="sideviews">⊞ Seitenansichten</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -2065,8 +2106,26 @@ document.getElementById('btn-rotate-right').addEventListener('click', () => {
   updateCameraPosition();
   drawBauplan();
 });
-document.getElementById('btn-export-photo').addEventListener('click', exportPhoto);
-document.getElementById('btn-export-bauplan-png').addEventListener('click', exportBauplanPNG);
+// Dropdown-Menü
+const exportDropdown = document.getElementById('btn-export-menu').parentElement;
+document.getElementById('btn-export-menu').addEventListener('click', (e) => {
+  e.stopPropagation();
+  exportDropdown.classList.toggle('open');
+});
+document.addEventListener('click', () => {
+  exportDropdown.classList.remove('open');
+});
+document.getElementById('export-menu').addEventListener('click', (e) => {
+  if (e.target.tagName === 'BUTTON') {
+    const type = e.target.dataset.export;
+    if (type === 'bauplan') exportBauplanPNG();
+    else if (type === 'photo') exportPhoto();
+    else if (type === 'dots') exportDotsPNG();
+    else if (type === 'grid') exportGridPNG();
+    else if (type === 'sideviews') exportSideViewsPNG();
+    exportDropdown.classList.remove('open');
+  }
+});
 
 function exportBauplanPNG() {
   // Hochauflösendes PNG des Bauplans in Standard-Orientierung (45° gedreht)
@@ -2294,6 +2353,82 @@ function exportPhoto() {
   renderer.setSize(container.clientWidth, container.clientHeight, false);
   camera = origCamera;
   updateCameraPosition();
+}
+
+// ====================================================================
+// PNG-Exports: Punktraster, Häuschen, Seitenansichten
+// ====================================================================
+function exportDotsPNG() {
+  const SIZE_PX = 2000;
+  const canvas = document.createElement('canvas');
+  canvas.width = SIZE_PX;
+  canvas.height = Math.round(SIZE_PX * 70 / 76);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const pxPerMm = SIZE_PX / 76;
+  const pdfMock = createCanvasPdfAdapter(ctx, pxPerMm, {
+    skipFrameBox: { x: 0, y: 0, w: 76, h: 70 }
+  });
+  drawPdfIsoOnDots(pdfMock, 0, 0, 76, 70, true);
+  const link = document.createElement('a');
+  link.href = canvas.toDataURL('image/png');
+  link.download = `wuerfelkoerper-${encodePlanToHash(plan)}-punktraster.png`;
+  link.click();
+}
+
+function exportGridPNG() {
+  const SIZE_PX = 2000;
+  const canvas = document.createElement('canvas');
+  canvas.width = SIZE_PX;
+  canvas.height = Math.round(SIZE_PX * 70 / 76);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const pxPerMm = SIZE_PX / 76;
+  const pdfMock = createCanvasPdfAdapter(ctx, pxPerMm, {
+    skipFrameBox: { x: 0, y: 0, w: 76, h: 70 }
+  });
+  drawPdfCabinetOnGrid(pdfMock, 0, 0, 76, 70, true);
+  const link = document.createElement('a');
+  link.href = canvas.toDataURL('image/png');
+  link.download = `wuerfelkoerper-${encodePlanToHash(plan)}-haeuschen.png`;
+  link.click();
+}
+
+function exportSideViewsPNG() {
+  // 3 Seitenansichten nebeneinander, mit Titeln
+  const svSize_mm = 42;
+  const titleHeight_mm = 6;
+  const gap_mm = 8;
+  const totalW_mm = 3 * svSize_mm + 2 * gap_mm;
+  const totalH_mm = titleHeight_mm + svSize_mm;
+  const SIZE_PX = 1800;
+  const pxPerMm = SIZE_PX / totalW_mm;
+  const canvas = document.createElement('canvas');
+  canvas.width = SIZE_PX;
+  canvas.height = Math.round(totalH_mm * pxPerMm);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const pdfMock = createCanvasPdfAdapter(ctx, pxPerMm);
+  const views = [
+    { key: 'front', label: 'von vorne' },
+    { key: 'right', label: 'von rechts' },
+    { key: 'top',   label: 'von oben' }
+  ];
+  for (let i = 0; i < 3; i++) {
+    const v = views[i];
+    const vx = i * (svSize_mm + gap_mm);
+    pdfMock.setFontSize(9);
+    pdfMock.setTextColor(95, 94, 90);
+    pdfMock.text(v.label, vx + svSize_mm / 2, 3, { align: 'center' });
+    drawPdfSideView(pdfMock, vx, titleHeight_mm, svSize_mm, v.key, true);
+  }
+  const link = document.createElement('a');
+  link.href = canvas.toDataURL('image/png');
+  link.download = `wuerfelkoerper-${encodePlanToHash(plan)}-seitenansichten.png`;
+  link.click();
 }
 
 // ====================================================================
