@@ -2135,7 +2135,7 @@ function exportBauplanPNG() {
   ctx.fillText('rechts', right.x, right.y);
 
   const link = document.createElement('a');
-  link.download = `bauplan-${encodePlanToHash(plan)}.png`;
+  link.download = `wuerfelkoerper-${encodePlanToHash(plan)}-bauplan.png`;
   link.href = canvas.toDataURL('image/png');
   link.click();
 }
