@@ -475,14 +475,12 @@ function loadPlanFromURL() {
 function computeView(direction) {
   const heights = [];
   if (direction === 'front') {
-    // Blick von der gegenüberliegenden Seite: c-Reihenfolge spiegeln
-    for (let c = SIZE - 1; c >= 0; c--) {
+    for (let c = 0; c < SIZE; c++) {
       let h = 0;
       for (let r = 0; r < SIZE; r++) h = Math.max(h, plan[r][c]);
       heights.push(h);
     }
   } else if (direction === 'right') {
-    // Blick von der gegenüberliegenden Seite: r-Reihenfolge spiegeln
     for (let r = SIZE - 1; r >= 0; r--) {
       let h = 0;
       for (let c = 0; c < SIZE; c++) h = Math.max(h, plan[r][c]);
@@ -1143,13 +1141,13 @@ function exportPDF(config) {
   const planCode = encodePlanToHash(plan);
   if (qrDataURL) {
     const qrX = PAGE_W - M - qrSize;
-    const qrY = M - 4;
+    const qrY = M - 6;
     pdf.addImage(qrDataURL, 'PNG', qrX, qrY, qrSize, qrSize);
     pdf.link(qrX, qrY, qrSize, qrSize, { url: qrUrl });
-    // Plan-Code unter dem QR-Code
+    // Plan-Code unter dem QR-Code, vor der Trennlinie
     pdf.setFontSize(7);
     pdf.setTextColor(95, 94, 90);
-    pdf.text(planCode, qrX + qrSize / 2, qrY + qrSize + 3, { align: 'center' });
+    pdf.text(planCode, qrX + qrSize / 2, qrY + qrSize + 2.5, { align: 'center' });
   }
 
   pdf.setDrawColor(212, 209, 199);
