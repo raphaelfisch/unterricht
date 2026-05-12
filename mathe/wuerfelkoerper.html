@@ -136,6 +136,15 @@
   }
   #threed-container:active { cursor: grabbing; }
 
+  #dots-canvas, #grid-canvas {
+    width: 100%;
+    height: 400px;
+    background: #fafaf5;
+    border-radius: 8px;
+    border: 1px solid #d3d1c7;
+    display: block;
+  }
+
   .panel-controls {
     display: flex;
     gap: 8px;
@@ -284,7 +293,7 @@
     .panel { padding: 14px; }
     .panel h2 { font-size: 15px; }
 
-    #bauplan-canvas, #threed-container {
+    #bauplan-canvas, #threed-container, #dots-canvas, #grid-canvas {
       height: 320px;
     }
 
@@ -301,7 +310,7 @@
     body { padding: 8px; }
     .toolbar { padding: 8px; gap: 6px; }
     button { font-size: 12px; padding: 9px 10px; }
-    #bauplan-canvas, #threed-container { height: 280px; }
+    #bauplan-canvas, #threed-container, #dots-canvas, #grid-canvas { height: 280px; }
     .panel { padding: 12px; }
   }
 </style>
@@ -314,19 +323,13 @@
 
 <div class="toolbar">
   <div class="toolbar-group">
-    <label>Schwierigkeit:</label>
-    <button data-diff="easy">leicht</button>
-    <button data-diff="medium" class="active">mittel</button>
-    <button data-diff="hard">schwer</button>
-  </div>
-  <div class="toolbar-group">
     <button id="btn-random" class="primary">🎲 Zufällige Figur</button>
     <button id="btn-clear">Leeren</button>
   </div>
   <div class="toolbar-group">
     <label>Code:</label>
     <input type="text" id="plan-code-input" maxlength="9" pattern="[0-3]{9}" placeholder="z.B. 313011022"
-      style="font-family: monospace; padding: 9px 10px; border: 1px solid #b4b2a9; border-radius: 8px; width: 130px; font-size: 14px;">
+      style="font-family: monospace; padding: 10px 14px; min-height: 40px; box-sizing: border-box; border: 1px solid #b4b2a9; border-radius: 8px; width: 150px; font-size: 14px;">
     <button id="btn-load-code">Laden</button>
   </div>
   <div class="toolbar-group">
@@ -353,6 +356,18 @@
       <h2>Bauplan</h2>
       <div class="hint">Klick: Würfel hinzufügen (0 → 1 → 2 → 3 → 0 ...) · Maus ziehen: drehen</div>
       <canvas id="bauplan-canvas" width="600" height="400"></canvas>
+    </div>
+  </div>
+
+  <div class="row-top">
+    <div class="panel">
+      <h2>auf Punktraster skizzieren</h2>
+      <canvas id="dots-canvas" width="600" height="400"></canvas>
+    </div>
+
+    <div class="panel">
+      <h2>auf Häuschenpapier skizzieren</h2>
+      <canvas id="grid-canvas" width="600" height="400"></canvas>
     </div>
   </div>
 
@@ -413,7 +428,6 @@
 const SIZE = 3;
 const MAX_HEIGHT = 3;
 let plan = Array.from({length: SIZE}, () => Array(SIZE).fill(0));
-let difficulty = 'medium';
 
 // Synchronisierter Rotationswinkel für Bauplan + 3D (horizontal)
 let rotationH = Math.PI / 4;
@@ -890,6 +904,8 @@ function init3D() {
     renderer.setSize(container.clientWidth, container.clientHeight);
     updateCameraPosition();
     drawBauplan();
+    drawDotsOnCanvas();
+    drawGridOnCanvas();
   }
 
   window.addEventListener('resize', handleResize);
@@ -915,6 +931,169 @@ function init3D() {
   }
 
   animate();
+}
+
+// ====================================================================
+// CANVAS-RENDERING: Punktraster und Häuschen (für die App)
+// ====================================================================
+// Adapter: simuliert die jsPDF-API auf einem Canvas-Kontext.
+// Dadurch können wir drawPdfIsoOnDots() und drawPdfCabinetOnGrid() direkt
+// verwenden, ohne die Logik zu duplizieren.
+// Maßeinheit: mm (wie jsPDF). Beim Zeichnen multiplizieren wir mit pxPerMm.
+
+function createCanvasPdfAdapter(ctx, pxPerMm, opts) {
+  opts = opts || {};
+  const skipFrameBox = opts.skipFrameBox; // {x, y, w, h} - dieses Rect wird übersprungen
+  let drawColor = '#000000';
+  let fillColor = '#ffffff';
+  let lineWidth = 1;
+  let textColor = '#000000';
+  let fontSize = 10;
+  let lineJoin = 'miter';
+  let lineCap = 'butt';
+
+  function rgbToCss(r, g, b) {
+    return `rgb(${r|0},${g|0},${b|0})`;
+  }
+
+  function applyLineStyle() {
+    ctx.strokeStyle = drawColor;
+    ctx.lineWidth = lineWidth * pxPerMm;
+    ctx.lineJoin = lineJoin;
+    ctx.lineCap = lineCap;
+    ctx.fillStyle = fillColor;
+  }
+
+  const adapter = {
+    setDrawColor(r, g, b) {
+      drawColor = (g === undefined) ? rgbToCss(r, r, r) : rgbToCss(r, g, b);
+    },
+    setFillColor(r, g, b) {
+      fillColor = (g === undefined) ? rgbToCss(r, r, r) : rgbToCss(r, g, b);
+    },
+    setTextColor(r, g, b) {
+      textColor = (g === undefined) ? rgbToCss(r, r, r) : rgbToCss(r, g, b);
+    },
+    setLineWidth(w) { lineWidth = w; },
+    setFontSize(s) { fontSize = s; },
+    setFont() { /* nicht nötig */ },
+    setLineJoin(s) { lineJoin = s; },
+    setLineCap(s) { lineCap = s; },
+
+    rect(x, y, w, h, style) {
+      // Rahmen-Rect (Box-Umrandung) im Tool überspringen
+      if (skipFrameBox &&
+          Math.abs(x - skipFrameBox.x) < 0.1 &&
+          Math.abs(y - skipFrameBox.y) < 0.1 &&
+          Math.abs(w - skipFrameBox.w) < 0.1 &&
+          Math.abs(h - skipFrameBox.h) < 0.1 &&
+          !style) {
+        return;
+      }
+      applyLineStyle();
+      const px = x * pxPerMm, py = y * pxPerMm;
+      const pw = w * pxPerMm, ph = h * pxPerMm;
+      if (style === 'F') {
+        ctx.fillRect(px, py, pw, ph);
+      } else if (style === 'FD' || style === 'DF') {
+        ctx.fillRect(px, py, pw, ph);
+        ctx.strokeRect(px, py, pw, ph);
+      } else {
+        ctx.strokeRect(px, py, pw, ph);
+      }
+    },
+
+    line(x1, y1, x2, y2) {
+      applyLineStyle();
+      ctx.beginPath();
+      ctx.moveTo(x1 * pxPerMm, y1 * pxPerMm);
+      ctx.lineTo(x2 * pxPerMm, y2 * pxPerMm);
+      ctx.stroke();
+    },
+
+    circle(x, y, r, style) {
+      applyLineStyle();
+      ctx.beginPath();
+      ctx.arc(x * pxPerMm, y * pxPerMm, r * pxPerMm, 0, Math.PI * 2);
+      if (style === 'F') ctx.fill();
+      else if (style === 'FD' || style === 'DF') { ctx.fill(); ctx.stroke(); }
+      else ctx.stroke();
+    },
+
+    lines(deltas, startX, startY, scale, style, closed) {
+      applyLineStyle();
+      const sx = (scale && scale[0]) || 1;
+      const sy = (scale && scale[1]) || 1;
+      ctx.beginPath();
+      let cx = startX, cy = startY;
+      ctx.moveTo(cx * pxPerMm, cy * pxPerMm);
+      for (const d of deltas) {
+        cx += d[0] * sx;
+        cy += d[1] * sy;
+        ctx.lineTo(cx * pxPerMm, cy * pxPerMm);
+      }
+      if (closed) ctx.closePath();
+      if (style === 'F') ctx.fill();
+      else if (style === 'FD' || style === 'DF') { ctx.fill(); ctx.stroke(); }
+      else ctx.stroke();
+    },
+
+    text(str, x, y, opts) {
+      ctx.fillStyle = textColor;
+      ctx.font = `${fontSize * pxPerMm * 0.35}px sans-serif`;
+      ctx.textAlign = (opts && opts.align) || 'left';
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillText(str, x * pxPerMm, y * pxPerMm);
+    },
+
+    addImage() { /* nicht benötigt im Tool */ },
+    link() { /* nicht benötigt */ },
+    save() { /* nicht benötigt */ },
+  };
+
+  return adapter;
+}
+
+function renderPdfBoxOnCanvas(canvasId, drawFn) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, rect.width, rect.height);
+
+  // Die PDF-Box ist im PDF ca. 76 mm breit und 70 mm hoch (cellW × cellInnerH)
+  // Wir berechnen pxPerMm so, dass die Box ins Canvas passt
+  const boxW_mm = 76;
+  const boxH_mm = 70;
+  const pxPerMm = Math.min(rect.width / boxW_mm, rect.height / boxH_mm);
+  const drawnW = boxW_mm * pxPerMm;
+  const drawnH = boxH_mm * pxPerMm;
+  // Zentrieren
+  const offsetX = (rect.width - drawnW) / 2;
+  const offsetY = (rect.height - drawnH) / 2;
+  ctx.translate(offsetX, offsetY);
+
+  const pdfMock = createCanvasPdfAdapter(ctx, pxPerMm, {
+    skipFrameBox: { x: 0, y: 0, w: boxW_mm, h: boxH_mm }
+  });
+  drawFn(pdfMock, 0, 0, boxW_mm, boxH_mm);
+}
+
+function drawDotsOnCanvas() {
+  renderPdfBoxOnCanvas('dots-canvas', (pdf, x, y, w, h) => {
+    drawPdfIsoOnDots(pdf, x, y, w, h, true);
+  });
+}
+
+function drawGridOnCanvas() {
+  renderPdfBoxOnCanvas('grid-canvas', (pdf, x, y, w, h) => {
+    drawPdfBackground(pdf, x, y, w, h, 'grid');
+    drawPdfCabinetOnGrid(pdf, x, y, w, h, true);
+  });
 }
 
 function build3D() {
@@ -1058,12 +1237,7 @@ function initOrientationCube() {
 // ZUFALLSGENERATOR
 // ====================================================================
 function generateRandom() {
-  const settings = {
-    easy: { minCubes: 4, maxCubes: 7, maxStack: 2, fillProb: 0.7 },
-    medium: { minCubes: 8, maxCubes: 13, maxStack: 3, fillProb: 0.7 },
-    hard: { minCubes: 12, maxCubes: 20, maxStack: 3, fillProb: 0.95 }
-  };
-  const s = settings[difficulty];
+  const s = { minCubes: 8, maxCubes: 15, maxStack: 3, fillProb: 0.75 };
   let attempts = 0;
   while (attempts < 100) {
     const newPlan = Array.from({length: SIZE}, () => Array(SIZE).fill(0));
@@ -1667,7 +1841,7 @@ function drawPdfCabinetOnGrid(pdf, x, y, w, h, withCubes = true) {
   const totalH = yMax - yMin;
 
   // Vertikalen Versatz nach unten
-  const verticalShift = 2 * step - 4.5; // 4.5 mm weniger nach unten
+  const verticalShift = 2 * step - 4.5 + step / 2; // halbes Häuschen mehr nach unten
 
   const desiredCx = x + (w - totalW) / 2 - xMin;
   const desiredCy = y + (h - totalH) / 2 - yMin + verticalShift;
@@ -1757,14 +1931,6 @@ function isoProject(r, c, h, ox, oy, size) {
 // ====================================================================
 // EVENTS
 // ====================================================================
-document.querySelectorAll('[data-diff]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('[data-diff]').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    difficulty = btn.dataset.diff;
-  });
-});
-
 document.getElementById('btn-random').addEventListener('click', generateRandom);
 document.getElementById('btn-clear').addEventListener('click', () => {
   plan = Array.from({length: SIZE}, () => Array(SIZE).fill(0));
@@ -2045,6 +2211,8 @@ function updateAll() {
   renderTopView('view-top');
   renderView('view-right', 'right');
   drawBauplan();
+  drawDotsOnCanvas();
+  drawGridOnCanvas();
   if (cubeGroup) build3D();
   const code = encodePlanToHash(plan);
   // Plan-Code-Eingabefeld synchronisieren
