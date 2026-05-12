@@ -89,7 +89,10 @@
     grid-template-columns: 1fr 1fr;
     gap: 20px;
   }
-  @media (max-width: 900px) {
+  .row-top .panel {
+    min-width: 0;
+  }
+  @media (max-width: 720px) {
     .row-top { grid-template-columns: 1fr; }
   }
 
@@ -103,6 +106,30 @@
     font-size: 16px;
     font-weight: 500;
     margin-bottom: 8px;
+    color: #2c2c2a;
+  }
+  .panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .panel-header h2 { margin-bottom: 0; }
+  .panel-header-controls {
+    display: flex;
+    gap: 4px;
+  }
+  .panel-header-controls button {
+    min-height: 0;
+    padding: 4px 8px;
+    font-size: 13px;
+    line-height: 1;
+    color: #5f5e5a;
+    background: transparent;
+    border: 1px solid #d3d1c7;
+  }
+  .panel-header-controls button:hover {
+    background: #f1efe8;
     color: #2c2c2a;
   }
   .panel .hint {
@@ -342,19 +369,19 @@
 <div class="container">
   <div class="row-top">
     <div class="panel">
-      <h2>3D-Ansicht</h2>
-      <div class="hint">Maus ziehen: drehen · Mausrad: zoomen · Bauplan dreht synchron mit</div>
-      <div id="threed-container"></div>
-      <div class="panel-controls">
-        <button id="btn-reset-view">Ansicht zurücksetzen</button>
-        <button id="btn-rotate-left">↺ 45°</button>
-        <button id="btn-rotate-right">45° ↻</button>
+      <div class="panel-header">
+        <h2>3D-Ansicht</h2>
+        <div class="panel-header-controls">
+          <button id="btn-rotate-left" title="45° links drehen">↺</button>
+          <button id="btn-rotate-right" title="45° rechts drehen">↻</button>
+          <button id="btn-reset-view" title="Ansicht zurücksetzen">⟲</button>
+        </div>
       </div>
+      <div id="threed-container"></div>
     </div>
 
     <div class="panel">
       <h2>Bauplan</h2>
-      <div class="hint">Klick: Würfel hinzufügen (0 → 1 → 2 → 3 → 0 ...) · Maus ziehen: drehen</div>
       <canvas id="bauplan-canvas" width="600" height="400"></canvas>
     </div>
   </div>
@@ -1065,34 +1092,51 @@ function renderPdfBoxOnCanvas(canvasId, drawFn) {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, rect.width, rect.height);
 
-  // Die PDF-Box ist im PDF ca. 76 mm breit und 70 mm hoch (cellW × cellInnerH)
-  // Wir berechnen pxPerMm so, dass die Box ins Canvas passt
-  const boxW_mm = 76;
-  const boxH_mm = 70;
-  const pxPerMm = Math.min(rect.width / boxW_mm, rect.height / boxH_mm);
-  const drawnW = boxW_mm * pxPerMm;
-  const drawnH = boxH_mm * pxPerMm;
-  // Zentrieren
-  const offsetX = (rect.width - drawnW) / 2;
-  const offsetY = (rect.height - drawnH) / 2;
-  ctx.translate(offsetX, offsetY);
+  // PDF-Box ist 76 × 70 mm. pxPerMm so wählen, dass die Box ins Canvas passt.
+  const boxW_mm_pdf = 76;
+  const boxH_mm_pdf = 70;
+  const pxPerMm = Math.min(rect.width / boxW_mm_pdf, rect.height / boxH_mm_pdf);
+
+  // Raster (Hintergrund + Würfelkörper) wird über das GANZE Canvas gezeichnet:
+  // Tatsächliche Render-Box in mm ist so groß, dass sie das Canvas ausfüllt.
+  const boxW_mm = rect.width / pxPerMm;
+  const boxH_mm = rect.height / pxPerMm;
+
+  // Würfelkörper wird in einer zentrierten 76×70 mm Box platziert (wie im PDF)
+  const cubeBox = {
+    x: (boxW_mm - boxW_mm_pdf) / 2,
+    y: (boxH_mm - boxH_mm_pdf) / 2,
+    w: boxW_mm_pdf,
+    h: boxH_mm_pdf
+  };
 
   const pdfMock = createCanvasPdfAdapter(ctx, pxPerMm, {
     skipFrameBox: { x: 0, y: 0, w: boxW_mm, h: boxH_mm }
   });
-  drawFn(pdfMock, 0, 0, boxW_mm, boxH_mm);
+  drawFn(pdfMock, 0, 0, boxW_mm, boxH_mm, cubeBox);
+
+  // Overlay: alles außerhalb der zentrierten 76×70 mm Box leicht abdunkeln
+  const cbPxX = cubeBox.x * pxPerMm;
+  const cbPxY = cubeBox.y * pxPerMm;
+  const cbPxW = cubeBox.w * pxPerMm;
+  const cbPxH = cubeBox.h * pxPerMm;
+  ctx.fillStyle = 'rgba(245, 245, 240, 0)';
+  // 4 Rechtecke um die Box: oben, unten, links, rechts
+  ctx.fillRect(0, 0, rect.width, cbPxY);
+  ctx.fillRect(0, cbPxY + cbPxH, rect.width, rect.height - (cbPxY + cbPxH));
+  ctx.fillRect(0, cbPxY, cbPxX, cbPxH);
+  ctx.fillRect(cbPxX + cbPxW, cbPxY, rect.width - (cbPxX + cbPxW), cbPxH);
 }
 
 function drawDotsOnCanvas() {
-  renderPdfBoxOnCanvas('dots-canvas', (pdf, x, y, w, h) => {
-    drawPdfIsoOnDots(pdf, x, y, w, h, true);
+  renderPdfBoxOnCanvas('dots-canvas', (pdf, x, y, w, h, cubeBox) => {
+    drawPdfIsoOnDots(pdf, x, y, w, h, true, cubeBox);
   });
 }
 
 function drawGridOnCanvas() {
-  renderPdfBoxOnCanvas('grid-canvas', (pdf, x, y, w, h) => {
-    drawPdfBackground(pdf, x, y, w, h, 'grid');
-    drawPdfCabinetOnGrid(pdf, x, y, w, h, true);
+  renderPdfBoxOnCanvas('grid-canvas', (pdf, x, y, w, h, cubeBox) => {
+    drawPdfCabinetOnGrid(pdf, x, y, w, h, true, cubeBox);
   });
 }
 
@@ -1119,7 +1163,14 @@ function build3D() {
 function updateCameraPosition() {
   const cx = (SIZE - 1) / 2;
   const cz = (SIZE - 1) / 2;
-  const targetY = 1.0;
+  // Vertikale Mitte des aktuellen Würfelkörpers (für Zentrierung)
+  let maxStack = 0;
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
+      if (plan[r][c] > maxStack) maxStack = plan[r][c];
+    }
+  }
+  const targetY = Math.max(1, maxStack) / 2;
   // Bei orthografischer Kamera ist die Distanz nicht visuell relevant, nur die Richtung
   const dist = 15;
   camera.position.x = cx + dist * Math.sin(rotationH) * Math.cos(cameraAngleV);
@@ -1410,7 +1461,6 @@ function exportPDF(config) {
 
   // === UNTEN RECHTS: Häuschen (für 3D-Skizze) ===
   drawCellTitle(pdf, colRight, rowBottom, 'auf Häuschenpapier skizzieren');
-  drawPdfBackground(pdf, colRight, rowBottom + titleHeight, cellW, cellInnerH, 'grid');
   drawPdfCabinetOnGrid(pdf, colRight, rowBottom + titleHeight, cellW, cellInnerH, config.showGrid || isSolution);
 
   // ====================================================================
@@ -1720,11 +1770,15 @@ function drawPdfIsoCube(pdf, cx, cy, r, c, h, size, ox, oy) {
 // Verwendet die GLEICHE Iso-Projektion wie das 3D-Schrägbild oben links,
 // und legt ein vollständiges Iso-Punktraster über die ganze Box, sodass
 // alle Würfelecken auf Rasterpunkten liegen.
-function drawPdfIsoOnDots(pdf, x, y, w, h, withCubes = true) {
+function drawPdfIsoOnDots(pdf, x, y, w, h, withCubes = true, cubeBox = null) {
   // Iso-Berechnung wie in drawPdfIsometric
   const padding = 4;
-  const availW = w - 2 * padding;
-  const availH = h - 2 * padding;
+  // cubeBox steuert die Größe des Würfelkörpers; wenn null, wird die ganze Box genutzt.
+  // Damit kann im Tool das Hintergrund-Raster über das ganze Canvas gehen,
+  // während der Würfelkörper auf eine feste PDF-Box-Größe beschränkt bleibt.
+  const cb = cubeBox || { x: x, y: y, w: w, h: h };
+  const availW = cb.w - 2 * padding;
+  const availH = cb.h - 2 * padding;
 
   let maxStack = 0;
   for (let r = 0; r < SIZE; r++) {
@@ -1750,8 +1804,8 @@ function drawPdfIsoOnDots(pdf, x, y, w, h, withCubes = true) {
   const realSxMax = sxMax * cubeSize - (SIZE - 1) * ox / 2;
   const realSyMin = syMin * cubeSize - (SIZE - 1) * oy;
   const realSyMax = syMax * cubeSize - (SIZE - 1) * oy;
-  const finalCx = x + (w - (realSxMax - realSxMin)) / 2 - realSxMin;
-  const finalCy = y + (h - (realSyMax - realSyMin)) / 2 - realSyMin;
+  const finalCx = cb.x + (cb.w - (realSxMax - realSxMin)) / 2 - realSxMin;
+  const finalCy = cb.y + (cb.h - (realSyMax - realSyMin)) / 2 - realSyMin;
   const offSx = -(SIZE - 1) * ox / 2;
   const offSy = -(SIZE - 1) * oy;
 
@@ -1804,7 +1858,7 @@ function drawPdfIsoOnDots(pdf, x, y, w, h, withCubes = true) {
 
   // Schrägbild über dem Punktraster (nur im Lösungsmodus)
   if (withCubes) {
-    drawPdfIsometric(pdf, x, y, w, h);
+    drawPdfIsometric(pdf, cb.x, cb.y, cb.w, cb.h);
   }
 }
 
@@ -1813,11 +1867,16 @@ function drawPdfIsoOnDots(pdf, x, y, w, h, withCubes = true) {
 //   - Würfel-Vorderkante (waagrecht): 4 Häuschen
 //   - Höhen-Kante (senkrecht): 4 Häuschen
 //   - Tiefen-Kante (schräg nach hinten-rechts-oben): 2 Häuschen rechts + 1 Häuschen hoch
-function drawPdfCabinetOnGrid(pdf, x, y, w, h, withCubes = true) {
+function drawPdfCabinetOnGrid(pdf, x, y, w, h, withCubes = true, cubeBox = null, opts = null) {
   const step = 3;                    // Häuschengröße in mm
   const cubeFront = 4 * step;        // Vorderkante = 4 Häuschen = 12 mm
   const depthRight = 2 * step;       // Tiefe geht 2 Häuschen nach rechts
   const depthUp    = 1 * step;       // Tiefe geht 1 Häuschen nach oben
+
+  // cubeBox: wenn gesetzt, wird der Würfelkörper darin platziert statt in der ganzen Box
+  const cb = cubeBox || { x: x, y: y, w: w, h: h };
+  // optionaler Versatz (z.B. nur im Tool)
+  const extraShiftX = (opts && opts.extraShiftX) || 0;
 
   // Saubere Linien-Enden
   pdf.setLineJoin('round');
@@ -1840,14 +1899,43 @@ function drawPdfCabinetOnGrid(pdf, x, y, w, h, withCubes = true) {
   const totalW = xMax - xMin;
   const totalH = yMax - yMin;
 
-  // Vertikalen Versatz nach unten
-  const verticalShift = 2 * step - 4.5 + step / 2; // halbes Häuschen mehr nach unten
+  // Vertikalen Versatz nach unten (PDF-Original-Wert)
+  const verticalShift = 2 * step - 4.5;
+  // optionaler zusätzlicher vertikaler Versatz (nur fürs Tool)
+  const extraShiftY = (opts && opts.extraShiftY) || 0;
 
-  const desiredCx = x + (w - totalW) / 2 - xMin;
-  const desiredCy = y + (h - totalH) / 2 - yMin + verticalShift;
-  // Horizontal auf ganze Häuschen snappen, vertikal auf halbe (für halbe-Häuschen-Versatz)
-  const cx = x + Math.round((desiredCx - x) / step) * step;
-  const cy = y + Math.round((desiredCy - y) / (step / 2)) * (step / 2);
+  const desiredCx = cb.x + (cb.w - totalW) / 2 - xMin;
+  const desiredCy = cb.y + (cb.h - totalH) / 2 - yMin + verticalShift;
+  // Snap auf step (3 mm) — runden statt floor, damit der Würfelkörper möglichst
+  // mittig in der cubeBox liegt. Da der Snap das Bild um bis zu step/2 verschiebt,
+  // gleichen wir den Snap-Versatz aus, indem wir den Snap so wählen, dass die
+  // Abweichung vom desiredCx symmetrisch um Null ist.
+  let cx = Math.round(desiredCx / step) * step;
+  let cy = Math.round(desiredCy / (step / 2)) * (step / 2);
+  // Optionaler Tool-spezifischer Verschub
+  cx += extraShiftX;
+  cy += extraShiftY;
+
+  // Häuschen-Raster über die ganze Background-Box zeichnen, ausgerichtet
+  // an einer Würfel-Vorderkanten-Eckpunkt-Position. So liegen die Würfel
+  // immer auf den Gitterlinien, unabhängig von der Canvas-Größe.
+  // Anker-Punkt: die untere-linke vordere Würfelecke (c=-0.5, r=-0.5, h=0)
+  //   x = cx + (-0.5)*cubeFront + (-0.5)*depthRight = cx - 7.5
+  //   y = cy - 0*cubeFront - (-0.5)*depthUp = cy + 0.5*depthUp = cy + 1.5
+  const anchorX = cx - 0.5 * cubeFront - 0.5 * depthRight;
+  const anchorY = cy + 0.5 * depthUp;
+  pdf.setDrawColor(200, 220, 230);
+  pdf.setLineWidth(0.15);
+  // Vertikale Linien: bei x = anchorX + k*step
+  const firstVx = anchorX - Math.ceil((anchorX - x) / step) * step;
+  for (let gx = firstVx; gx <= x + w; gx += step) {
+    if (gx >= x) pdf.line(gx, y, gx, y + h);
+  }
+  // Horizontale Linien: bei y = anchorY + k*step
+  const firstHy = anchorY - Math.ceil((anchorY - y) / step) * step;
+  for (let gy = firstHy; gy <= y + h; gy += step) {
+    if (gy >= y) pdf.line(x, gy, x + w, gy);
+  }
 
   // Würfel: hinten zuerst, dann nach vorne
   const cubes = [];
@@ -1869,6 +1957,11 @@ function drawPdfCabinetOnGrid(pdf, x, y, w, h, withCubes = true) {
       drawCabinetCube(pdf, cx, cy, (SIZE - 1) - cube.r, cube.c, cube.h, cubeFront, depthRight, depthUp);
     }
   }
+
+  // Rahmen der Box (im Tool wird er vom Adapter geskippt)
+  pdf.setDrawColor(180, 200, 215);
+  pdf.setLineWidth(0.3);
+  pdf.rect(x, y, w, h);
 }
 
 function drawCabinetCube(pdf, cx, cy, r, c, h, cubeFront, depthRight, depthUp) {
@@ -2214,6 +2307,7 @@ function updateAll() {
   drawDotsOnCanvas();
   drawGridOnCanvas();
   if (cubeGroup) build3D();
+  if (typeof camera !== 'undefined' && camera) updateCameraPosition();
   const code = encodePlanToHash(plan);
   // Plan-Code-Eingabefeld synchronisieren
   const planCodeInput = document.getElementById('plan-code-input');
