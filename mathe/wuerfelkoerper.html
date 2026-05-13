@@ -332,6 +332,153 @@
   }
   .dropdown-menu button:hover { background: #f1efe8; }
 
+  /* ================ BEAMER-MODUS ================ */
+  #beamer-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: #f5f5f0;
+    z-index: 1000;
+    flex-direction: column;
+  }
+  #beamer-overlay.active { display: flex; }
+
+  .beamer-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    background: white;
+    border-bottom: 1px solid #d3d1c7;
+    flex-shrink: 0;
+  }
+  .beamer-title {
+    font-size: 22px;
+    font-weight: 500;
+    color: #2c2c2a;
+  }
+  .beamer-toolbar-controls {
+    display: flex;
+    gap: 8px;
+  }
+  .beamer-toolbar-controls button {
+    font-size: 18px;
+    padding: 8px 14px;
+    min-height: 44px;
+    min-width: 44px;
+  }
+  #beamer-exit {
+    background: #d9534f;
+    color: white;
+    border-color: #b94942;
+  }
+  #beamer-exit:hover { background: #b94942; }
+
+  .beamer-stage {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    min-height: 0;
+    position: relative;
+  }
+  .beamer-stage > * {
+    max-width: 100%;
+    max-height: 100%;
+  }
+
+  .beamer-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    width: 60px;
+    height: 80px;
+    font-size: 40px;
+    background: white;
+    border: 1px solid #d3d1c7;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    color: #2c2c2a;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .beamer-nav:hover { background: #f1efe8; }
+  .beamer-nav-left { left: 20px; }
+  .beamer-nav-right { right: 20px; }
+
+  .beamer-pagination {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px;
+    flex-shrink: 0;
+  }
+  .beamer-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #d3d1c7;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    min-height: 0;
+  }
+  .beamer-dot.active { background: #534ab7; }
+
+  /* Beamer-spezifische Inhalte: 3D, Bauplan, Skizzen riesig */
+  #beamer-stage canvas, #beamer-stage #beamer-3d {
+    width: auto !important;
+    height: auto !important;
+    max-width: 95% !important;
+    max-height: 95% !important;
+    background: #fafaf5;
+    border-radius: 12px;
+    border: 1px solid #d3d1c7;
+  }
+
+  /* Beamer-Seitenansichten — gross */
+  .beamer-sideviews {
+    display: flex;
+    gap: 60px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .beamer-sideview-box {
+    text-align: center;
+  }
+  .beamer-sideview-title {
+    font-size: 24px;
+    color: #5f5e5a;
+    margin-bottom: 16px;
+  }
+  .beamer-sideview-grid {
+    display: inline-grid;
+    gap: 4px;
+    padding: 12px;
+    background: #fafaf5;
+    border-radius: 8px;
+    border: 1px solid #d3d1c7;
+  }
+  .beamer-sideview-cell {
+    width: 70px;
+    height: 70px;
+    border-radius: 4px;
+  }
+  .beamer-sideview-cell.filled { background: #534ab7; }
+  .beamer-sideview-cell.empty { background: transparent; border: 1px solid #d3d1c7; }
+  @media (max-width: 900px) {
+    .beamer-sideview-cell { width: 45px; height: 45px; }
+    .beamer-sideviews { gap: 30px; }
+  }
+  @media (max-width: 600px) {
+    .beamer-sideview-cell { width: 30px; height: 30px; }
+    .beamer-sideview-title { font-size: 16px; }
+    .beamer-sideviews { gap: 16px; }
+  }
+
   /* Mobile-Optimierungen */
   @media (max-width: 700px) {
     body { padding: 10px; }
@@ -387,10 +534,9 @@
     <button id="btn-clear">Leeren</button>
   </div>
   <div class="toolbar-group">
-    <label>Code:</label>
     <input type="text" id="plan-code-input" maxlength="9" pattern="[0-3]{9}" placeholder="z.B. 313011022"
       style="font-family: monospace; padding: 10px 14px; min-height: 40px; box-sizing: border-box; border: 1px solid #b4b2a9; border-radius: 8px; width: 150px; font-size: 14px;">
-    <button id="btn-load-code">Laden</button>
+    <button id="btn-load-code">Code laden</button>
   </div>
   <div class="toolbar-group">
     <button id="btn-export-pdf" class="success">📄 Aufgabe als PDF</button>
@@ -404,7 +550,24 @@
         <button data-export="sideviews">⊞ Seitenansichten</button>
       </div>
     </div>
+    <button id="btn-beamer">🖥️ Beamer</button>
   </div>
+</div>
+
+<!-- Beamer-Modus Overlay -->
+<div id="beamer-overlay">
+  <div class="beamer-toolbar">
+    <div class="beamer-title" id="beamer-title">3D-Ansicht</div>
+    <div class="beamer-toolbar-controls">
+      <button id="beamer-random" title="Zufällige Figur">🎲</button>
+      <button id="beamer-clear" title="Leeren">🗑️</button>
+      <button id="beamer-exit" title="Beamer-Modus verlassen">✕</button>
+    </div>
+  </div>
+  <button class="beamer-nav beamer-nav-left" id="beamer-prev">‹</button>
+  <button class="beamer-nav beamer-nav-right" id="beamer-next">›</button>
+  <div class="beamer-stage" id="beamer-stage"></div>
+  <div class="beamer-pagination" id="beamer-pagination"></div>
 </div>
 
 <div class="container">
@@ -418,24 +581,24 @@
           <button id="btn-reset-view" title="Ansicht zurücksetzen">⟲</button>
         </div>
       </div>
-      <div id="threed-container"></div>
+      <div id="threed-host"><div id="threed-container"></div></div>
     </div>
 
     <div class="panel">
       <h2>Bauplan</h2>
-      <canvas id="bauplan-canvas" width="600" height="400"></canvas>
+      <div id="bauplan-host"><canvas id="bauplan-canvas" width="600" height="400"></canvas></div>
     </div>
   </div>
 
   <div class="row-top">
     <div class="panel">
       <h2>auf Punktraster skizzieren</h2>
-      <canvas id="dots-canvas" width="600" height="400"></canvas>
+      <div id="dots-host"><canvas id="dots-canvas" width="600" height="400"></canvas></div>
     </div>
 
     <div class="panel">
       <h2>auf Häuschenpapier skizzieren</h2>
-      <canvas id="grid-canvas" width="600" height="400"></canvas>
+      <div id="grid-host"><canvas id="grid-canvas" width="600" height="400"></canvas></div>
     </div>
   </div>
 
@@ -2430,6 +2593,205 @@ function exportSideViewsPNG() {
   link.download = `wuerfelkoerper-${encodePlanToHash(plan)}-seitenansichten.png`;
   link.click();
 }
+
+// ====================================================================
+// BEAMER-MODUS
+// ====================================================================
+let beamerSlide = 0;
+const beamerSlides = [
+  { title: '3D-Ansicht',           render: renderBeamer3D },
+  { title: 'Bauplan',              render: renderBeamerBauplan },
+  { title: 'auf Punktraster',      render: renderBeamerDots },
+  { title: 'auf Häuschenpapier',   render: renderBeamerGrid },
+  { title: 'Seitenansichten',      render: renderBeamerSideViews }
+];
+
+function renderBeamer3D(stage) {
+  // 3D-Container in Stage einbetten (temporär)
+  const container = document.getElementById('threed-container');
+  // Größe einstellen
+  const stageRect = stage.getBoundingClientRect();
+  const size = Math.min(stageRect.width, stageRect.height) * 0.95;
+  container.style.width = size + 'px';
+  container.style.height = size + 'px';
+  stage.appendChild(container);
+  if (renderer) {
+    renderer.setSize(size, size, false);
+    updateCameraPosition();
+  }
+}
+
+function renderBeamerBauplan(stage) {
+  const canvas = document.getElementById('bauplan-canvas');
+  const stageRect = stage.getBoundingClientRect();
+  const size = Math.min(stageRect.width, stageRect.height) * 0.95;
+  canvas.style.width = size + 'px';
+  canvas.style.height = size + 'px';
+  stage.appendChild(canvas);
+  drawBauplan();
+}
+
+function renderBeamerDots(stage) {
+  const canvas = document.getElementById('dots-canvas');
+  const stageRect = stage.getBoundingClientRect();
+  const size = Math.min(stageRect.width * 0.95, stageRect.height * 0.95);
+  canvas.style.width = size + 'px';
+  canvas.style.height = (size * 70 / 76) + 'px';
+  stage.appendChild(canvas);
+  drawDotsOnCanvas();
+}
+
+function renderBeamerGrid(stage) {
+  const canvas = document.getElementById('grid-canvas');
+  const stageRect = stage.getBoundingClientRect();
+  const size = Math.min(stageRect.width * 0.95, stageRect.height * 0.95);
+  canvas.style.width = size + 'px';
+  canvas.style.height = (size * 70 / 76) + 'px';
+  stage.appendChild(canvas);
+  drawGridOnCanvas();
+}
+
+function renderBeamerSideViews(stage) {
+  // Eigenes DOM mit größeren Zellen
+  const wrap = document.createElement('div');
+  wrap.className = 'beamer-sideviews';
+  const views = [
+    { label: 'von vorne',  data: computeView('front'), w: SIZE, h: SIZE },
+    { label: 'von rechts', data: computeView('right'), w: SIZE, h: SIZE },
+    { label: 'von oben',   data: computeTopView(),    w: SIZE, h: SIZE }
+  ];
+  for (const v of views) {
+    const box = document.createElement('div');
+    box.className = 'beamer-sideview-box';
+    box.innerHTML = `<div class="beamer-sideview-title">${v.label}</div>`;
+    const grid = document.createElement('div');
+    grid.className = 'beamer-sideview-grid';
+    grid.style.gridTemplateColumns = `repeat(${v.w}, max-content)`;
+    if (Array.isArray(v.data) && typeof v.data[0] === 'number') {
+      // Vorder/rechts: heights pro Spalte
+      for (let row = 0; row < v.h; row++) {
+        for (let col = 0; col < v.w; col++) {
+          const cell = document.createElement('div');
+          const filled = (v.h - row) <= v.data[col];
+          cell.className = 'beamer-sideview-cell ' + (filled ? 'filled' : 'empty');
+          grid.appendChild(cell);
+        }
+      }
+    } else {
+      // Top: 2D-Daten
+      for (let r = 0; r < v.h; r++) {
+        for (let c = 0; c < v.w; c++) {
+          const cell = document.createElement('div');
+          const filled = v.data[r] && v.data[r][c];
+          cell.className = 'beamer-sideview-cell ' + (filled ? 'filled' : 'empty');
+          grid.appendChild(cell);
+        }
+      }
+    }
+    box.appendChild(grid);
+    wrap.appendChild(box);
+  }
+  stage.appendChild(wrap);
+}
+
+function setBeamerSlide(index) {
+  beamerSlide = (index + beamerSlides.length) % beamerSlides.length;
+  const slide = beamerSlides[beamerSlide];
+  document.getElementById('beamer-title').textContent = slide.title;
+  const stage = document.getElementById('beamer-stage');
+  // Stage leeren und elemente ggf. zurück in den normalen DOM-Platz bewegen
+  restoreBeamerElements();
+  stage.innerHTML = '';
+  slide.render(stage);
+  updateBeamerPagination();
+}
+
+function updateBeamerPagination() {
+  const pag = document.getElementById('beamer-pagination');
+  pag.innerHTML = '';
+  for (let i = 0; i < beamerSlides.length; i++) {
+    const dot = document.createElement('button');
+    dot.className = 'beamer-dot' + (i === beamerSlide ? ' active' : '');
+    dot.addEventListener('click', () => setBeamerSlide(i));
+    pag.appendChild(dot);
+  }
+}
+
+function restoreBeamerElements() {
+  // Elemente, die in den Beamer ausgeliehen wurden, zurück in normale Position bringen
+  const threed = document.getElementById('threed-container');
+  const bauplan = document.getElementById('bauplan-canvas');
+  const dots = document.getElementById('dots-canvas');
+  const grid = document.getElementById('grid-canvas');
+  [threed, bauplan, dots, grid].forEach(el => {
+    if (el) {
+      el.style.width = '';
+      el.style.height = '';
+    }
+  });
+  // Original-Container wiederherstellen
+  document.getElementById('threed-host').appendChild(threed);
+  document.getElementById('bauplan-host').appendChild(bauplan);
+  document.getElementById('dots-host').appendChild(dots);
+  document.getElementById('grid-host').appendChild(grid);
+  // Renderer und Canvas zurücksetzen
+  if (renderer) {
+    const c = document.getElementById('threed-container');
+    renderer.setSize(c.clientWidth || 400, c.clientHeight || 400, false);
+    updateCameraPosition();
+  }
+  drawBauplan();
+  drawDotsOnCanvas();
+  drawGridOnCanvas();
+}
+
+function enterBeamer() {
+  document.getElementById('beamer-overlay').classList.add('active');
+  // Fullscreen anfordern (nicht alle Browser/Geräte unterstützen das)
+  const el = document.documentElement;
+  try {
+    if (el.requestFullscreen) el.requestFullscreen();
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+  } catch (e) { /* okay */ }
+  setBeamerSlide(0);
+}
+
+function exitBeamer() {
+  document.getElementById('beamer-overlay').classList.remove('active');
+  restoreBeamerElements();
+  try {
+    if (document.exitFullscreen) document.exitFullscreen();
+    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+  } catch (e) { /* okay */ }
+}
+
+document.getElementById('btn-beamer').addEventListener('click', enterBeamer);
+document.getElementById('beamer-exit').addEventListener('click', exitBeamer);
+document.getElementById('beamer-prev').addEventListener('click', () => setBeamerSlide(beamerSlide - 1));
+document.getElementById('beamer-next').addEventListener('click', () => setBeamerSlide(beamerSlide + 1));
+document.getElementById('beamer-random').addEventListener('click', () => {
+  generateRandom();
+  setBeamerSlide(beamerSlide); // re-render
+});
+document.getElementById('beamer-clear').addEventListener('click', () => {
+  plan = Array.from({length: SIZE}, () => Array(SIZE).fill(0));
+  updateAll();
+  setBeamerSlide(beamerSlide);
+});
+
+// Tastatur-Steuerung im Beamer-Modus
+document.addEventListener('keydown', (e) => {
+  if (!document.getElementById('beamer-overlay').classList.contains('active')) return;
+  if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+    e.preventDefault();
+    setBeamerSlide(beamerSlide + 1);
+  } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+    e.preventDefault();
+    setBeamerSlide(beamerSlide - 1);
+  } else if (e.key === 'Escape') {
+    exitBeamer();
+  }
+});
 
 // ====================================================================
 // MAIN
