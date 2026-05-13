@@ -388,6 +388,30 @@
     max-height: 100%;
   }
 
+  /* Einheitliche Vollbild-Box, in die jeder Slide-Inhalt zentriert eingepasst wird */
+  .beamer-box {
+    width: 100%;
+    height: 100%;
+    max-width: min(80vh, calc(100vw - 200px));
+    max-height: min(80vh, calc(100vw - 200px));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fafaf5;
+    border-radius: 12px;
+    border: 1px solid #d3d1c7;
+    overflow: hidden;
+  }
+  .beamer-box > canvas,
+  .beamer-box > #threed-container {
+    width: 100% !important;
+    height: 100% !important;
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    display: block;
+  }
+
   .beamer-nav {
     position: absolute;
     top: 50%;
@@ -401,8 +425,12 @@
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     color: #2c2c2a;
-    line-height: 1;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    padding-bottom: 6px; /* optische Korrektur, da ‹/› in der Schriftmitte liegen */
   }
   .beamer-nav:hover { background: #f1efe8; }
   .beamer-nav-left { left: 20px; }
@@ -427,24 +455,19 @@
   }
   .beamer-dot.active { background: #534ab7; }
 
-  /* Beamer-spezifische Inhalte: 3D, Bauplan, Skizzen riesig */
-  #beamer-stage canvas, #beamer-stage #beamer-3d {
-    width: auto !important;
-    height: auto !important;
-    max-width: 95% !important;
-    max-height: 95% !important;
-    background: #fafaf5;
-    border-radius: 12px;
-    border: 1px solid #d3d1c7;
-  }
-
-  /* Beamer-Seitenansichten — gross */
+  /* Beamer-Seitenansichten — entweder alle horizontal oder alle vertikal */
   .beamer-sideviews {
     display: flex;
     gap: 60px;
-    align-items: flex-start;
-    flex-wrap: wrap;
+    align-items: center;
     justify-content: center;
+  }
+  /* Vertikales Layout, wenn horizontal nicht alle 3 Platz hätten */
+  @media (max-width: 900px) {
+    .beamer-sideviews {
+      flex-direction: column;
+      gap: 24px;
+    }
   }
   .beamer-sideview-box {
     text-align: center;
@@ -530,12 +553,12 @@
 
 <div class="toolbar">
   <div class="toolbar-group">
-    <button id="btn-random" class="primary">🎲 Zufällige Figur</button>
+    <button id="btn-random" class="primary">🎲 Zufälliger Würfelkörper</button>
     <button id="btn-clear">Leeren</button>
   </div>
   <div class="toolbar-group">
-    <input type="text" id="plan-code-input" maxlength="9" pattern="[0-3]{9}" placeholder="z.B. 313011022"
-      style="font-family: monospace; padding: 10px 14px; min-height: 40px; box-sizing: border-box; border: 1px solid #b4b2a9; border-radius: 8px; width: 150px; font-size: 14px;">
+    <input type="text" id="plan-code-input" maxlength="9" pattern="[0-3]{9}" placeholder="313011022"
+      style="font-family: monospace; padding: 10px 12px; min-height: 40px; box-sizing: border-box; border: 1px solid #b4b2a9; border-radius: 8px; width: 11ch; font-size: 14px; text-align: center;">
     <button id="btn-load-code">Code laden</button>
   </div>
   <div class="toolbar-group">
@@ -559,14 +582,15 @@
   <div class="beamer-toolbar">
     <div class="beamer-title" id="beamer-title">3D-Ansicht</div>
     <div class="beamer-toolbar-controls">
-      <button id="beamer-random" title="Zufällige Figur">🎲</button>
+      <button id="beamer-random" title="Zufälliger Würfelkörper">🎲</button>
       <button id="beamer-clear" title="Leeren">🗑️</button>
       <button id="beamer-exit" title="Vollbild-Modus verlassen">✕</button>
     </div>
   </div>
-  <button class="beamer-nav beamer-nav-left" id="beamer-prev">‹</button>
-  <button class="beamer-nav beamer-nav-right" id="beamer-next">›</button>
-  <div class="beamer-stage" id="beamer-stage"></div>
+  <div class="beamer-stage" id="beamer-stage">
+    <button class="beamer-nav beamer-nav-left" id="beamer-prev">‹</button>
+    <button class="beamer-nav beamer-nav-right" id="beamer-next">›</button>
+  </div>
   <div class="beamer-pagination" id="beamer-pagination"></div>
 </div>
 
@@ -2607,48 +2631,45 @@ const beamerSlides = [
 ];
 
 function renderBeamer3D(stage) {
-  // 3D-Container in Stage einbetten (temporär)
+  const box = document.createElement('div');
+  box.className = 'beamer-box';
+  stage.appendChild(box);
   const container = document.getElementById('threed-container');
-  // Größe einstellen
-  const stageRect = stage.getBoundingClientRect();
-  const size = Math.min(stageRect.width, stageRect.height) * 0.95;
-  container.style.width = size + 'px';
-  container.style.height = size + 'px';
-  stage.appendChild(container);
-  if (renderer) {
-    renderer.setSize(size, size, false);
-    updateCameraPosition();
-  }
+  box.appendChild(container);
+  // Renderer auf neue Größe anpassen (nachdem Layout angewendet wurde)
+  requestAnimationFrame(() => {
+    if (renderer) {
+      renderer.setSize(box.clientWidth, box.clientHeight, false);
+      updateCameraPosition();
+    }
+  });
 }
 
 function renderBeamerBauplan(stage) {
+  const box = document.createElement('div');
+  box.className = 'beamer-box';
+  stage.appendChild(box);
   const canvas = document.getElementById('bauplan-canvas');
-  const stageRect = stage.getBoundingClientRect();
-  const size = Math.min(stageRect.width, stageRect.height) * 0.95;
-  canvas.style.width = size + 'px';
-  canvas.style.height = size + 'px';
-  stage.appendChild(canvas);
-  drawBauplan();
+  box.appendChild(canvas);
+  requestAnimationFrame(() => drawBauplan());
 }
 
 function renderBeamerDots(stage) {
+  const box = document.createElement('div');
+  box.className = 'beamer-box';
+  stage.appendChild(box);
   const canvas = document.getElementById('dots-canvas');
-  const stageRect = stage.getBoundingClientRect();
-  const size = Math.min(stageRect.width * 0.95, stageRect.height * 0.95);
-  canvas.style.width = size + 'px';
-  canvas.style.height = (size * 70 / 76) + 'px';
-  stage.appendChild(canvas);
-  drawDotsOnCanvas();
+  box.appendChild(canvas);
+  requestAnimationFrame(() => drawDotsOnCanvas());
 }
 
 function renderBeamerGrid(stage) {
+  const box = document.createElement('div');
+  box.className = 'beamer-box';
+  stage.appendChild(box);
   const canvas = document.getElementById('grid-canvas');
-  const stageRect = stage.getBoundingClientRect();
-  const size = Math.min(stageRect.width * 0.95, stageRect.height * 0.95);
-  canvas.style.width = size + 'px';
-  canvas.style.height = (size * 70 / 76) + 'px';
-  stage.appendChild(canvas);
-  drawGridOnCanvas();
+  box.appendChild(canvas);
+  requestAnimationFrame(() => drawGridOnCanvas());
 }
 
 function renderBeamerSideViews(stage) {
@@ -2699,9 +2720,11 @@ function setBeamerSlide(index) {
   const slide = beamerSlides[beamerSlide];
   document.getElementById('beamer-title').textContent = slide.title;
   const stage = document.getElementById('beamer-stage');
-  // Stage leeren und elemente ggf. zurück in den normalen DOM-Platz bewegen
   restoreBeamerElements();
-  stage.innerHTML = '';
+  // Nur Slide-Inhalt entfernen, Pfeile (beamer-nav) erhalten
+  Array.from(stage.children).forEach(child => {
+    if (!child.classList.contains('beamer-nav')) stage.removeChild(child);
+  });
   slide.render(stage);
   updateBeamerPagination();
 }
