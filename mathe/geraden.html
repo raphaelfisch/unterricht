@@ -473,17 +473,27 @@
                 updateDemo2Display();
             }
         }
-        function labelPoint(c, name) {
+        function drawPointLabel(c, text) {
             const p = coordToPixel(c);
-            ctx.fillStyle = '#333'; ctx.font = 'bold 13px Arial';
-            ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
-            ctx.fillText(name + '(' + fmt(c.x) + '/' + fmt(c.y) + ')', p.x + 10, p.y - 8);
+            ctx.font = 'bold 13px Arial';
+            const tw = ctx.measureText(text).width;
+            const gap = 12, padX = 5, h = 18;
+            let x = p.x + gap;                                          // linke Textkante
+            if (x + tw + padX > canvas.width - 2) x = p.x - gap - tw;   // sonst nach links kippen
+            if (x - padX < 2) x = 2 + padX;                            // nicht links rausragen
+            let cy = p.y - gap;                                        // vertikale Mitte
+            if (cy - h / 2 < 2) cy = p.y + gap;                        // sonst nach unten kippen
+            if (cy + h / 2 > canvas.height - 2) cy = p.y - gap;        // nicht unten rausragen
+            ctx.fillStyle = 'rgba(255,255,255,0.85)';
+            ctx.beginPath(); ctx.roundRect(x - padX, cy - h / 2, tw + 2 * padX, h, 4); ctx.fill();
+            ctx.fillStyle = '#111827'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+            ctx.fillText(text, x, cy);
+        }
+        function labelPoint(c, name) {
+            drawPointLabel(c, name + '(' + fmt(c.x) + '/' + fmt(c.y) + ')');
         }
         function labelCur(c) {
-            const p = coordToPixel(c);
-            ctx.fillStyle = '#333'; ctx.font = 'bold 13px Arial';
-            ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
-            ctx.fillText('(' + fmt(c.x) + '/' + fmt(c.y) + ')', p.x + 10, p.y - 8);
+            drawPointLabel(c, '(' + fmt(c.x) + '/' + fmt(c.y) + ')');
         }
 
         // ---------- Panels ----------
