@@ -28,6 +28,9 @@
         /* Layout: Desktop quer, Mobile hoch */
         .layout { display: flex; gap: 28px; align-items: flex-start; }
         .col-canvas { flex: 0 0 auto; }
+        #taskText { width: min(600px, 92vw); max-width: 100%; margin: 0 auto; }
+        #taskText:empty { display: none; }
+        #taskText .task-text:last-child { margin-bottom: 14px; }
         .col-panel { flex: 1 1 auto; min-width: 0; }
 
         #canvas {
@@ -130,6 +133,7 @@
 
         <div class="layout">
             <div class="col-canvas">
+                <div id="taskText"></div>
                 <canvas id="canvas" width="600" height="600"></canvas>
                 <div class="controls">
                     <button class="btn" id="triangleBtn">Steigungsdreieck anzeigen</button>
@@ -483,6 +487,7 @@
 
         // ---------- Panels ----------
         const taskPanel = document.getElementById('taskPanel');
+        const taskText = document.getElementById('taskText');
         const feedback = document.getElementById('feedback');
         const hintBox = document.getElementById('hintBox');
         const scoreEl = document.getElementById('score');
@@ -500,6 +505,7 @@
 
         function buildPanel() {
             taskPanel.innerHTML = '';
+            taskText.innerHTML = '';
             updateScore();
             if (state.type === 1) panelTyp1Uebung();
             else if (state.type === 2) panelTyp2Uebung();
@@ -508,8 +514,8 @@
 
         // --- Typ 1 Übung ---
         function panelTyp1Uebung() {
-            taskPanel.appendChild(el('p', 'task-text', 'Fülle die Wertetabelle aus. Klicke dann zwei (oder mehr) Punkte der Geraden ins Koordinatensystem (nochmals klicken entfernt einen) \u2013 sobald sie passen, erscheint die Gerade.'));
-            if (state.level === 'schwer') taskPanel.appendChild(el('p', 'task-text', 'Achtung: Nicht alle Tabellenwerte lassen sich einzeichnen \u2013 nutze die Punkte, die ins Koordinatensystem passen.'));
+            taskText.appendChild(el('p', 'task-text', 'Fülle die Wertetabelle aus. Klicke dann zwei (oder mehr) Punkte der Geraden ins Koordinatensystem (nochmals klicken entfernt einen) \u2013 sobald sie passen, erscheint die Gerade.'));
+            if (state.level === 'schwer') taskText.appendChild(el('p', 'task-text', 'Achtung: Nicht alle Tabellenwerte lassen sich einzeichnen \u2013 nutze die Punkte, die ins Koordinatensystem passen.'));
             const eq = el('div', 'equation-display', eqString(state.a, state.b));
             taskPanel.appendChild(eq);
             taskPanel.appendChild(buildTable(false));
@@ -591,7 +597,7 @@
             info.appendChild(elId('div', 'point-display', 'pd2', ''));
             taskPanel.appendChild(info);
             taskPanel.appendChild(elId('div', 'equation-display', 'eqDemo', ''));
-            taskPanel.appendChild(el('p', 'task-text', 'Ziehe die zwei Punkte frei herum – oder packe die Gerade selbst und verschiebe sie als Ganzes. Die Gleichung passt sich live an; das Steigungsdreieck lässt sich einblenden.'));
+            taskText.appendChild(el('p', 'task-text', 'Ziehe die zwei Punkte frei herum – oder packe die Gerade selbst und verschiebe sie als Ganzes. Die Gleichung passt sich live an; das Steigungsdreieck lässt sich einblenden.'));
             const dispRow = el('div', 'controls');
             const seg = el('div', 'segmented');
             seg.appendChild(el('span', 'seg-label', 'Anzeige'));
@@ -662,7 +668,7 @@
 
         // --- Typ 2 Übung ---
         function panelTyp2Uebung() {
-            taskPanel.appendChild(el('p', 'task-text',
+            taskText.appendChild(el('p', 'task-text',
                 'Klicke die beiden Punkte ins Koordinatensystem (nochmals klicken entfernt einen). Sobald beide stimmen, erscheint die Gerade \u2013 notiere dann die Geradengleichung.'));
             const info = el('div', 'point-info');
             info.appendChild(elId('div', 'point-display', 'pd1', 'P\u2081 (' + fmt(state.gp1.x) + ' / ' + fmt(state.gp1.y) + ')'));
