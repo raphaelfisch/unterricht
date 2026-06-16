@@ -5,655 +5,909 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Geraden im Koordinatensystem</title>
     <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        button { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
         body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            font-family: system-ui, -apple-system, sans-serif;
+            background: #fff; color: #000;
+            padding: 24px; max-width: 1040px; margin: 0 auto;
         }
-        
-        .container {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        
-        h1 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 30px;
-        }
-        
+        h1 { font-size: 1.2rem; font-weight: 500; text-align: center; margin-bottom: 22px; }
+
+        /* Umschalter */
+        .switch-row { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; margin-bottom: 24px; }
+        .switch-row + .switch-row { margin-top: -14px; }
+        .segmented { display: inline-flex; align-items: center; gap: 6px; }
+        .seg-label { font-size: 0.72rem; color: #999; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-right: 2px; }
+        .seg { font-family: inherit; font-size: 0.85rem; padding: 7px 14px; border: 1px solid #ccc; background: #fff; color: #000; cursor: pointer; border-radius: 3px; }
+        .seg:hover { background: #f5f5f5; }
+        .seg.active { background: #000; color: #fff; border-color: #000; }
+
+        /* Layout: Desktop quer, Mobile hoch */
+        .layout { display: flex; gap: 28px; align-items: flex-start; }
+        .col-canvas { flex: 0 0 auto; }
+        .col-panel { flex: 1 1 auto; min-width: 0; }
+
         #canvas {
-            border: 2px solid #ddd;
-            border-radius: 10px;
-            display: block;
-            margin: 0 auto 20px;
-            cursor: crosshair;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            touch-action: none;
+            display: block; border: 1px solid #e5e5e5; border-radius: 6px;
+            cursor: crosshair; touch-action: none; background: #fff;
+            width: 600px; height: 600px;
         }
-        
+
+        /* Aufgaben-Prompt */
+        .task-text { font-size: 0.95rem; color: #444; line-height: 1.5; margin-bottom: 14px; }
+        .task-text b { color: #000; }
         .equation-display {
-            background: linear-gradient(45deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-            font-size: 24px;
-            font-weight: bold;
-            margin: 20px 0;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            font-size: 1.5rem; font-weight: 600; color: #000; text-align: center;
+            padding: 14px; background: #f9f9f9; border: 1px solid #eee; border-radius: 6px; margin: 14px 0;
         }
-        
-        .controls {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin: 20px 0;
-            flex-wrap: wrap;
+        #eqDemo { display: flex; align-items: center; justify-content: center; min-height: 80px; box-sizing: border-box; padding: 10px 14px; }
+        .frac { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; margin: 0 3px; line-height: 1.05; }
+        .frac-num { border-bottom: 2px solid currentColor; padding: 0 5px 1px; }
+        .frac-den { padding: 1px 5px 0; }
+
+        /* Tabelle */
+        .wt-wrap { margin: 14px 0; overflow-x: auto; }
+        table.wt { border-collapse: collapse; font-size: 1.05rem; }
+        table.wt th, table.wt td { border: 1px solid #ccc; width: 64px; height: 46px; text-align: center; padding: 0; }
+        table.wt th { background: #f9f9f9; font-weight: 600; }
+        table.wt td.given { background: #fff; font-weight: 600; }
+        table.wt td input { width: 60px; height: 42px; border: none; text-align: center; font-size: 1.05rem; font-family: inherit; background: transparent; outline: none; }
+        table.wt td input.ok { background: #dcfce7; }
+        table.wt td input.bad { background: #fef2f2; }
+        td.reveal { cursor: pointer; color: #bbb; font-weight: 600; user-select: none; }
+        td.reveal.shown { color: #2563eb; cursor: default; }
+
+        /* Gleichungs-Eingabe */
+        .eq-input { display: flex; align-items: center; gap: 8px; font-size: 1.3rem; font-weight: 600; margin: 14px 0; flex-wrap: wrap; }
+        .eq-input input { width: 64px; height: 44px; text-align: center; font-size: 1.2rem; font-family: inherit; border: 1px solid #ccc; border-radius: 4px; }
+        .eq-input input:focus { outline: none; border-color: #2563eb; }
+        .eq-input input.ok { border-color: #22c55e; background: #dcfce7; }
+        .eq-input input.bad { border-color: #ef4444; background: #fef2f2; }
+
+        /* Gegebene Punkte */
+        .point-info { display: flex; gap: 12px; margin: 12px 0; }
+        .point-display { flex: 1 1 0; min-width: 0; box-sizing: border-box; text-align: center; font-size: 0.95rem; padding: 8px 14px; border: 1px solid #eee; border-radius: 6px; background: #f9f9f9; font-weight: 600; }
+        #pd1 { border-left: 3px solid #2563eb; }
+        #pd2 { border-left: 3px solid #ec4899; }
+
+        /* Buttons */
+        .controls { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+        .col-canvas .controls { justify-content: center; }
+        .btn { font-family: inherit; font-size: 0.85rem; padding: 7px 14px; border: 1px solid #ccc; background: #fff; color: #000; cursor: pointer; border-radius: 3px; }
+        .btn:hover { background: #f5f5f5; }
+        .btn.check { background: #2563eb; color: #fff; border-color: #2563eb; }
+        .btn.check:hover { background: #1d4ed8; }
+        .btn.ghost { color: #444; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Feedback / Tipp / Score */
+        .feedback { font-size: 1rem; min-height: 26px; margin: 14px 0; font-weight: 500; }
+        .feedback.good { color: #16a34a; }
+        .feedback.bad { color: #dc2626; }
+        .hint-box { display: none; background: #dbeafe; border: 1px solid #3b82f6; color: #1d4ed8; padding: 12px 14px; border-radius: 6px; margin: 10px 0; font-size: 0.95rem; }
+        .hint-box.show { display: block; }
+        .score { font-size: 0.9rem; color: #666; margin-top: 16px; padding-top: 12px; border-top: 1px solid #eee; }
+        .score b { color: #000; }
+        .streak-fire { color: #f59e0b; }
+
+        .hidden { display: none !important; }
+
+        /* Mobile / Hochformat */
+        @media (max-width: 880px) {
+            body { padding: 16px; }
+            .layout { flex-direction: column; align-items: stretch; }
+            .col-canvas { align-self: center; max-width: 100%; }
+            #canvas { width: min(600px, 92vw); height: auto; aspect-ratio: 1 / 1; }
+            .switch-row { gap: 12px; }
+            .seg { padding: 6px 11px; font-size: 0.8rem; }
+            .equation-display { font-size: 1.3rem; }
         }
-        
-        .toggle-btn, .reset-btn, .fullscreen-btn {
-            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        }
-        
-        .toggle-btn:hover, .reset-btn:hover, .fullscreen-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(0,0,0,0.3);
-        }
-        
-        .toggle-btn:active, .reset-btn:active, .fullscreen-btn:active {
-            transform: translateY(0);
-        }
-        
-        .reset-btn {
-            background: linear-gradient(45deg, #ff6b6b 0%, #ee5a52 100%);
-        }
-        
-        .fullscreen-btn {
-            background: linear-gradient(45deg, #4ecdc4 0%, #44a08d 100%);
-        }
-        
-        .point-info {
-            display: flex;
-            justify-content: space-around;
-            margin: 15px 0;
-            gap: 20px;
-        }
-        
-        .point-display {
-            background: #e3f2fd;
-            padding: 10px 15px;
-            border-radius: 8px;
-            font-weight: bold;
-            flex: 1;
-            text-align: center;
-        }
-        
-        #point1-display { border-left: 4px solid #ff6b6b; }
-        #point2-display { border-left: 4px solid #4ecdc4; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Geraden im Koordinatensystem</h1>
-        <canvas id="canvas" width="600" height="600"></canvas>
-        
-        <div class="point-info">
-            <div id="point1-display" class="point-display">Punkt 1: (1, 2)</div>
-            <div id="point2-display" class="point-display">Punkt 2: (3, 4)</div>
+
+        <div class="switch-row">
+            <div class="segmented" id="typeSwitch">
+                <span class="seg-label">Aufgabe</span>
+                <button class="seg active" data-type="3">Erkunden</button>
+                <button class="seg" data-type="1">Wertetabelle &amp; Gerade</button>
+                <button class="seg" data-type="2">Punkte &amp; Gleichung</button>
+            </div>
         </div>
-        
-        <div id="equation" class="equation-display">y = 1x + 1</div>
-        
-        <div class="controls">
-            <button id="toggleTriangle" class="toggle-btn">Steigungsdreieck anzeigen</button>
-            <button id="resetBtn" class="reset-btn">Reset</button>
-            <button id="fullscreenBtn" class="fullscreen-btn">Vollbild</button>
+        <div class="switch-row hidden" id="levelRow">
+            <div class="segmented" id="levelSwitch">
+                <span class="seg-label">Niveau</span>
+                <button class="seg" data-level="einfach">Einfach</button>
+                <button class="seg active" data-level="mittel">Mittel</button>
+                <button class="seg" data-level="schwer">Schwer</button>
+            </div>
+        </div>
+
+        <div class="layout">
+            <div class="col-canvas">
+                <canvas id="canvas" width="600" height="600"></canvas>
+                <div class="controls">
+                    <button class="btn" id="triangleBtn">Steigungsdreieck anzeigen</button>
+                    <button class="btn" id="resetBtn">Reset</button>
+                    <button class="btn" id="fullscreenBtn">Vollbild</button>
+                </div>
+            </div>
+            <div class="col-panel">
+                <div id="taskPanel"></div>
+                <div class="feedback" id="feedback"></div>
+                <div class="hint-box" id="hintBox"></div>
+                <p class="score" id="score"></p>
+            </div>
         </div>
     </div>
 
     <script>
-        // DOM Elemente
+    (function () {
+        'use strict';
+
+        // ---------- Canvas / Koordinatensystem ----------
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
-        const equationDiv = document.getElementById('equation');
-        const point1Display = document.getElementById('point1-display');
-        const point2Display = document.getElementById('point2-display');
-        const toggleTriangleBtn = document.getElementById('toggleTriangle');
-        const resetBtn = document.getElementById('resetBtn');
-        const fullscreenBtn = document.getElementById('fullscreenBtn');
-        
-        // Koordinatensystem-Parameter
+        const gridRange = 10;
         const centerX = canvas.width / 2;
         const centerY = canvas.height / 2;
-        const scale = 50; // Pixel pro Einheit
-        const gridRange = 5;
-        
-        // Standardpositionen für Reset
-        const defaultPoint1 = { x: 1, y: 2 };
-        const defaultPoint2 = { x: 3, y: 4 };
-        
-        // Punkte (in Koordinatensystem-Einheiten)
-        let point1 = { ...defaultPoint1 };
-        let point2 = { ...defaultPoint2 };
-        let draggedPoint = null;
-        let draggedLine = false;
-        let lastMousePos = null;
-        let showTriangle = false;
-        
-        // Formatiere Zahlen (nur Nachkommastellen wenn nötig)
-        function formatNumber(num) {
-            if (num === Math.floor(num)) {
-                return num.toString();
-            } else {
-                return num.toFixed(2).replace(/\.?0+$/, '');
+        const scale = (canvas.width / 2 - 20) / gridRange; // = 28 px / Einheit
+
+        function coordToPixel(c) {
+            return { x: centerX + c.x * scale, y: centerY - c.y * scale };
+        }
+        function pixelToCoord(p) {
+            return { x: (p.x - centerX) / scale, y: (centerY - p.y) / scale };
+        }
+
+        // ---------- Hilfsfunktionen ----------
+        function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+        function choice(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+        function shuffle(arr) {
+            const a = arr.slice();
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
             }
+            return a;
         }
-        
-        // Koordinaten-Umrechnung
-        function coordToPixel(coord) {
-            return {
-                x: centerX + coord.x * scale,
-                y: centerY - coord.y * scale // Y-Achse ist invertiert
-            };
-        }
-        
-        function pixelToCoord(pixel) {
-            return {
-                x: (pixel.x - centerX) / scale,
-                y: (centerY - pixel.y) / scale
-            };
-        }
-        
-        // Zeichne Pfeil
-        function drawArrow(fromX, fromY, toX, toY) {
-            const headlen = 10;
-            const angle = Math.atan2(toY - fromY, toX - fromX);
-            
-            // Pfeilspitze
-            ctx.beginPath();
-            ctx.moveTo(toX, toY);
-            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
-            ctx.moveTo(toX, toY);
-            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
-            ctx.stroke();
-        }
-        
-        // Zeichne das Koordinatensystem
-        function drawGrid() {
-            ctx.strokeStyle = '#e0e0e0';
-            ctx.lineWidth = 1;
-            
-            // Gitterlinien
-            for (let i = -gridRange; i <= gridRange; i++) {
-                if (i === 0) continue;
-                
-                // Vertikale Linien
-                const x = centerX + i * scale;
-                ctx.beginPath();
-                ctx.moveTo(x, 0);
-                ctx.lineTo(x, canvas.height);
-                ctx.stroke();
-                
-                // Horizontale Linien
-                const y = centerY - i * scale;
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(canvas.width, y);
-                ctx.stroke();
+        function gcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { [a, b] = [b, a % b]; } return a || 1; }
+        function eqPt(a, b) { return Math.abs(a.x - b.x) < 1e-6 && Math.abs(a.y - b.y) < 1e-6; }
+        function onTarget(p) { return eqPt(p, state.gp1) || eqPt(p, state.gp2); }
+        function onLine(p) { return Math.abs(p.y - (state.a * p.x + state.b)) < 1e-6; }
+        function isPlacedCorrect() {
+            if (state.type === 1) {
+                return state.placed.length >= 2 && state.placed.every(p => onLine(p));
             }
-            
-            // Hauptachsen
-            ctx.strokeStyle = '#333';
-            ctx.lineWidth = 2;
-            
-            // X-Achse
-            ctx.beginPath();
-            ctx.moveTo(0, centerY);
-            ctx.lineTo(canvas.width - 15, centerY);
-            ctx.stroke();
-            
-            // Pfeil für X-Achse
-            drawArrow(canvas.width - 25, centerY, canvas.width - 10, centerY);
-            
-            // Y-Achse
-            ctx.beginPath();
-            ctx.moveTo(centerX, canvas.height);
-            ctx.lineTo(centerX, 15);
-            ctx.stroke();
-            
-            // Pfeil für Y-Achse
-            drawArrow(centerX, 25, centerX, 10);
-            
-            // Achsenbeschriftung
-            ctx.fillStyle = '#333';
-            ctx.font = '14px Arial';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            
-            // X-Achsen-Zahlen
-            for (let i = -gridRange; i <= gridRange; i++) {
-                if (i === 0) continue;
-                const x = centerX + i * scale;
-                ctx.fillText(i.toString(), x, centerY + 20);
-            }
-            
-            // Y-Achsen-Zahlen
-            ctx.textAlign = 'center';
-            for (let i = -gridRange; i <= gridRange; i++) {
-                if (i === 0) continue;
-                const y = centerY - i * scale;
-                ctx.fillText(i.toString(), centerX - 20, y);
-            }
-            
-            // Achsenbeschriftung
-            ctx.fillStyle = '#666';
-            ctx.font = '16px Arial';
-            ctx.fillText('x', canvas.width - 20, centerY + 20);
-            ctx.fillText('y', centerX - 20, 20);
+            return state.placed.length === 2 &&
+                   [state.gp1, state.gp2].every(t => state.placed.some(p => eqPt(p, t)));
         }
-        
-        // Zeichne die Gerade
-        function drawLine() {
-            if (Math.abs(point2.x - point1.x) < 0.001) {
-                // Vertikale Linie
-                const x = coordToPixel({x: point1.x, y: 0}).x;
-                ctx.strokeStyle = '#2196F3';
-                ctx.lineWidth = 3;
-                ctx.beginPath();
-                ctx.moveTo(x, 0);
-                ctx.lineTo(x, canvas.height);
-                ctx.stroke();
-                return;
-            }
-            
-            // Berechne Steigung und y-Achsenabschnitt
-            const a = (point2.y - point1.y) / (point2.x - point1.x);
-            const b = point1.y - a * point1.x;
-            
-            // Zeichne die Linie über den gesamten Canvas
-            ctx.strokeStyle = '#2196F3';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            
-            // Berechne Y-Werte an den Rändern des Canvas
-            const leftCoord = pixelToCoord({x: 0, y: 0});
-            const rightCoord = pixelToCoord({x: canvas.width, y: 0});
-            
-            const leftY = a * leftCoord.x + b;
-            const rightY = a * rightCoord.x + b;
-            
-            const leftPixel = coordToPixel({x: leftCoord.x, y: leftY});
-            const rightPixel = coordToPixel({x: rightCoord.x, y: rightY});
-            
-            ctx.moveTo(leftPixel.x, leftPixel.y);
-            ctx.lineTo(rightPixel.x, rightPixel.y);
-            ctx.stroke();
+
+        function fmt(n) {
+            if (Math.abs(n - Math.round(n)) < 1e-9) return String(Math.round(n));
+            return parseFloat(n.toFixed(3)).toString();
         }
-        
-        // Zeichne das Steigungsdreieck
-        function drawSlopeTriangle() {
-            if (!showTriangle || point1.x === point2.x || point1.y === point2.y) return;
-            
-            const pixel1 = coordToPixel(point1);
-            const pixel2 = coordToPixel(point2);
-            
-            // Dritter Punkt des rechtwinkligen Dreiecks
-            const cornerPoint = { x: point2.x, y: point1.y };
-            const pixelCorner = coordToPixel(cornerPoint);
-            
-            // Zeichne das Dreieck
-            ctx.strokeStyle = '#ff9800';
-            ctx.lineWidth = 2;
-            ctx.setLineDash([5, 5]);
-            
-            ctx.beginPath();
-            // Horizontale Linie (von Punkt1 zur Ecke)
-            ctx.moveTo(pixel1.x, pixel1.y);
-            ctx.lineTo(pixelCorner.x, pixelCorner.y);
-            // Vertikale Linie (von Ecke zu Punkt2)
-            ctx.lineTo(pixel2.x, pixel2.y);
-            ctx.stroke();
-            
-            // Zurück zu durchgezogenen Linien
-            ctx.setLineDash([]);
-            
-            // Berechne die Seitenlängen
-            const deltaX = Math.abs(point2.x - point1.x);
-            const deltaY = Math.abs(point2.y - point1.y);
-            
-            // Beschriftung der Katheten
-            ctx.fillStyle = '#ff9800';
-            ctx.font = 'bold 18px Arial';
-            ctx.textAlign = 'center';
-            
-            // Horizontale Kathete (nur die Zahl)
-            const midX = (pixel1.x + pixelCorner.x) / 2;
-            const labelYPos = pixel1.y > pixelCorner.y ? pixel1.y + 25 : pixel1.y - 15;
-            
-            const textX = formatNumber(deltaX);
-            const textMetricsX = ctx.measureText(textX);
-            const paddingX = 6;
-            
-            // Hintergrund für horizontale Kathete
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-            const bgWidthX = textMetricsX.width + paddingX * 2;
-            const bgHeightX = 20;
-            const bgX = midX - bgWidthX / 2;
-            const bgY = labelYPos - bgHeightX / 2 + 2;
-            
-            ctx.beginPath();
-            ctx.roundRect(bgX, bgY, bgWidthX, bgHeightX, 4);
-            ctx.fill();
-            
-            // Text für horizontale Kathete
-            ctx.fillStyle = '#ff9800';
-            ctx.fillText(textX, midX, labelYPos);
-            
-            // Vertikale Kathete (nur die Zahl, horizontal, näher)
-            const midY = (pixelCorner.y + pixel2.y) / 2;
-            const labelXPos = pixelCorner.x > pixel2.x ? pixelCorner.x + 15 : pixelCorner.x - 15;
-            
-            const textY = formatNumber(deltaY);
-            const textMetricsY = ctx.measureText(textY);
-            const paddingY = 6;
-            
-            // Hintergrund für vertikale Kathete
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-            const bgWidthY = textMetricsY.width + paddingY * 2;
-            const bgHeightY = 20;
-            const bgXPos = labelXPos - bgWidthY / 2;
-            const bgYPos = midY - bgHeightY / 2 + 2;
-            
-            ctx.beginPath();
-            ctx.roundRect(bgXPos, bgYPos, bgWidthY, bgHeightY, 4);
-            ctx.fill();
-            
-            // Text für vertikale Kathete
-            ctx.fillStyle = '#ff9800';
-            ctx.fillText(textY, labelXPos, midY);
-        }
-        
-        // Zeichne die Punkte
-        function drawPoints() {
-            const pixel1 = coordToPixel(point1);
-            const pixel2 = coordToPixel(point2);
-            
-            // Punkt 1 (rot)
-            ctx.fillStyle = '#ff6b6b';
-            ctx.beginPath();
-            ctx.arc(pixel1.x, pixel1.y, 8, 0, 2 * Math.PI);
-            ctx.fill();
-            ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-            
-            // Punkt 2 (türkis)
-            ctx.fillStyle = '#4ecdc4';
-            ctx.beginPath();
-            ctx.arc(pixel2.x, pixel2.y, 8, 0, 2 * Math.PI);
-            ctx.fill();
-            ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-        }
-        
-        // Aktualisiere die Geradengleichung
-        function updateEquation() {
-            if (Math.abs(point2.x - point1.x) < 0.001) {
-                equationDiv.textContent = `x = ${formatNumber(point1.x)}`;
-                return;
-            }
-            
-            const a = (point2.y - point1.y) / (point2.x - point1.x);
-            const b = point1.y - a * point1.x;
-            
-            let equation = 'y = ';
-            
-            // Steigung
-            if (Math.abs(a) < 0.001) {
-                // Horizontale Gerade: nur y-Wert anzeigen
-                equation = `y = ${formatNumber(b)}`;
-            } else if (Math.abs(a - 1) < 0.001) {
-                equation += 'x';
-            } else if (Math.abs(a + 1) < 0.001) {
-                equation += '-x';
-            } else {
-                equation += `${formatNumber(a)}x`;
-            }
-            
-            // Y-Achsenabschnitt (nur bei nicht-horizontalen Geraden)
-            if (Math.abs(a) > 0.001 && Math.abs(b) > 0.001) {
-                if (b > 0) {
-                    equation += ` + ${formatNumber(b)}`;
-                } else {
-                    equation += ` - ${formatNumber(Math.abs(b))}`;
+
+        // Steigung als sauberer String: ganze Zahl, Halbe als Dezimal, sonst Bruch
+        function slopeStr(a) {
+            if (Math.abs(a - Math.round(a)) < 1e-9) return String(Math.round(a));
+            if (Math.abs(a * 2 - Math.round(a * 2)) < 1e-9) return fmt(a); // 0.5, 1.5, ...
+            for (const d of [3, 4]) {
+                if (Math.abs(a * d - Math.round(a * d)) < 1e-9) {
+                    let n = Math.round(a * d), dd = d;
+                    const g = gcd(n, dd); n /= g; dd /= g;
+                    if (dd === 1) return String(n);
+                    return (n < 0 ? '-' : '') + Math.abs(n) + '/' + dd;
                 }
             }
-            
-            equationDiv.textContent = equation;
+            return fmt(a);
         }
-        
-        // Aktualisiere die Punktanzeigen
-        function updatePointDisplays() {
-            point1Display.textContent = `Punkt 1: (${formatNumber(point1.x)}, ${formatNumber(point1.y)})`;
-            point2Display.textContent = `Punkt 2: (${formatNumber(point2.x)}, ${formatNumber(point2.y)})`;
+
+        function eqString(a, b) {
+            if (Math.abs(a) < 1e-9) return 'y = ' + fmt(b);
+            let s = 'y = ';
+            const as = slopeStr(a);
+            if (as === '1') s += 'x';
+            else if (as === '-1') s += '-x';
+            else s += as + 'x';
+            if (Math.abs(b) > 1e-9) s += (b > 0 ? ' + ' + fmt(b) : ' \u2212 ' + fmt(Math.abs(b)));
+            return s;
         }
-        
-        // Zeichne alles
+
+        // Eingabe (Zahl, Komma oder Bruch) parsen -> Number oder NaN
+        function parseVal(str) {
+            if (str == null) return NaN;
+            str = String(str).trim().replace(',', '.');
+            if (str === '') return NaN;
+            if (str.indexOf('/') !== -1) {
+                const p = str.split('/');
+                if (p.length !== 2) return NaN;
+                const n = parseFloat(p[0]), d = parseFloat(p[1]);
+                if (isNaN(n) || isNaN(d) || d === 0) return NaN;
+                return n / d;
+            }
+            const v = parseFloat(str);
+            return isNaN(v) ? NaN : v;
+        }
+
+        // ---------- Zustand ----------
+        const state = {
+            type: 3,
+            level: 'mittel',
+            fracMode: true,   // Erkunden: Steigung/Achsenabschnitt als Bruch (sonst Dezimal)
+            // Typ 1
+            a: 1.5, b: 3,
+            cols: [],          // [{x, y, given:'x'|'y'}]
+            showPoints1: false,
+            showLine1: false,
+            placed: [],  // vom Schüler ins System geklickte Punkte (Übung)
+            placedMatched: false,
+            scored: false,
+            // Typ 2
+            p1: { x: 1, y: 2 }, p2: { x: 3, y: 4 },  // Erkunden: frei ziehbar
+            gp1: { x: 0, y: 4 }, gp2: { x: -6, y: -8 }, // Übung: gegebene (einzuzeichnende) Punkte
+            // gemeinsam
+            showTriangle: false,
+            score: 0, streak: 0,
+            hintLevel: 0
+        };
+
+        // ---------- Aufgaben generieren ----------
+        function genTyp1() {
+            let slopes, bRange, nReverse, wide;
+            if (state.level === 'einfach') { slopes = [1, 2, 3, 0.5, 1 / 3, 2 / 3]; bRange = 0; nReverse = 1; wide = false; }
+            else if (state.level === 'schwer') { slopes = [-3, -2.5, -2, -1.5, -1, -0.5, 0.5, 1, 1.5, 2, 2.5, 3]; bRange = 6; nReverse = 3; wide = true; }
+            else { slopes = [-3, -2, -1.5, -1, -0.5, 0.5, 1, 1.5, 2, 3]; bRange = 5; nReverse = 2; wide = false; }
+            let a, b, xs, ys, ok = false;
+            for (let tries = 0; tries < 400 && !ok; tries++) {
+                a = choice(slopes);
+                b = randInt(-bRange, bRange);
+                // Nenner der Steigung bestimmen -> x müssen Vielfache davon sein (ganzzahlige y)
+                let den = 1;
+                for (const d of [1, 2, 3, 4]) { if (Math.abs(a * d - Math.round(a * d)) < 1e-9) { den = d; break; } }
+                if (wide) {
+                    // Schwer: einzeichenbare (|y|<=10) und weiter aussen liegende (|y|<=24) Vielfache sammeln
+                    const plot = [], ext = [];
+                    for (let m = -10; m <= 10; m++) {
+                        if (m % den !== 0) continue;
+                        const y = a * m + b;
+                        if (Math.abs(y) <= 10) plot.push(m);
+                        else if (Math.abs(y) <= 24) ext.push(m);
+                    }
+                    if (plot.length < 2 || plot.length + ext.length < 4) continue;
+                    let sel = shuffle(plot).slice(0, 2); // zwei garantiert einzeichenbare Punkte
+                    const rest = shuffle(plot.concat(ext).filter(m => sel.indexOf(m) < 0));
+                    xs = sel.concat(rest.slice(0, 2));
+                } else {
+                    const R = den === 1 ? 4 : den === 2 ? 6 : 9;
+                    const pool = [];
+                    for (let m = -R; m <= R; m++) {
+                        if (m % den !== 0) continue;
+                        if (Math.abs(a * m + b) <= 10) pool.push(m); // gleich aufs Raster begrenzen
+                    }
+                    if (pool.length < 4) continue;
+                    xs = shuffle(pool).slice(0, 4);
+                }
+                ys = xs.map(x => a * x + b);
+                ok = new Set(ys).size === 4;
+            }
+            // nReverse Spalten "y gegeben" (rückwärts rechnen), Rest "x gegeben"
+            const order = shuffle([0, 1, 2, 3]);
+            const givenY = new Set(order.slice(0, nReverse));
+            let cols = xs.map((x, i) => ({ x: x, y: ys[i], given: givenY.has(i) ? 'y' : 'x' }));
+            cols.sort((p, q) => p.x - q.x);
+            state.a = a; state.b = b; state.cols = cols;
+            state.showPoints1 = false; state.showLine1 = false;
+            state.placed = [];
+            state.placedMatched = false;
+            state.scored = false;
+        }
+
+        function genTyp2() {
+            let fr;
+            if (state.level === 'einfach') fr = [[1,1],[2,1],[3,1],[1,2],[1,3],[2,3]];
+            else if (state.level === 'schwer') fr = [[1,1],[2,1],[3,1],[-1,1],[-2,1],[-3,1],[1,2],[-1,2],[1,3],[-1,3],[2,3],[-2,3]];
+            else fr = [[1,1],[2,1],[3,1],[-1,1],[-2,1],[-3,1],[1,2],[-1,2]];
+            for (let tries = 0; tries < 300; tries++) {
+                const [num, den] = choice(fr);
+                const a = num / den;
+                const b = (state.level === 'einfach') ? 0 : randInt(-4, 4);
+                // gültige x: Vielfache von den, |x|<=9 und |y|<=9 (Einfach: ohne 0)
+                const valid = [];
+                for (let m = -9; m <= 9; m++) {
+                    if (m % den !== 0) continue;
+                    if (state.level === 'einfach' && m === 0) continue;
+                    if (Math.abs(a * m + b) <= 9) valid.push(m);
+                }
+                if (valid.length < 2) continue;
+                const pick = shuffle(valid);
+                const x1 = pick[0], x2 = pick[1];
+                const pts = [{ x: x1, y: a * x1 + b }, { x: x2, y: a * x2 + b }].sort((p, q) => p.x - q.x);
+                state.a = a; state.b = b;
+                state.gp1 = pts[0]; state.gp2 = pts[1];
+                state.placed = [];
+                state.placedMatched = false;
+                state.scored = false;
+                return;
+            }
+        }
+
+        function newTask() {
+            state.hintLevel = 0;
+            hintBox.classList.remove('show');
+            setFeedback('', '');
+            if (state.type === 1) genTyp1();
+            else if (state.type === 2) genTyp2();
+            // Typ 3 (Erkunden) behält die frei ziehbaren Punkte
+            buildPanel();
+            draw();
+        }
+
+        // ---------- Zeichnen ----------
+        function drawArrow(fromX, fromY, toX, toY) {
+            const h = 10, ang = Math.atan2(toY - fromY, toX - fromX);
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - h * Math.cos(ang - Math.PI / 6), toY - h * Math.sin(ang - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - h * Math.cos(ang + Math.PI / 6), toY - h * Math.sin(ang + Math.PI / 6));
+            ctx.stroke();
+        }
+
+        function drawGrid() {
+            // feine Gitterlinien
+            for (let i = -gridRange; i <= gridRange; i++) {
+                if (i === 0) continue;
+                ctx.strokeStyle = (i % 5 === 0) ? '#cfcfcf' : '#ececec';
+                ctx.lineWidth = 1;
+                const x = centerX + i * scale;
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+                const y = centerY - i * scale;
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+            }
+            // Achsen
+            ctx.strokeStyle = '#333'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(0, centerY); ctx.lineTo(canvas.width - 6, centerY); ctx.stroke();
+            drawArrow(canvas.width - 20, centerY, canvas.width - 6, centerY);
+            ctx.beginPath(); ctx.moveTo(centerX, canvas.height); ctx.lineTo(centerX, 6); ctx.stroke();
+            drawArrow(centerX, 20, centerX, 6);
+            // Beschriftung bei 5 und 10
+            ctx.fillStyle = '#333'; ctx.font = '13px Arial';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            [-10, -5, 5, 10].forEach(i => {
+                const x = centerX + i * scale;
+                ctx.fillText(String(i), x, centerY + 16);
+                const y = centerY - i * scale;
+                ctx.fillText(String(i), centerX - 16, y);
+            });
+            ctx.fillStyle = '#666'; ctx.font = 'italic 15px Arial';
+            ctx.fillText('x', canvas.width - 14, centerY + 16);
+            ctx.fillText('y', centerX + 14, 14);
+        }
+
+        function drawFullLine(a, b, color) {
+            ctx.strokeStyle = color; ctx.lineWidth = 3;
+            const lx = pixelToCoord({ x: 0, y: 0 }).x;
+            const rx = pixelToCoord({ x: canvas.width, y: 0 }).x;
+            const lp = coordToPixel({ x: lx, y: a * lx + b });
+            const rp = coordToPixel({ x: rx, y: a * rx + b });
+            ctx.beginPath(); ctx.moveTo(lp.x, lp.y); ctx.lineTo(rp.x, rp.y); ctx.stroke();
+        }
+
+        function drawLineThrough(P1, P2, color) {
+            if (Math.abs(P2.x - P1.x) < 1e-9) { // senkrecht
+                const x = coordToPixel({ x: P1.x, y: 0 }).x;
+                ctx.strokeStyle = color; ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+                return;
+            }
+            const a = (P2.y - P1.y) / (P2.x - P1.x);
+            const b = P1.y - a * P1.x;
+            drawFullLine(a, b, color);
+        }
+
+        function drawDot(c, color, r) {
+            const p = coordToPixel(c);
+            ctx.fillStyle = color;
+            ctx.beginPath(); ctx.arc(p.x, p.y, r || 8, 0, 2 * Math.PI); ctx.fill();
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+        }
+
+        function drawTriangle(P1, P2) {
+            if (Math.abs(P1.x - P2.x) < 1e-9 || Math.abs(P1.y - P2.y) < 1e-9) return;
+            const a = coordToPixel(P1), c = coordToPixel(P2);
+            const corner = coordToPixel({ x: P2.x, y: P1.y });
+            ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2; ctx.setLineDash([5, 5]);
+            ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(corner.x, corner.y); ctx.lineTo(c.x, c.y); ctx.stroke();
+            ctx.setLineDash([]);
+            const dx = P2.x - P1.x, dy = P2.y - P1.y;
+            labelOnTriangle((a.x + corner.x) / 2, a.y > corner.y ? a.y + 16 : a.y - 16, fmt(Math.abs(dx)));
+            labelOnTriangle(corner.x > c.x ? corner.x + 16 : corner.x - 16, (corner.y + c.y) / 2, fmt(Math.abs(dy)));
+        }
+        function labelOnTriangle(x, y, text) {
+            ctx.font = 'bold 16px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            const w = ctx.measureText(text).width + 10;
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.beginPath(); ctx.roundRect(x - w / 2, y - 11, w, 22, 4); ctx.fill();
+            ctx.fillStyle = '#b45309'; ctx.fillText(text, x, y);
+        }
+
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawGrid();
-            drawLine();
-            drawSlopeTriangle();
-            drawPoints();
-            updateEquation();
-            updatePointDisplays();
+
+            if (state.type === 1) {
+                if (isPlacedCorrect()) {
+                    drawFullLine(state.a, state.b, '#111827');
+                    if (state.showTriangle && state.cols.length >= 2)
+                        drawTriangle(state.cols[0], state.cols[state.cols.length - 1]);
+                }
+                state.placed.forEach(m => {
+                    drawDot(m, onLine(m) ? '#22c55e' : '#ef4444');
+                    if (state.level === 'einfach') labelCur(m);
+                });
+            } else if (state.type === 2) {
+                if (isPlacedCorrect()) {
+                    drawLineThrough(state.gp1, state.gp2, '#111827');
+                    if (state.showTriangle) drawTriangle(state.gp1, state.gp2);
+                }
+                state.placed.forEach(m => {
+                    drawDot(m, onTarget(m) ? '#22c55e' : '#ef4444');
+                    if (state.level === 'einfach') labelCur(m);
+                });
+            } else { // Erkunden: frei ziehbare Punkte, Live-Gleichung
+                drawLineThrough(state.p1, state.p2, '#111827');
+                if (state.showTriangle) drawTriangle(state.p1, state.p2);
+                drawDot(state.p1, '#2563eb');
+                drawDot(state.p2, '#ec4899');
+                updateDemo2Display();
+            }
         }
-        
-        // Prüfe, ob ein Punkt angeklickt wurde
-        function getClickedPoint(mouseX, mouseY) {
-            const pixel1 = coordToPixel(point1);
-            const pixel2 = coordToPixel(point2);
-            
-            const dist1 = Math.sqrt((mouseX - pixel1.x) ** 2 + (mouseY - pixel1.y) ** 2);
-            const dist2 = Math.sqrt((mouseX - pixel2.x) ** 2 + (mouseY - pixel2.y) ** 2);
-            
-            if (dist1 < 15) return 'point1';
-            if (dist2 < 15) return 'point2';
+        function labelPoint(c, name) {
+            const p = coordToPixel(c);
+            ctx.fillStyle = '#333'; ctx.font = 'bold 13px Arial';
+            ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+            ctx.fillText(name + '(' + fmt(c.x) + '/' + fmt(c.y) + ')', p.x + 10, p.y - 8);
+        }
+        function labelCur(c) {
+            const p = coordToPixel(c);
+            ctx.fillStyle = '#333'; ctx.font = 'bold 13px Arial';
+            ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+            ctx.fillText('(' + fmt(c.x) + '/' + fmt(c.y) + ')', p.x + 10, p.y - 8);
+        }
+
+        // ---------- Panels ----------
+        const taskPanel = document.getElementById('taskPanel');
+        const feedback = document.getElementById('feedback');
+        const hintBox = document.getElementById('hintBox');
+        const scoreEl = document.getElementById('score');
+        const triangleBtn = document.getElementById('triangleBtn');
+
+        function setFeedback(msg, kind) {
+            feedback.textContent = msg;
+            feedback.className = 'feedback' + (kind ? ' ' + kind : '');
+        }
+        function updateScore() {
+            if (state.type !== 3) {
+                scoreEl.innerHTML = 'Punkte: <b>' + state.score + '</b> &nbsp;·&nbsp; Serie: <b>' + state.streak + '</b>' + (state.streak >= 3 ? ' <span class="streak-fire">🔥</span>' : '');
+            } else scoreEl.textContent = '';
+        }
+
+        function buildPanel() {
+            taskPanel.innerHTML = '';
+            updateScore();
+            if (state.type === 1) panelTyp1Uebung();
+            else if (state.type === 2) panelTyp2Uebung();
+            else panelErkunden();
+        }
+
+        // --- Typ 1 Übung ---
+        function panelTyp1Uebung() {
+            taskPanel.appendChild(el('p', 'task-text', 'Fülle die Wertetabelle aus. Klicke dann zwei (oder mehr) Punkte der Geraden ins Koordinatensystem (nochmals klicken entfernt einen) \u2013 sobald sie passen, erscheint die Gerade.'));
+            if (state.level === 'schwer') taskPanel.appendChild(el('p', 'task-text', 'Achtung: Nicht alle Tabellenwerte lassen sich einzeichnen \u2013 nutze die Punkte, die ins Koordinatensystem passen.'));
+            const eq = el('div', 'equation-display', eqString(state.a, state.b));
+            taskPanel.appendChild(eq);
+            taskPanel.appendChild(buildTable(false));
+            const ctr1 = el('div', 'controls');
+            ctr1.appendChild(button('Tabelle prüfen', 'btn check', checkTable));
+            ctr1.appendChild(button('Tipp', 'btn hint', showHint));
+            ctr1.appendChild(button('Neue Aufgabe', 'btn ghost', newTask));
+            taskPanel.appendChild(ctr1);
+        }
+
+        function buildTable(demo) {
+            const wrap = el('div', 'wt-wrap');
+            const t = document.createElement('table');
+            t.className = 'wt';
+            const r1 = document.createElement('tr');
+            const r2 = document.createElement('tr');
+            r1.appendChild(thCell('x'));
+            r2.appendChild(thCell('y'));
+            state.cols.forEach((c, i) => {
+                // x-Zeile
+                r1.appendChild(cellFor(c, 'x', i, demo));
+                // y-Zeile
+                r2.appendChild(cellFor(c, 'y', i, demo));
+            });
+            t.appendChild(r1); t.appendChild(r2);
+            wrap.appendChild(t);
+            return wrap;
+        }
+        function thCell(txt) { const th = document.createElement('th'); th.textContent = txt; return th; }
+        function cellFor(c, row, i, demo) {
+            const td = document.createElement('td');
+            const isGiven = (c.given === row);          // dieser Wert ist vorgegeben
+            const val = row === 'x' ? c.x : c.y;
+            if (isGiven) {
+                td.className = 'given';
+                td.textContent = fmt(val);
+            } else if (demo) {
+                td.className = 'reveal';
+                td.textContent = '?';
+                td.addEventListener('click', () => {
+                    td.textContent = fmt(val);
+                    td.classList.add('shown');
+                    td.classList.remove('reveal');
+                });
+            } else {
+                const inp = document.createElement('input');
+                inp.type = 'text';
+                inp.dataset.row = row; inp.dataset.idx = i;
+                inp.setAttribute('inputmode', 'text');
+                td.appendChild(inp);
+            }
+            return td;
+        }
+
+        function checkTable() {
+            const inputs = taskPanel.querySelectorAll('table.wt input');
+            let allFilled = true, allOk = true;
+            inputs.forEach(inp => {
+                const i = +inp.dataset.idx, row = inp.dataset.row;
+                const expected = row === 'x' ? state.cols[i].x : state.cols[i].y;
+                const got = parseVal(inp.value);
+                inp.classList.remove('ok', 'bad');
+                if (inp.value.trim() === '') { allFilled = false; allOk = false; return; }
+                if (!isNaN(got) && Math.abs(got - expected) < 1e-6) inp.classList.add('ok');
+                else { inp.classList.add('bad'); allOk = false; }
+            });
+            if (allOk) setFeedback('Tabelle korrekt! Jetzt die Gerade zeichnen.', 'good');
+            else if (!allFilled) setFeedback('Bitte alle Felder ausfüllen.', 'bad');
+            else setFeedback('Noch nicht ganz – rot markierte Werte nochmals prüfen.', 'bad');
+        }
+
+        function checkLine1() { /* entfernt: Gerade erscheint automatisch beim korrekten Einzeichnen */ }
+
+
+        // --- Erkunden (frei ziehbare Punkte, Live-Gleichung) ---
+        function panelErkunden() {
+            const info = el('div', 'point-info');
+            info.appendChild(elId('div', 'point-display', 'pd1', ''));
+            info.appendChild(elId('div', 'point-display', 'pd2', ''));
+            taskPanel.appendChild(info);
+            taskPanel.appendChild(elId('div', 'equation-display', 'eqDemo', ''));
+            taskPanel.appendChild(el('p', 'task-text', 'Ziehe die zwei Punkte frei herum – oder packe die Gerade selbst und verschiebe sie als Ganzes. Die Gleichung passt sich live an; das Steigungsdreieck lässt sich einblenden.'));
+            const dispRow = el('div', 'controls');
+            const seg = el('div', 'segmented');
+            seg.appendChild(el('span', 'seg-label', 'Anzeige'));
+            [['bruch', 'Bruch'], ['dezimal', 'Dezimal']].forEach(([v, label]) => {
+                const sb = document.createElement('button');
+                sb.type = 'button';
+                sb.className = 'seg' + (((v === 'bruch') === state.fracMode) ? ' active' : '');
+                sb.textContent = label;
+                sb.addEventListener('click', () => {
+                    state.fracMode = (v === 'bruch');
+                    seg.querySelectorAll('.seg').forEach(x => x.classList.remove('active'));
+                    sb.classList.add('active');
+                    updateDemo2Display();
+                });
+                seg.appendChild(sb);
+            });
+            dispRow.appendChild(seg);
+            taskPanel.appendChild(dispRow);
+            const ctr = el('div', 'controls');
+            ctr.appendChild(button('Neue Punkte', 'btn ghost', () => {
+                state.p1 = { x: randInt(-4, 4), y: randInt(-4, 4) };
+                state.p2 = { x: randInt(-4, 5), y: randInt(-3, 5) };
+                if (state.p1.x === state.p2.x && state.p1.y === state.p2.y) state.p2.x++;
+                draw(); updateDemo2Display();
+            }));
+            taskPanel.appendChild(ctr);
+            updateDemo2Display();
+        }
+        function reduceFrac(num, den) {
+            if (den < 0) { num = -num; den = -den; }
+            const g = gcd(num, den) || 1;
+            return { n: num / g, d: den / g };
+        }
+        function fracSpan(n, d) {
+            return '<span class="frac"><span class="frac-num">' + n + '</span><span class="frac-den">' + d + '</span></span>';
+        }
+        function updateDemo2Display() {
+            const pd1 = document.getElementById('pd1');
+            const pd2 = document.getElementById('pd2');
+            const eq = document.getElementById('eqDemo');
+            if (pd1) pd1.textContent = 'P\u2081 (' + fmt(state.p1.x) + ' / ' + fmt(state.p1.y) + ')';
+            if (pd2) pd2.textContent = 'P\u2082 (' + fmt(state.p2.x) + ' / ' + fmt(state.p2.y) + ')';
+            if (!eq) return;
+            const dx = state.p2.x - state.p1.x;
+            if (Math.abs(dx) < 1e-9) { eq.textContent = 'x = ' + fmt(state.p1.x); return; } // senkrecht
+            const dy = state.p2.y - state.p1.y;
+            const A = reduceFrac(dy, dx);                                // Steigung exakt
+            const B = reduceFrac(state.p1.y * dx - dy * state.p1.x, dx); // Achsenabschnitt exakt
+            // b wird IMMER exakt dargestellt (ganze Zahl oder Bruch) – der Schalter betrifft nur a
+            const bMag = (B.d === 1) ? Math.abs(B.n) : fracSpan(Math.abs(B.n), B.d);
+            if (A.n === 0) { // waagrechte Gerade: y = b
+                eq.innerHTML = 'y = ' + (B.n < 0 ? '\u2212' : '') + bMag;
+                return;
+            }
+            // Steigungsterm: Bruch ODER Dezimal
+            let slope;
+            if (state.fracMode) {
+                if (A.d === 1) slope = (A.n === 1 ? '' : A.n === -1 ? '\u2212' : (A.n < 0 ? '\u2212' : '') + Math.abs(A.n)) + 'x';
+                else slope = (A.n < 0 ? '\u2212' : '') + fracSpan(Math.abs(A.n), A.d) + 'x';
+            } else {
+                const a = A.n / A.d;
+                slope = (Math.abs(a - 1) < 1e-9 ? '' : Math.abs(a + 1) < 1e-9 ? '\u2212' : (a < 0 ? '\u2212' + fmt(Math.abs(a)) : fmt(a))) + 'x';
+            }
+            let s = 'y = ' + slope;
+            if (B.n !== 0) s += (B.n > 0 ? ' + ' : ' \u2212 ') + bMag;
+            eq.innerHTML = s;
+        }
+
+        // --- Typ 2 Übung ---
+        function panelTyp2Uebung() {
+            taskPanel.appendChild(el('p', 'task-text',
+                'Klicke die beiden Punkte ins Koordinatensystem (nochmals klicken entfernt einen). Sobald beide stimmen, erscheint die Gerade \u2013 notiere dann die Geradengleichung.'));
+            const info = el('div', 'point-info');
+            info.appendChild(elId('div', 'point-display', 'pd1', 'P\u2081 (' + fmt(state.gp1.x) + ' / ' + fmt(state.gp1.y) + ')'));
+            info.appendChild(elId('div', 'point-display', 'pd2', 'P\u2082 (' + fmt(state.gp2.x) + ' / ' + fmt(state.gp2.y) + ')'));
+            taskPanel.appendChild(info);
+
+            const row = el('div', 'eq-input');
+            row.appendChild(document.createTextNode('y ='));
+            const ai = inputBox('aIn'); row.appendChild(ai);
+            if (state.level === 'einfach') {
+                row.appendChild(document.createTextNode('· x'));
+            } else {
+                row.appendChild(document.createTextNode('· x'));
+                const bi = inputBox('bIn'); bi.placeholder = '\u00b1'; row.appendChild(bi);
+            }
+            taskPanel.appendChild(row);
+            taskPanel.appendChild(el('p', 'task-text', state.level === 'einfach'
+                ? 'Die Gerade geht durch den Ursprung. Trage die Steigung ein (auch als Bruch, z. B. 1/2).'
+                : 'Steigung als Bruch oder Dezimalzahl; beim y-Achsenabschnitt das Vorzeichen mittippen (z. B. \u22123).'));
+
+            const ctr = el('div', 'controls');
+            ctr.appendChild(button('Prüfen', 'btn check', checkEq2));
+            ctr.appendChild(button('Tipp', 'btn hint', showHint));
+            ctr.appendChild(button('Neue Aufgabe', 'btn ghost', newTask));
+            taskPanel.appendChild(ctr);
+        }
+        function inputBox(id) {
+            const i = document.createElement('input');
+            i.type = 'text'; i.id = id; i.setAttribute('inputmode', 'text');
+            return i;
+        }
+        function checkEq2() {
+            const ai = document.getElementById('aIn');
+            const bi = document.getElementById('bIn');
+            const ga = parseVal(ai.value);
+            const gb = bi ? parseVal(bi.value) : 0;
+            ai.classList.remove('ok', 'bad'); if (bi) bi.classList.remove('ok', 'bad');
+            const okA = !isNaN(ga) && Math.abs(ga - state.a) < 0.02;
+            const okB = bi ? (!isNaN(gb) && Math.abs(gb - state.b) < 0.05) : true;
+            ai.classList.add(okA ? 'ok' : 'bad');
+            if (bi) bi.classList.add(okB ? 'ok' : 'bad');
+            if (okA && okB) {
+                setFeedback('Richtig! ' + eqString(state.a, state.b) + ' 🎉', 'good');
+                if (!state.scored) { state.score++; state.streak++; updateScore(); state.scored = true; }
+            } else {
+                state.streak = 0; updateScore();
+                let msg = 'Noch nicht: ';
+                if (!okA && !okB) msg += 'Steigung und y-Achsenabschnitt prüfen.';
+                else if (!okA) msg += 'die Steigung stimmt noch nicht.';
+                else msg += 'der y-Achsenabschnitt stimmt noch nicht.';
+                setFeedback(msg, 'bad');
+            }
+        }
+
+        // ---------- Tipps (gestuft) ----------
+        function showHint() {
+            let hints;
+            if (state.type === 1) {
+                if (state.level === 'einfach') {
+                    hints = [
+                        'Die Gerade geht durch den Ursprung: y = a · x (b ist 0).',
+                        'Ist x gegeben? Dann y = a · x ausrechnen.',
+                        'Ist y gegeben? Dann umstellen: x = y / a.',
+                        'Zum Zeichnen genügen zwei Punkte: klicke zwei Tabellenpunkte ins Koordinatensystem.'
+                    ];
+                } else {
+                    hints = [
+                        'Setze die gegebene Zahl in die Gleichung ein.',
+                        'Ist x gegeben? Dann y = a · x + b ausrechnen.',
+                        'Ist y gegeben? Dann nach x umstellen: x = (y − b) / a.',
+                        state.level === 'schwer'
+                            ? 'Manche Tabellenpunkte liegen ausserhalb des Rasters. Klicke zwei, die hineinpassen – zwei genügen für die Gerade.'
+                            : 'Zum Zeichnen genügen zwei Punkte der Geraden: klicke zwei Tabellenpunkte ins Koordinatensystem.'
+                    ];
+                }
+            } else { // Typ 2
+                hints = [
+                    'Klicke die beiden gegebenen Punkte ins Koordinatensystem.',
+                    'Steigung a = Δy / Δx (Veränderung in y geteilt durch Veränderung in x). Das Steigungsdreieck hilft.',
+                    state.level === 'einfach'
+                        ? 'Die Gerade geht durch den Ursprung, also ist b = 0 – du brauchst nur die Steigung.'
+                        : 'b ist der y-Wert, bei dem die Gerade die y-Achse schneidet (x = 0) – Vorzeichen beachten.'
+                ];
+            }
+            if (state.hintLevel >= hints.length) state.hintLevel = hints.length - 1;
+            hintBox.textContent = '💡 ' + hints[state.hintLevel];
+            hintBox.classList.add('show');
+            if (state.hintLevel < hints.length - 1) state.hintLevel++;
+        }
+
+        // ---------- kleine DOM-Helfer ----------
+        function el(tag, cls, txt) { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+        function elId(tag, cls, id, txt) { const e = el(tag, cls, txt); e.id = id; return e; }
+        function button(txt, cls, fn) { const b = el('button', cls, txt); b.addEventListener('click', fn); return b; }
+
+        // ---------- Interaktion: Klick zum Setzen (Übung) / Ziehen (Typ 2 Demo) ----------
+        function isDragMode() { return state.type === 3; }
+        function isClickMode() { return state.type === 1 || state.type === 2; }
+        function evCoords(e) {
+            const r = canvas.getBoundingClientRect();
+            const sx = canvas.width / r.width, sy = canvas.height / r.height;
+            return { x: (e.clientX - r.left) * sx, y: (e.clientY - r.top) * sy };
+        }
+        function toCoord(c) {
+            const g = pixelToCoord(c);
+            return {
+                x: Math.max(-gridRange, Math.min(gridRange, Math.round(g.x))),
+                y: Math.max(-gridRange, Math.min(gridRange, Math.round(g.y)))
+            };
+        }
+        function hitHandle(px, py) {
+            for (const k of ['p1', 'p2']) {
+                const p = coordToPixel(state[k]);
+                if (Math.hypot(px - p.x, py - p.y) < 16) return k;
+            }
             return null;
         }
-        
-        // Prüfe, ob die Gerade angeklickt wurde
-        function isLineClicked(mouseX, mouseY) {
-            if (Math.abs(point2.x - point1.x) < 0.001) {
-                // Vertikale Linie
-                const linePixelX = coordToPixel({x: point1.x, y: 0}).x;
-                return Math.abs(mouseX - linePixelX) < 10;
-            }
-            
-            // Berechne Distanz vom Mauszeiger zur Geraden
-            const mouseCoord = pixelToCoord({x: mouseX, y: mouseY});
-            const a = (point2.y - point1.y) / (point2.x - point1.x);
-            const b = point1.y - a * point1.x;
-            
-            // Distanz von Punkt zur Gerade: |ax - y + b| / sqrt(a² + 1)
-            const distance = Math.abs(a * mouseCoord.x - mouseCoord.y + b) / Math.sqrt(a * a + 1);
-            
-            // Prüfe ob Maus nah genug an der Linie ist (in Koordinateneinheiten)
-            return distance < 0.2;
+        function hitLine(px, py) {
+            const dx = state.p2.x - state.p1.x, dy = state.p2.y - state.p1.y;
+            if (Math.abs(dx) < 1e-9 && Math.abs(dy) < 1e-9) return false; // gleiche Punkte
+            const m = pixelToCoord({ x: px, y: py });
+            if (Math.abs(dx) < 1e-9) return Math.abs(m.x - state.p1.x) < 0.3; // senkrecht
+            const a = dy / dx, b = state.p1.y - a * state.p1.x;
+            return Math.abs(a * m.x - m.y + b) / Math.sqrt(a * a + 1) < 0.3;
         }
-        
-        // Hilfsfunktion um Maus- und Touch-Koordinaten zu erhalten
-        function getEventCoordinates(e) {
-            const rect = canvas.getBoundingClientRect();
-            if (e.touches && e.touches.length > 0) {
-                // Touch Event
-                return {
-                    x: e.touches[0].clientX - rect.left,
-                    y: e.touches[0].clientY - rect.top
-                };
-            } else {
-                // Mouse Event
-                return {
-                    x: e.clientX - rect.left,
-                    y: e.clientY - rect.top
-                };
-            }
-        }
-        
-        // Behandle Start von Maus/Touch-Interaktion
-        function handleStart(e) {
-            e.preventDefault();
-            const coords = getEventCoordinates(e);
-            
-            // Zuerst prüfen ob ein Punkt angeklickt wurde
-            draggedPoint = getClickedPoint(coords.x, coords.y);
-            
-            if (draggedPoint) {
-                canvas.style.cursor = 'grabbing';
-                draggedLine = false;
-            } else if (isLineClicked(coords.x, coords.y)) {
-                // Wenn kein Punkt, aber die Linie angeklickt wurde
-                draggedLine = true;
-                draggedPoint = null;
-                lastMousePos = pixelToCoord({x: coords.x, y: coords.y});
-                canvas.style.cursor = 'move';
-            }
-        }
-        
-        // Behandle Bewegung von Maus/Touch
-        function handleMove(e) {
-            e.preventDefault();
-            const coords = getEventCoordinates(e);
-            
-            if (draggedPoint) {
-                let coord = pixelToCoord({x: coords.x, y: coords.y});
-                
-                // Raste auf Gitterpunkte ein (ganzzahlige Koordinaten)
-                coord.x = Math.round(coord.x);
-                coord.y = Math.round(coord.y);
-                
-                // Begrenze die Koordinaten auf den sichtbaren Bereich
-                coord.x = Math.max(-gridRange, Math.min(gridRange, coord.x));
-                coord.y = Math.max(-gridRange, Math.min(gridRange, coord.y));
-                
-                if (draggedPoint === 'point1') {
-                    point1 = coord;
-                } else if (draggedPoint === 'point2') {
-                    point2 = coord;
+        let dragging = null, downPos = null, lineLast = null;
+        function onDown(e) {
+            const c = evCoords(e); downPos = c;
+            if (isDragMode()) {
+                const k = hitHandle(c.x, c.y);
+                if (k) { dragging = k; canvas.style.cursor = 'grabbing'; if (e.cancelable) e.preventDefault(); return; }
+                if (hitLine(c.x, c.y)) {
+                    dragging = 'line'; lineLast = pixelToCoord(c);
+                    canvas.style.cursor = 'grabbing'; if (e.cancelable) e.preventDefault();
                 }
-                
-                draw();
-            } else if (draggedLine && lastMousePos) {
-                // Verschiebe die gesamte Gerade (ohne Begrenzung der Punkte)
-                const currentMousePos = pixelToCoord({x: coords.x, y: coords.y});
-                const deltaX = Math.round(currentMousePos.x - lastMousePos.x);
-                const deltaY = Math.round(currentMousePos.y - lastMousePos.y);
-                
-                if (deltaX !== 0 || deltaY !== 0) {
-                    // Verschiebe beide Punkte um den gleichen Betrag (unbegrenzt)
-                    point1.x += deltaX;
-                    point1.y += deltaY;
-                    point2.x += deltaX;
-                    point2.y += deltaY;
-                    
-                    lastMousePos = currentMousePos;
-                    draw();
+            }
+        }
+        function onMove(e) {
+            const c = evCoords(e);
+            if (dragging === 'line') {
+                if (e.cancelable) e.preventDefault();
+                const cur = pixelToCoord(c);
+                let ddx = Math.round(cur.x - lineLast.x);
+                let ddy = Math.round(cur.y - lineLast.y);
+                // gemeinsamen Versatz so begrenzen, dass beide Punkte im Raster bleiben (Gerade behält ihre Form)
+                const minX = Math.min(state.p1.x, state.p2.x), maxX = Math.max(state.p1.x, state.p2.x);
+                const minY = Math.min(state.p1.y, state.p2.y), maxY = Math.max(state.p1.y, state.p2.y);
+                ddx = Math.max(-gridRange - minX, Math.min(gridRange - maxX, ddx));
+                ddy = Math.max(-gridRange - minY, Math.min(gridRange - maxY, ddy));
+                if (ddx !== 0 || ddy !== 0) {
+                    state.p1.x += ddx; state.p1.y += ddy;
+                    state.p2.x += ddx; state.p2.y += ddy;
+                    lineLast = { x: lineLast.x + ddx, y: lineLast.y + ddy };
+                    draw(); updateDemo2Display();
                 }
-            } else if (!e.touches) {
-                // Nur bei Maus-Events Cursor ändern (nicht bei Touch)
-                const clickedPoint = getClickedPoint(coords.x, coords.y);
-                if (clickedPoint) {
-                    canvas.style.cursor = 'grab';
-                } else if (isLineClicked(coords.x, coords.y)) {
-                    canvas.style.cursor = 'move';
+                return;
+            }
+            if (dragging) {
+                if (e.cancelable) e.preventDefault();
+                const g = toCoord(c);
+                state[dragging].x = g.x; state[dragging].y = g.y;
+                draw(); updateDemo2Display();
+            } else if (e.pointerType === 'mouse' && isDragMode()) {
+                canvas.style.cursor = hitHandle(c.x, c.y) ? 'grab' : (hitLine(c.x, c.y) ? 'move' : 'crosshair');
+            }
+        }
+        function onUp(e) {
+            const c = evCoords(e);
+            if (dragging) { dragging = null; lineLast = null; canvas.style.cursor = 'crosshair'; downPos = null; return; }
+            if (isClickMode() && downPos && Math.hypot(c.x - downPos.x, c.y - downPos.y) < 12) {
+                togglePlaced(toCoord(c));
+            }
+            downPos = null;
+        }
+        function togglePlaced(g) {
+            const i = state.placed.findIndex(p => eqPt(p, g));
+            if (i >= 0) state.placed.splice(i, 1);
+            else state.placed.push(g);
+            draw();
+            const ok = isPlacedCorrect();
+            if (ok && !state.placedMatched) {
+                if (state.type === 1) {
+                    setFeedback('Die Gerade stimmt! 🎉', 'good');
+                    if (!state.scored) { state.score++; state.streak++; updateScore(); state.scored = true; }
                 } else {
-                    canvas.style.cursor = 'crosshair';
+                    setFeedback('Beide Punkte richtig gesetzt \u2013 die Gerade erscheint! Notiere nun die Gleichung.', 'good');
                 }
             }
+            state.placedMatched = ok;
         }
-        
-        // Behandle Ende von Maus/Touch-Interaktion
-        function handleEnd(e) {
-            e.preventDefault();
-            draggedPoint = null;
-            draggedLine = false;
-            lastMousePos = null;
-            if (!e.touches || e.touches.length === 0) {
-                canvas.style.cursor = 'crosshair';
-            }
+
+        canvas.addEventListener('pointerdown', onDown);
+        canvas.addEventListener('pointermove', onMove);
+        canvas.addEventListener('pointerup', onUp);
+        canvas.addEventListener('pointerleave', () => { dragging = null; lineLast = null; downPos = null; });
+
+        // ---------- Umschalter / Buttons ----------
+        document.getElementById('typeSwitch').addEventListener('click', e => {
+            const b = e.target.closest('[data-type]'); if (!b) return;
+            const t = +b.dataset.type;
+            if (t === state.type) return; // gleicher Typ -> keine neue Aufgabe
+            setActive('typeSwitch', b);
+            state.type = t;
+            document.getElementById('levelRow').classList.toggle('hidden', state.type === 3);
+            state.showTriangle = false; triangleBtn.textContent = 'Steigungsdreieck anzeigen';
+            newTask();
+        });
+        document.getElementById('levelSwitch').addEventListener('click', e => {
+            const b = e.target.closest('[data-level]'); if (!b) return;
+            if (b.dataset.level === state.level) return; // gleiches Niveau -> keine neue Aufgabe
+            setActive('levelSwitch', b);
+            state.level = b.dataset.level;
+            newTask();
+        });
+        function setActive(container, btn) {
+            document.querySelectorAll('#' + container + ' .seg').forEach(s => s.classList.remove('active'));
+            btn.classList.add('active');
         }
-        
-        // Event-Listener für Canvas
-        canvas.addEventListener('mousedown', handleStart);
-        canvas.addEventListener('mousemove', handleMove);
-        canvas.addEventListener('mouseup', handleEnd);
-        canvas.addEventListener('mouseleave', handleEnd);
-        
-        canvas.addEventListener('touchstart', handleStart);
-        canvas.addEventListener('touchmove', handleMove);
-        canvas.addEventListener('touchend', handleEnd);
-        canvas.addEventListener('touchcancel', handleEnd);
-        
-        // Button Event-Listener
-        toggleTriangleBtn.addEventListener('click', () => {
-            showTriangle = !showTriangle;
-            toggleTriangleBtn.textContent = showTriangle ? 'Steigungsdreieck ausblenden' : 'Steigungsdreieck anzeigen';
+
+        triangleBtn.addEventListener('click', () => {
+            state.showTriangle = !state.showTriangle;
+            triangleBtn.textContent = state.showTriangle ? 'Steigungsdreieck ausblenden' : 'Steigungsdreieck anzeigen';
             draw();
         });
-        
-        resetBtn.addEventListener('click', () => {
-            point1 = { ...defaultPoint1 };
-            point2 = { ...defaultPoint2 };
-            showTriangle = false;
-            toggleTriangleBtn.textContent = 'Steigungsdreieck anzeigen';
+        function resetCurrent() {
+            state.placed = [];
+            state.placedMatched = false;
+            state.showPoints1 = false; state.showLine1 = false;
+            state.showTriangle = false; triangleBtn.textContent = 'Steigungsdreieck anzeigen';
+            state.hintLevel = 0; hintBox.classList.remove('show');
+            setFeedback('', '');
+            buildPanel();
             draw();
+        }
+        document.getElementById('resetBtn').addEventListener('click', resetCurrent);
+        const fsBtn = document.getElementById('fullscreenBtn');
+        fsBtn.addEventListener('click', () => {
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+            else document.exitFullscreen().catch(() => {});
         });
-        
-        fullscreenBtn.addEventListener('click', () => {
-            if (!document.fullscreenElement) {
-                // In Vollbild wechseln
-                document.documentElement.requestFullscreen().then(() => {
-                    fullscreenBtn.textContent = 'Vollbild verlassen';
-                }).catch(err => {
-                    console.log('Vollbild nicht möglich:', err);
-                });
-            } else {
-                // Vollbild verlassen
-                document.exitFullscreen().then(() => {
-                    fullscreenBtn.textContent = 'Vollbild';
-                }).catch(err => {
-                    console.log('Vollbild verlassen nicht möglich:', err);
-                });
-            }
-        });
-        
-        // Fullscreen-Änderungen überwachen
         document.addEventListener('fullscreenchange', () => {
-            if (document.fullscreenElement) {
-                fullscreenBtn.textContent = 'Vollbild verlassen';
-            } else {
-                fullscreenBtn.textContent = 'Vollbild';
-            }
+            fsBtn.textContent = document.fullscreenElement ? 'Vollbild verlassen' : 'Vollbild';
         });
-        
-        // Initiale Zeichnung
-        draw();
+
+        // ---------- Start ----------
+        newTask();
+    })();
     </script>
 </body>
 </html>
