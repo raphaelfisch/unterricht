@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geraden im Koordinatensystem</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        
+        #canvas {
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            display: block;
+            margin: 0 auto 20px;
+            cursor: crosshair;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            touch-action: none;
+        }
+        
+        .equation-display {
+            background: linear-gradient(45deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            margin: 20px 0;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .toggle-btn, .reset-btn, .fullscreen-btn {
+            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        
+        .toggle-btn:hover, .reset-btn:hover, .fullscreen-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+        }
+        
+        .toggle-btn:active, .reset-btn:active, .fullscreen-btn:active {
+            transform: translateY(0);
+        }
+        
+        .reset-btn {
+            background: linear-gradient(45deg, #ff6b6b 0%, #ee5a52 100%);
+        }
+        
+        .fullscreen-btn {
+            background: linear-gradient(45deg, #4ecdc4 0%, #44a08d 100%);
+        }
+        
+        .point-info {
+            display: flex;
+            justify-content: space-around;
+            margin: 15px 0;
+            gap: 20px;
+        }
+        
+        .point-display {
+            background: #e3f2fd;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            flex: 1;
+            text-align: center;
+        }
+        
+        #point1-display { border-left: 4px solid #ff6b6b; }
+        #point2-display { border-left: 4px solid #4ecdc4; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Geraden im Koordinatensystem</h1>
+        <canvas id="canvas" width="600" height="600"></canvas>
+        
+        <div class="point-info">
+            <div id="point1-display" class="point-display">Punkt 1: (1, 2)</div>
+            <div id="point2-display" class="point-display">Punkt 2: (3, 4)</div>
+        </div>
+        
+        <div id="equation" class="equation-display">y = 1x + 1</div>
+        
+        <div class="controls">
+            <button id="toggleTriangle" class="toggle-btn">Steigungsdreieck anzeigen</button>
+            <button id="resetBtn" class="reset-btn">Reset</button>
+            <button id="fullscreenBtn" class="fullscreen-btn">Vollbild</button>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elemente
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const equationDiv = document.getElementById('equation');
+        const point1Display = document.getElementById('point1-display');
+        const point2Display = document.getElementById('point2-display');
+        const toggleTriangleBtn = document.getElementById('toggleTriangle');
+        const resetBtn = document.getElementById('resetBtn');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        
+        // Koordinatensystem-Parameter
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const scale = 50; // Pixel pro Einheit
+        const gridRange = 5;
+        
+        // Standardpositionen für Reset
+        const defaultPoint1 = { x: 1, y: 2 };
+        const defaultPoint2 = { x: 3, y: 4 };
+        
+        // Punkte (in Koordinatensystem-Einheiten)
+        let point1 = { ...defaultPoint1 };
+        let point2 = { ...defaultPoint2 };
+        let draggedPoint = null;
+        let draggedLine = false;
+        let lastMousePos = null;
+        let showTriangle = false;
+        
+        // Formatiere Zahlen (nur Nachkommastellen wenn nötig)
+        function formatNumber(num) {
+            if (num === Math.floor(num)) {
+                return num.toString();
+            } else {
+                return num.toFixed(2).replace(/\.?0+$/, '');
+            }
+        }
+        
+        // Koordinaten-Umrechnung
+        function coordToPixel(coord) {
+            return {
+                x: centerX + coord.x * scale,
+                y: centerY - coord.y * scale // Y-Achse ist invertiert
+            };
+        }
+        
+        function pixelToCoord(pixel) {
+            return {
+                x: (pixel.x - centerX) / scale,
+                y: (centerY - pixel.y) / scale
+            };
+        }
+        
+        // Zeichne Pfeil
+        function drawArrow(fromX, fromY, toX, toY) {
+            const headlen = 10;
+            const angle = Math.atan2(toY - fromY, toX - fromX);
+            
+            // Pfeilspitze
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.stroke();
+        }
+        
+        // Zeichne das Koordinatensystem
+        function drawGrid() {
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 1;
+            
+            // Gitterlinien
+            for (let i = -gridRange; i <= gridRange; i++) {
+                if (i === 0) continue;
+                
+                // Vertikale Linien
+                const x = centerX + i * scale;
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+                
+                // Horizontale Linien
+                const y = centerY - i * scale;
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+            
+            // Hauptachsen
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            
+            // X-Achse
+            ctx.beginPath();
+            ctx.moveTo(0, centerY);
+            ctx.lineTo(canvas.width - 15, centerY);
+            ctx.stroke();
+            
+            // Pfeil für X-Achse
+            drawArrow(canvas.width - 25, centerY, canvas.width - 10, centerY);
+            
+            // Y-Achse
+            ctx.beginPath();
+            ctx.moveTo(centerX, canvas.height);
+            ctx.lineTo(centerX, 15);
+            ctx.stroke();
+            
+            // Pfeil für Y-Achse
+            drawArrow(centerX, 25, centerX, 10);
+            
+            // Achsenbeschriftung
+            ctx.fillStyle = '#333';
+            ctx.font = '14px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            // X-Achsen-Zahlen
+            for (let i = -gridRange; i <= gridRange; i++) {
+                if (i === 0) continue;
+                const x = centerX + i * scale;
+                ctx.fillText(i.toString(), x, centerY + 20);
+            }
+            
+            // Y-Achsen-Zahlen
+            ctx.textAlign = 'center';
+            for (let i = -gridRange; i <= gridRange; i++) {
+                if (i === 0) continue;
+                const y = centerY - i * scale;
+                ctx.fillText(i.toString(), centerX - 20, y);
+            }
+            
+            // Achsenbeschriftung
+            ctx.fillStyle = '#666';
+            ctx.font = '16px Arial';
+            ctx.fillText('x', canvas.width - 20, centerY + 20);
+            ctx.fillText('y', centerX - 20, 20);
+        }
+        
+        // Zeichne die Gerade
+        function drawLine() {
+            if (Math.abs(point2.x - point1.x) < 0.001) {
+                // Vertikale Linie
+                const x = coordToPixel({x: point1.x, y: 0}).x;
+                ctx.strokeStyle = '#2196F3';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+                return;
+            }
+            
+            // Berechne Steigung und y-Achsenabschnitt
+            const a = (point2.y - point1.y) / (point2.x - point1.x);
+            const b = point1.y - a * point1.x;
+            
+            // Zeichne die Linie über den gesamten Canvas
+            ctx.strokeStyle = '#2196F3';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            
+            // Berechne Y-Werte an den Rändern des Canvas
+            const leftCoord = pixelToCoord({x: 0, y: 0});
+            const rightCoord = pixelToCoord({x: canvas.width, y: 0});
+            
+            const leftY = a * leftCoord.x + b;
+            const rightY = a * rightCoord.x + b;
+            
+            const leftPixel = coordToPixel({x: leftCoord.x, y: leftY});
+            const rightPixel = coordToPixel({x: rightCoord.x, y: rightY});
+            
+            ctx.moveTo(leftPixel.x, leftPixel.y);
+            ctx.lineTo(rightPixel.x, rightPixel.y);
+            ctx.stroke();
+        }
+        
+        // Zeichne das Steigungsdreieck
+        function drawSlopeTriangle() {
+            if (!showTriangle || point1.x === point2.x || point1.y === point2.y) return;
+            
+            const pixel1 = coordToPixel(point1);
+            const pixel2 = coordToPixel(point2);
+            
+            // Dritter Punkt des rechtwinkligen Dreiecks
+            const cornerPoint = { x: point2.x, y: point1.y };
+            const pixelCorner = coordToPixel(cornerPoint);
+            
+            // Zeichne das Dreieck
+            ctx.strokeStyle = '#ff9800';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            
+            ctx.beginPath();
+            // Horizontale Linie (von Punkt1 zur Ecke)
+            ctx.moveTo(pixel1.x, pixel1.y);
+            ctx.lineTo(pixelCorner.x, pixelCorner.y);
+            // Vertikale Linie (von Ecke zu Punkt2)
+            ctx.lineTo(pixel2.x, pixel2.y);
+            ctx.stroke();
+            
+            // Zurück zu durchgezogenen Linien
+            ctx.setLineDash([]);
+            
+            // Berechne die Seitenlängen
+            const deltaX = Math.abs(point2.x - point1.x);
+            const deltaY = Math.abs(point2.y - point1.y);
+            
+            // Beschriftung der Katheten
+            ctx.fillStyle = '#ff9800';
+            ctx.font = 'bold 18px Arial';
+            ctx.textAlign = 'center';
+            
+            // Horizontale Kathete (nur die Zahl)
+            const midX = (pixel1.x + pixelCorner.x) / 2;
+            const labelYPos = pixel1.y > pixelCorner.y ? pixel1.y + 25 : pixel1.y - 15;
+            
+            const textX = formatNumber(deltaX);
+            const textMetricsX = ctx.measureText(textX);
+            const paddingX = 6;
+            
+            // Hintergrund für horizontale Kathete
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            const bgWidthX = textMetricsX.width + paddingX * 2;
+            const bgHeightX = 20;
+            const bgX = midX - bgWidthX / 2;
+            const bgY = labelYPos - bgHeightX / 2 + 2;
+            
+            ctx.beginPath();
+            ctx.roundRect(bgX, bgY, bgWidthX, bgHeightX, 4);
+            ctx.fill();
+            
+            // Text für horizontale Kathete
+            ctx.fillStyle = '#ff9800';
+            ctx.fillText(textX, midX, labelYPos);
+            
+            // Vertikale Kathete (nur die Zahl, horizontal, näher)
+            const midY = (pixelCorner.y + pixel2.y) / 2;
+            const labelXPos = pixelCorner.x > pixel2.x ? pixelCorner.x + 15 : pixelCorner.x - 15;
+            
+            const textY = formatNumber(deltaY);
+            const textMetricsY = ctx.measureText(textY);
+            const paddingY = 6;
+            
+            // Hintergrund für vertikale Kathete
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            const bgWidthY = textMetricsY.width + paddingY * 2;
+            const bgHeightY = 20;
+            const bgXPos = labelXPos - bgWidthY / 2;
+            const bgYPos = midY - bgHeightY / 2 + 2;
+            
+            ctx.beginPath();
+            ctx.roundRect(bgXPos, bgYPos, bgWidthY, bgHeightY, 4);
+            ctx.fill();
+            
+            // Text für vertikale Kathete
+            ctx.fillStyle = '#ff9800';
+            ctx.fillText(textY, labelXPos, midY);
+        }
+        
+        // Zeichne die Punkte
+        function drawPoints() {
+            const pixel1 = coordToPixel(point1);
+            const pixel2 = coordToPixel(point2);
+            
+            // Punkt 1 (rot)
+            ctx.fillStyle = '#ff6b6b';
+            ctx.beginPath();
+            ctx.arc(pixel1.x, pixel1.y, 8, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Punkt 2 (türkis)
+            ctx.fillStyle = '#4ecdc4';
+            ctx.beginPath();
+            ctx.arc(pixel2.x, pixel2.y, 8, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+        
+        // Aktualisiere die Geradengleichung
+        function updateEquation() {
+            if (Math.abs(point2.x - point1.x) < 0.001) {
+                equationDiv.textContent = `x = ${formatNumber(point1.x)}`;
+                return;
+            }
+            
+            const a = (point2.y - point1.y) / (point2.x - point1.x);
+            const b = point1.y - a * point1.x;
+            
+            let equation = 'y = ';
+            
+            // Steigung
+            if (Math.abs(a) < 0.001) {
+                // Horizontale Gerade: nur y-Wert anzeigen
+                equation = `y = ${formatNumber(b)}`;
+            } else if (Math.abs(a - 1) < 0.001) {
+                equation += 'x';
+            } else if (Math.abs(a + 1) < 0.001) {
+                equation += '-x';
+            } else {
+                equation += `${formatNumber(a)}x`;
+            }
+            
+            // Y-Achsenabschnitt (nur bei nicht-horizontalen Geraden)
+            if (Math.abs(a) > 0.001 && Math.abs(b) > 0.001) {
+                if (b > 0) {
+                    equation += ` + ${formatNumber(b)}`;
+                } else {
+                    equation += ` - ${formatNumber(Math.abs(b))}`;
+                }
+            }
+            
+            equationDiv.textContent = equation;
+        }
+        
+        // Aktualisiere die Punktanzeigen
+        function updatePointDisplays() {
+            point1Display.textContent = `Punkt 1: (${formatNumber(point1.x)}, ${formatNumber(point1.y)})`;
+            point2Display.textContent = `Punkt 2: (${formatNumber(point2.x)}, ${formatNumber(point2.y)})`;
+        }
+        
+        // Zeichne alles
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawGrid();
+            drawLine();
+            drawSlopeTriangle();
+            drawPoints();
+            updateEquation();
+            updatePointDisplays();
+        }
+        
+        // Prüfe, ob ein Punkt angeklickt wurde
+        function getClickedPoint(mouseX, mouseY) {
+            const pixel1 = coordToPixel(point1);
+            const pixel2 = coordToPixel(point2);
+            
+            const dist1 = Math.sqrt((mouseX - pixel1.x) ** 2 + (mouseY - pixel1.y) ** 2);
+            const dist2 = Math.sqrt((mouseX - pixel2.x) ** 2 + (mouseY - pixel2.y) ** 2);
+            
+            if (dist1 < 15) return 'point1';
+            if (dist2 < 15) return 'point2';
+            return null;
+        }
+        
+        // Prüfe, ob die Gerade angeklickt wurde
+        function isLineClicked(mouseX, mouseY) {
+            if (Math.abs(point2.x - point1.x) < 0.001) {
+                // Vertikale Linie
+                const linePixelX = coordToPixel({x: point1.x, y: 0}).x;
+                return Math.abs(mouseX - linePixelX) < 10;
+            }
+            
+            // Berechne Distanz vom Mauszeiger zur Geraden
+            const mouseCoord = pixelToCoord({x: mouseX, y: mouseY});
+            const a = (point2.y - point1.y) / (point2.x - point1.x);
+            const b = point1.y - a * point1.x;
+            
+            // Distanz von Punkt zur Gerade: |ax - y + b| / sqrt(a² + 1)
+            const distance = Math.abs(a * mouseCoord.x - mouseCoord.y + b) / Math.sqrt(a * a + 1);
+            
+            // Prüfe ob Maus nah genug an der Linie ist (in Koordinateneinheiten)
+            return distance < 0.2;
+        }
+        
+        // Hilfsfunktion um Maus- und Touch-Koordinaten zu erhalten
+        function getEventCoordinates(e) {
+            const rect = canvas.getBoundingClientRect();
+            if (e.touches && e.touches.length > 0) {
+                // Touch Event
+                return {
+                    x: e.touches[0].clientX - rect.left,
+                    y: e.touches[0].clientY - rect.top
+                };
+            } else {
+                // Mouse Event
+                return {
+                    x: e.clientX - rect.left,
+                    y: e.clientY - rect.top
+                };
+            }
+        }
+        
+        // Behandle Start von Maus/Touch-Interaktion
+        function handleStart(e) {
+            e.preventDefault();
+            const coords = getEventCoordinates(e);
+            
+            // Zuerst prüfen ob ein Punkt angeklickt wurde
+            draggedPoint = getClickedPoint(coords.x, coords.y);
+            
+            if (draggedPoint) {
+                canvas.style.cursor = 'grabbing';
+                draggedLine = false;
+            } else if (isLineClicked(coords.x, coords.y)) {
+                // Wenn kein Punkt, aber die Linie angeklickt wurde
+                draggedLine = true;
+                draggedPoint = null;
+                lastMousePos = pixelToCoord({x: coords.x, y: coords.y});
+                canvas.style.cursor = 'move';
+            }
+        }
+        
+        // Behandle Bewegung von Maus/Touch
+        function handleMove(e) {
+            e.preventDefault();
+            const coords = getEventCoordinates(e);
+            
+            if (draggedPoint) {
+                let coord = pixelToCoord({x: coords.x, y: coords.y});
+                
+                // Raste auf Gitterpunkte ein (ganzzahlige Koordinaten)
+                coord.x = Math.round(coord.x);
+                coord.y = Math.round(coord.y);
+                
+                // Begrenze die Koordinaten auf den sichtbaren Bereich
+                coord.x = Math.max(-gridRange, Math.min(gridRange, coord.x));
+                coord.y = Math.max(-gridRange, Math.min(gridRange, coord.y));
+                
+                if (draggedPoint === 'point1') {
+                    point1 = coord;
+                } else if (draggedPoint === 'point2') {
+                    point2 = coord;
+                }
+                
+                draw();
+            } else if (draggedLine && lastMousePos) {
+                // Verschiebe die gesamte Gerade (ohne Begrenzung der Punkte)
+                const currentMousePos = pixelToCoord({x: coords.x, y: coords.y});
+                const deltaX = Math.round(currentMousePos.x - lastMousePos.x);
+                const deltaY = Math.round(currentMousePos.y - lastMousePos.y);
+                
+                if (deltaX !== 0 || deltaY !== 0) {
+                    // Verschiebe beide Punkte um den gleichen Betrag (unbegrenzt)
+                    point1.x += deltaX;
+                    point1.y += deltaY;
+                    point2.x += deltaX;
+                    point2.y += deltaY;
+                    
+                    lastMousePos = currentMousePos;
+                    draw();
+                }
+            } else if (!e.touches) {
+                // Nur bei Maus-Events Cursor ändern (nicht bei Touch)
+                const clickedPoint = getClickedPoint(coords.x, coords.y);
+                if (clickedPoint) {
+                    canvas.style.cursor = 'grab';
+                } else if (isLineClicked(coords.x, coords.y)) {
+                    canvas.style.cursor = 'move';
+                } else {
+                    canvas.style.cursor = 'crosshair';
+                }
+            }
+        }
+        
+        // Behandle Ende von Maus/Touch-Interaktion
+        function handleEnd(e) {
+            e.preventDefault();
+            draggedPoint = null;
+            draggedLine = false;
+            lastMousePos = null;
+            if (!e.touches || e.touches.length === 0) {
+                canvas.style.cursor = 'crosshair';
+            }
+        }
+        
+        // Event-Listener für Canvas
+        canvas.addEventListener('mousedown', handleStart);
+        canvas.addEventListener('mousemove', handleMove);
+        canvas.addEventListener('mouseup', handleEnd);
+        canvas.addEventListener('mouseleave', handleEnd);
+        
+        canvas.addEventListener('touchstart', handleStart);
+        canvas.addEventListener('touchmove', handleMove);
+        canvas.addEventListener('touchend', handleEnd);
+        canvas.addEventListener('touchcancel', handleEnd);
+        
+        // Button Event-Listener
+        toggleTriangleBtn.addEventListener('click', () => {
+            showTriangle = !showTriangle;
+            toggleTriangleBtn.textContent = showTriangle ? 'Steigungsdreieck ausblenden' : 'Steigungsdreieck anzeigen';
+            draw();
+        });
+        
+        resetBtn.addEventListener('click', () => {
+            point1 = { ...defaultPoint1 };
+            point2 = { ...defaultPoint2 };
+            showTriangle = false;
+            toggleTriangleBtn.textContent = 'Steigungsdreieck anzeigen';
+            draw();
+        });
+        
+        fullscreenBtn.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                // In Vollbild wechseln
+                document.documentElement.requestFullscreen().then(() => {
+                    fullscreenBtn.textContent = 'Vollbild verlassen';
+                }).catch(err => {
+                    console.log('Vollbild nicht möglich:', err);
+                });
+            } else {
+                // Vollbild verlassen
+                document.exitFullscreen().then(() => {
+                    fullscreenBtn.textContent = 'Vollbild';
+                }).catch(err => {
+                    console.log('Vollbild verlassen nicht möglich:', err);
+                });
+            }
+        });
+        
+        // Fullscreen-Änderungen überwachen
+        document.addEventListener('fullscreenchange', () => {
+            if (document.fullscreenElement) {
+                fullscreenBtn.textContent = 'Vollbild verlassen';
+            } else {
+                fullscreenBtn.textContent = 'Vollbild';
+            }
+        });
+        
+        // Initiale Zeichnung
+        draw();
+    </script>
+</body>
+</html>
