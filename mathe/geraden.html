@@ -565,7 +565,7 @@
                 const inp = document.createElement('input');
                 inp.type = 'text';
                 inp.dataset.row = row; inp.dataset.idx = i;
-                inp.setAttribute('inputmode', 'decimal');
+                inp.setAttribute('inputmode', 'text');
                 td.appendChild(inp);
             }
             return td;
@@ -698,7 +698,7 @@
         }
         function inputBox(id) {
             const i = document.createElement('input');
-            i.type = 'text'; i.id = id; i.setAttribute('inputmode', 'decimal');
+            i.type = 'text'; i.id = id; i.setAttribute('inputmode', 'text');
             return i;
         }
         function checkEq2() {
