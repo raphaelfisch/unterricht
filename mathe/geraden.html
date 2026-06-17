@@ -17,6 +17,9 @@
         /* Umschalter */
         .switch-row { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; margin-bottom: 24px; }
         .switch-row + .switch-row { margin-top: -14px; }
+        .lvl-mobile { display: none; }
+        .lvl-desktop { margin-bottom: 14px; }
+        .panel-divider { border-top: 1px solid #eee; }
         .segmented { display: inline-flex; align-items: center; gap: 6px; }
         .seg-label { font-size: 0.72rem; color: #999; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-right: 2px; }
         .seg { font-family: inherit; font-size: 0.85rem; padding: 7px 14px; border: 1px solid #ccc; background: #fff; color: #000; cursor: pointer; border-radius: 3px; }
@@ -106,6 +109,12 @@
             .col-canvas { align-self: center; max-width: 100%; }
             #canvas { width: min(600px, 92vw); height: auto; aspect-ratio: 1 / 1; }
             .switch-row { gap: 12px; }
+            .lvl-mobile { display: flex; }
+            .lvl-desktop { display: none; }
+            table.wt { width: 100%; }
+            table.wt th { width: 42px; }
+            table.wt td { width: auto; }
+            table.wt td input { width: 100%; box-sizing: border-box; }
             .seg { padding: 6px 11px; font-size: 0.8rem; }
             .equation-display { font-size: 1.3rem; }
             .col-panel { align-self: stretch; }
@@ -116,18 +125,20 @@
     <div class="container">
         <h1>Geraden im Koordinatensystem</h1>
 
-        <div class="switch-row">
-            <div class="segmented" id="typeSwitch">
-                <button class="seg active" data-type="3">Erkunden</button>
-                <button class="seg" data-type="1">Wertetabelle &amp; Gerade</button>
-                <button class="seg" data-type="2">Punkte &amp; Gleichung</button>
+        <div class="header-switches">
+            <div class="switch-row" id="typeRow">
+                <div class="segmented" id="typeSwitch">
+                    <button class="seg active" data-type="3">Erkunden</button>
+                    <button class="seg" data-type="1">Wertetabelle &amp; Gerade</button>
+                    <button class="seg" data-type="2">Punkte &amp; Gleichung</button>
+                </div>
             </div>
-        </div>
-        <div class="switch-row hidden" id="levelRow">
-            <div class="segmented" id="levelSwitch">
-                <button class="seg" data-level="einfach">Einfach</button>
-                <button class="seg active" data-level="mittel">Mittel</button>
-                <button class="seg" data-level="schwer">Schwer</button>
+            <div class="switch-row levelRow lvl-mobile hidden">
+                <div class="segmented levelSwitch">
+                    <button class="seg" data-level="einfach">Einfach</button>
+                    <button class="seg active" data-level="mittel">Mittel</button>
+                    <button class="seg" data-level="schwer">Schwer</button>
+                </div>
             </div>
         </div>
 
@@ -142,6 +153,14 @@
                 </div>
             </div>
             <div class="col-panel">
+                <div class="switch-row levelRow lvl-desktop hidden">
+                    <div class="segmented levelSwitch">
+                        <button class="seg" data-level="einfach">Einfach</button>
+                        <button class="seg active" data-level="mittel">Mittel</button>
+                        <button class="seg" data-level="schwer">Schwer</button>
+                    </div>
+                </div>
+                <div class="panel-divider levelRow lvl-desktop hidden"></div>
                 <div id="taskPanel"></div>
                 <div class="feedback" id="feedback"></div>
                 <div class="hint-box" id="hintBox"></div>
@@ -220,6 +239,27 @@
             else if (as === '-1') s += '-x';
             else s += as + 'x';
             if (Math.abs(b) > 1e-9) s += (b > 0 ? ' + ' + fmt(b) : ' \u2212 ' + fmt(Math.abs(b)));
+            return s;
+        }
+        // wie eqString, aber Drittel/Viertel als gestapelter Bruch (Halbe bleiben Dezimal)
+        function eqHTMLtyp1(a, b) {
+            if (Math.abs(a) < 1e-9) return 'y = ' + fmt(b);
+            let slope;
+            const isInt = Math.abs(a - Math.round(a)) < 1e-9;
+            const isHalf = Math.abs(a * 2 - Math.round(a * 2)) < 1e-9;
+            let den = 0;
+            if (!isInt && !isHalf) { for (const d of [3, 4]) { if (Math.abs(a * d - Math.round(a * d)) < 1e-9) { den = d; break; } } }
+            if (isInt) {
+                const n = Math.round(a);
+                slope = (n === 1 ? 'x' : n === -1 ? '\u2212x' : (n < 0 ? '\u2212' : '') + Math.abs(n) + 'x');
+            } else if (den) {
+                const A = reduceFrac(Math.round(a * den), den);
+                slope = (A.n < 0 ? '\u2212' : '') + fracSpan(Math.abs(A.n), A.d) + 'x';
+            } else { // Halbe und alles andere als Dezimal
+                slope = (a < 0 ? '\u2212' + fmt(Math.abs(a)) : fmt(a)) + 'x';
+            }
+            let s = 'y = ' + slope;
+            if (Math.abs(b) > 1e-9) s += (b > 0 ? ' + ' : ' \u2212 ') + fmt(Math.abs(b));
             return s;
         }
 
@@ -528,7 +568,8 @@
         function panelTyp1Uebung() {
             taskText.appendChild(el('p', 'task-text', 'Fülle die Wertetabelle aus. Klicke dann zwei (oder mehr) Punkte der Geraden ins Koordinatensystem (nochmals klicken entfernt einen) \u2013 sobald sie passen, erscheint die Gerade.'));
             if (state.level === 'schwer') taskText.appendChild(el('p', 'task-text', 'Achtung: Nicht alle Tabellenwerte lassen sich einzeichnen \u2013 nutze die Punkte, die ins Koordinatensystem passen.'));
-            const eq = el('div', 'equation-display', eqString(state.a, state.b));
+            const eq = el('div', 'equation-display');
+            eq.innerHTML = eqHTMLtyp1(state.a, state.b);
             taskPanel.appendChild(eq);
             taskPanel.appendChild(buildTable(false));
             const ctr1 = el('div', 'controls');
@@ -884,17 +925,20 @@
             if (t === state.type) return; // gleicher Typ -> keine neue Aufgabe
             setActive('typeSwitch', b);
             state.type = t;
-            document.getElementById('levelRow').classList.toggle('hidden', state.type === 3);
+            document.querySelectorAll('.levelRow').forEach(r => r.classList.toggle('hidden', state.type === 3));
             state.showTriangle = false; triangleBtn.textContent = 'Steigungsdreieck anzeigen';
             newTask();
         });
-        document.getElementById('levelSwitch').addEventListener('click', e => {
+        function syncLevelActive() {
+            document.querySelectorAll('.levelSwitch .seg').forEach(s => s.classList.toggle('active', s.dataset.level === state.level));
+        }
+        document.querySelectorAll('.levelSwitch').forEach(sw => sw.addEventListener('click', e => {
             const b = e.target.closest('[data-level]'); if (!b) return;
             if (b.dataset.level === state.level) return; // gleiches Niveau -> keine neue Aufgabe
-            setActive('levelSwitch', b);
             state.level = b.dataset.level;
+            syncLevelActive();
             newTask();
-        });
+        }));
         function setActive(container, btn) {
             document.querySelectorAll('#' + container + ' .seg').forEach(s => s.classList.remove('active'));
             btn.classList.add('active');
