@@ -55,11 +55,12 @@
 
         /* Tabelle */
         .wt-wrap { margin: 14px 0; overflow-x: auto; }
-        table.wt { border-collapse: collapse; font-size: 1.05rem; }
-        table.wt th, table.wt td { border: 1px solid #ccc; width: 64px; height: 46px; text-align: center; padding: 0; }
-        table.wt th { background: #f9f9f9; font-weight: 600; }
+        table.wt { border-collapse: collapse; font-size: 1.05rem; width: 100%; }
+        table.wt th, table.wt td { border: 1px solid #ccc; height: 46px; text-align: center; padding: 0; }
+        table.wt th { background: #f9f9f9; font-weight: 600; width: 64px; }
+        table.wt td { width: auto; }
         table.wt td.given { background: #fff; font-weight: 600; }
-        table.wt td input { width: 60px; height: 42px; border: none; text-align: center; font-size: 1.05rem; font-family: inherit; background: transparent; outline: none; }
+        table.wt td input { width: 100%; height: 42px; border: none; text-align: center; font-size: 1.05rem; font-family: inherit; background: transparent; outline: none; box-sizing: border-box; }
         table.wt td input.ok { background: #dcfce7; }
         table.wt td input.bad { background: #fef2f2; }
         td.reveal { cursor: pointer; color: #bbb; font-weight: 600; user-select: none; }
