@@ -481,7 +481,7 @@ const SVG_SKETCH=`<svg viewBox="0 0 900 450" role="img" aria-label="Musterskizze
   <circle cx="110" cy="66" r="11" fill="var(--blue)"/><text class="n" x="110" y="71" text-anchor="middle">10</text>
   <text class="lb" x="128" y="62">Kein Russ:</text><text class="lb" x="128" y="80">blau</text>
   <circle cx="110" cy="112" r="11" fill="var(--blue)"/><text class="n" x="110" y="117" text-anchor="middle">9</text>
-  <text class="lb" x="128" y="108">Luftlöcher:</text><text class="lb" x="128" y="126">viel Sauerstoff</text>
+  <text class="lb" x="128" y="108">Brennsprit:</text><text class="lb" x="128" y="126">verbrennt fast ganz</text>
   </g>
 </svg>`;
 
@@ -495,7 +495,7 @@ const $=s=>document.querySelector(s);
 const panel=$("#panel"), say=$("#say");
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 function words(s){return (s.trim().match(/\S+/g)||[]).length}
-function sentences(s){return (s.trim().match(/[^.!?]+[.!?]*/g)||[]).filter(x=>x.trim().length>2).length}
+function sentences(s){s=s.trim().replace(/\b(z|d|u|ca|bzw|usw|etc|evtl|ggf|bspw|vgl|Nr|Std|min)\.(\s?[a-zA-Z]\.)?/g,"$1").replace(/(\d)\.(\d)/g,"$1,$2").replace(/\.{2,}|…/g,"");return (s.match(/[^.!?]+[.!?]*/g)||[]).filter(x=>x.trim().length>2).length}
 function get(path){return path.split(".").reduce((o,k)=>o[k],S)}
 function set(path,v){const ks=path.split(".");let o=S;ks.slice(0,-1).forEach(k=>o=o[k]);o[ks.at(-1)]=v;save()}
 
@@ -525,37 +525,37 @@ function wire(step){
   panel.querySelectorAll("[data-radio]").forEach(el=>el.addEventListener("change",()=>{if(el.checked){set(el.dataset.radio,el.value);refresh(step)}}));
   panel.querySelectorAll("[data-copy]").forEach(b=>b.onclick=()=>{const t=b.dataset.copy, cs=b.parentNode.querySelector("[data-cs]"), box=b.closest(".promptbox").querySelector(".prompt");
     const fb=()=>{const r=document.createRange();r.selectNodeContents(box);const sel=getSelection();sel.removeAllRanges();sel.addRange(r);cs.textContent="Text markiert – drücke Strg+C."};
-    try{navigator.clipboard.writeText(t).then(()=>cs.textContent="Kopiert. Füge ihn in duck.ai ein.",fb)}catch(e){fb()}});
+    try{navigator.clipboard.writeText(t).then(()=>cs.textContent="Kopiert. Füge den Prompt in duck.ai ein.",fb)}catch(e){fb()}});
 }
 
 /* ---------- Schritte ---------- */
 const P_MAIN=`Ich lerne in Chemie das Thema Verbrennung. Klassenstufe: Sek.
 Meine Leitfrage: Warum brennt eine Kerze gelb, die Flamme beim Fondue-Réchaud aber blau?
-Erkläre mir den Vorgang Schritt für Schritt. Gib mir immer nur EINEN Schritt und stelle mir danach eine Kontrollfrage. Warte auf meine Antwort, bevor du weitermachst. Schreibe keinen fertigen Text für ein Plakat.`;
+Erkläre mir den Vorgang Schritt für Schritt. Gib mir immer nur EINEN Schritt. Stelle mir danach eine Frage zur Kontrolle. Warte auf meine Antwort. Schreibe keinen fertigen Text für ein Plakat.`;
 const P_GAP=`Ich verstehe diesen Schritt noch nicht: ___
-Erkläre mir nur diesen Schritt, einfach und kurz. Stelle mir danach eine Kontrollfrage.`;
+Erkläre mir nur diesen Schritt, einfach und kurz. Stelle mir danach eine Frage zur Kontrolle.`;
 const P_CHECK=`Warum ist der unterste Teil einer Kerzenflamme blau? Antworte in 2–3 Sätzen für die Sekundarschule.`;
 const P_KID=`Spiel ein neugieriges Kind von 8 Jahren. Ich erkläre dir, warum eine Kerze gelb brennt und die Flamme beim Fondue-Réchaud blau.
 Frag immer wieder «Warum?» oder «Was heisst das?», wenn ich etwas Schwieriges sage. Stelle immer nur EINE Frage und warte auf meine Antwort.
 Nach 5 Fragen sagst du mir in Kindersprache, was du verstanden hast.`;
 const P_FD=`Erkläre mir in 5 Sätzen, warum eine Kerze gelb brennt und die Flamme beim Fondue-Réchaud blau.
-Baue absichtlich EINEN Fehler ein, sag mir aber nicht, welchen. Ich suche ihn.
-Danach sagst du mir, ob ich ihn gefunden habe.`;
+Baue absichtlich EINEN Fehler ein. Sag mir nicht, welchen Fehler. Ich suche den Fehler.
+Danach sagst du mir, ob ich den Fehler gefunden habe.`;
 const P_QUIZ=`Du bist Quizmaster in einer Quizshow. Mein Thema: Warum brennt eine Kerze gelb, die Flamme beim Fondue-Réchaud aber blau?
 Stelle mir 5 Fragen, die immer schwieriger werden. Immer nur EINE Frage, dann wartest du auf meine Antwort.
-Sag mir ehrlich, ob meine Antwort richtig ist. Wenn sie falsch ist, gib mir zuerst einen Tipp statt der Lösung.
+Sag mir ehrlich, ob meine Antwort richtig ist. Ist meine Antwort falsch? Dann gib mir zuerst einen Tipp statt der Lösung.
 Am Schluss sagst du mir meinen Punktestand.`;
 const KIWARN=`<div class="kiwarn" role="note"><span class="ic" aria-hidden="true">!</span><p><b>Achtung: Die KI kann Fehler machen, auch beim Korrigieren.</b> Kommt dir eine Antwort komisch vor? Dann prüf die Antwort mit deiner Skizze oder mit einer zweiten KI. Oder frag deine Lehrperson.</p></div>`;
-const P_FB=`Hier ist mein Text für ein Plakat, das ein Kind der 3. Klasse verstehen soll:
+const P_FB=`Hier ist mein Text für ein Plakat. Ein Kind der 3. Klasse soll meinen Text verstehen:
 ___
-Ist er fachlich richtig und verständlich? Gib mir Hinweise, aber schreibe den Text nicht um.`;
+Ist mein Text richtig und verständlich? Gib mir Tipps. Schreib meinen Text nicht um.`;
 
 const STEPS=[
 {t:"Start",say:[["k", "Hoi! Heute erforschen wir eine brennende Kerze."],["b", "Ich helfe dir bei den Schritten mit KI. Aber ich kann Fehler machen."],["k", "Am wichtigsten ist dein eigener Kopf. Schalte deinen Kopf ein!"],["k", "👉 Du bist dran: Lies, was dich erwartet. Leg Papier und Bleistift bereit. Dann klick auf «Weiter»."]],
  body:()=>`<p class="kicker">Musterbeispiel</p><h2>Vom Bild zum Erklär-Plakat</h2>
  
- <p class="lead">Hier lernst du einen Weg in 12 Schritten. Später gehst du den gleichen Weg mit deinem eigenen Bild. Bei jedem Schritt arbeitest du zuerst selbst. Dann siehst du ein Beispiel.</p>
- <ul><li>12 Schritte mit <b>drei Spielrunden</b>. Dauer: etwa 2 Lektionen.</li><li>Öffne <a href="https://duck.ai" target="_blank" rel="noopener">duck.ai</a> in einem zweiten Tab.</li><li>Leg Papier und Bleistift bereit. Du brauchst beides für die Skizze.</li><li>Das Gerät speichert deine Einträge. Du kannst später weitermachen.</li></ul>
+ <p class="lead">Hier lernst du einen Weg in 12 Schritten. Später gehst du den gleichen Weg mit deinem eigenen Bildpaar. Bei jedem Schritt arbeitest du zuerst selbst. Dann siehst du ein Beispiel.</p>
+ <ul><li>12 Schritte mit <b>drei Spielrunden</b>. Dauer: etwa 2 Lektionen.</li><li>Öffne <a href="https://duck.ai" target="_blank" rel="noopener">duck.ai</a> in einem zweiten Tab.</li><li>Leg Papier und Bleistift bereit. Du brauchst beides für die Skizze.</li><li>Das Surface speichert deine Einträge. Du kannst später weitermachen.</li></ul>
  <div class="quote">In die Felder kannst du nichts einfügen. Du schreibst immer mit eigenen Worten.</div>
  ${KIWARN}`,need:()=>true,auto:true},
 
@@ -567,7 +567,7 @@ const STEPS=[
  reveal:()=>`<p>Das haben andere gefragt:</p><ul><li>Warum tropft das Wachs?</li><li>Wohin verschwindet das Wachs?</li><li>Warum ist die Flamme gelb?</li><li>Warum ist die Flamme unten blau?</li><li>Warum russt eine Kerze manchmal?</li></ul>
  <p>Gute Forscherfragen beginnen oft mit <b>Warum</b> oder <b>Wie</b>. Gute Forscherfragen fragen: Was passiert?</p>`},
 
-{t:"Leitfrage",say:[["k",`<div class="chatimg">${SVG_RECHAUD}</div><span class="cap">Ein Fondue-Réchaud mit Brennsprit (von oben)</span>`],["k",`Hier siehst du ein Réchaud von der Seite: <a class="extlink" href="https://www.kaqtu.ch/cdn/shop/files/157877_L_300_bdcfe307-533a-404f-975c-5ccadc909e84.webp?v=1791946726&amp;width=800" target="_blank" rel="noopener">📷 Foto öffnen</a>`],["k", "Vergleiche die Flamme der Kerze mit der Flamme beim Réchaud. Was ist anders?"],["k", "👉 Du bist dran: Schreib deine Leitfrage auf. Dann prüf deine Leitfrage mit den drei Häkchen."]],
+{t:"Leitfrage",say:[["k",`<div class="chatimg">${SVG_RECHAUD}</div><span class="cap">Ein Fondue-Réchaud mit Brennsprit (von oben)</span>`],["k",`Hier siehst du ein Réchaud von der Seite: <a class="extlink" href="https://www.kaqtu.ch/cdn/shop/files/157877_L_300_bdcfe307-533a-404f-975c-5ccadc909e84.webp?v=1791946726&amp;width=800" target="_blank" rel="noopener">📷 Foto öffnen</a>`],["k", "Vergleiche die Flamme der Kerze mit der Flamme beim Réchaud. Was ist anders?"],["k", "👉 Du bist dran: Lies die Aufgabe. Schreib deine Leitfrage auf. Prüf deine Leitfrage mit den drei Häkchen. Dann klick auf «Mit Kolbi vergleichen»."]],
  body:()=>`<p class="kicker">Schritt 2 · ohne KI</p><h2>Eine Leitfrage wählen</h2>
  <div class="scene"><figure>${SVG_CANDLE}<figcaption>Kerze</figcaption></figure><figure>${SVG_RECHAUD}<figcaption>Fondue-Réchaud mit Brennsprit<br><a class="extlink" href="https://www.kaqtu.ch/cdn/shop/files/157877_L_300_bdcfe307-533a-404f-975c-5ccadc909e84.webp?v=1791946726&amp;width=800" target="_blank" rel="noopener">📷 Réchaud von der Seite</a></figcaption></figure></div>
  <div class="task"><h3>Deine Aufgabe</h3><p>Schreib eine Leitfrage auf. Du kannst eine Frage von vorhin nehmen. Oder du schreibst eine neue Frage.</p>
@@ -582,7 +582,7 @@ const STEPS=[
  <p>Tipp: Ein Vergleich gibt oft eine gute Leitfrage.</p>
  <p>Ab jetzt arbeiten wir mit dieser Leitfrage weiter.</p>`},
 
-{t:"Vermutung",say:[["k", "Was glaubst du: Warum sind die Flammen verschieden?"],["k", "Deine Vermutung darf falsch sein. Wichtig ist: Du denkst zuerst selbst."],["k", "👉 Du bist dran: Schreib deine Vermutung auf. Höchstens zwei Sätze, ohne KI."]],
+{t:"Vermutung",say:[["k", "Was glaubst du: Warum sind die Flammen verschieden?"],["k", "Deine Vermutung darf falsch sein. Wichtig ist: Du denkst zuerst selbst."],["k", "👉 Du bist dran: Lies die Aufgabe. Schreib deine Vermutung auf, höchstens zwei Sätze. Dann klick auf «Mit Kolbi vergleichen»."]],
  body:()=>`<p class="kicker">Schritt 3 · ohne KI</p><h2>Eine Vermutung aufschreiben</h2>
  <div class="mine"><b>Leitfrage</b>Warum brennt eine Kerze gelb, die Flamme beim Fondue-Réchaud aber blau?</div>
  <div class="task"><h3>Deine Aufgabe</h3>${field("verm","Ich vermute, dass …",{area:1,maxs:2,ph:"höchstens 2 Sätze"})}</div>`,
@@ -591,7 +591,7 @@ const STEPS=[
  <p>Diese Vermutung ist gut. Man kann die Vermutung nämlich prüfen. In Schritt 7 siehst du, ob die Vermutung stimmt.</p>
  <p>Wichtig ist: Du hast zuerst selbst gedacht. Später merkst du, was du dazugelernt hast.</p>`},
 
-{t:"KI fragen",say:[["b", "Jetzt darfst du mich fragen!"],["b", "Ich erkläre dir immer nur einen Schritt. Dann stelle ich dir eine Frage."],["k", "Mit diesen Fragen muss dein Kopf mitdenken."],["k", "👉 Du bist dran: Kopier den Prompt in duck.ai. Beantworte die Fragen der KI. Schreib deine Antworten auch hier auf."]],
+{t:"KI fragen",say:[["b", "Jetzt darfst du mich fragen!"],["b", "Ich erkläre dir immer nur einen Schritt. Dann stelle ich dir eine Frage."],["k", "Mit diesen Fragen muss dein Kopf mitdenken."],["k", "👉 Du bist dran: Lies die Anleitung. Kopier den Prompt in duck.ai. Beantworte die Fragen der KI. Schreib deine Antworten auch hier auf. Dann klick auf «Mit Kolbi vergleichen»."]],
  body:()=>`<p class="kicker">Schritt 4 · mit KI</p><h2>Die KI als Lernpartnerin</h2>
  <p>Kopier den Prompt. Füg den Prompt in <a href="https://duck.ai" target="_blank" rel="noopener">duck.ai</a> ein. Die KI erklärt einen Schritt. Dann stellt die KI dir eine Frage. Beantworte die Frage in duck.ai. Schreib deine Antwort auch hier auf.</p>
  ${promptBox(P_MAIN)}
@@ -601,11 +601,11 @@ const STEPS=[
  <p class="hint">Verstehst du einen Schritt nicht? Dann frag nach:</p>${promptBox(P_GAP,"Nachfrage-Prompt kopieren")}</div>`,
  need:()=>S.ka.every(x=>words(x)>=4),
  reveal:()=>`<p>Diese Punkte gehören zur Erklärung. Kamen die Punkte bei dir vor? Hake ab.</p>
- <div class="checks">${["Wachs besteht aus Kohlenstoff und Wasserstoff.","Das Wachs schmilzt. Das flüssige Wachs steigt im Docht hoch und wird zu Gas.","Das Wachs-Gas reagiert mit dem Sauerstoff aus der Luft. Dabei entstehen Kohlendioxid und Wasserdampf.","In der Mitte der Flamme hat es zu wenig Sauerstoff. Dort entsteht Russ. Russ sind winzige Körnchen aus Kohlenstoff.","Die Russkörnchen werden sehr heiss und glühen gelb.","Beim Réchaud kommt durch Luftlöcher viel Sauerstoff hinein. Dort entsteht kein Russ. Die Flamme bleibt blau."]
+ <div class="checks">${["Wachs besteht aus Kohlenstoff und Wasserstoff.","Das Wachs schmilzt. Das flüssige Wachs steigt im Docht hoch und wird zu Gas.","Das Wachs-Gas reagiert mit dem Sauerstoff aus der Luft. Dabei entstehen Kohlendioxid und Wasserdampf.","In der Mitte der Flamme hat es zu wenig Sauerstoff. Dort entsteht Russ. Russ besteht aus winzigen Körnchen aus Kohlenstoff.","Die Russkörnchen werden sehr heiss und glühen gelb.","Beim Réchaud brennt Brennsprit. Brennsprit ist Alkohol. Alkohol verbrennt fast ganz. Durch die Löcher im Réchaud kommt zusätzlich Luft dazu. Darum entsteht kaum Russ. Die Flamme bleibt blau."]
   .map((t,i)=>`<label><input type="checkbox" data-chk="kp.${i}" ${S.kp[i]?"checked":""}>${t}</label>`).join("")}</div>
  <p class="hint">Fehlt ein Punkt? Dann frag die KI mit dem Nachfrage-Prompt. Erst dann gehst du weiter.</p>`},
 
-{t:"Skizze",say:[["k", "Jetzt zeichnest du, was bei der Kerze passiert."],["k", "Einen Text kann man abschreiben. Eine Skizze muss man verstehen."],["k", "Die Skizze muss nicht schön sein. Wichtig ist der Ablauf."],["k", "👉 Du bist dran: Zeichne auf Papier. Schreib hier deine Beschriftungen auf, höchstens vier Wörter."]],
+{t:"Skizze",say:[["k", "Jetzt zeichnest du, was bei der Kerze passiert."],["k", "Einen Text kann man abschreiben. Für eine Skizze musst du den Ablauf verstehen."],["k", "Die Skizze muss nicht schön sein. Wichtig ist der Ablauf."],["k", "👉 Du bist dran: Lies die Aufgabe. Zeichne auf Papier. Schreib hier deine Beschriftungen auf, höchstens vier Wörter. Dann klick auf «Mit Kolbi vergleichen»."]],
  body:()=>`<p class="kicker">Schritt 5 · auf Papier</p><h2>Eine Ablaufskizze zeichnen</h2>
  <p>Zeichne auf Papier eine Kerze mit Flamme. Zeig mit Pfeilen: Was passiert zuerst? Was passiert danach? Schreib deine Beschriftungen hier auf. Pro Beschriftung brauchst du <b>höchstens 4 Wörter</b>.</p>
  <div class="task"><h3>Meine Beschriftungen (in der Reihenfolge des Ablaufs)</h3>
@@ -615,7 +615,7 @@ const STEPS=[
  <div class="sketch">${SVG_SKETCH}</div>
  <p class="hint">Deine Skizze darf anders aussehen. Wichtig ist: Man erkennt den Ablauf.</p>`},
 
-{t:"Erklär's dem Kind",say:[["b", "Spielrunde 1! Die KI spielt ein Kind. Es fragt immer: Warum?"],["k", "Erklär nur mit deiner Skizze. Wo du nicht weiterweisst, musst du nochmals lernen."],["k", "👉 Du bist dran: Kopier den Prompt in duck.ai. Erklär dem KI-Kind die Kerze. Dann beantworte hier die zwei Fragen."]],
+{t:"Erklär's dem Kind",say:[["b", "Spielrunde 1! Ich spiele ein Kind. Das KI-Kind fragt immer: Warum?"],["k", "Erklär nur mit deiner Skizze. Wo du nicht weiterweisst, musst du nochmals lernen."],["k", "👉 Du bist dran: Lies die Anleitung. Kopier den Prompt in duck.ai. Erklär dem KI-Kind die Kerze. Beantworte hier die zwei Fragen. Dann klick auf «Mit Kolbi vergleichen»."]],
  body:()=>`<p class="kicker">Schritt 6 · mit KI</p><p><span class="game-badge">Spielrunde 1</span></p><h2>Erklär's dem Kind</h2>
  <p>Leg deine Skizze vor dich. Kopier den Prompt in <a href="https://duck.ai" target="_blank" rel="noopener">duck.ai</a>. Die KI spielt ein Kind von 8 Jahren. Das KI-Kind stellt dir viele Fragen. <b>Antworte nur mit deinem Wissen und mit deiner Skizze.</b> Nicht nachschauen!</p>
  ${promptBox(P_KID)}
@@ -625,11 +625,11 @@ const STEPS=[
  ${field("kidSaid","Was hat das KI-Kind am Schluss verstanden? Stimmt die Zusammenfassung?",{area:1,maxs:2})}</div>`,
  need:()=>words(S.kidHard)>=4&&words(S.kidSaid)>=4&&fieldOk("kidHard")&&fieldOk("kidSaid"),
  reveal:()=>`<p>Zur Kerze fragen Kinder oft:</p><ul><li>«Was ist Russ?»</li><li>«Warum leuchtet etwas, wenn es heiss ist?»</li><li>«Was ist Sauerstoff?»</li></ul>
- <p><b>Bei einer Frage bist du hängen geblieben? Super, das ist wertvoll!</b> Bei dieser Frage fehlt dir noch Wissen. Schau den Punkt nochmals an. Erst dann gehst du weiter.</p>
+ <p><b>Bei einer Frage bist du hängen geblieben?</b> Jetzt weisst du: Hier musst du noch lernen. Lern diese Frage nochmals. Erst dann gehst du weiter.</p>
  <p>Tipp: Vergleiche aus dem Alltag helfen beim Erklären. Zum Beispiel: «Russ glüht wie die Glut im Cheminée.» Solche Vergleiche kommen später aufs Plakat.</p>
  <p class="hint">Ist die Zusammenfassung vom KI-Kind falsch? Dann war deine Erklärung vielleicht unklar. Oder die KI hat einen Fehler gemacht. Beides kommt vor.</p>`},
 
-{t:"Vergleichen",say:[["k", "Weisst du noch, was du am Anfang vermutet hast?"],["k", "Jetzt schauen wir: Stimmte deine Vermutung?"],["k", "👉 Du bist dran: Kreuz an, ob deine Vermutung stimmte. Schreib auf, was du gelernt hast."]],
+{t:"Vergleichen",say:[["k", "Weisst du noch, was du am Anfang vermutet hast?"],["k", "Jetzt schauen wir: Stimmte deine Vermutung?"],["k", "👉 Du bist dran: Lies deine Vermutung oben nochmals. Kreuz an, ob deine Vermutung stimmte. Schreib auf, was du gelernt hast. Dann klick auf «Mit Kolbi vergleichen»."]],
  body:()=>`<p class="kicker">Schritt 7</p><h2>Stimmte meine Vermutung?</h2>
  <div class="mine"><b>Meine Vermutung</b>${esc(S.verm||"(noch keine)")}</div>
  <div class="task"><h3>Deine Aufgabe</h3><div class="checks">
@@ -637,10 +637,10 @@ const STEPS=[
  ${field("verglWhy","Was habe ich dazugelernt?",{area:1,maxs:2})}</div>`,
  need:()=>!!S.vergl&&words(S.verglWhy)>=5&&fieldOk("verglWhy"),
  reveal:()=>`<p>Viele vermuten: «Die blaue Flamme ist heisser.» Diese Vermutung ist <b>nicht ganz richtig</b>. Der wichtige Unterschied ist der <b>Russ</b>.</p>
- <ul><li>Kerze: In der Mitte der Flamme fehlt Sauerstoff. Dort entsteht Russ. Glühender Russ leuchtet gelb.</li><li>Réchaud: Viel Sauerstoff kommt dazu. Dort entsteht kein Russ. Ohne Russ bleibt die Flamme blau.</li></ul>
+ <ul><li>Kerze: In der Mitte der Flamme fehlt Sauerstoff. Dort entsteht Russ. Glühender Russ leuchtet gelb.</li><li>Réchaud: Brennsprit verbrennt fast ganz. Dabei entsteht kaum Russ. Ohne Russ bleibt die Flamme blau.</li></ul>
  <p>Eine Vermutung verbessern ist kein Fehler. Genau so lernt man.</p>`},
 
-{t:"Prüfen",say:[["b", "Ich kann Fehler machen. Du musst meine Antworten prüfen."],["b", "In Spielrunde 2 baue ich sogar absichtlich einen Fehler ein."],["k", "Du bist der Detektiv. Glaub der KI nicht alles."],["k", "👉 Du bist dran: Vergleich zuerst zwei KIs. Dann such den eingebauten Fehler."]],
+{t:"Prüfen",say:[["b", "Ich kann Fehler machen. Du musst meine Antworten prüfen."],["b", "In Spielrunde 2 baue ich sogar absichtlich einen Fehler ein."],["k", "Du bist der Detektiv. Glaub der KI nicht alles."],["k", "👉 Du bist dran: Lies die Anleitung. Vergleiche zuerst zwei KIs. Such dann den eingebauten Fehler. Dann klick auf «Mit Kolbi vergleichen»."]],
  body:()=>`<p class="kicker">Schritt 8 · mit KI</p><h2>Kritisch prüfen</h2>
  <h3>Teil A: Zwei KIs vergleichen</h3>
  <p>Stell diese Frage <b>zwei verschiedenen</b> KIs: <a href="https://duck.ai" target="_blank" rel="noopener">duck.ai</a> und <a href="https://lumo.proton.me" target="_blank" rel="noopener">Lumo</a>. Lies beide Antworten genau.</p>
@@ -654,14 +654,14 @@ const STEPS=[
  <div class="checks">${[["ja","Die KI sagt: richtig gefunden."],["nein","Die KI sagt: nicht gefunden. Der eingebaute Fehler war ein anderer."]].map(([v,t])=>`<label><input type="radio" name="fd" value="${v}" data-radio="fdOk" ${S.fdOk===v?"checked":""}>${t}</label>`).join("")}</div></div>
  ${KIWARN}`,
  need:()=>words(S.same)>=4&&words(S.diff)>=2&&fieldOk("same")&&fieldOk("diff")&&words(S.fdFound)>=3&&fieldOk("fdFound")&&!!S.fdOk,
- reveal:()=>`<p>Bei dieser Frage antworten KIs oft verschieden. Manche KIs sagen: «Unten ist die Flamme am heissesten.» Diese Antwort stimmt so nicht.</p>
+ reveal:()=>`<p>Bei dieser Frage antworten KIs oft verschieden. Manche KIs sagen: «Die Flamme ist unten blau, weil es dort am heissesten ist.» Diese Antwort stimmt so nicht.</p>
  <p>Das blaue Licht kommt von <b>Gasteilchen</b>. Bei der Verbrennung wird Energie frei. Mit dieser Energie leuchten die Gasteilchen blau. Unten in der Flamme gibt es noch keinen Russ. Darum leuchtet nichts gelb.</p>
  <p><b>Zwei KIs sagen etwas anderes? Dann:</b></p><ul><li>schaust du im Lehrmittel oder auf einer Wissensseite nach,</li><li>fragst du deine Lehrperson,</li><li>schreibst du den Unterschied auf.</li></ul>
- <p><b>Zum Fehlerdetektiv:</b> Mit dem eingebauten Fehler hast du geübt. Noch spannender sind <b>echte</b> KI-Fehler. Echte Fehler macht die KI aus Versehen. «Unten ist die Flamme am heissesten» ist so ein echter Fehler. Dieser Fehler ist der erste Eintrag im <b>Fehlerlogbuch</b> der Klasse.</p>
+ <p><b>Zum Fehlerdetektiv:</b> Mit dem eingebauten Fehler hast du geübt. Noch spannender sind <b>echte</b> KI-Fehler. Echte Fehler macht die KI aus Versehen. «Die Flamme ist unten blau, weil es dort am heissesten ist» ist so ein echter Fehler. Dieser Fehler ist der erste Eintrag im <b>Fehlerlogbuch</b> der Klasse.</p>
  <p class="hint">Achtung: Manchmal baut die KI zwei Fehler ein. Manchmal vergisst die KI den eingebauten Fehler. Oder die KI sagt «gefunden», obwohl du den Fehler nicht gefunden hast. Auch das sind KI-Fehler.</p>
  ${field("realErr","Hast du heute einen echten KI-Fehler entdeckt? Schreib den Fehler hier auf. Trag den Fehler auch ins Fehlerlogbuch der Klasse ein. (freiwillig)",{area:1,maxs:2})}`},
 
-{t:"Quizshow",say:[["b", "Spielrunde 3: Quizshow! Ich stelle dir fünf Fragen."],["b", "Achtung: Manchmal sage ich «richtig», obwohl deine Antwort falsch ist."],["k", "Prüf unsichere Antworten mit deiner Skizze."],["k", "👉 Du bist dran: Kopier den Prompt. Beantworte die Fragen aus dem Kopf."]],
+{t:"Quizshow",say:[["b", "Spielrunde 3: Quizshow! Ich stelle dir fünf Fragen."],["b", "Achtung: Manchmal sage ich «richtig», obwohl deine Antwort falsch ist."],["k", "Prüf unsichere Antworten mit deiner Skizze."],["k", "👉 Du bist dran: Lies die Anleitung. Kopier den Prompt in duck.ai. Beantworte die Fragen aus dem Kopf. Dann klick auf «Mit Kolbi vergleichen»."]],
  body:()=>`<p class="kicker">Schritt 9 · mit KI</p><p><span class="game-badge">Spielrunde 3</span></p><h2>Quizshow: Bin ich bereit?</h2>
  <p>Die KI ist jetzt die Quizmasterin. Die KI stellt dir 5 Fragen. Die Fragen werden immer schwieriger. Antworte aus dem Kopf, ohne Skizze.</p>
  ${promptBox(P_QUIZ)}
@@ -671,11 +671,11 @@ const STEPS=[
  ${field("quizHard","Diese Frage war schwierig für mich:",{area:1,maxs:2})}</div>`,
  need:()=>/^[0-5]$/.test(S.quizPts.trim())&&words(S.quizHard)>=3&&fieldOk("quizHard"),
  reveal:()=>{const p=+S.quizPts.trim();return `${p>=4?`<p style="color:var(--green);font-weight:700">${p} von 5: Du bist bereit fürs Plakat!</p>`:p>=3?`<p style="color:var(--yellow);font-weight:700">${p} von 5: Fast! Schau die schwierige Frage nochmals an.</p>`:`<p style="color:var(--red);font-weight:700">${p} von 5: Schau deine Skizze nochmals an. Spiel dann eine zweite Runde. Erst danach schreibst du.</p>`}
- <p>Typische Quizfragen zur Kerze:</p><ul><li>Was passiert mit dem Wachs vor dem Brennen?</li><li>Woraus besteht Russ?</li><li>Warum entsteht beim Réchaud kein Russ?</li><li>Was entsteht, wenn Wachs vollständig verbrennt?</li><li>Warum ist die Kerzenflamme unten blau?</li></ul>
+ <p>Typische Quizfragen zur Kerze:</p><ul><li>Was passiert mit dem Wachs vor dem Brennen?</li><li>Woraus besteht Russ?</li><li>Warum entsteht beim Réchaud kaum Russ?</li><li>Was entsteht, wenn Wachs vollständig verbrennt?</li><li>Warum ist die Kerzenflamme unten blau?</li></ul>
  <p><b>Warst du bei einer Antwort unsicher? Und die KI sagt trotzdem «richtig»?</b> Dann prüf die Antwort mit deiner Skizze. KIs sind beim Korrigieren oft zu nett.</p>
- <p class="hint">Deine schwierige Frage wissen oft auch andere nicht. Deine schwierige Frage gehört deshalb aufs Plakat.</p>`}},
+ <p class="hint">Die Antwort auf deine schwierige Frage wissen oft auch andere nicht. Deine schwierige Frage gehört deshalb aufs Plakat.</p>`}},
 
-{t:"Texte",say:[["k", "Jetzt schreibst du selbst. KI ist aus."],["b", "Ich mache Pause. Erst am Schluss darf ich dir Tipps geben."],["k", "👉 Du bist dran: Schreib den Text für ein Kind der 3. Klasse. Schau dabei nur auf deine Skizze."]],
+{t:"Texte",say:[["k", "Jetzt schreibst du selbst. KI ist aus."],["b", "Ich mache Pause. Erst am Schluss darf ich dir Tipps geben."],["k", "👉 Du bist dran: Lies die Aufgabe. Schreib den Text für ein Kind der 3. Klasse. Schau dabei nur auf deine Skizze. Dann klick auf «Mit Kolbi vergleichen»."]],
  body:()=>`<p class="kicker">Schritt 10 · ohne KI</p><h2>Einen Plakattext schreiben</h2>
  <p>Ein «Hesch gwüsst?»-Plakat hat 3 bis 4 kurze Abschnitte. Schreib hier den Abschnitt <b>«Warum leuchtet die Kerze gelb?»</b>. Schliess zuerst den Tab mit duck.ai. Schau nur auf deine Skizze.</p>
  <div class="mine"><b>Meine Skizzen-Beschriftungen</b>${S.labels.filter(x=>x.trim()).map(esc).join(" → ")||"(noch keine)"}</div>
@@ -683,10 +683,10 @@ const STEPS=[
  <p class="hint">Ist dein Text fertig? Dann darfst du Tipps von der KI holen. Die KI gibt nur Tipps. Die KI schreibt deinen Text nicht um.</p>${promptBox(P_FB,"Feedback-Prompt kopieren")}</div>`,
  need:()=>words(S.text)>=15&&fieldOk("text"),
  reveal:()=>`<p>So könnte der Abschnitt aussehen:</p>
- <div class="quote">In der Mitte der Flamme hat es zu wenig Luft. In der Mitte verbrennt das Wachs nicht ganz. Es entstehen winzige schwarze Körnchen: Russ. Die Russkörnchen werden sehr heiss. Die heissen Körnchen leuchten gelb, wie die Glut im Cheminée.</div>
+ <div class="quote">In der Mitte der Flamme hat es zu wenig Luft. Dort entstehen winzige schwarze Körnchen: Russ. Die Russkörnchen werden sehr heiss. Die heissen Russkörnchen leuchten gelb, wie die Glut im Cheminée.</div>
  <p>Achte auf: kurze Sätze, einfache Wörter, ein Vergleich aus dem Alltag (hier: die Glut im Cheminée).</p>`},
 
-{t:"Kennzeichnen",say:[["k", "Hast du KI benutzt? Dann musst du KI auf deiner Arbeit angeben."],["k", "👉 Du bist dran: Wähle die passende Stufe. Kreuz die Tools an."]],
+{t:"Kennzeichnen",say:[["k", "Hast du KI benutzt? Dann musst du KI auf deiner Arbeit angeben."],["k", "👉 Du bist dran: Lies die vier Stufen. Wähle die passende Stufe. Kreuz die KIs an, die du benutzt hast. Dann klick auf «Mit Kolbi vergleichen»."]],
  body:()=>`<p class="kicker">Schritt 11</p><h2>Die Arbeit kennzeichnen</h2>
  <div class="task"><h3>Welche Stufe passt zu deiner Arbeit?</h3><div class="checks">
  ${[["frei","KI-frei: ohne KI."],["unterstuetzt","KI-unterstützt: Die KI hat mir Ideen gegeben. Den Text habe ich selbst geschrieben."],["kollaboriert","KI-kollaboriert: Die Idee war von mir. Mit der KI habe ich die Idee weiterentwickelt."],["generiert","KI-generiert: Die KI hat den Text geschrieben. Ich habe den Text geprüft."]]
@@ -698,9 +698,9 @@ const STEPS=[
  <p>Die KI hat dir Dinge erklärt und Fragen gestellt. Die Skizze und den Text hast du selbst gemacht. So sieht die Kennzeichnung aus:</p>
  <div class="prompt">Diese Arbeit ist KI-unterstützt.
 Benutzte KIs: ${[S.tools[0]?"duck.ai":"",S.tools[1]?"Lumo":""].filter(Boolean).join(", ")}
-Prompts: Lern-Prompt, Erklär's dem Kind, Fehlerdetektiv, Quizshow, Feedback-Prompt</div>`},
+Prompts: siehe Prompt-Protokoll</div>`},
 
-{t:"Auflösung",say:[["k", "Geschafft! Du hast viel selbst herausgefunden."],["b", "Ich habe nur ein bisschen geholfen. So soll es sein."],["k", "👉 Du bist dran: Hol bei deiner Lehrperson das Original-Plakat. Vergleich das Original-Plakat mit deinem Weg."]],
+{t:"Auflösung",say:[["k", "Geschafft! Du hast viel selbst herausgefunden."],["b", "Ich habe nur ein bisschen geholfen. So soll es sein."],["k", "👉 Du bist dran: Hol bei deiner Lehrperson das Original-Plakat. Lies die drei Fragen. Vergleiche das Original-Plakat mit deinem Forschungsweg unten."]],
  body:()=>`<p class="kicker">Schritt 12</p><h2>Vergleich mit dem Original</h2>
  <p class="lead">Hol dir bei deiner Lehrperson das Original-Plakat <b>«Hesch gwüsst? Warum brennen Kerzen gelb?»</b>.</p>
  <div class="task"><h3>Vergleiche</h3><ul><li>Findest du deine Skizzen-Beschriftungen auf dem Original wieder?</li><li>Welche vier Abschnitte hat das Original? Welche Abschnitte hast du auch herausgefunden?</li><li>Was fehlt dir noch im Vergleich zum Original?</li></ul></div>
@@ -718,7 +718,7 @@ Prompts: Lern-Prompt, Erklär's dem Kind, Fehlerdetektiv, Quizshow, Feedback-Pro
  <dt>Echter KI-Fehler</dt><dd>${esc(S.realErr)||"–"}</dd>
  <dt>Mein Text</dt><dd>${esc(S.text)||"–"}</dd>
  <dt>Kennzeichnung</dt><dd>${esc({frei:"KI-frei",unterstuetzt:"KI-unterstützt",kollaboriert:"KI-kollaboriert",generiert:"KI-generiert"}[S.lvl]||"–")}</dd></dl></div>
- <div class="quote"><b>Jetzt bist du dran:</b> Wähle ein Bild aus der Sammlung deiner Lehrperson. Geh mit dem Auftragsblatt den gleichen Weg. Am Schluss machst du dein eigenes Plakat von Hand.</div>
+ <div class="quote"><b>Jetzt bist du dran:</b> Wähle ein Bildpaar aus der Bildsammlung deiner Lehrperson. Geh mit dem Auftragsblatt den gleichen Weg. Am Schluss machst du dein eigenes Plakat von Hand.</div>
  <div class="row"><button class="btn small" id="reset">Alles löschen und neu beginnen</button></div>`,need:()=>true,auto:true}
 ];
 
@@ -750,7 +750,7 @@ function confirmReset(){const ov=document.createElement("div");ov.className="ove
   ov.querySelector("#myes").onclick=()=>{ov.remove();S=JSON.parse(JSON.stringify(blank));save();go(0)}}
 render();
 function hasProgress(){return Object.keys(S.revealed||{}).length>0}
-const REVIEW_BANK={"1": [["Womit beginnen gute Forscherfragen oft?", ["Mit Warum oder Wie", "Mit Wer oder Wann", "Mit Ja oder Nein"]]], "2": [["Was macht eine Leitfrage besonders gut?", ["Die Leitfrage vergleicht zwei Dinge.", "Die Leitfrage ist möglichst lang.", "Die KI hat die Leitfrage geschrieben."]]], "3": [["Darf deine Vermutung falsch sein?", ["Ja. Wichtig ist: Du denkst zuerst selbst.", "Nein, sonst gibt es Abzug.", "Nur wenn die KI zustimmt."]]], "4": [["Wie soll die KI dir beim Lernen helfen?", ["Immer nur einen Schritt erklären und dir eine Frage stellen.", "Den ganzen Text fürs Plakat schreiben.", "Die Antwort sofort verraten."]], ["Was passiert mit dem Wachs, bevor das Wachs brennt?", ["Das Wachs schmilzt und wird zu Gas.", "Das Wachs wird zu Wasser.", "Das Wachs brennt als festes Stück."]]], "5": [["Wie viele Wörter hat eine Beschriftung in der Skizze höchstens?", ["4", "10", "20"]]], "6": [["Du bleibst beim Erklären hängen. Was heisst das?", ["Bei diesem Punkt fehlt dir noch Wissen.", "Das KI-Kind hat einen Fehler gemacht.", "Du bist schon fertig."]]], "7": [["Warum leuchtet die Kerzenflamme gelb?", ["Russkörnchen glühen gelb.", "Die Flamme ist kalt.", "Das Wachs ist gelb."]], ["Warum ist die Flamme beim Réchaud blau?", ["Viel Sauerstoff, darum entsteht kein Russ.", "Der Brennsprit ist blau.", "Die Flamme ist kälter."]]], "8": [["Zwei KIs sagen etwas anderes. Was machst du?", ["Im Lehrmittel nachschauen oder die Lehrperson fragen.", "Der längeren Antwort glauben.", "Die zweite KI einfach ignorieren."]]], "9": [["Die KI sagt «richtig», du bist aber unsicher. Was machst du?", ["Die Antwort mit deiner Skizze prüfen.", "Der KI einfach glauben.", "Das Quiz neu starten."]]], "10": [["Für wen schreibst du den Plakattext?", ["Für ein Kind der 3. Klasse.", "Für Chemie-Profis.", "Für die KI."]]], "11": [["Die KI hat dir Dinge erklärt. Den Text hast du selbst geschrieben. Welche Stufe passt?", ["KI-unterstützt", "KI-generiert", "KI-frei"]]]};
+const REVIEW_BANK={"1": [["Womit beginnen gute Forscherfragen oft?", ["Mit Warum oder Wie", "Mit Wer oder Wann", "Mit Ja oder Nein"]]], "2": [["Was macht eine Leitfrage besonders gut?", ["Die Leitfrage vergleicht zwei Dinge.", "Die Leitfrage ist möglichst lang.", "Die KI hat die Leitfrage geschrieben."]]], "3": [["Darf deine Vermutung falsch sein?", ["Ja. Wichtig ist: Du denkst zuerst selbst.", "Nein, sonst gibt es Abzug.", "Nur wenn die KI zustimmt."]]], "4": [["Wie soll die KI dir beim Lernen helfen?", ["Immer nur einen Schritt erklären und dir eine Frage stellen.", "Den ganzen Text fürs Plakat schreiben.", "Die Antwort sofort verraten."]], ["Was passiert mit dem Wachs, bevor das Wachs brennt?", ["Das Wachs schmilzt und wird zu Gas.", "Das Wachs wird zu Wasser.", "Das Wachs brennt als festes Stück."]]], "5": [["Wie viele Wörter hat eine Beschriftung in der Skizze höchstens?", ["4", "10", "20"]]], "6": [["Du bleibst beim Erklären hängen. Was heisst das?", ["Bei diesem Punkt fehlt dir noch Wissen.", "Das KI-Kind hat einen Fehler gemacht.", "Du bist schon fertig."]]], "7": [["Warum leuchtet die Kerzenflamme gelb?", ["Russkörnchen glühen gelb.", "Die Flamme ist kalt.", "Das Wachs ist gelb."]], ["Warum ist die Flamme beim Réchaud blau?", ["Brennsprit verbrennt fast ganz. Darum entsteht kaum Russ.", "Der Brennsprit ist blau.", "Die Flamme ist kälter."]]], "8": [["Zwei KIs sagen etwas anderes. Was machst du?", ["Im Lehrmittel nachschauen oder die Lehrperson fragen.", "Der längeren Antwort glauben.", "Die zweite KI einfach ignorieren."]]], "9": [["Die KI sagt «richtig», du bist aber unsicher. Was machst du?", ["Die Antwort mit deiner Skizze prüfen.", "Der KI einfach glauben.", "Das Quiz neu starten."]]], "10": [["Für wen schreibst du den Plakattext?", ["Für ein Kind der 3. Klasse.", "Für Chemie-Profis.", "Für die KI."]]], "11": [["Die KI hat dir Dinge erklärt. Den Text hast du selbst geschrieben. Welche Stufe passt?", ["KI-unterstützt", "KI-generiert", "KI-frei"]]]};
 function REVIEW_DONE(){return Object.keys(S.revealed||{}).map(Number).filter(i=>S.revealed[i]).sort((a,b)=>a-b)}
 function REVIEW_OK(){return true}
 

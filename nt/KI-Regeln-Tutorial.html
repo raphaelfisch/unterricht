@@ -518,9 +518,9 @@ const VIEWS = [
 ()=>{
   talk([["k", "Dein Gehirn ist wie ein Muskel."], ["k", "Dein Gehirn wird nur stark, wenn du es selbst trainierst."], ["b", "Ich kann dir Arbeit abnehmen. Aber dann trainiert dein Gehirn nicht."], ["k", "Und genau darum gilt: Schalte DEINEN Kopf ein! Denk zuerst selbst."], ["k", "👉 Du bist dran: Lies unseren Grundsatz. Dann beantworte die Frage."]]);
   panel.innerHTML=`<p class="kicker">Kapitel 1</p><h2>Unser Grundsatz</h2>
-  <div class="quote">«KI kann dir beim Lernen helfen. Sie ersetzt aber nicht dein eigenes Denken. Du bist immer selbst für deine Arbeit verantwortlich.»</div>
+  <div class="quote">«KI kann dir beim Lernen helfen. Die KI ersetzt aber nicht dein eigenes Denken. Du bist immer selbst für deine Arbeit verantwortlich.»</div>
   <p>Dein Gehirn ist wie ein Muskel. Dein Gehirn wird nur stärker, wenn <b>du</b> denkst. Wenn die KI für dich denkt, lernt nur die KI.</p>
-  <p>Die KI kann Fehler machen. Übernimmst du einen KI-Fehler, ist der Fehler <b>dein</b> Fehler. Du bist verantwortlich, nicht die KI.</p>
+  <p>Die KI kann Fehler machen. Du übernimmst einen KI-Fehler? Dann ist der Fehler <b>dein</b> Fehler. Du bist verantwortlich, nicht die KI.</p>
   <div class="task"><h3>Kurz überlegen</h3>
     <p>Wofür ist KI da?</p>
     <div class="opts" id="o1"></div><p class="fb" id="f1"></p></div>
@@ -582,7 +582,7 @@ const VIEWS = [
 },
 // 4 Regeln
 ()=>{
-  talk([["k", "Es gibt sechs Regeln für KI."], ["b", "Regel 5 ist mir wichtig: Ich bin ein Programm, kein Freund."], ["b", "Wenn es dir schlecht geht, rede mit einem Menschen."], ["k", "👉 Du bist dran: Lies die sechs Regeln. Öffne bei jeder das Beispiel."]]);
+  talk([["k", "Es gibt sechs Regeln für KI."], ["b", "Regel 5 ist mir wichtig: Ich bin ein Programm, kein Freund."], ["b", "Wenn es dir schlecht geht, rede mit einem Menschen."], ["k", "👉 Du bist dran: Lies die sechs Regeln. Klick bei jeder Regel auf «Beispiel». Lies das Beispiel. Dann klick unten auf «Weiter»."]]);
   const R=[
     ["Denk zuerst selbst nach","Versuch die Aufgabe zuerst selbst. Erst dann fragst du die KI.","Du willst wissen, warum Eisen rostet. Zuerst schreibst du deine eigene Vermutung auf."],
     ["Prüfe kritisch","Glaub der KI nicht alles. Die KI kann Fehler machen.","Die KI nennt eine Jahreszahl. Du prüfst die Jahreszahl im Lehrmittel."],
@@ -602,7 +602,7 @@ const VIEWS = [
 },
 // 5 Datenschutz
 ()=>{
-  talk([["b", "Alles, was du mir schreibst, kann gespeichert werden."], ["k", "Schreib nie Namen, Adressen oder Schulen in eine KI."], ["k", "👉 Du bist dran: Lies, was nie in eine KI gehört. Finde im Text die heiklen Wörter. Dann klick auf «Prüfen»."]]);
+  talk([["b", "Alles, was du mir schreibst, kann gespeichert werden."], ["k", "Schreib nie Namen, Adressen oder Schulen in eine KI."], ["k", "👉 Du bist dran: Lies, was nie in eine KI gehört. Klick im Text auf die heiklen Wörter. Dann klick auf «Prüfen»."]]);
   const text=[["Hallo,",0],["ich",0],["heisse",0],["Lena Brunner",1],["und",0],["gehe",0],["in",0],["die",0],["Klasse 2b",1],["der",0],["Schule Seefeld.",1],["Frau Keller",1],["will,",0],["dass",0],["wir",0],["die",0],["Photosynthese",0],["verstehen.",0],["Erkläre",0],["sie",0],["mir",0],["Schritt",0],["für",0],["Schritt.",0],["Schick",0],["mir",0],["die",0],["Antwort",0],["an",0],["lena.b@mail.ch.",1]];
   const total=text.filter(x=>x[1]).length;
   panel.innerHTML=`<p class="kicker">Kapitel 5</p><h2>Das gehört nie in eine KI</h2>
@@ -618,22 +618,22 @@ const VIEWS = [
   document.querySelectorAll(".tok").forEach(b=>b.onclick=()=>b.classList.toggle("marked"));
   $("#check").onclick=()=>{let hit=0,wrong=0;document.querySelectorAll(".tok").forEach(b=>{b.classList.remove("missed");const s=b.dataset.s==="1",m=b.classList.contains("marked");if(s&&m)hit++;if(!s&&m)wrong++;if(s&&!m)b.classList.add("missed")});
     const good=hit===total&&wrong===0;if(good)complete(5);
-    $("#res").innerHTML=`<div class="result ${good?"good":"bad"}">${hit} von ${total} gefunden${wrong?`, ${wrong} Wort zu viel markiert`:""}.</div>`+
+    $("#res").innerHTML=`<div class="result ${good?"good":"bad"}">${hit} von ${total} gefunden${wrong?`, ${wrong} ${wrong===1?"Wort":"Wörter"} zu viel markiert`:""}.</div>`+
     (good?`<p style="margin-top:10px"><b>So ist der Text sicher:</b></p><div class="prompt">Hallo, ich gehe in die 2. Sek. Meine Lehrperson will, dass wir die Photosynthese verstehen. Erkläre mir die Photosynthese Schritt für Schritt.</div>`:`<p class="fb" style="margin-top:8px">Die gestrichelten Stellen fehlen noch.</p>`)};
   bindNav();
 },
 // 6 Abschreiben
 ()=>{
-  talk([["k", "Jetzt kommt das wichtigste Kapitel."], ["b", "Ich kann dir einen ganzen Text schreiben. Das geht schnell."], ["k", "Aber wenn du einen Text nur abschreibst, lernst du fast nichts."], ["k", "Darum: Schalte DEINEN Kopf ein! Du denkst, die KI hilft nur."], ["k", "👉 Du bist dran: Lies, wie Mia und Noah arbeiten. Dann beantworte die Frage."]]);
+  talk([["k", "Jetzt kommt das wichtigste Kapitel."], ["b", "Ich kann dir einen ganzen Text schreiben. Das geht schnell."], ["k", "Aber wenn du einen Text nur abschreibst, lernst du fast nichts."], ["k", "Darum: Schalte DEINEN Kopf ein! Du denkst selbst. Die KI hilft dir nur."], ["k", "👉 Du bist dran: Lies, wie Mia und Noah arbeiten. Dann beantworte die Frage."]]);
   panel.innerHTML=`<p class="kicker">Kapitel 6 · Das Wichtigste</p><h2>Abgeschrieben ist nicht gelernt</h2>
   <p class="lead">Mia und Noah bekommen beide einen rostigen Nagel. Beide sollen auf einem Plakat erklären: Was ist mit dem Nagel passiert?</p>
   <div class="compare">
     <div class="person"><h3>Mia</h3><ol><li>Mia fragt die KI: «Warum rostet Eisen?»</li><li>Mia schreibt die Antwort Satz für Satz ab.</li><li>Mias Plakat sieht perfekt aus.</li></ol></div>
-    <div class="person"><h3>Noah</h3><ol><li>Noah schaut den Nagel genau an. Noah schreibt seine Vermutung auf.</li><li>Noah lässt sich von der KI Schritt für Schritt erklären. Die KI stellt Noah Fragen.</li><li>Noah zeichnet eine Skizze: Was passiert zuerst? Was passiert danach?</li></ol></div>
+    <div class="person"><h3>Noah</h3><ol><li>Noah schaut den Nagel genau an. Noah schreibt seine Vermutung auf.</li><li>Die KI erklärt Noah das Rosten Schritt für Schritt. Die KI stellt Noah Fragen.</li><li>Noah zeichnet eine Skizze: Was passiert zuerst? Was passiert danach?</li></ol></div>
   </div>
   <div class="task"><h3>Eine Woche später fragt jemand: «Was braucht es, damit Eisen rostet?»</h3><p>Wer kann antworten?</p><div class="opts" id="o6"></div><p class="fb" id="f6"></p></div>
   <h3>Zeichnen statt abschreiben</h3>
-  <p>Einen Text kannst du abschreiben, ohne den Text zu verstehen. Eine Skizze mit Pfeilen geht nicht ohne Verstehen. Für eine Skizze musst du wissen: Was passiert zuerst? Was passiert danach?</p><p>In dieser Einheit machst du keine Textnotizen. Du zeichnest eine Skizze, mit höchstens 4 Wörtern pro Beschriftung.</p>
+  <p>Einen Text kannst du abschreiben, ohne den Text zu verstehen. Für eine Skizze mit Pfeilen musst du das Thema verstehen. Für eine Skizze musst du wissen: Was passiert zuerst? Was passiert danach?</p><p>In dieser Einheit machst du keine Textnotizen. Du zeichnest eine Skizze, mit höchstens 4 Wörtern pro Beschriftung.</p>
   <div class="levels">
     <div class="lvl l1"><b>1. Beobachten</b>Bild genau anschauen. Fragen aufschreiben. Ohne KI.</div>
     <div class="lvl l4"><b>2. Vermuten</b>Eigene Vermutung aufschreiben. Ohne KI.</div>
@@ -718,7 +718,7 @@ function startTest(){
   talk([["k", "Jetzt kommt der Test."], ["b", "Bei Tests ist KI verboten. Ich bin jetzt aus."], ["k", "Jetzt zählt nur dein Kopf. Du schaffst den Test!"], ["k", "👉 Du bist dran: Lies die Hinweise. Du hast nur <b>einen Versuch</b>. Dann klick auf «Test starten»."]]);
   panel.innerHTML=`<p class="kicker">Abschlusstest</p><h2>Bereit für den Test?</h2>
   <div class="warn"><h3>Du hast nur EINEN Versuch.</h3>
-    <p>Klickst du auf «Test starten», zählt der Test. Lädst du die Seite neu oder brichst du ab, ist der Test gesperrt.</p>
+    <p>Du klickst auf «Test starten»? Dann zählt der Test. Du lädst die Seite neu? Dann ist der Test gesperrt. Du brichst ab? Dann ist der Test auch gesperrt.</p>
     <p>Einen neuen Versuch gibt es nur mit einem Code von deiner Lehrperson.</p></div>
   <ul class="list-plain"><li>10 Fragen</li><li>Du brauchst mindestens 8 richtige Antworten.</li><li>Während des Tests siehst du nur die Fragen. Die Kapitel sind dann weg.</li></ul>
   <div class="nav"><button class="btn" id="back">Zurück zu den Kapiteln</button><button class="btn primary" id="go">Test starten</button></div>`;
@@ -743,7 +743,7 @@ function openConfirm(){
 function showLocked(L){
   if(L.status==="done"){showResult(L);return}
   setTestMode(false);
-  talk([["k", "👉 Dein Test wurde schon gestartet. Hol bei deiner Lehrperson den Code. Gib den Code unten ein."]]);
+  talk([["k", "👉 Du bist dran: Du hast den Test schon gestartet. Hol bei deiner Lehrperson den Code. Gib den Code unten ein."]]);
   panel.innerHTML=`<p class="kicker">Abschlusstest</p><div class="result bad">Test unterbrochen (gestartet am ${L.stamp}).</div>
   ${unlockHTML("Den Test kann man nur einmal machen. Frag deine Lehrperson nach dem Code.")}`;bindUnlock()}
 function showQ(){
@@ -775,7 +775,7 @@ function showResult(R){
     ${wrong.length?`<div class="task"><h3>Diese Fragen schaust du nochmals an</h3><ul class="list-plain">${wrong.map(Q=>`<li>${Q.q}<br><b>Richtig:</b> ${Q.o[Q.a]}</li>`).join("")}</ul></div>`:""}
     ${unlockHTML("Den Test kann man nur einmal machen. Für einen neuen Versuch brauchst du einen Code von deiner Lehrperson.")}`;
   } else {
-    talk([["k", "Fast geschafft! Keine Sorge."], ["k", "👉 Du bist dran: Schau die Kapitel unten nochmals an. Dann holst du den Code bei deiner Lehrperson."]]);
+    talk([["k", "Du hast den Test noch nicht bestanden. Keine Sorge, du bekommst eine neue Chance."], ["k", "👉 Du bist dran: Schau die Kapitel unten nochmals an. Dann holst du den Code bei deiner Lehrperson."]]);
     panel.innerHTML=`<div class="result bad">${score} von 10 richtig. Du brauchst mindestens 8 richtige Antworten. (${stamp})</div>
     <p>Schau dir diese Kapitel nochmals an:</p>
     <div style="display:flex;gap:8px;flex-wrap:wrap">${chs.map(c=>`<button class="btn" data-ch="${c}">Kapitel ${c}: ${CH[c].t}</button>`).join("")}</div>
@@ -786,7 +786,7 @@ function showResult(R){
 }
 renderSteps();VIEWS[0]();
 function hasProgress(){try{return (JSON.parse(localStorage.getItem("kolbi-progress-v1")||"[]")).length>1||!!localStorage.getItem("kolbi-test-v1")}catch(e){return false}}
-const REVIEW_BANK={"1": [["Wann wird dein Gehirn stärker?", ["Wenn du selbst denkst.", "Wenn die KI für dich denkt.", "Wenn du schnell fertig bist."]]], "2": [["Die KI erklärt dir ein schwieriges Wort. Welche Farbe hat die Ampel?", ["Grün", "Gelb", "Rot"]], ["Die KI schreibt deinen ganzen Vortrag. Welche Farbe hat die Ampel?", ["Rot", "Gelb", "Grün"]]], "3": [["Warum benutzen wir duck.ai?", ["duck.ai speichert nichts und braucht kein Login.", "duck.ai hat immer recht.", "duck.ai schreibt die besten Texte."]]], "4": [["Die KI klingt sehr sicher. Stimmt die Antwort dann sicher?", ["Nein. Die Antwort kann trotzdem falsch sein.", "Ja, immer.", "Ja, wenn die Antwort lang ist."]], ["Dir geht es nicht gut. Mit wem redest du?", ["Mit einem Menschen, dem du vertraust.", "Mit der KI.", "Mit niemandem."]]], "5": [["Was schreibst du statt deinem echten Wohnort?", ["Einen erfundenen Ort wie «Musterstadt»", "Deine Adresse", "Den Namen deiner Schule"]]], "6": [["Wer lernt mehr: Mia oder Noah?", ["Noah, weil Noah selbst nachdenkt.", "Mia, weil Mias Plakat perfekt ist.", "Beide gleich viel."]], ["Warum zeichnest du eine Skizze statt Textnotizen?", ["Eine Skizze geht nicht ohne Verstehen.", "Zeichnen geht schneller.", "Die KI kann keine Skizzen lesen."]]], "7": [["Was heisst «kennzeichnen»?", ["Angeben, ob und wie du KI benutzt hast.", "Die KI um Erlaubnis fragen.", "Den Text farbig markieren."]]]};
+const REVIEW_BANK={"1": [["Wann wird dein Gehirn stärker?", ["Wenn du selbst denkst.", "Wenn die KI für dich denkt.", "Wenn du schnell fertig bist."]]], "2": [["Die KI erklärt dir ein schwieriges Wort. Welche Farbe hat die Ampel?", ["Grün", "Gelb", "Rot"]], ["Die KI schreibt deinen ganzen Vortrag. Welche Farbe hat die Ampel?", ["Rot", "Gelb", "Grün"]]], "3": [["Warum benutzen wir duck.ai?", ["duck.ai speichert nichts und braucht kein Login.", "duck.ai hat immer recht.", "duck.ai schreibt die besten Texte."]]], "4": [["Die KI klingt sehr sicher. Stimmt die Antwort dann sicher?", ["Nein. Die Antwort kann trotzdem falsch sein.", "Ja, immer.", "Ja, wenn die Antwort lang ist."]], ["Dir geht es nicht gut. Mit wem redest du?", ["Mit einem Menschen, dem du vertraust.", "Mit der KI.", "Mit niemandem."]]], "5": [["Was schreibst du statt deinem echten Wohnort?", ["Einen erfundenen Ort wie «Musterstadt»", "Deine Adresse", "Den Namen deiner Schule"]]], "6": [["Wer lernt mehr: Mia oder Noah?", ["Noah, weil Noah selbst nachdenkt.", "Mia, weil Mias Plakat perfekt ist.", "Beide gleich viel."]], ["Warum zeichnest du eine Skizze statt Textnotizen?", ["Für eine Skizze musst du das Thema verstehen.", "Zeichnen geht schneller.", "Die KI kann keine Skizzen lesen."]]], "7": [["Was heisst «kennzeichnen»?", ["Angeben, ob und wie du KI benutzt hast.", "Die KI um Erlaubnis fragen.", "Den Text farbig markieren."]]]};
 function REVIEW_DONE(){return [...done].filter(i=>i>0&&i<8).sort((a,b)=>a-b)}
 function REVIEW_OK(){return !getLock()}
 
