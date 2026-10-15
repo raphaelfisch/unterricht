@@ -1,0 +1,849 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>KI-Regeln mit Kolbi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+html{color-scheme:light}body{margin:0}[hidden]{display:none!important}img{max-width:100%}
+
+/* Layout: eine Lernstrecke – Kapitel-Leiste oben, Kolbi (Erlenmeyerkolben) spricht links, Inhalt rechts; auf dem Handy untereinander */
+:root{
+  --bg:#f3f6f9; --surface:#ffffff; --ink:#1b2a41; --muted:#5b6b80; --line:#d6dee8;
+  --accent:#e2702b; --accent-soft:#fde8da; --flask:#7cc6d6; --flask-deep:#3a9bb0;
+  --green:#2f9a4c; --green-soft:#e2f4e6; --yellow:#c98a00; --yellow-soft:#fdf2d2; --red:#d2453a; --red-soft:#fbe3e1;
+  --blue:#2f6fd6; --blue-soft:#e3ecfb;
+  --display:"Baloo 2", "Trebuchet MS", system-ui, sans-serif;
+  --body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121a24; --surface:#1b2633; --ink:#e8eef5; --muted:#9fb0c3; --line:#2e3d4f;
+  --accent:#f08a48; --accent-soft:#3a2617; --flask:#5fb3c6; --flask-deep:#8fd3e2;
+  --green:#5cc77a; --green-soft:#183323; --yellow:#e8b53a; --yellow-soft:#362b10; --red:#f07468; --red-soft:#3a1c1a;
+  --blue:#7aa7f0; --blue-soft:#1a2a45; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121a24; --surface:#1b2633; --ink:#e8eef5; --muted:#9fb0c3; --line:#2e3d4f;
+  --accent:#f08a48; --accent-soft:#3a2617; --flask:#5fb3c6; --flask-deep:#8fd3e2;
+  --green:#5cc77a; --green-soft:#183323; --yellow:#e8b53a; --yellow-soft:#362b10; --red:#f07468; --red-soft:#3a1c1a;
+  --blue:#7aa7f0; --blue-soft:#1a2a45; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.55;padding-inline:16px;padding-block:20px 48px}
+.wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{font-family:var(--display);line-height:1.15;text-wrap:balance;margin:0}
+h1{font-size:clamp(1.7rem,4vw,2.3rem);font-weight:800}
+h2{font-size:clamp(1.4rem,3.2vw,1.8rem);font-weight:800}
+h3{font-size:1.15rem;font-weight:700}
+p{margin:0}
+.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand small{display:block;font-size:.8rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.steps{display:flex;gap:6px;flex-wrap:wrap}
+.steps button{font:700 .85rem var(--body);width:34px;height:34px;border-radius:50%;border:2px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;line-height:1;opacity:.55}
+.steps button.done{border-color:var(--flask-deep);color:var(--flask-deep);opacity:1}
+.steps button.now{background:var(--accent);border-color:var(--accent);color:#fff;opacity:1}
+.steps button:focus-visible,button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.stage{display:grid;grid-template-columns:200px minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:720px){.stage{grid-template-columns:minmax(0,1fr)}.guide{flex-direction:row!important;align-items:flex-start}.guide svg{width:84px!important;height:auto;flex:none}}
+.guide{display:flex;flex-direction:column;align-items:center;gap:12px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px)}
+.guide svg{width:150px;height:auto}
+.bubble{background:var(--surface);border:2px solid var(--ink);border-radius:18px;padding:12px 14px;font-size:.98rem;position:relative;min-width:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:18px;min-width:0}
+@media (max-width:480px){.panel{padding:18px}}
+.kicker{font:700 .78rem var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.lead{font-size:1.08rem}
+.quote{border-left:5px solid var(--accent);background:var(--accent-soft);padding:14px 16px;border-radius:0 12px 12px 0;font-style:italic;font-size:1.1rem}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.lamp{border-radius:12px;padding:14px;border:2px solid}
+.lamp h3{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.lamp ul{margin:0;padding-left:18px;font-size:.95rem}
+.g{border-color:var(--green);background:var(--green-soft)} .g h3{color:var(--green)}
+.y{border-color:var(--yellow);background:var(--yellow-soft)} .y h3{color:var(--yellow)}
+.r{border-color:var(--red);background:var(--red-soft)} .r h3{color:var(--red)}
+.dot{width:14px;height:14px;border-radius:50%;background:currentColor;display:inline-block}
+.task{border:2px dashed var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.task h3{color:var(--blue)}
+.sort-item{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-radius:10px;background:var(--bg)}
+.sort-item p{flex:1 1 240px;min-width:0}
+.pick{display:flex;gap:6px}
+.pick button{font:700 .85rem var(--body);padding:6px 10px;border-radius:999px;border:2px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.pick button[data-v="g"].sel{background:var(--green);border-color:var(--green);color:#fff}
+.pick button[data-v="y"].sel{background:var(--yellow);border-color:var(--yellow);color:#fff}
+.pick button[data-v="r"].sel{background:var(--red);border-color:var(--red);color:#fff}
+.sort-item.ok{outline:2px solid var(--green)} .sort-item.no{outline:2px solid var(--red)}
+.fb{font-size:.92rem;color:var(--muted);flex-basis:100%}
+.btn{font:700 1rem var(--body);padding:11px 18px;border-radius:999px;border:2px solid var(--ink);background:var(--surface);color:var(--ink);cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.nav{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.result{padding:12px 14px;border-radius:10px;font-weight:700}
+.result.good{background:var(--green-soft);color:var(--green)} .result.bad{background:var(--red-soft);color:var(--red)}
+.tools{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.tool{border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:4px}
+.tool a{color:var(--blue);font-weight:700}
+.tool.rec{border:2px solid var(--green)}
+.badge{font:700 .72rem var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--green)}
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.rule{border:1px solid var(--line);border-top:4px solid var(--blue);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:6px;background:var(--surface)}
+.rule .n{font:800 1.6rem var(--display);color:var(--blue);line-height:1}
+.rule details{font-size:.94rem;color:var(--muted)}
+.rule summary{cursor:pointer;color:var(--blue);font-weight:700}
+.tokens{line-height:2.3;background:var(--bg);border-radius:12px;padding:14px;font-size:1.02rem}
+.tok{cursor:pointer;border-radius:6px;padding:3px 3px;border:none;background:transparent;font:inherit;color:inherit}
+.tok:hover{background:var(--blue-soft)}
+.tok.marked{background:var(--red);color:#fff}
+.tok.missed{outline:2px dashed var(--red)}
+.compare{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.person{border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.person ol{margin:0;padding-left:20px;font-size:.95rem}
+.prompt{background:var(--bg);border-radius:12px;padding:14px;font-family:ui-monospace,Consolas,monospace;font-size:.92rem;white-space:pre-wrap;word-break:break-word}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+label{font-weight:700;font-size:.9rem;display:flex;flex-direction:column;gap:4px}
+input,select{font:1rem var(--body);padding:9px 10px;border-radius:8px;border:2px solid var(--line);background:var(--surface);color:var(--ink);width:100%}
+.levels{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.lvl{border-radius:12px;padding:12px;border:1px solid var(--line)}
+.lvl b{font-family:var(--display);font-size:1.05rem;display:block}
+.lvl.l1{background:var(--yellow-soft)} .lvl.l2{background:var(--accent-soft)} .lvl.l3{background:var(--red-soft)} .lvl.l4{background:var(--blue-soft)}
+.match{display:flex;flex-direction:column;gap:10px}
+.match-row{display:grid;grid-template-columns:minmax(0,1fr) 200px;gap:10px;align-items:center;padding:10px;border-radius:10px;background:var(--bg)}
+@media (max-width:560px){.match-row{grid-template-columns:minmax(0,1fr)}}
+.q{display:flex;flex-direction:column;gap:10px}
+.q .count{font:700 .85rem var(--body);color:var(--muted)}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{text-align:left;font:1rem var(--body);padding:12px 14px;border-radius:12px;border:2px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.opt:hover{border-color:var(--blue)}
+.opt.sel{border-color:var(--blue);background:var(--blue-soft)}
+.bar{height:10px;border-radius:999px;background:var(--line);overflow:hidden}
+.bar span{display:block;height:100%;background:var(--accent);transition:width .3s}
+.cert{border:3px solid var(--green);border-radius:16px;padding:22px;text-align:center;display:flex;flex-direction:column;gap:10px;background:var(--green-soft)}
+.cert .big{font:800 2.4rem var(--display);color:var(--green)}
+.list-plain{margin:0;padding-left:20px}
+.testmode .steps,.testmode .guide{display:none}
+.testmode .stage{grid-template-columns:minmax(0,1fr)}
+.testmode .panel{max-width:720px;margin:0 auto;width:100%}
+.warn{border:3px solid var(--red);background:var(--red-soft);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:8px}
+.warn h3{color:var(--red);font-size:1.3rem}
+.overlay{position:fixed;inset:0;background:rgba(10,18,28,.6);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50}
+.modal{background:var(--surface);color:var(--ink);border:3px solid var(--red);border-radius:16px;padding:22px;max-width:440px;width:100%;display:flex;flex-direction:column;gap:14px}
+.modal h2{color:var(--red)}
+.modal .nav{justify-content:flex-end}
+@keyframes bub{0%{transform:translateY(0);opacity:.9}100%{transform:translateY(-38px);opacity:0}}
+.b1{animation:bub 2.6s infinite ease-in}.b2{animation:bub 3.1s .8s infinite ease-in}.b3{animation:bub 2.8s 1.5s infinite ease-in}
+@media (prefers-reduced-motion:reduce){.b1,.b2,.b3{animation:none}.bar span{transition:none}}
+
+/* Duo: Kolbi (Chemie) und Robo (KI) */
+:root{--byte:#5b5bd6;--byte-soft:#ecebfd;--kolbi:#d9622a;--kolbi-soft:#fde8da}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--byte:#a3a3ff;--byte-soft:#25244a;--kolbi:#f39a63;--kolbi-soft:#3a2617}}
+:root[data-theme="dark"]{--byte:#a3a3ff;--byte-soft:#25244a;--kolbi:#f39a63;--kolbi-soft:#3a2617}
+.guide{display:flex;flex-direction:column;align-items:stretch;gap:10px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px)}
+.duo{display:flex;justify-content:center;align-items:flex-end;gap:6px}
+.duo figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:2px;opacity:.45;transition:opacity .2s,transform .2s}
+.duo figure.on{opacity:1;transform:translateY(-3px)}
+.duo figure svg{width:92px;height:auto}
+.duo figcaption{font:800 .85rem var(--display)}
+.duo .fk figcaption{color:var(--kolbi)} .duo .fb figcaption{color:var(--byte)}
+.talk{display:flex;flex-direction:column;gap:8px}
+.line{border:2px solid var(--kolbi);background:var(--surface);border-radius:14px;padding:8px 10px 10px;font-size:.95rem;min-width:0}
+.line.b{border-color:var(--byte);background:var(--byte-soft)}
+.line .who{display:flex;align-items:center;justify-content:space-between;gap:6px;font:800 .8rem var(--display);letter-spacing:.03em;color:var(--kolbi);margin-bottom:2px}
+.line.b .who{color:var(--byte)}
+.spk{border:none;background:transparent;color:inherit;cursor:pointer;font-size:1rem;line-height:1;padding:2px 4px;border-radius:6px}
+.spk:hover{background:var(--bg)}
+.voicebar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center;font-size:.78rem;color:var(--muted)}
+.voicebar button{font:700 .8rem var(--body);border:2px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:4px 10px;cursor:pointer}
+.voicebar button[aria-pressed="true"]{border-color:var(--byte);color:var(--byte)}
+.talking .mth{animation:mth .28s infinite alternate}
+@keyframes mth{from{transform:scaleY(1)}to{transform:scaleY(.4)}}
+.mth{transform-box:fill-box;transform-origin:center}
+.cast{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.castcard{border-radius:14px;padding:14px;display:flex;gap:12px;align-items:flex-start;border:2px solid var(--kolbi);background:var(--kolbi-soft)}
+.castcard.b{border-color:var(--byte);background:var(--byte-soft)}
+.castcard svg{width:72px;height:auto;flex:none}
+.castcard h3{margin-bottom:4px}
+.castcard p{font-size:.95rem}
+@media (max-width:720px){.guide{position:static}.duo figure svg{width:64px}}
+@media (prefers-reduced-motion:reduce){.talking .mth{animation:none}}
+
+@media (max-width:720px){.guide{flex-direction:column!important;align-items:stretch!important}}
+
+/* Willkommensscreen */
+.welcome[hidden],.wrap[hidden]{display:none!important}
+.welcome{max-width:980px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:22px;text-align:center;padding-block:12px 24px}
+.welcome .eyebrow{font:700 .85rem var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.welcome h1{font-size:clamp(2.2rem,6vw,3.4rem);line-height:1.05}
+.welcome .sub{font-size:1.15rem;color:var(--muted);max-width:40ch}
+.wduo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;width:100%}
+@media (max-width:640px){.wduo{grid-template-columns:minmax(0,1fr)}}
+.wcard{border-radius:20px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:10px;border:3px solid var(--kolbi);background:var(--kolbi-soft)}
+.wcard.b{border-color:var(--byte);background:var(--byte-soft)}
+.wcard svg{width:150px;height:auto}
+.wcard .nm{font:800 1.6rem var(--display);color:var(--kolbi);line-height:1}
+.wcard.b .nm{color:var(--byte)}
+.wcard .role{font:700 .78rem var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.wcard .sp{background:var(--surface);border-radius:14px;padding:12px 14px;font-size:1.02rem;text-align:left;width:100%;position:relative}
+.wcard .sp::before{content:"";position:absolute;top:-9px;left:50%;margin-left:-9px;border:9px solid transparent;border-top:0;border-bottom-color:var(--surface)}
+.wlist{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;width:100%;margin:0;padding:0;list-style:none}
+.wlist li{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;text-align:left;display:flex;gap:10px;align-items:flex-start}
+.wlist b.n{font:800 1.3rem var(--display);color:var(--accent);line-height:1.1;min-width:1.4em}
+.wbtns{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.wbtns .btn{font-size:1.1rem;padding:14px 24px}
+.wnote{font-size:.85rem;color:var(--muted)}
+
+/* Chat */
+.talk .line{max-width:94%}
+.talk .line.k{align-self:flex-start;border-radius:14px 14px 14px 4px}
+.talk .line.b{align-self:flex-end;border-radius:14px 14px 4px 14px}
+.line.pop{animation:pop .32s ease-out}
+@keyframes pop{from{opacity:0;transform:translateY(8px) scale(.96)}to{opacity:1;transform:none}}
+.line.typing{display:inline-flex;gap:5px;padding:10px 14px;width:auto}
+.line.typing span{width:7px;height:7px;border-radius:50%;background:var(--kolbi);animation:dot 1s infinite ease-in-out}
+.line.typing.b span{background:var(--byte)}
+.line.typing span:nth-child(2){animation-delay:.15s}.line.typing span:nth-child(3){animation-delay:.3s}
+@keyframes dot{0%,80%,100%{opacity:.3;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
+.skiptalk{align-self:center;font:700 .8rem var(--body);border:none;background:transparent;color:var(--muted);cursor:pointer;text-decoration:underline;padding:2px 6px}
+@media (prefers-reduced-motion:reduce){.line.pop,.line.typing span{animation:none}}
+
+/* Messenger */
+:root{--chatbg:#e7edf3;--chatdot:rgba(27,42,65,.07);--bubk:#ffffff;--bubb:#e6e5fc}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--chatbg:#0e151e;--chatdot:rgba(255,255,255,.05);--bubk:#1f2b39;--bubb:#2b2a55}}
+:root[data-theme="dark"]{--chatbg:#0e151e;--chatdot:rgba(255,255,255,.05);--bubk:#1f2b39;--bubb:#2b2a55}
+.stage{grid-template-columns:290px minmax(0,1fr)}
+@media (max-width:720px){.stage{grid-template-columns:minmax(0,1fr)}}
+.chat{border:1px solid var(--line);border-radius:18px;overflow:hidden;background:var(--chatbg);display:flex;flex-direction:column}
+.chathead{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border-bottom:1px solid var(--line)}
+.avs{display:flex}
+.av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none;border:2px solid var(--surface);transition:transform .2s}
+.av svg{width:100%;height:100%;display:block}
+.av.k{background:var(--kolbi-soft)} .av.b{background:var(--byte-soft)}
+.avs .av+.av{margin-left:-10px}
+.avs .av.on{transform:scale(1.08);z-index:1}
+.ctitle{display:flex;flex-direction:column;min-width:0;line-height:1.2}
+.ctitle b{font:800 1rem var(--display)}
+.ctitle small{font-size:.78rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ctitle small.typing{color:var(--green);font-style:italic}
+.chat .talk{padding:12px 10px 10px;gap:8px;min-height:140px;background-color:var(--chatbg);background-image:radial-gradient(var(--chatdot) 1.2px,transparent 1.3px);background-size:16px 16px}
+.msg{display:flex;gap:6px;align-items:flex-start;max-width:100%}
+.msg.b{flex-direction:row-reverse}
+.msg .av{width:28px;height:28px;border-width:0}
+.bub{position:relative;background:var(--bubk);color:var(--ink);border-radius:12px;padding:6px 10px 4px;box-shadow:0 1px 1px rgba(0,0,0,.13);max-width:calc(100% - 38px);font-size:.95rem;min-width:0}
+.msg.k .bub{border-top-left-radius:2px}
+.msg.b .bub{background:var(--bubb);border-top-right-radius:2px}
+.msg.k .bub::before{content:"";position:absolute;top:0;left:-7px;border-top:8px solid var(--bubk);border-left:8px solid transparent}
+.msg.b .bub::before{content:"";position:absolute;top:0;right:-7px;border-top:8px solid var(--bubb);border-right:8px solid transparent}
+.bub .nm{display:block;font:700 .78rem var(--body);color:var(--kolbi);margin-bottom:1px}
+.msg.b .bub .nm{color:var(--byte)}
+.bub .meta{display:flex;justify-content:flex-end;align-items:center;gap:6px;font-size:.68rem;color:var(--muted);margin-top:2px}
+.bub .spk{font-size:.8rem;padding:0 2px}
+.msg.pop{animation:pop .3s ease-out}
+.bub.dots{display:flex;gap:4px;padding:10px 12px}
+.bub.dots span{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:dot 1s infinite ease-in-out}
+.bub.dots span:nth-child(2){animation-delay:.15s}.bub.dots span:nth-child(3){animation-delay:.3s}
+.chat .skiptalk{margin:0 0 8px}
+@media (prefers-reduced-motion:reduce){.msg.pop,.bub.dots span{animation:none}}
+
+/* Inhalt erst nach dem Gespräch */
+body.chatting .panel{display:none}
+.panelwait{border:2px dashed var(--line);border-radius:16px;padding:24px;display:flex;flex-direction:column;align-items:flex-start;gap:12px;color:var(--muted);min-width:0}
+.panelwait[hidden]{display:none!important}
+.panel.fadein{animation:fadeup .4s ease-out}
+@keyframes fadeup{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.panel.fadein{animation:none}}
+
+/* Gruppenchat: Kolbi und Robo links, Du rechts */
+:root{--bubu:#d7f4dc;--bubu-ink:#16402a}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bubu:#1d4a2c;--bubu-ink:#dff5e4}}
+:root[data-theme="dark"]{--bubu:#1d4a2c;--bubu-ink:#dff5e4}
+.msg.b{flex-direction:row}
+.msg.b .bub{border-top-right-radius:12px;border-top-left-radius:2px}
+.msg.b .bub::before{right:auto;left:-7px;border-right:0;border-top:8px solid var(--bubb);border-left:8px solid transparent}
+.msg.u{flex-direction:row-reverse;align-self:flex-end}
+.msg.u .bub{background:var(--bubu);color:var(--bubu-ink);border-top-right-radius:2px;font-weight:700}
+.msg.u .bub::before{content:"";position:absolute;top:0;right:-7px;border-top:8px solid var(--bubu);border-right:8px solid transparent}
+.msg.u .bub .nm{color:var(--green)}
+
+.opt:disabled{cursor:default;opacity:1;color:var(--ink)}
+
+/* Chatfenster nie hoeher als der Bildschirm; der Verlauf scrollt innen */
+.guide{max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px - env(safe-area-inset-top,0px))}
+.guide>*{flex:none}
+.guide>.chat{flex:1 1 auto;min-height:0}
+.chat .talk{flex:1 1 auto;min-height:140px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+@media (max-width:720px){.guide{max-height:none}.chat .talk{max-height:60vh;max-height:60dvh}}
+
+/* Fester Kasten: Seite scrollt nicht, nur der Auftrag (und der Chat) */
+@media (min-width:721px){
+html:has(.wrap:not([hidden])),html:has(.wrap:not([hidden])) body{height:100%}
+body:has(.wrap:not([hidden])){overflow:hidden;padding-block:14px}
+.wrap:not([hidden]){height:100%;max-width:1180px;gap:10px}
+.wrap>header.top{flex:none}
+.wrap>header.top h1{font-size:1.5rem;margin:0}
+.wrap>header.top small{display:none}
+.stage{flex:1 1 auto;min-height:0;grid-template-rows:minmax(0,1fr);align-items:stretch;border:2px solid var(--line);border-radius:22px;padding:12px;background:var(--bg);box-shadow:0 2px 10px rgba(0,0,0,.06)}
+.stage>.guide{position:static;max-height:none!important;height:100%;min-height:0}
+.stage>*:not(.guide){height:100%;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
+.stage>.panel{border-radius:14px}
+}
+</style>
+
+</head>
+<body>
+<section class="welcome" id="welcome" aria-labelledby="wtitle">
+  <span class="eyebrow">Chemie · KI-Einheit</span>
+  <h1 id="wtitle">Unsere KI-Regeln</h1>
+  <p class="sub">Bevor du mit KI arbeitest, frischst du mit uns die Regeln auf.</p>
+  <div class="wduo">
+    <div class="wcard"><svg viewBox="0 0 160 190" role="img" aria-label="Kolbi, ein Erlenmeyerkolben">
+  <circle class="b1" cx="70" cy="28" r="5" fill="var(--flask)"/><circle class="b2" cx="88" cy="34" r="4" fill="var(--flask)"/><circle class="b3" cx="80" cy="22" r="3" fill="var(--flask)"/>
+  <path d="M62 40 h36 v40 l44 86 a10 10 0 0 1 -9 14 H27 a10 10 0 0 1 -9 -14 l44 -86 z" fill="var(--surface)" stroke="var(--ink)" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M44 120 h72 l22 44 a6 6 0 0 1 -5 8 H27 a6 6 0 0 1 -5 -8 z" fill="var(--flask)"/>
+  <rect x="56" y="34" width="48" height="10" rx="4" fill="var(--ink)"/>
+  <path d="M100 36 l14 -9 v18 z M100 36 l-14 -9 v18 z" fill="var(--kolbi)"/><circle cx="100" cy="36" r="4.5" fill="var(--kolbi)"/>
+  <circle cx="66" cy="104" r="6" fill="var(--ink)"/><circle cx="94" cy="104" r="6" fill="var(--ink)"/>
+  <path d="M58 98 l-5 -4 M61 96 l-3 -5 M102 98 l5 -4 M99 96 l3 -5" stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="68" cy="102" r="2" fill="var(--surface)"/><circle cx="96" cy="102" r="2" fill="var(--surface)"/>
+  <path  d="M68 122 q12 12 24 0" fill="none" stroke="var(--ink)" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="56" cy="118" r="5" fill="var(--accent)" opacity=".45"/><circle cx="104" cy="118" r="5" fill="var(--accent)" opacity=".45"/>
+</svg><span class="nm">Kolbi</span><span class="role">Chemie-Forscherin</span><p class="sp">Hoi! Ich bin Kolbi. Ich liebe Chemie, beobachte genau und denke selbst.</p></div>
+    <div class="wcard b"><svg viewBox="0 0 160 190" role="img" aria-label="Robo, ein KI-Roboter">
+  <line x1="80" y1="30" x2="80" y2="14" stroke="var(--ink)" stroke-width="4"/><circle cx="80" cy="11" r="6" fill="var(--byte)"/>
+  <rect x="30" y="30" width="100" height="78" rx="16" fill="var(--surface)" stroke="var(--ink)" stroke-width="5"/>
+  <rect x="42" y="42" width="76" height="54" rx="8" fill="#1d2140"/>
+  <rect x="56" y="58" width="12" height="14" rx="3" fill="#7fe3ff"/><rect x="92" y="58" width="12" height="14" rx="3" fill="#7fe3ff"/>
+  <rect x="66" y="80" width="28" height="5" rx="2.5" fill="#7fe3ff"/>
+  <rect x="22" y="56" width="8" height="22" rx="3" fill="var(--byte)"/><rect x="130" y="56" width="8" height="22" rx="3" fill="var(--byte)"/>
+  <rect x="72" y="108" width="16" height="10" fill="var(--ink)"/>
+  <rect x="40" y="118" width="80" height="56" rx="12" fill="var(--byte)" stroke="var(--ink)" stroke-width="5"/>
+  <circle cx="64" cy="140" r="5" fill="#7fe3ff"/><rect x="76" y="136" width="28" height="8" rx="4" fill="#ffffff" opacity=".7"/>
+  <rect x="58" y="154" width="44" height="6" rx="3" fill="#ffffff" opacity=".5"/>
+  <path d="M40 132 l-14 18 M120 132 l14 18" stroke="var(--ink)" stroke-width="6" stroke-linecap="round"/>
+</svg><span class="nm">Robo</span><span class="role">KI-Roboter</span><p class="sp">Ich bin Robo, eine KI. Ich weiss viel, aber ich mache auch Fehler. Ich bin ein Programm, kein Mensch.</p></div>
+  </div>
+  <ul class="wlist"><li><b class="n">1</b><span>7 kurze Kapitel mit kleinen Aufgaben</span></li><li><b class="n">2</b><span>Ein Test am Schluss. Du hast <b>nur einen Versuch</b>.</span></li><li><b class="n">3</b><span>Dauer: etwa 30–40 Minuten</span></li></ul>
+  <div class="wbtns"><button class="btn primary" id="wStartVoice">🔊 Los geht's mit Stimmen</button><button class="btn" id="wStartQuiet">Los geht's ohne Ton</button></div>
+  <p class="wnote">Mit Stimmen: Bitte Kopfhörer aufsetzen. Die Stimmen sind KI-generiert. Du kannst sie jederzeit ein- und ausschalten.</p>
+</section>
+<div class="wrap" hidden>
+  <header class="top">
+    <div class="brand">
+      <div><small>Chemie · Einstieg</small><h1>Unsere KI-Regeln</h1></div>
+    </div>
+    <nav class="steps" id="steps" aria-label="Kapitel"></nav>
+  </header>
+
+  <div class="stage">
+    <aside class="guide" aria-live="polite">
+      <div class="chat">
+        <div class="chathead">
+          <div class="avs"><span class="av k" id="figK"><svg viewBox="14 24 132 160" aria-hidden="true">
+  
+  <path d="M62 40 h36 v40 l44 86 a10 10 0 0 1 -9 14 H27 a10 10 0 0 1 -9 -14 l44 -86 z" fill="var(--surface)" stroke="var(--ink)" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M44 120 h72 l22 44 a6 6 0 0 1 -5 8 H27 a6 6 0 0 1 -5 -8 z" fill="var(--flask)"/>
+  <rect x="56" y="34" width="48" height="10" rx="4" fill="var(--ink)"/>
+  <path d="M100 36 l14 -9 v18 z M100 36 l-14 -9 v18 z" fill="var(--kolbi)"/><circle cx="100" cy="36" r="4.5" fill="var(--kolbi)"/>
+  <circle cx="66" cy="104" r="6" fill="var(--ink)"/><circle cx="94" cy="104" r="6" fill="var(--ink)"/>
+  <path d="M58 98 l-5 -4 M61 96 l-3 -5 M102 98 l5 -4 M99 96 l3 -5" stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="68" cy="102" r="2" fill="var(--surface)"/><circle cx="96" cy="102" r="2" fill="var(--surface)"/>
+  <path d="M68 122 q12 12 24 0" fill="none" stroke="var(--ink)" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="56" cy="118" r="5" fill="var(--accent)" opacity=".45"/><circle cx="104" cy="118" r="5" fill="var(--accent)" opacity=".45"/>
+</svg></span><span class="av b" id="figB"><svg viewBox="16 2 128 128" aria-hidden="true">
+  <line x1="80" y1="30" x2="80" y2="14" stroke="var(--ink)" stroke-width="4"/><circle cx="80" cy="11" r="6" fill="var(--byte)"/>
+  <rect x="30" y="30" width="100" height="78" rx="16" fill="var(--surface)" stroke="var(--ink)" stroke-width="5"/>
+  <rect x="42" y="42" width="76" height="54" rx="8" fill="#1d2140"/>
+  <rect x="56" y="58" width="12" height="14" rx="3" fill="#7fe3ff"/><rect x="92" y="58" width="12" height="14" rx="3" fill="#7fe3ff"/>
+  <rect x="66" y="80" width="28" height="5" rx="2.5" fill="#7fe3ff"/>
+  <rect x="22" y="56" width="8" height="22" rx="3" fill="var(--byte)"/><rect x="130" y="56" width="8" height="22" rx="3" fill="var(--byte)"/>
+  <rect x="72" y="108" width="16" height="10" fill="var(--ink)"/>
+  <rect x="40" y="118" width="80" height="56" rx="12" fill="var(--byte)" stroke="var(--ink)" stroke-width="5"/>
+  <circle cx="64" cy="140" r="5" fill="#7fe3ff"/><rect x="76" y="136" width="28" height="8" rx="4" fill="#ffffff" opacity=".7"/>
+  <rect x="58" y="154" width="44" height="6" rx="3" fill="#ffffff" opacity=".5"/>
+  <path d="M40 132 l-14 18 M120 132 l14 18" stroke="var(--ink)" stroke-width="6" stroke-linecap="round"/>
+</svg></span></div>
+          <div class="ctitle"><b>Kolbi &amp; Robo</b><small id="chatStatus">Chemie-Forscherin · KI-Roboter</small></div>
+        </div>
+        <div class="talk" id="say"></div>
+      </div>
+      <div class="voicebar"><button id="voiceToggle" aria-pressed="false">🔈 Stimmen aus</button><button id="readAll">▶ Vorlesen</button><span>Die Stimmen sind KI-generiert.</span></div>
+    </aside>
+    <main class="panel" id="panel"></main>
+  </div>
+</div>
+
+<script>
+const STAR_SVG='<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" style="display:block"><path fill="currentColor" d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3 6.1 20.6l1.3-6.6-4.9-4.6 6.6-.8z"/></svg>';
+
+/* ---------- Kolbi & Robo: Dialog und Stimmen ---------- */
+const WHO={k:{name:"Kolbi",fig:"figK"},b:{name:"Robo",fig:"figB"},u:{name:"Du",fig:null}};
+let LINES=[]; let voiceOn=false;
+try{voiceOn=localStorage.getItem("duo-voice")==="1"}catch(e){}
+const TTS=("speechSynthesis" in window)?window.speechSynthesis:null;
+let VOICES={k:null,b:null};
+function pickVoices(){
+  if(!TTS)return; const vs=TTS.getVoices(); if(!vs.length)return;
+  const de=vs.filter(v=>/^de/i.test(v.lang));
+  const find=(rx,pool)=>pool.find(v=>rx.test(v.name));
+  const nat=v=>/Natural|Online|Neural/i.test(v.name); const srt=a=>a.filter(nat).concat(a.filter(v=>!nat(v)));
+  const dd=srt(de.filter(v=>/^de[-_]DE/i.test(v.lang))); const hd=srt(de.filter(v=>!/CH/i.test(v.lang))); /* nur Hochdeutsch, natuerliche Stimmen zuerst, nie de-CH */
+  const fem=/Katja|Amala|Seraphina|Hedda|Vicki|Anna|Petra|Marlene|Ingrid|Elke|Gisela|Klarissa|Female|Frau/i;
+  const mal=/Conrad|Killian|Florian|Stefan|Hans|Kasper|Ralf|Bernd|Christoph|Male|Mann/i;
+  VOICES.k=find(/Katja.*(Natural|Online)/i,dd)||find(/Amala.*(Natural|Online)/i,dd)||find(/Seraphina/i,dd)||find(fem,dd.filter(nat))||find(/Katja/i,dd)||find(fem,dd)||find(fem,hd)||dd.find(v=>!mal.test(v.name))||hd[0]||null;
+  VOICES.b=find(/Conrad/i,dd)||find(/Florian/i,dd)||find(/Killian/i,dd)||find(mal,dd.filter(nat))||find(mal,dd)||find(mal,hd)||dd.find(v=>v!==VOICES.k)||hd.find(v=>v!==VOICES.k)||VOICES.k;
+}
+if(TTS){pickVoices();TTS.onvoiceschanged=pickVoices}
+function plain(h){const d=document.createElement("div");d.innerHTML=h;return d.textContent.replace(/[«»]/g,"").replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}]/gu,"").trim()}
+function setActive(w){["k","b"].forEach(x=>{const f=document.getElementById(WHO[x].fig);if(!f)return;f.classList.toggle("on",!w||x===w);f.classList.remove("talking")})}
+function speakLines(list){
+  if(!TTS){return}
+  list=list.filter(x=>x[0]!=="u");
+  TTS.cancel();
+  list.forEach(([w,t])=>{const u=new SpeechSynthesisUtterance(plain(t));u.lang=(VOICES[w]&&VOICES[w].lang)||"de-DE";if(VOICES[w])u.voice=VOICES[w];
+    if(w==="b"){u.pitch=VOICES.b&&VOICES.b!==VOICES.k?1:0.75;u.rate=1.05}else{u.pitch=VOICES.k&&VOICES.k!==VOICES.b?1:1.2;u.rate=1}
+    u.onstart=()=>{setActive(w);document.getElementById(WHO[w].fig).classList.add("talking")};
+    u.onend=()=>{document.getElementById(WHO[w].fig).classList.remove("talking")};
+    TTS.speak(u)});
+}
+let talkToken=0;
+function avHTML(w){if(!WHO[w].fig)return "";const a=document.getElementById(WHO[w].fig);return `<span class="av ${w}">${a?a.innerHTML:""}</span>`}
+function hhmm(){const d=new Date();return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")}
+function setStatus(w){const s=document.getElementById("chatStatus");if(!s)return;if(w){s.textContent=WHO[w].name+" schreibt …";s.classList.add("typing")}else{s.textContent="Chemie-Forscherin · KI-Roboter";s.classList.remove("typing")}}
+
+function addChat(list){const box=document.getElementById("say");let i=0;
+  const step=()=>{if(i>=list.length)return;const [w,t]=list[i++];
+    if(w==="u"){box.appendChild(lineEl(w,t,true));setTimeout(step,600);return}
+    const ty=typingEl(w);box.appendChild(ty);
+    setTimeout(()=>{ty.remove();box.appendChild(lineEl(w,t,true));if(TTS&&voiceOn)speakOne(w,t,()=>{});setTimeout(step,600)},typeMs(t,TTS&&voiceOn))};
+  step()}
+function lineEl(w,t,anim){const d=document.createElement("div");d.className="msg "+w+(anim?" pop":"");
+  d.innerHTML=`${avHTML(w)}<div class="bub"><span class="nm">${WHO[w].name}</span><div>${t}</div><div class="meta">${TTS&&w!=="u"?`<button class="spk" aria-label="${WHO[w].name} vorlesen" title="Vorlesen">🔊</button>`:""}<span>${hhmm()}</span></div></div>`;
+  const b=d.querySelector(".spk");if(b)b.onclick=()=>speakLines([[w,t]]);return d}
+function typeMs(t,speaking){const n=plain(t).length;return speaking?Math.min(1500,Math.max(700,n*20)):Math.min(3800,Math.max(1000,n*42))}
+function typingEl(w){const d=document.createElement("div");d.className="msg "+w;d.setAttribute("aria-label",WHO[w].name+" schreibt");
+  d.innerHTML=`${avHTML(w)}<div class="bub dots"><span></span><span></span><span></span></div>`;setStatus(w);
+  const o=new MutationObserver(()=>{if(!d.isConnected){setStatus(null);o.disconnect()}});o.observe(document.getElementById("say"),{childList:true});return d}
+function speakOne(w,t,cb){let done=false;const fin=()=>{if(!done){done=true;cb()}};
+  const u=new SpeechSynthesisUtterance(plain(t));u.lang=(VOICES[w]&&VOICES[w].lang)||"de-DE";if(VOICES[w])u.voice=VOICES[w];
+  if(w==="b"){u.pitch=VOICES.b&&VOICES.b!==VOICES.k?1:0.75;u.rate=1.05}else{u.pitch=VOICES.k&&VOICES.k!==VOICES.b?1:1.2;u.rate=1}
+  const f=document.getElementById(WHO[w].fig);
+  u.onstart=()=>{setActive(w);f.classList.add("talking")};u.onend=()=>{f.classList.remove("talking");fin()};u.onerror=()=>{f.classList.remove("talking");fin()};
+  TTS.speak(u);setTimeout(fin,plain(t).length*95+2500)}
+function setChatting(on){const was=document.body.classList.contains("chatting");document.body.classList.toggle("chatting",on);const pw=document.getElementById("panelWait");if(pw)pw.hidden=!on;
+  const pn=document.getElementById("panel");if(!on&&was&&pn){pn.classList.remove("fadein");void pn.offsetWidth;pn.classList.add("fadein")}}
+function showAll(lines){setChatting(false);const box=document.getElementById("say");box.innerHTML="";lines.forEach(([w,t])=>box.appendChild(lineEl(w,t,false)));setActive(null);const s=document.getElementById("skipTalk");if(s)s.hidden=true}
+const TALK_KEY="duo-talk-seen-"+(document.title||"").replace(/\W+/g,"");
+let TALK_SEEN=new Set();try{TALK_SEEN=new Set(JSON.parse(localStorage.getItem(TALK_KEY)||"[]"))}catch(e){}
+function talkId(lines){const t=lines.map(x=>x[0]+x[1]).join("|");let h=5381;for(const c of t)h=((h*33)^c.charCodeAt(0))>>>0;return h.toString(36)}
+function markSeen(id){TALK_SEEN.add(id);try{localStorage.setItem(TALK_KEY,JSON.stringify([...TALK_SEEN]))}catch(e){}}
+function talk(lines){
+  if(typeof lines==="string")lines=[["k",lines]];
+  LINES=lines; const tok=++talkToken; const box=document.getElementById("say"); box.innerHTML="";
+  if(TTS)TTS.cancel();
+  const hidden=document.querySelector(".wrap").hidden;
+  const reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const speaking=!!TTS&&voiceOn&&!hidden;
+  const skip=document.getElementById("skipTalk");
+  const g=document.querySelector(".guide");const guideOff=!g||g.offsetParent===null;
+  const tid=talkId(lines);const seenBefore=TALK_SEEN.has(tid);
+  if(hidden||reduce||guideOff||seenBefore||lines.length<2&&!speaking){showAll(lines);setActive(lines[0][0]);if(speaking)speakLines(lines);return}
+  const doSkip=()=>{talkToken++;if(TTS)TTS.cancel();showAll(lines)};
+  if(skip){skip.hidden=false;skip.onclick=doSkip}
+  const pws=document.getElementById("pwSkip");if(pws)pws.onclick=doSkip;
+  setChatting(true);
+  let i=0;
+  const next=()=>{if(tok!==talkToken)return;
+    if(i>=lines.length){if(skip)skip.hidden=true;setActive(null);setChatting(false);markSeen(tid);return}
+    const [w,t]=lines[i];const typ=typingEl(w);box.appendChild(typ);setActive(w);
+    const wait=typeMs(t,speaking);
+    setTimeout(()=>{if(tok!==talkToken)return;typ.remove();box.appendChild(lineEl(w,t,true));i++;
+      if(speaking)speakOne(w,t,()=>setTimeout(next,250));else setTimeout(next,Math.min(2600,Math.max(700,plain(t).length*28)))},wait)};
+  next();
+}
+(function(){const vt=document.getElementById("voiceToggle"),ra=document.getElementById("readAll");
+  if(!TTS){vt.hidden=true;ra.hidden=true;vt.parentNode.querySelector("span").textContent="Dein Browser kann nicht vorlesen.";return}
+  const upd=()=>{vt.setAttribute("aria-pressed",voiceOn);vt.textContent=voiceOn?"🔊 Stimmen an":"🔈 Stimmen aus"};upd();
+  vt.onclick=()=>{voiceOn=!voiceOn;try{localStorage.setItem("duo-voice",voiceOn?"1":"0")}catch(e){};upd();if(voiceOn)speakLines(LINES);else TTS.cancel()};
+  ra.onclick=()=>speakLines(LINES);})();
+
+const CH = [
+  {t:"Start"},{t:"Grundsatz"},{t:"KI-Ampel"},{t:"Tools"},{t:"Sechs Regeln"},{t:"Datenschutz"},{t:"Abschreiben"},{t:"Kennzeichnen"},{t:"Test"}
+];
+let cur = 0; const seen = new Set([0]);
+const $ = s => document.querySelector(s);
+const panel = $("#panel"), say = $("#say");
+
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function esc(s){return s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+
+const PROG_KEY="kolbi-progress-v1";
+const done=new Set([0]);
+try{(JSON.parse(localStorage.getItem(PROG_KEY)||"[]")).forEach(i=>done.add(i))}catch(e){}
+function hasTestLock(){try{return !!localStorage.getItem("kolbi-test-v1")}catch(e){return false}}
+function reach(){if(hasTestLock())return CH.length-1;
+  let i=0;while(i<CH.length-1&&done.has(i))i++;return i}
+const DU_DONE={"1": "✓ Frage richtig beantwortet.", "2": "✓ Alle Farben richtig zugeordnet.", "3": "✓ Frage richtig beantwortet.", "4": "✓ Alle sechs Beispiele gelesen.", "5": "✓ Alle heiklen Stellen gefunden.", "6": "✓ Frage richtig beantwortet.", "7": "✓ Alle Stufen richtig zugeordnet."};
+function complete(i){if(done.has(i))return;done.add(i);
+  if(DU_DONE[i])addChat([["u",DU_DONE[i]],["k",i===7?"Stark! 👉 Jetzt klick auf «Zum Test».":"Stark! 👉 Jetzt klick auf «Weiter»."]]);try{localStorage.setItem(PROG_KEY,JSON.stringify([...done]))}catch(e){}
+  const n=$("#next");if(n&&cur===i){n.disabled=false;const h=$("#nexthint");if(h)h.hidden=true}renderSteps()}
+function renderSteps(){
+  const n = $("#steps"); n.innerHTML = ""; const r=reach();
+  CH.forEach((c,i)=>{const b=document.createElement("button");if(i===0)b.innerHTML=STAR_SVG;else b.textContent=i;b.title=c.t;b.setAttribute("aria-label",c.t+(i>r?" (gesperrt)":""));
+    if(i===cur)b.className="now";else if(done.has(i))b.className="done";
+    if(i>r){b.disabled=true;b.style.cursor="not-allowed"}
+    b.onclick=()=>go(i);n.appendChild(b)});
+}
+function navHTML(next="Weiter"){
+  const ok=done.has(cur);
+  return `<div class="nav">${cur>0?`<button class="btn" id="back">Zurück</button>`:"<span></span>"}<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end"><span class="fb" id="nexthint" style="flex-basis:auto"${ok?" hidden":""}>Löse zuerst die Aufgabe in diesem Kapitel.</span><button class="btn primary" id="next"${ok?"":" disabled"}>${next}</button></div></div>`;
+}
+function bindNav(){const b=$("#back"),n=$("#next");if(b)b.onclick=()=>go(cur-1);if(n)n.onclick=()=>go(cur+1)}
+function go(i){i=Math.max(0,Math.min(CH.length-1,i));if(i>reach())return;cur=i;seen.add(cur);renderSteps();VIEWS[cur]();{const pn=document.getElementById("panel");if(pn)pn.scrollTop=0}window.scrollTo({top:0})}
+
+const VIEWS = [
+// 0 Start
+()=>{
+  talk([["k", "Hoi! Ich bin Kolbi. Ich liebe Chemie."], ["b", "Ich bin Robo. Ich bin eine KI, also ein Computerprogramm."], ["k", "Wir zeigen dir die KI-Regeln unserer Schule."], ["k", "👉 Du bist dran: Lies, was dich erwartet. Dann klick auf «Los geht's»."]]);
+  panel.innerHTML=`<p class="kicker">Willkommen</p>
+  <h2>Bevor du mit KI arbeitest</h2>
+  
+  <p class="lead">Bald machst du dein eigenes Plakat zu einem Chemiethema. Dabei darfst du KI benutzen. Zuerst lernst du hier unsere KI-Regeln.</p>
+  <ul class="list-plain">
+    <li>7 kurze Kapitel mit kleinen Aufgaben</li>
+    <li>Am Schluss: ein Test mit 10 Fragen. Du hast <b>nur einen Versuch</b>.</li>
+    <li>Du brauchst mindestens <b>8 richtige</b> Antworten.</li>
+    <li>Dauer: etwa 30 bis 40 Minuten</li>
+  </ul>
+  <div class="quote">Wichtig: Am Schluss musst du dein Thema <b>selbst erklären</b>. Wer nur abschreibt, kann sein Thema nicht erklären.</div>
+  ${navHTML("Los geht's")}`;bindNav();
+},
+// 1 Grundsatz
+()=>{
+  talk([["k", "Dein Gehirn ist wie ein Muskel."], ["k", "Dein Gehirn wird nur stark, wenn du es selbst trainierst."], ["b", "Ich kann dir Arbeit abnehmen. Aber dann trainiert dein Gehirn nicht."], ["k", "Und genau darum gilt: Schalte DEINEN Kopf ein! Denk zuerst selbst."], ["k", "👉 Du bist dran: Lies unseren Grundsatz. Dann beantworte die Frage."]]);
+  panel.innerHTML=`<p class="kicker">Kapitel 1</p><h2>Unser Grundsatz</h2>
+  <div class="quote">«KI kann dir beim Lernen helfen. Sie ersetzt aber nicht dein eigenes Denken. Du bist immer selbst für deine Arbeit verantwortlich.»</div>
+  <p>Dein Gehirn ist wie ein Muskel. Dein Gehirn wird nur stärker, wenn <b>du</b> denkst. Wenn die KI für dich denkt, lernt nur die KI.</p>
+  <p>Die KI kann Fehler machen. Übernimmst du einen KI-Fehler, ist der Fehler <b>dein</b> Fehler. Du bist verantwortlich, nicht die KI.</p>
+  <div class="task"><h3>Kurz überlegen</h3>
+    <p>Wofür ist KI da?</p>
+    <div class="opts" id="o1"></div><p class="fb" id="f1"></p></div>
+  ${navHTML()}`;
+  const opts=[["Damit ich schneller fertig bin.",0],["KI hilft mir beim Lernen. Das Denken mache ich selbst.",1],["Damit ich nicht mehr verantwortlich bin.",0]];
+  const box=$("#o1");shuffle(opts).forEach(([t,ok])=>{const b=document.createElement("button");b.className="opt";b.textContent=t;b.onclick=()=>{box.querySelectorAll(".opt").forEach(x=>x.classList.remove("sel"));b.classList.add("sel");if(ok)complete(1);$("#f1").innerHTML=ok?"<span style='color:var(--green)'>Richtig.</span> KI ist eine Lernhilfe. KI denkt nicht für dich.":"<span style='color:var(--red)'>Nicht ganz.</span> Lies den Grundsatz nochmals.";};box.appendChild(b)});
+  bindNav();
+},
+// 2 Ampel
+()=>{
+  talk([["k", "Nicht alles mit KI ist erlaubt."], ["k", "Grün heisst: erlaubt. Gelb: nur mit Erlaubnis. Rot: verboten."], ["b", "Bei Rot bleibe ich aus, zum Beispiel bei Tests."], ["k", "👉 Du bist dran: Lies die Beispiele. Gib jedem Satz eine Farbe. Dann klick auf «Prüfen»."]]);
+  const items=shuffle([
+    ["Die KI erklärt dir ein schwieriges Wort aus dem Chemiebuch.","g"],
+    ["Du sammelst mit der KI Ideen für dein Plakat.","g"],
+    ["Die KI prüft die Rechtschreibung in deinem eigenen Text.","g"],
+    ["Du übernimmst einen Satz von der KI in deinen Text.","y"],
+    ["Die KI macht ein Bild für dein Projekt.","y"],
+    ["Du fragst die KI während eines Tests.","r"],
+    ["Die KI schreibt deinen ganzen Vortrag.","r"],
+    ["Du machst mit KI ein Fake-Bild von einer Mitschülerin.","r"]
+  ]);
+  const why={g:"Grün: immer erlaubt.",y:"Gelb: nur erlaubt, wenn die Lehrperson Ja sagt.",r:"Rot: verboten."};
+  panel.innerHTML=`<p class="kicker">Kapitel 2</p><h2>Die KI-Ampel</h2>
+  <div class="grid3">
+    <div class="lamp g"><h3><span class="dot"></span>Grün – immer erlaubt</h3><ul><li>Üben und verstehen</li><li>Ideen sammeln</li><li>Schwierige Wörter erklären lassen</li><li>Tipps zu deinem eigenen Text</li></ul></div>
+    <div class="lamp y"><h3><span class="dot"></span>Gelb – nur mit Erlaubnis</h3><ul><li>Sätze von der KI übernehmen</li><li>Hausaufgaben mit KI</li><li>Gruppenarbeiten mit KI</li><li>Bilder oder Videos machen lassen</li></ul></div>
+    <div class="lamp r"><h3><span class="dot"></span>Rot – verboten</h3><ul><li>Tests und Prüfungen</li><li>Ganze Texte schreiben lassen</li><li>Anderen schaden (Fake-Bilder, Fake News)</li><li>Persönliche Daten eingeben</li></ul></div>
+  </div>
+  <div class="task"><h3>Aufgabe: Welche Farbe passt?</h3><div id="sort" style="display:flex;flex-direction:column;gap:8px"></div>
+  <button class="btn" id="check">Prüfen</button><div id="res"></div></div>
+  ${navHTML()}`;
+  const s=$("#sort");
+  items.forEach(([t,v],i)=>{const d=document.createElement("div");d.className="sort-item";d.dataset.v=v;
+    d.innerHTML=`<p>${t}</p><div class="pick">${["g","y","r"].map(k=>`<button data-v="${k}" aria-label="${{g:"Grün",y:"Gelb",r:"Rot"}[k]}">${{g:"Grün",y:"Gelb",r:"Rot"}[k]}</button>`).join("")}</div><p class="fb" hidden></p>`;
+    d.querySelectorAll(".pick button").forEach(b=>b.onclick=()=>{d.querySelectorAll(".pick button").forEach(x=>x.classList.remove("sel"));b.classList.add("sel")});
+    s.appendChild(d)});
+  $("#check").onclick=()=>{let ok=0;s.querySelectorAll(".sort-item").forEach(d=>{const sel=d.querySelector(".sel");const fb=d.querySelector(".fb");d.classList.remove("ok","no");
+    if(!sel){fb.hidden=false;fb.textContent="Wähle eine Farbe.";return}
+    const r=sel.dataset.v===d.dataset.v;if(r)ok++;d.classList.add(r?"ok":"no");fb.hidden=false;fb.textContent=r?why[d.dataset.v]:"Nochmals überlegen. Schau oben bei der Ampel nach."});
+    if(ok===items.length)complete(2);
+    $("#res").innerHTML=`<div class="result ${ok===items.length?"good":"bad"}">${ok} von ${items.length} richtig${ok===items.length?" – super!":". Korrigiere die rot markierten Sätze."}</div>`};
+  bindNav();
+},
+// 3 Tools
+()=>{
+  talk([["b", "Es gibt viele KIs. Manche speichern alles, was du eintippst."], ["k", "In der Schule benutzen wir nur KIs, die nichts speichern."], ["k", "👉 Du bist dran: Schau dir die drei KIs an. Dann beantworte die Frage."]]);
+  panel.innerHTML=`<p class="kicker">Kapitel 3</p><h2>Diese KIs benutzen wir</h2>
+  <div class="tools">
+    <div class="tool rec"><span class="badge">Empfohlen</span><h3>DuckDuckGo AI Chat</h3><a href="https://duck.ai" target="_blank" rel="noopener">duck.ai</a><p>Kein Login. Speichert nichts.</p></div>
+    <div class="tool"><span class="badge" style="color:var(--muted)">Alternative</span><h3>Lumo</h3><a href="https://lumo.proton.me" target="_blank" rel="noopener">lumo.proton.me</a><p>Schützt deine Daten gut. Firma aus der Schweiz.</p></div>
+    <div class="tool"><span class="badge" style="color:var(--muted)">Alternative</span><h3>PublicAI</h3><a href="https://publicai.co" target="_blank" rel="noopener">publicai.co</a><p>Eine offene KI für alle.</p></div>
+  </div>
+  <p>ChatGPT, Gemini und ähnliche KIs speichern deine Eingaben. Mit deinen Eingaben trainieren diese Firmen ihre KI. In der Schule empfehlen wir ChatGPT und Gemini nicht.</p>
+  <div class="task"><h3>Kurz überlegen</h3><p>Warum empfehlen wir duck.ai?</p><div class="opts" id="o3"></div><p class="fb" id="f3"></p></div>
+  ${navHTML()}`;
+  const opts=[["duck.ai speichert nichts und braucht kein Login.",1],["duck.ai hat immer recht.",0],["duck.ai löst Aufgaben am schnellsten.",0]];
+  const box=$("#o3");shuffle(opts).forEach(([t,ok])=>{const b=document.createElement("button");b.className="opt";b.textContent=t;b.onclick=()=>{box.querySelectorAll(".opt").forEach(x=>x.classList.remove("sel"));b.classList.add("sel");if(ok)complete(3);$("#f3").innerHTML=ok?"<span style='color:var(--green)'>Richtig.</span> Es geht um den Schutz deiner Daten.":"<span style='color:var(--red)'>Nein.</span> Auch duck.ai macht Fehler. Es geht um den Schutz deiner Daten.";};box.appendChild(b)});
+  bindNav();
+},
+// 4 Regeln
+()=>{
+  talk([["k", "Es gibt sechs Regeln für KI."], ["b", "Regel 5 ist mir wichtig: Ich bin ein Programm, kein Freund."], ["b", "Wenn es dir schlecht geht, rede mit einem Menschen."], ["k", "👉 Du bist dran: Lies die sechs Regeln. Öffne bei jeder das Beispiel."]]);
+  const R=[
+    ["Denk zuerst selbst nach","Versuch die Aufgabe zuerst selbst. Erst dann fragst du die KI.","Du willst wissen, warum Eisen rostet. Zuerst schreibst du deine eigene Vermutung auf."],
+    ["Prüfe kritisch","Glaub der KI nicht alles. Die KI kann Fehler machen.","Die KI nennt eine Jahreszahl. Du prüfst die Jahreszahl im Lehrmittel."],
+    ["Schütze dich und andere","Gib keine Namen, Adressen, Fotos oder persönlichen Infos ein.","Du schreibst nicht «Ich wohne in Weinfelden». Du schreibst «Ich wohne in Musterstadt»."],
+    ["Sei dir der Manipulation bewusst","Die KI kann dich täuschen und Menschen unfair behandeln. Die KI ist nicht neutral.","Die KI klingt sehr sicher. Trotzdem kann die Antwort falsch sein."],
+    ["Keine echten Beziehungen","Die KI ist ein Programm, kein Freund. Sprich mit echten Menschen.","Geht es dir nicht gut? Dann redest du mit einer Freundin, deinen Eltern oder einer Lehrperson."],
+    ["Nutze KI bewusst","KI braucht viel Strom. Frag dich: Brauche ich die KI hier wirklich?","Die Hauptstadt von Frankreich weisst du selbst. Oder du findest die Hauptstadt im Atlas."]
+  ];
+  panel.innerHTML=`<p class="kicker">Kapitel 4</p><h2>Sechs Grundregeln</h2>
+  <p class="fb" id="rcount" style="flex-basis:auto">Öffne bei allen sechs Regeln das Beispiel. Geöffnet: 0 von 6</p>
+  <div class="rules">${R.map((r,i)=>`<div class="rule"><span class="n">${i+1}</span><h3>${r[0]}</h3><p>${r[1]}</p><details><summary>Beispiel</summary>${r[2]}</details></div>`).join("")}</div>
+  ${navHTML()}`;bindNav();
+  const opened=new Set();
+  panel.querySelectorAll(".rule details").forEach((d,i)=>d.addEventListener("toggle",()=>{if(d.open)opened.add(i);
+    $("#rcount").textContent=opened.size<6?`Öffne bei allen sechs Regeln das Beispiel. Geöffnet: ${opened.size} von 6`:"Du hast alle sechs Beispiele gelesen.";
+    if(opened.size===6)complete(4)}));
+},
+// 5 Datenschutz
+()=>{
+  talk([["b", "Alles, was du mir schreibst, kann gespeichert werden."], ["k", "Schreib nie Namen, Adressen oder Schulen in eine KI."], ["k", "👉 Du bist dran: Lies, was nie in eine KI gehört. Finde im Text die heiklen Wörter. Dann klick auf «Prüfen»."]]);
+  const text=[["Hallo,",0],["ich",0],["heisse",0],["Lena Brunner",1],["und",0],["gehe",0],["in",0],["die",0],["Klasse 2b",1],["der",0],["Schule Seefeld.",1],["Frau Keller",1],["will,",0],["dass",0],["wir",0],["die",0],["Photosynthese",0],["verstehen.",0],["Erkläre",0],["sie",0],["mir",0],["Schritt",0],["für",0],["Schritt.",0],["Schick",0],["mir",0],["die",0],["Antwort",0],["an",0],["lena.b@mail.ch.",1]];
+  const total=text.filter(x=>x[1]).length;
+  panel.innerHTML=`<p class="kicker">Kapitel 5</p><h2>Das gehört nie in eine KI</h2>
+  <div class="grid3">
+    <div class="lamp r"><h3>Nie eingeben</h3><ul><li>Echte Namen (deinen Namen und andere Namen)</li><li>Adresse, Telefon, E-Mail</li><li>Passwörter</li><li>Namen von Schule, Klasse und Lehrpersonen</li><li>Fotos oder Infos über dich oder andere</li></ul></div>
+    <div class="lamp g"><h3>Stattdessen</h3><ul><li>Erfundene Namen wie «Musterstadt»</li><li>Unsicher? Frag deine Lehrperson.</li></ul></div>
+    <div class="lamp y"><h3>Warum?</h3><ul><li>Die KI kann deine Eingaben für immer speichern.</li><li>Fremde können deine Eingaben vielleicht sehen.</li><li>Kopiere auch keine ganzen Texte aus Büchern oder Arbeitsblättern.</li></ul></div>
+  </div>
+  <div class="task"><h3>Aufgabe: Finde die ${total} heiklen Stellen</h3>
+    <div class="tokens" id="tok">${text.map((t,i)=>`<button class="tok" data-i="${i}" data-s="${t[1]}">${esc(t[0])}</button>`).join(" ")}</div>
+    <button class="btn" id="check">Prüfen</button><div id="res"></div></div>
+  ${navHTML()}`;
+  document.querySelectorAll(".tok").forEach(b=>b.onclick=()=>b.classList.toggle("marked"));
+  $("#check").onclick=()=>{let hit=0,wrong=0;document.querySelectorAll(".tok").forEach(b=>{b.classList.remove("missed");const s=b.dataset.s==="1",m=b.classList.contains("marked");if(s&&m)hit++;if(!s&&m)wrong++;if(s&&!m)b.classList.add("missed")});
+    const good=hit===total&&wrong===0;if(good)complete(5);
+    $("#res").innerHTML=`<div class="result ${good?"good":"bad"}">${hit} von ${total} gefunden${wrong?`, ${wrong} Wort zu viel markiert`:""}.</div>`+
+    (good?`<p style="margin-top:10px"><b>So ist der Text sicher:</b></p><div class="prompt">Hallo, ich gehe in die 2. Sek. Meine Lehrperson will, dass wir die Photosynthese verstehen. Erkläre mir die Photosynthese Schritt für Schritt.</div>`:`<p class="fb" style="margin-top:8px">Die gestrichelten Stellen fehlen noch.</p>`)};
+  bindNav();
+},
+// 6 Abschreiben
+()=>{
+  talk([["k", "Jetzt kommt das wichtigste Kapitel."], ["b", "Ich kann dir einen ganzen Text schreiben. Das geht schnell."], ["k", "Aber wenn du einen Text nur abschreibst, lernst du fast nichts."], ["k", "Darum: Schalte DEINEN Kopf ein! Du denkst, die KI hilft nur."], ["k", "👉 Du bist dran: Lies, wie Mia und Noah arbeiten. Dann beantworte die Frage."]]);
+  panel.innerHTML=`<p class="kicker">Kapitel 6 · Das Wichtigste</p><h2>Abgeschrieben ist nicht gelernt</h2>
+  <p class="lead">Mia und Noah bekommen beide einen rostigen Nagel. Beide sollen auf einem Plakat erklären: Was ist mit dem Nagel passiert?</p>
+  <div class="compare">
+    <div class="person"><h3>Mia</h3><ol><li>Mia fragt die KI: «Warum rostet Eisen?»</li><li>Mia schreibt die Antwort Satz für Satz ab.</li><li>Mias Plakat sieht perfekt aus.</li></ol></div>
+    <div class="person"><h3>Noah</h3><ol><li>Noah schaut den Nagel genau an. Noah schreibt seine Vermutung auf.</li><li>Noah lässt sich von der KI Schritt für Schritt erklären. Die KI stellt Noah Fragen.</li><li>Noah zeichnet eine Skizze: Was passiert zuerst? Was passiert danach?</li></ol></div>
+  </div>
+  <div class="task"><h3>Eine Woche später fragt jemand: «Was braucht es, damit Eisen rostet?»</h3><p>Wer kann antworten?</p><div class="opts" id="o6"></div><p class="fb" id="f6"></p></div>
+  <h3>Zeichnen statt abschreiben</h3>
+  <p>Einen Text kannst du abschreiben, ohne den Text zu verstehen. Eine Skizze mit Pfeilen geht nicht ohne Verstehen. Für eine Skizze musst du wissen: Was passiert zuerst? Was passiert danach?</p><p>In dieser Einheit machst du keine Textnotizen. Du zeichnest eine Skizze, mit höchstens 4 Wörtern pro Beschriftung.</p>
+  <div class="levels">
+    <div class="lvl l1"><b>1. Beobachten</b>Bild genau anschauen. Fragen aufschreiben. Ohne KI.</div>
+    <div class="lvl l4"><b>2. Vermuten</b>Eigene Vermutung aufschreiben. Ohne KI.</div>
+    <div class="lvl l2"><b>3. Mit KI lernen</b>Die KI erklärt Schritt für Schritt und stellt dir Fragen.</div>
+    <div class="lvl l3"><b>4. Skizzieren</b>Skizze mit Pfeilen zeichnen. Ohne KI.</div>
+  </div>
+  <h3>So fragst du die KI richtig</h3>
+  <p>Frag die KI nicht nach dem ganzen Thema. Frag die KI nur nach dem Schritt, den du nicht verstehst. Füll die Felder aus. Dann kopierst du den Prompt.</p>
+  <div class="fields">
+    <label for="pt">Thema<input id="pt" placeholder="z. B. Rost"></label>
+    <label for="pk">Klassenstufe<input id="pk" placeholder="z. B. 2. Sek"></label>
+    <label for="ps">Schritt, den ich nicht verstehe<input id="ps" placeholder="z. B. warum Wasser nötig ist"></label>
+  </div>
+  <div class="prompt" id="pr"></div>
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn" id="copy">Prompt kopieren</button><span id="cs" class="fb" style="flex-basis:auto"></span></div>
+  ${navHTML()}`;
+  const opts=[["Mia. Mias Plakat ist perfekt.",0],["Noah. Noah hat selbst nachgedacht.",1],["Beide gleich gut.",0]];
+  const box=$("#o6");shuffle(opts).forEach(([t,ok])=>{const b=document.createElement("button");b.className="opt";b.textContent=t;b.onclick=()=>{box.querySelectorAll(".opt").forEach(x=>x.classList.remove("sel"));b.classList.add("sel");if(ok)complete(6);$("#f6").innerHTML=ok?"<span style='color:var(--green)'>Genau.</span> Mia hat nur abgeschrieben. In Mias Kopf ist fast nichts geblieben.":"<span style='color:var(--red)'>Eher nicht.</span> Ein schönes Plakat heisst nicht, dass man das Thema versteht.";};box.appendChild(b)});
+  const upd=()=>{const t=$("#pt").value||"___",k=$("#pk").value||"___",s=$("#ps").value||"___";
+    $("#pr").textContent=`Ich lerne in Chemie das Thema ${t}. Klassenstufe: ${k}.\nIn meiner Skizze verstehe ich diesen Schritt nicht: ${s}.\nErkläre mir nur diesen Schritt, einfach und kurz. Stelle mir danach eine Frage zur Kontrolle. Schreibe keinen Text für mein Plakat.`};
+  ["#pt","#pk","#ps"].forEach(s=>$(s).addEventListener("input",upd));upd();
+  $("#copy").onclick=()=>{const txt=$("#pr").textContent;const fallback=()=>{const r=document.createRange();r.selectNodeContents($("#pr"));const sel=getSelection();sel.removeAllRanges();sel.addRange(r);$("#cs").textContent="Text markiert – drücke Strg+C."};
+    try{navigator.clipboard.writeText(txt).then(()=>{$("#cs").textContent="Kopiert."},fallback)}catch(e){fallback()}};
+  bindNav();
+},
+// 7 Kennzeichnen
+()=>{
+  talk([["k", "Hast du KI benutzt? Dann musst du KI auf deiner Arbeit angeben."], ["k", "KI angeben heisst: kennzeichnen."], ["b", "Bei deinem Plakat darf ich nur helfen. Dein Plakat machst du selbst."], ["k", "👉 Du bist dran: Lies die vier Stufen. Ordne die Beispiele zu. Dann klick auf «Prüfen»."]]);
+  const S=[["Du hast alles mit Büchern und Internetseiten gemacht, ohne KI.","frei"],["Die KI hat dir Ideen und Erklärungen gegeben. Den Text hast du selbst geschrieben.","unterstuetzt"],["Die Idee war von dir. Im Gespräch mit der KI hast du die Idee weiterentwickelt.","kollaboriert"],["Die KI hat den Text geschrieben. Du hast den Text geprüft und verbessert.","generiert"]];
+  panel.innerHTML=`<p class="kicker">Kapitel 7</p><h2>Kennzeichne deine Arbeit</h2>
+  <div class="levels">
+    <div class="lvl l1"><b>KI-frei</b>Ohne KI. Ich habe alles selbst gemacht.</div>
+    <div class="lvl l2"><b>KI-unterstützt</b>Die KI hat mir Ideen gegeben. Den Text habe ich selbst geschrieben.</div>
+    <div class="lvl l3"><b>KI-kollaboriert</b>Die Idee war von mir. Mit der KI habe ich die Idee weiterentwickelt.</div>
+    <div class="lvl l4"><b>KI-generiert</b>Die KI hat den Text geschrieben. Ich habe den Text geprüft und verbessert.</div>
+  </div>
+  <div class="prompt">Diese Arbeit ist KI-unterstützt.\nBenutzte KI: duck.ai · Prompts: siehe Prompt-Protokoll</div>
+  <div class="task"><h3>Aufgabe: Welche Stufe passt?</h3><div class="match" id="m"></div><button class="btn" id="check">Prüfen</button><div id="res"></div></div>
+  ${navHTML("Zum Test")}`;
+  const lab={frei:"KI-frei",unterstuetzt:"KI-unterstützt",kollaboriert:"KI-kollaboriert",generiert:"KI-generiert"};
+  const m=$("#m");shuffle(S).forEach(([t,v],i)=>{const d=document.createElement("div");d.className="match-row";d.dataset.v=v;
+    d.innerHTML=`<p>${t}</p><select id="ms${i}" aria-label="Stufe wählen"><option value="">Stufe wählen …</option>${Object.entries(lab).map(([k,l])=>`<option value="${k}">${l}</option>`).join("")}</select>`;m.appendChild(d)});
+  $("#check").onclick=()=>{let ok=0;m.querySelectorAll(".match-row").forEach(d=>{const r=d.querySelector("select").value===d.dataset.v;if(r)ok++;d.style.outline=`2px solid var(--${r?"green":"red"})`});
+    if(ok===S.length)complete(7);
+    $("#res").innerHTML=`<div class="result ${ok===S.length?"good":"bad"}">${ok} von ${S.length} richtig.</div>`};
+  bindNav();
+},
+// 8 Test
+()=>startTest()
+];
+
+const QUIZ=[
+  {q:"In welcher Reihenfolge arbeitest du an deinem Plakat?",o:["KI fragen – Antwort abschreiben – Plakat machen","Selbst beobachten und vermuten – mit KI Schritt für Schritt lernen – Skizze zeichnen","Skizze von der KI zeichnen lassen – Plakat machen","Text von der KI kopieren – Skizze weglassen"],a:1,ch:6},
+  {q:"Du übernimmst zwei Sätze von der KI in dein Plakat. Welche Farbe hat die Ampel?",o:["Grün","Gelb","Rot"],a:1,ch:2},
+  {q:"Während eines Tests fragst du schnell die KI. Welche Farbe hat die Ampel?",o:["Grün","Gelb","Rot"],a:2,ch:2},
+  {q:"Welche KI empfehlen wir an unserer Schule?",o:["duck.ai (DuckDuckGo)","ChatGPT","Gemini","Die KI, die am schnellsten antwortet"],a:0,ch:3},
+  {q:"Was darfst du in einen Prompt schreiben?",o:["Deinen vollen Namen","Den Namen deiner Lehrerin","Einen Platzhalter wie «Musterstadt»","Deine E-Mail-Adresse"],a:2,ch:5},
+  {q:"Die KI schreibt: «Pflanzen geben nachts Sauerstoff ab.» Was machst du?",o:["Ich schreibe den Satz aufs Plakat.","Ich prüfe den Satz in einer zweiten Quelle.","Ich frage die KI: «Bist du sicher?» Dann glaube ich die Antwort.","Ich lasse den Satz einfach weg."],a:1,ch:4},
+  {q:"Welcher Prompt hilft dir am meisten beim Lernen?",o:["Schreib mir einen Text über Rost für mein Plakat.","Ich lerne in Chemie das Thema Rost. In meiner Skizze verstehe ich nicht, warum es Wasser braucht. Erkläre mir nur diesen Schritt und stelle mir eine Frage.","Warum rostet Eisen?","Mach mein Plakat fertig."],a:1,ch:6},
+  {q:"Warum bringt es nichts, einen KI-Text abzuschreiben?",o:["Die Schrift wird unschön.","Du denkst nicht selbst nach. Später kannst du dein Thema nicht erklären.","KI-Texte sind immer falsch.","Abschreiben bringt viel, wenn man sauber schreibt."],a:1,ch:6},
+  {q:"Die KI hat dir fünf Ideen für deine Leitfrage gegeben. Du hast eine Idee gewählt. Den ganzen Text hast du selbst geschrieben. Welche Stufe passt?",o:["KI-frei","KI-unterstützt","KI-kollaboriert","KI-generiert"],a:1,ch:7},
+  {q:"Dir geht es schlecht. Jeden Abend erzählst du der KI deine Sorgen. Was sagt unsere Regel?",o:["Gute Idee. Die KI hört immer zu.","Die KI ist kein Freund. Sprich mit echten Menschen.","Nur mit duck.ai ist das okay.","Das ist egal."],a:1,ch:4}
+];
+let qi=0, answers=[];
+const LOCK_KEY="kolbi-test-v1", CODE_HASH=3268370233;
+function hashCode(s){let x=5381;for(const c of s)x=((x*33)^c.charCodeAt(0))>>>0;return x}
+function getLock(){try{return JSON.parse(localStorage.getItem(LOCK_KEY)||"null")}catch(e){return null}}
+function setLock(v){try{localStorage.setItem(LOCK_KEY,JSON.stringify(v))}catch(e){}}
+function clearLock(){try{localStorage.removeItem(LOCK_KEY)}catch(e){}}
+function stampNow(){const n=new Date();return n.toLocaleDateString("de-CH")+", "+n.toLocaleTimeString("de-CH",{hour:"2-digit",minute:"2-digit"})}
+function unlockHTML(text){return `<div class="task"><h3>Neuer Versuch</h3><p>${text}</p>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end"><label for="code" style="flex:1 1 180px">Code der Lehrperson<input id="code" autocomplete="off" autocapitalize="characters"></label><button class="btn" id="unlock">Freischalten</button></div>
+  <p class="fb" id="cmsg"></p></div>`}
+function bindUnlock(){const go2=()=>{const v=($("#code").value||"").trim().toUpperCase();
+  if(hashCode(v)===CODE_HASH){clearLock();(document.getElementById("mouth")||{setAttribute(){}}).setAttribute("d","M68 122 q12 12 24 0");startTest()}
+  else{$("#cmsg").innerHTML="<span style='color:var(--red)'>Dieser Code stimmt nicht.</span>"}};
+  $("#unlock").onclick=go2;$("#code").addEventListener("keydown",e=>{if(e.key==="Enter")go2()})}
+function startTest(){
+  const L=getLock();
+  if(L){showLocked(L);return}
+  setTestMode(false);
+  talk([["k", "Jetzt kommt der Test."], ["b", "Bei Tests ist KI verboten. Ich bin jetzt aus."], ["k", "Jetzt zählt nur dein Kopf. Du schaffst den Test!"], ["k", "👉 Du bist dran: Lies die Hinweise. Du hast nur <b>einen Versuch</b>. Dann klick auf «Test starten»."]]);
+  panel.innerHTML=`<p class="kicker">Abschlusstest</p><h2>Bereit für den Test?</h2>
+  <div class="warn"><h3>Du hast nur EINEN Versuch.</h3>
+    <p>Klickst du auf «Test starten», zählt der Test. Lädst du die Seite neu oder brichst du ab, ist der Test gesperrt.</p>
+    <p>Einen neuen Versuch gibt es nur mit einem Code von deiner Lehrperson.</p></div>
+  <ul class="list-plain"><li>10 Fragen</li><li>Du brauchst mindestens 8 richtige Antworten.</li><li>Während des Tests siehst du nur die Fragen. Die Kapitel sind dann weg.</li></ul>
+  <div class="nav"><button class="btn" id="back">Zurück zu den Kapiteln</button><button class="btn primary" id="go">Test starten</button></div>`;
+  $("#back").onclick=()=>go(7);
+  $("#go").onclick=openConfirm}
+function setTestMode(on){document.querySelector(".wrap").classList.toggle("testmode",on)}
+function openConfirm(){
+  const ov=document.createElement("div");ov.className="overlay";
+  ov.innerHTML=`<div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="mt" aria-describedby="md">
+    <h2 id="mt">Nur ein Versuch!</h2>
+    <p id="md">Du kannst den Test <b>nur einmal</b> machen. Nach dem Start kannst du nicht mehr zurück zu den Kapiteln. Bist du sicher?</p>
+    <div class="nav"><button class="btn" id="mno">Nein, zurück</button><button class="btn primary" id="myes">Ja, Test starten</button></div></div>`;
+  document.body.appendChild(ov);
+  const close=()=>{ov.remove();document.removeEventListener("keydown",esc2);$("#go")&&$("#go").focus()};
+  const esc2=e=>{if(e.key==="Escape")close()};
+  document.addEventListener("keydown",esc2);
+  ov.addEventListener("click",e=>{if(e.target===ov)close()});
+  ov.querySelector("#mno").onclick=close;
+  ov.querySelector("#myes").onclick=()=>{ov.remove();document.removeEventListener("keydown",esc2);
+    setLock({status:"running",stamp:stampNow()});qi=0;answers=[];setTestMode(true);showQ()};
+  ov.querySelector("#mno").focus()}
+function showLocked(L){
+  if(L.status==="done"){showResult(L);return}
+  setTestMode(false);
+  talk([["k", "👉 Dein Test wurde schon gestartet. Hol bei deiner Lehrperson den Code. Gib den Code unten ein."]]);
+  panel.innerHTML=`<p class="kicker">Abschlusstest</p><div class="result bad">Test unterbrochen (gestartet am ${L.stamp}).</div>
+  ${unlockHTML("Den Test kann man nur einmal machen. Frag deine Lehrperson nach dem Code.")}`;bindUnlock()}
+function showQ(){
+  if(qi===0)talk([["k", "Lies jede Frage genau."]]);
+  const Q=QUIZ[qi];
+  panel.innerHTML=`<p class="kicker">Abschlusstest</p>
+  <div class="bar" aria-hidden="true"><span style="width:${qi/QUIZ.length*100}%"></span></div>
+  <div class="q"><span class="count">Frage ${qi+1} von ${QUIZ.length}</span><h2>${Q.q}</h2><div class="opts" id="qo"></div></div>
+  <div class="nav"><button class="btn" id="back"${qi===0?" hidden":""}>Zurück</button><button class="btn primary" id="qn" disabled>${qi===QUIZ.length-1?"Auswerten":"Nächste Frage"}</button></div>`;
+  const box=$("#qo");Q.o.forEach((t,i)=>{const b=document.createElement("button");b.className="opt";b.textContent=t;if(answers[qi]===i)b.classList.add("sel");
+    b.onclick=()=>{answers[qi]=i;box.querySelectorAll(".opt").forEach(x=>x.classList.remove("sel"));b.classList.add("sel");$("#qn").disabled=false};box.appendChild(b)});
+  if(answers[qi]!==undefined)$("#qn").disabled=false;
+  $("#qn").onclick=()=>{if(qi<QUIZ.length-1){qi++;showQ()}else{
+    const score=QUIZ.reduce((s,Q,i)=>s+(answers[i]===Q.a?1:0),0);
+    const wrong=QUIZ.map((Q,i)=>answers[i]===Q.a?null:i).filter(i=>i!==null);
+    const R={status:"done",score,pass:score>=8,stamp:stampNow(),wrong};setLock(R);showResult(R)}};
+  $("#back").onclick=()=>{qi--;showQ()};
+}
+function showResult(R){
+  setTestMode(false);
+  const score=R.score, pass=R.pass, stamp=R.stamp;
+  const wrong=(R.wrong||[]).map(i=>QUIZ[i]);
+  const chs=[...new Set(wrong.map(Q=>Q.ch))].sort();
+  if(pass){
+    talk([["k", "Super! Du kennst jetzt unsere KI-Regeln."], ["k", "👉 Du bist dran: Zeig diesen Bildschirm deiner Lehrperson. Dann unterschreibst du das Regelblatt."]]);
+    (document.getElementById("mouth")||{setAttribute(){}}).setAttribute("d","M64 118 q16 20 32 0");
+    panel.innerHTML=`<div class="cert"><span class="kicker" style="color:var(--green)">Bestanden</span><span class="big">${score} / 10</span><p>KI-Regeln-Test · ${stamp}</p>
+    <p>Zeig diesen Bildschirm deiner Lehrperson. Dann unterschreibst du das Regelblatt.</p></div>
+    ${wrong.length?`<div class="task"><h3>Diese Fragen schaust du nochmals an</h3><ul class="list-plain">${wrong.map(Q=>`<li>${Q.q}<br><b>Richtig:</b> ${Q.o[Q.a]}</li>`).join("")}</ul></div>`:""}
+    ${unlockHTML("Den Test kann man nur einmal machen. Für einen neuen Versuch brauchst du einen Code von deiner Lehrperson.")}`;
+  } else {
+    talk([["k", "Fast geschafft! Keine Sorge."], ["k", "👉 Du bist dran: Schau die Kapitel unten nochmals an. Dann holst du den Code bei deiner Lehrperson."]]);
+    panel.innerHTML=`<div class="result bad">${score} von 10 richtig. Du brauchst mindestens 8 richtige Antworten. (${stamp})</div>
+    <p>Schau dir diese Kapitel nochmals an:</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">${chs.map(c=>`<button class="btn" data-ch="${c}">Kapitel ${c}: ${CH[c].t}</button>`).join("")}</div>
+    ${unlockHTML("Hast du die Kapitel nochmals angeschaut? Dann zeig diesen Bildschirm deiner Lehrperson. Deine Lehrperson gibt dir den Code für einen neuen Versuch.")}`;
+    panel.querySelectorAll("[data-ch]").forEach(b=>b.onclick=()=>go(+b.dataset.ch));
+  }
+  bindUnlock();
+}
+renderSteps();VIEWS[0]();
+function hasProgress(){try{return (JSON.parse(localStorage.getItem("kolbi-progress-v1")||"[]")).length>1||!!localStorage.getItem("kolbi-test-v1")}catch(e){return false}}
+const REVIEW_BANK={"1": [["Wann wird dein Gehirn stärker?", ["Wenn du selbst denkst.", "Wenn die KI für dich denkt.", "Wenn du schnell fertig bist."]]], "2": [["Die KI erklärt dir ein schwieriges Wort. Welche Farbe hat die Ampel?", ["Grün", "Gelb", "Rot"]], ["Die KI schreibt deinen ganzen Vortrag. Welche Farbe hat die Ampel?", ["Rot", "Gelb", "Grün"]]], "3": [["Warum benutzen wir duck.ai?", ["duck.ai speichert nichts und braucht kein Login.", "duck.ai hat immer recht.", "duck.ai schreibt die besten Texte."]]], "4": [["Die KI klingt sehr sicher. Stimmt die Antwort dann sicher?", ["Nein. Die Antwort kann trotzdem falsch sein.", "Ja, immer.", "Ja, wenn die Antwort lang ist."]], ["Dir geht es nicht gut. Mit wem redest du?", ["Mit einem Menschen, dem du vertraust.", "Mit der KI.", "Mit niemandem."]]], "5": [["Was schreibst du statt deinem echten Wohnort?", ["Einen erfundenen Ort wie «Musterstadt»", "Deine Adresse", "Den Namen deiner Schule"]]], "6": [["Wer lernt mehr: Mia oder Noah?", ["Noah, weil Noah selbst nachdenkt.", "Mia, weil Mias Plakat perfekt ist.", "Beide gleich viel."]], ["Warum zeichnest du eine Skizze statt Textnotizen?", ["Eine Skizze geht nicht ohne Verstehen.", "Zeichnen geht schneller.", "Die KI kann keine Skizzen lesen."]]], "7": [["Was heisst «kennzeichnen»?", ["Angeben, ob und wie du KI benutzt hast.", "Die KI um Erlaubnis fragen.", "Den Text farbig markieren."]]]};
+function REVIEW_DONE(){return [...done].filter(i=>i>0&&i<8).sort((a,b)=>a-b)}
+function REVIEW_OK(){return !getLock()}
+
+/* ---------- Willkommen zurück: Wiederholung ---------- */
+function todayStr(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+const LAST_KEY="duo-last-"+(document.title||"").replace(/\W+/g,"");
+function mixArr(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function startReview(){
+  const steps=REVIEW_DONE();const pool=[];
+  steps.forEach(s=>(REVIEW_BANK[s]||[]).forEach(q=>pool.push({s,q:q[0],o:q[1],a:q[1][0],r:s+Math.random()*4})));
+  if(pool.length<2)return false;
+  pool.sort((x,y)=>x.r-y.r);const qs=pool.slice(0,3);
+  talk([["k","Willkommen zurück! 👋"],["k","Kopf an: Was weisst du noch vom letzten Mal?"],["k","👉 Du bist dran: Beantworte die Fragen aus dem Kopf. Dann geht es weiter."]]);
+  panel.innerHTML=`<p class="kicker">Wiederholung</p><h2>Kopf an! Was weisst du noch?</h2>
+  <p>Beantworte die Fragen aus dem Kopf. Nicht nachschauen!</p>
+  ${qs.map((q,i)=>`<div class="task"><h3>Frage ${i+1}</h3><p><b>${q.q}</b></p><div class="opts" id="rq${i}"></div><p class="fb" id="rf${i}"></p></div>`).join("")}
+  <div class="nav"><span></span><button class="btn primary" id="rgo" disabled>Weiter zu meinem Schritt</button></div>`;
+  let answered=0,right=0;
+  qs.forEach((q,i)=>{const box=document.getElementById("rq"+i);
+    mixArr(q.o).forEach(t=>{const b=document.createElement("button");b.className="opt";b.textContent=t;
+      b.onclick=()=>{if(box.dataset.done)return;box.dataset.done="1";b.classList.add("sel");const ok=t===q.a;if(ok)right++;answered++;
+        box.querySelectorAll(".opt").forEach(x=>{x.disabled=true;if(x.textContent===q.a)x.style.borderColor="var(--green)"});
+        document.getElementById("rf"+i).innerHTML=ok?"<span style='color:var(--green)'>Richtig!</span>":"<span style='color:var(--red)'>Nicht ganz.</span> Richtig ist: "+q.a;
+        if(answered===qs.length){document.getElementById("rgo").disabled=false;
+          addChat([["u","✓ Wiederholung: "+right+" von "+qs.length+" richtig"],["k",right===qs.length?"Stark, dein Kopf ist eingeschaltet! 👉 Klick auf «Weiter zu meinem Schritt».":"Gut, dass du nachgedacht hast. Lies die richtigen Antworten nochmals. 👉 Dann klick auf «Weiter zu meinem Schritt»."]])}};
+      box.appendChild(b)})});
+  document.getElementById("rgo").onclick=()=>go(reach());
+  return true}
+function resumeSession(){
+  const today=todayStr();let last=null;try{last=localStorage.getItem(LAST_KEY);localStorage.setItem(LAST_KEY,today)}catch(e){}
+  if(last&&last<today&&hasProgress()&&REVIEW_OK()&&startReview())return;
+  if(hasProgress())go(reach());else talk(LINES)}
+
+/* ---------- Willkommen ---------- */
+(function(){const w=document.getElementById("welcome"),wr=document.querySelector(".wrap");
+  if(typeof hasProgress==="function"&&hasProgress()){["wStartVoice","wStartQuiet"].forEach(id=>{const b=document.getElementById(id);b.textContent=b.textContent.replace("Los geht's","Weitermachen")})}
+  if(!TTS){document.getElementById("wStartVoice").hidden=true;document.getElementById("wStartQuiet").textContent=document.getElementById("wStartQuiet").textContent.replace(" ohne Ton","")}
+  const start=v=>{voiceOn=v;try{localStorage.setItem("duo-voice",v?"1":"0")}catch(e){}
+    const vt=document.getElementById("voiceToggle");if(vt){vt.setAttribute("aria-pressed",v);vt.textContent=v?"🔊 Stimmen an":"🔈 Stimmen aus"}
+    w.hidden=true;wr.hidden=false;window.scrollTo({top:0});resumeSession()};
+  document.getElementById("wStartVoice").onclick=()=>start(true);
+  document.getElementById("wStartQuiet").onclick=()=>start(false);
+})();
+
+
+/* Chat scrollt automatisch mit */
+(function(){const box=document.getElementById("say");if(!box)return;
+  const down=()=>{box.scrollTop=box.scrollHeight};
+  new MutationObserver(()=>{requestAnimationFrame(down)}).observe(box,{childList:true,subtree:true});
+  box.addEventListener("load",down,true);window.addEventListener("resize",down);
+  const g=document.querySelector(".guide");
+  const fit=()=>{if(!g)return;if(innerWidth<=720){g.style.maxHeight="";return}
+    const top=Math.max(g.getBoundingClientRect().top,12);g.style.maxHeight=Math.max(320,innerHeight-top-12)+"px"};
+  let raf=0;const q=()=>{if(!raf)raf=requestAnimationFrame(()=>{raf=0;fit()})};
+  window.addEventListener("scroll",q,{passive:true});window.addEventListener("resize",q);
+  new MutationObserver(q).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:["class","hidden"]});fit();})();
+</script>
+
+</body>
+</html>
