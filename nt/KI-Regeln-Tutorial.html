@@ -284,6 +284,13 @@ body:has(.wrap:not([hidden])){overflow:hidden;padding-block:14px}
 .stage>*:not(.guide){height:100%;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}
 .stage>.panel{border-radius:14px}
 }
+
+/* Hinweis: nicht in Edge */
+.edgehint{flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:10px;background:#fff4d6;color:#4a3b00;border:2px solid #e8b100;border-radius:12px;padding:10px 14px;margin:0 0 10px;font-size:.95rem}
+.edgehint b{font-weight:800}
+.edgehint .eh-go{background:#0b5cad;color:#fff;border:none;border-radius:999px;padding:7px 14px;font:700 .9rem var(--body,inherit);text-decoration:none;cursor:pointer}
+.edgehint .eh-x{background:transparent;border:1px solid #c9a200;color:#4a3b00;border-radius:999px;padding:6px 12px;font:600 .85rem var(--body,inherit);cursor:pointer}
+.welcome .edgehint{width:100%;max-width:820px;box-sizing:border-box}
 </style>
 
 </head>
@@ -843,6 +850,24 @@ function resumeSession(){
   let raf=0;const q=()=>{if(!raf)raf=requestAnimationFrame(()=>{raf=0;fit()})};
   window.addEventListener("scroll",q,{passive:true});window.addEventListener("resize",q);
   new MutationObserver(q).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:["class","hidden"]});fit();})();
+
+/* Hinweis, wenn das Tutorial nicht in Edge läuft */
+(function(){
+  const ua=navigator.userAgent||"";
+  if(/Edg\//.test(ua))return;
+  try{if(sessionStorage.getItem("edgehint-x")==="1")return}catch(e){}
+  const win=/Windows/.test(ua);
+  const make=()=>{const d=document.createElement("div");d.className="edgehint";d.setAttribute("role","note");
+    d.innerHTML='<span>⚠️ <b>Bitte benutze Edge.</b> Nur in Edge wird dein Fortschritt richtig gespeichert. Nur in Edge gibt es die guten Stimmen.</span>'+
+      (win&&/^https?:/.test(location.protocol)?'<a class="eh-go" href="microsoft-edge:'+location.href+'">In Edge öffnen</a>':'')+
+      (win&&location.protocol==="file:"?'<span>So geht es: Schliess dieses Fenster. Klick mit der rechten Maustaste auf die Datei. Wähle «Öffnen mit» und dann «Microsoft Edge».</span>':'')+
+      '<button class="eh-x" type="button">Trotzdem hier weiterarbeiten</button>';
+    d.querySelector(".eh-x").onclick=()=>{try{sessionStorage.setItem("edgehint-x","1")}catch(e){}document.querySelectorAll(".edgehint").forEach(x=>x.remove())};
+    return d};
+  const w=document.querySelector(".welcome"), wr=document.querySelector(".wrap");
+  if(w)w.insertBefore(make(),w.firstChild);
+  if(wr)wr.insertBefore(make(),wr.firstChild);
+})();
 </script>
 
 </body>
