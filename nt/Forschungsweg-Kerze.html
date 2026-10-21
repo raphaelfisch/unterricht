@@ -172,7 +172,7 @@ textarea{min-height:84px;resize:vertical}
 .line.typing span:nth-child(2){animation-delay:.15s}.line.typing span:nth-child(3){animation-delay:.3s}
 @keyframes dot{0%,80%,100%{opacity:.3;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
 .skiptalk{align-self:center;font:700 .8rem var(--body);border:none;background:transparent;color:var(--muted);cursor:pointer;text-decoration:underline;padding:2px 6px}
-@media (prefers-reduced-motion:reduce){.line.pop,.line.typing span{animation:none}}
+@media (prefers-reduced-motion:reduce){.line.pop{animation:none}}
 
 /* Messenger */
 :root{--chatbg:#e7edf3;--chatdot:rgba(27,42,65,.07);--bubk:#ffffff;--bubb:#e6e5fc}
@@ -210,10 +210,12 @@ textarea{min-height:84px;resize:vertical}
 .bub.dots span{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:dot 1s infinite ease-in-out}
 .bub.dots span:nth-child(2){animation-delay:.15s}.bub.dots span:nth-child(3){animation-delay:.3s}
 .chat .skiptalk{margin:0 0 8px}
-@media (prefers-reduced-motion:reduce){.msg.pop,.bub.dots span{animation:none}}
+@media (prefers-reduced-motion:reduce){.msg.pop{animation:none}}
 
 /* Inhalt erst nach dem Gespräch */
 body.chatting .panel{display:none}
+.panelwait{background:var(--surface);border:2px dashed var(--line);border-radius:16px;padding:24px;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--muted);font-size:1.15rem;line-height:1.5;min-height:200px;min-width:0}.panelwait[hidden]{display:none}.panelwait p{margin:auto;text-align:center}.panelwait .pw-left,.panelwait .pw-down{font-size:2.6rem;font-weight:700;color:var(--accent);line-height:1}.panelwait .pw-down{display:none}@media (max-width:720px){.panelwait .pw-left{display:none}.panelwait .pw-down{display:inline}.panelwait .pw-left+span+br{display:inline}.panelwait{min-height:0;padding:16px}}
+
 .panelwait{border:2px dashed var(--line);border-radius:16px;padding:24px;display:flex;flex-direction:column;align-items:flex-start;gap:12px;color:var(--muted);min-width:0}
 .panelwait[hidden]{display:none!important}
 .panel.fadein{animation:fadeup .4s ease-out}
@@ -356,6 +358,7 @@ body:has(.wrap:not([hidden])){overflow:hidden;padding-block:14px}
       </div>
       <div class="voicebar"><button id="voiceToggle" aria-pressed="false">🔈 Stimmen aus</button><button id="readAll">▶ Vorlesen</button><span>Die Stimmen sind KI-generiert.</span></div>
     </aside>
+    <div class="panelwait" id="panelWait" hidden><p><span class="pw-left">←</span><span class="pw-down">↑</span><br><b>Lies zuerst, was Kolbi und Robo sagen.</b><br>Dann kommt hier deine Aufgabe.</p></div>
     <main class="panel" id="panel"></main>
   </div>
 </div>
@@ -434,7 +437,7 @@ function talk(lines){
   const skip=document.getElementById("skipTalk");
   const g=document.querySelector(".guide");const guideOff=!g||g.offsetParent===null;
   const tid=talkId(lines);const seenBefore=TALK_SEEN.has(tid);
-  if(hidden||reduce||guideOff||seenBefore||lines.length<2&&!speaking){showAll(lines);setActive(lines[0][0]);if(speaking)speakLines(lines);return}
+  if(hidden||guideOff||seenBefore||lines.length<2&&!speaking){showAll(lines);setActive(lines[0][0]);if(speaking)speakLines(lines);return}
   const doSkip=()=>{talkToken++;if(TTS)TTS.cancel();showAll(lines)};
   if(skip){skip.hidden=false;skip.onclick=doSkip}
   const pws=document.getElementById("pwSkip");if(pws)pws.onclick=doSkip;
