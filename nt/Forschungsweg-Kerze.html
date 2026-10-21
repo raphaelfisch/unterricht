@@ -283,6 +283,32 @@ body:has(.wrap:not([hidden])){overflow:hidden;padding-block:14px}
 /* Titelseite im gleichen Rahmen wie die Arbeitsansicht (bleibt scrollbar) */
 @media (min-width:721px){body:has(.welcome:not([hidden])){padding-block:14px}.welcome:not([hidden]){max-width:1180px;min-height:calc(100vh - 28px);min-height:calc(100dvh - 28px);box-sizing:border-box;justify-content:center;border:2px solid var(--line);border-radius:22px;padding:28px 24px;background:var(--bg);box-shadow:0 2px 10px rgba(0,0,0,.06)}}
 
+/* Titelseite passt sich der verfuegbaren Hoehe an (z. B. Surface Go) */
+@media (min-width:721px) and (max-height:820px){
+.welcome:not([hidden]){gap:12px;padding:16px 24px}
+.welcome h1{font-size:2.5rem}
+.welcome .sub{font-size:1.02rem}
+.wcard{padding:12px 14px;gap:6px}
+.wcard svg{width:92px}
+.wcard .nm{font-size:1.35rem}
+.wcard .sp{padding:9px 12px;font-size:.98rem}
+.wlist li{padding:8px 12px}
+.welcome .edgehint{padding:8px 12px;margin:0}
+}
+@media (min-width:721px) and (max-height:680px){
+body:has(.welcome:not([hidden])){padding-block:8px}
+.welcome:not([hidden]){gap:10px;padding:12px 20px;min-height:calc(100vh - 16px);min-height:calc(100dvh - 16px)}
+.welcome h1{font-size:2.1rem}
+.welcome .sub{font-size:.98rem}
+.wcard{display:grid;grid-template-columns:66px minmax(0,1fr);column-gap:12px;row-gap:2px;align-items:start;text-align:left;padding:10px 12px}
+.wcard svg{width:66px;grid-row:1 / span 3}
+.wcard .nm{font-size:1.2rem}
+.wcard .sp{font-size:.95rem;padding:7px 10px;margin-top:4px}
+.wcard .sp::before{display:none}
+.wlist li{padding:7px 12px;font-size:.95rem}
+.wnote{font-size:.78rem}
+}
+
 </style>
 
 </head>
