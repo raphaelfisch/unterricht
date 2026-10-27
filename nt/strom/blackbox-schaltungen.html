@@ -361,6 +361,13 @@ input[type=text]::placeholder{text-transform:none;letter-spacing:normal}
    vollständig danebenpassen und keiner abgeschnitten wird. Steht zuunterst,
    weil sonst die 600-px-Regel weiter unten gewinnen würde. */
 @media (max-width:360px){h1{font-size:1rem}}
+/* Handy: Reiter auf Fingergrösse. */
+@media (max-width:640px){.tab{min-height:44px;display:inline-flex;align-items:center;justify-content:center}}
+/* Handy: Kopfknöpfe, Aufgabenchips und Werkzeugknöpfe auf Fingergrösse. */
+@media (max-width:640px){.b.fs,.b.help{height:44px;min-height:44px}.b.fs.heim,.b.help{width:44px}
+  .chip{min-height:44px}.b{min-height:44px}.tskip{min-height:40px}.zoombtn{width:44px;height:44px}}
+@media (max-width:640px){.b.fs,.b.help{min-width:44px}.tskip{min-height:44px}}
+@media (max-width:640px){.b{min-width:44px}}
 </style>
 </head>
 <body>
