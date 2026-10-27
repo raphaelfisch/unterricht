@@ -1106,6 +1106,9 @@ addEventListener('hashchange',()=>{
 const startTeil=teilAusAdresse();
 G.plan=bauen();
 if(startTeil!==null){ G.teil=startTeil; if(startTeil==='pruefen') neueAufgabe(); }
+/* Erst den Direktlink auswerten, dann die Adresse nachführen – sonst
+   überschreibt der Start den gewünschten Teil mit «Knoten». */
+(function(){ const t=teilAusAdresse(); if(t!==null&&t!==G.teil) teilOeffnen(t); })();
 adresseNachfuehren();
 render();
 requestAnimationFrame(render);

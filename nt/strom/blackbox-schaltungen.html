@@ -1130,8 +1130,12 @@ function tipText(stage) {
    Wechsel zwischen den drei Teilen als eigenen Schritt. */
 const MODI = ['ueben', 'bauen', 'code'];
 let hashStumm = false;
+/* Der gewünschte Teil wird hier gelesen, bevor irgendein render() laufen
+   kann – sonst überschreibt das erste render() die Adresse mit «Üben». */
+const STARTHASH = location.hash || '';
+let startFertig = false;
 function adresse() {
-  if (hashStumm) return;
+  if (hashStumm || !startFertig) return;
   const i = MODI.indexOf(st.mode);
   if (i < 0) return;
   const h = '#' + (i + 1) + '-' + MODI[i];
@@ -1140,7 +1144,7 @@ function adresse() {
   if (location.hash !== h) { try { history.replaceState(null, '', h); } catch (e) {} }
 }
 function ausAdresse() {
-  const m = /^#?(\d)/.exec(location.hash || '');
+  const m = /^#?(\d)/.exec(startFertig ? (location.hash || '') : STARTHASH);
   if (!m) return false;
   const i = Number(m[1]) - 1;
   if (i < 0 || i >= MODI.length) return false;
@@ -1832,6 +1836,7 @@ $('toastReset').onclick = () => {
 const restored = restoreState();
 if (!restored) loadLevel(0);
 ausAdresse();
+startFertig = true;
 render();
 if (restored && restored.work) showToast();
 maybeAutoTour();

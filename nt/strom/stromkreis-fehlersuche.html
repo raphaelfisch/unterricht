@@ -1419,8 +1419,12 @@ function renderBar(){
    Stufenwechsel als eigenen Schritt. */
 const KUERZEL={1:'fehler-sehen',2:'vorhersagen',3:'eingrenzen',4:'pruefen',5:'ausschliessen',6:'ueberlastung'};
 let hashStumm=false;
+/* Die gewünschte Stufe wird hier gelesen, bevor irgendein render() laufen
+   kann – sonst überschreibt das erste render() die Adresse mit Stufe 1. */
+const STARTHASH=location.hash||'';
+let startFertig=false;
 function adresse(){
-  if(hashStumm) return;
+  if(hashStumm||!startFertig) return;
   const n=curStufe(), k=KUERZEL[n];
   if(!k) return;
   const h='#'+n+'-'+k;
@@ -1429,7 +1433,7 @@ function adresse(){
   if(location.hash!==h){ try{ history.replaceState(null,'',h); }catch(e){} }
 }
 function ausAdresse(){
-  const m=/^#?(\d)/.exec(location.hash||'');
+  const m=/^#?(\d)/.exec(startFertig?(location.hash||''):STARTHASH);
   if(!m) return false;
   const n=Number(m[1]);
   if(!KUERZEL[n]) return false;
@@ -1615,6 +1619,7 @@ addEventListener('resize',refit);
 addEventListener('orientationchange',refit);
 
 ausAdresse();
+startFertig=true;
 render();
 requestAnimationFrame(render);   // zweiter Durchgang, sobald das Layout steht
 hilfeBeimErstenMal();

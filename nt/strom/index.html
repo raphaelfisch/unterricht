@@ -47,7 +47,7 @@ h1{font-size:1.5rem;margin:0;font-weight:700;letter-spacing:-.01em}
 /* Zweiter Block: nicht zum Üben, sondern zum Vorzeigen an der Wand.
    Eine Karte allein soll nicht über die ganze Breite laufen. */
 .rubrik{margin:26px 0 0;font-size:1.05rem;font-weight:700;letter-spacing:-.01em}
-.zeilen{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;margin-top:12px;align-items:stretch}
+.zeilen{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:16px;margin-top:12px;align-items:stretch}
 .zeile{display:flex;align-items:stretch;gap:0;
   background:var(--paper);border:1px solid var(--line);border-radius:18px;overflow:hidden;
   text-decoration:none;color:inherit;transition:border-color .15s, box-shadow .15s}

@@ -2163,15 +2163,20 @@ function renderChip(){
    Stufenwechsel als eigenen Schritt. */
 const KUERZEL={0:'hell-oder-dunkel',1:'ladung',2:'stromstaerke',3:'spannung',4:'widerstand',5:'leistung'};
 let hashStumm=false;
+/* Die gewünschte Stufe wird hier gelesen, bevor irgendein render() laufen
+   kann – sonst überschreibt das erste render() die Adresse mit Stufe 0,
+   und der Direktlink wäre weg, bevor er gelesen wurde. */
+const STARTHASH=location.hash||'';
+let startFertig=false;
 function adresse(){
-  if(hashStumm) return;
+  if(hashStumm||!startFertig) return;
   const h='#'+G.stufe+'-'+KUERZEL[G.stufe];
   // In einer Vorschau (eingebettete Seite) darf die Adresse nicht geändert
   // werden – das Werkzeug soll deswegen nicht stehen bleiben.
   if(location.hash!==h){ try{ history.replaceState(null,'',h); }catch(e){} }
 }
 function ausAdresse(){
-  const m=/^#?(\d)/.exec(location.hash||'');
+  const m=/^#?(\d)/.exec(startFertig?(location.hash||''):STARTHASH);
   if(!m) return false;
   const n=Number(m[1]);
   if(!BEREIT.includes(n)) return false;
@@ -2536,6 +2541,7 @@ addEventListener('resize',refit);
 addEventListener('orientationchange',refit);
 
 ausAdresse();
+startFertig=true;
 render();
 requestAnimationFrame(render);
 requestAnimationFrame(frame);

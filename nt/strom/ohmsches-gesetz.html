@@ -148,7 +148,15 @@ section[hidden]{display:none!important}
 #dreieck #triExpl{min-height:2.9em}   /* zwei Zeilen */
 #dreieck #triFb{min-height:5.8em}     /* vier Zeilen */
 @media (max-width:820px){#dreieck #triTask{min-height:3.9em}}
-@media (max-width:640px){#dreieck #triTask{min-height:5.2em}}
+/* Auf schmalen Geräten darf die Frage nicht neben dem Umschalter
+   eingeklemmt werden – sonst wird sie bis zu neunzeilig. Der Umschalter
+   rückt eine Zeile tiefer, die Frage bekommt die ganze Breite. */
+@media (max-width:700px){
+  .bar{flex-wrap:wrap}
+  .bar>div:first-child,.bar>.task{flex:1 1 100%}
+  #dreieck #triTask{min-height:3.9em}
+}
+@media (max-width:360px){#dreieck #triFb{min-height:7.25em}}
 .helpTri{display:flex;align-items:center;gap:10px;margin-top:6px}
 .minitri{width:200px;margin:10px auto 0}
 
