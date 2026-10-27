@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="de-CH">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Knoten">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Knoten und Maschen</title>
+<style>
+:root{--bg:#E6ECF1;--paper:#F8FAFB;--ink:#1D2935;--muted:#5A6672;--line:#C6D0D9;--btn:#FFFFFF;
+  --accent:#2E6DB4;--ok:#23794A;--bad:#B8322A;
+  --knot:#1b9e63;--m1:#2563c9;--m2:#c2318f;--m3:#1f9e6e}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+/* Muss vor allen display-Regeln stehen: sonst überschreibt eine Klasse das hidden-Attribut */
+[hidden]{display:none !important}
+button{font:inherit}
+html,body{height:100%}
+body{margin:0;font-family:system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;font-size:16px;line-height:1.45;
+  background:var(--bg);color:var(--ink);overflow:hidden;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+header,.top,.card{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.wrap{max-width:1700px;margin:0 auto;padding:12px 16px 16px;height:100vh;height:100dvh;display:flex;flex-direction:column;gap:18px;box-sizing:border-box}
+.top{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px 14px;flex:0 0 auto}
+.top h1{grid-column:1;grid-row:1;justify-self:start}
+.top .tabs{grid-column:2;grid-row:1;justify-self:center}
+.top .tools{grid-column:3;grid-row:1;justify-self:end}
+h1{font-size:1.5rem;margin:0;font-weight:700;letter-spacing:-.01em;white-space:nowrap}
+/* Die drei Teile: gleich breit, jeder mit eigenem Rand – wie die Stufen in «Grössen» */
+.top .tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px;margin:0;
+  border:1px solid var(--line);border-radius:14px;padding:3px;background:var(--paper)}
+.top .tabs .tab{border:0;background:transparent;color:var(--ink);height:38px;padding:0 10px;font-size:.9rem;
+  display:flex;align-items:center;justify-content:center;border-radius:11px;
+  white-space:nowrap;text-align:center;overflow:hidden;text-overflow:ellipsis}
+.top .tabs .tab:hover:not(:disabled){background:#EEF2F7}
+.top .tabs .tab.on,.top .tabs .tab.on:hover{background:var(--ink);color:var(--paper)}
+.tools{display:flex;align-items:center;gap:12px}
+.fsbtn{display:inline-flex;align-items:center;justify-content:center;gap:7px;font:inherit;font-size:.92rem;height:36px;
+  border:1px solid var(--line);background:var(--btn);color:var(--muted);padding:0 14px;border-radius:999px;cursor:pointer}
+.fsbtn:hover{border-color:var(--accent);color:var(--accent)}
+.hilfebtn{width:36px;height:36px;padding:0;border-radius:999px;font-weight:700;font-size:.92rem;justify-content:center}
+.heim{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+.heim svg{display:block}
+@media (max-width:767px){.heim{width:36px;padding:0;border-radius:999px}.heim span{display:none}}
+@media (max-width:430px){.tools{gap:8px}}
+.stagewrap{position:relative}
+.zoombtn{display:none;position:absolute;right:10px;bottom:10px;width:40px;height:40px;border-radius:50%;
+  border:1.5px solid var(--ink);background:#fff;font-size:1.1rem;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.15)}
+#stage.zoom{overflow:auto}
+#stage.zoom svg{width:210%;height:auto;max-height:none}
+.modal{position:fixed;inset:0;z-index:60;background:rgba(18,24,30,.45);display:grid;place-items:center;padding:16px}
+.modal[hidden]{display:none}
+.mcard{background:var(--paper);border-radius:14px;padding:14px 16px 16px;max-width:460px;width:100%;
+  max-height:calc(100vh - 32px);overflow:auto;box-shadow:0 14px 40px rgba(0,0,0,.3)}
+.mhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.mhead b{font-size:1.05rem}
+.mcard p{margin:7px 0;line-height:1.5}
+.fsmode .wrap{max-width:none}
+@media (max-width:1180px){
+  .top{grid-template-columns:1fr auto}
+  .top .tools{grid-column:2}
+  .top .tabs{grid-column:1 / -1;grid-row:2;justify-self:stretch;width:100%}
+}
+.tab{border:1px solid var(--line);background:var(--btn);border-radius:999px;padding:7px 13px;font-size:.92rem;cursor:pointer;color:var(--ink)}
+.tab.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tab:disabled{opacity:.45;cursor:default}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:10px 12px;
+  flex:1;min-height:0;display:flex;flex-direction:column;gap:8px}
+.stagewrap{flex:0 0 auto;min-height:0}
+.side{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px}
+#stage{min-height:0;width:100%;height:100%}
+.panel{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:4px;margin:0}
+.lead{margin:6px 0;font-size:1.02rem;line-height:1.45}
+.msg{padding:8px 11px;border-radius:12px;margin:6px 0;line-height:1.45}
+.msg.ok{background:#e6f6ec;color:#11683a}
+.msg.bad{background:#fdecec;color:#9b1c1c}
+.msg.info{background:#eef4fd;color:#1d4d99}
+.mc{display:flex;flex-direction:column;gap:6px;margin:6px 0}
+.opt{text-align:left;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--btn);font-size:.97rem;cursor:pointer;color:var(--ink)}
+.opt:disabled{cursor:default}
+.opt.pick{border-color:var(--accent);background:#eef4fd;box-shadow:inset 0 0 0 1px var(--accent)}
+.opt.right{border-color:var(--ok);background:#e6f6ec}
+.opt.wrongsel{border-color:var(--bad);background:#fdecec}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.btn{padding:9px 14px;border-radius:10px;border:1px solid var(--line);background:var(--btn);font:inherit;cursor:pointer;color:var(--ink);min-height:40px}
+.btn.primary{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:default}
+/* Wahlknöpfe für Knoten und Maschen: fingergross, mit Farbpunkt wie im Bild */
+.wahl{display:flex;gap:6px;flex-wrap:wrap;margin:7px 0}
+.wahl button{display:inline-flex;align-items:center;gap:7px;min-height:44px;padding:0 14px;border-radius:12px;
+  border:1px solid var(--line);background:var(--btn);font:inherit;font-size:.93rem;cursor:pointer;color:var(--ink)}
+.wahl button:hover:not(:disabled){border-color:var(--accent)}
+.wahl button.on{border-color:var(--ink);background:var(--ink);color:#fff;box-shadow:inset 0 0 0 1px var(--ink)}
+.wahl .pkt{width:13px;height:13px;border-radius:50%;flex:0 0 auto;border:2px solid rgba(0,0,0,.25)}
+/* Die Bilanz: links was hineinfliesst, rechts was hinaus – als Rechnung lesbar */
+.bil{background:#eef2f7;border-radius:12px;padding:9px 12px;margin:7px 0}
+.bil .kopf{font-weight:700;font-size:.9rem;color:var(--muted);margin-bottom:3px}
+.bil .rech{font-size:1.12rem;font-weight:700;color:var(--ink);line-height:1.5}
+/* Division mit echtem Bruchstrich, wie im Lehrmittel gedruckt.
+   inline-flex statt Tabelle: Der Bruch sitzt damit auf derselben Grundlinie wie
+   das Gleichheitszeichen daneben und wächst mit der Schriftgrösse mit. */
+.bruch{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;
+  margin:0 .22em;line-height:1.18;position:relative;top:-.08em}
+.bruch>span{padding:0 .34em;white-space:nowrap}
+.bruch>span+span{border-top:2px solid currentColor;margin-top:1px;padding-top:1px}
+.bil .rech .gleich{color:var(--ok);padding:0 3px}
+.bil .rech .kippt{color:var(--bad);padding:0 3px}
+.bil .was{font-size:.86rem;color:var(--muted);margin-top:2px;line-height:1.4}
+.regel{background:#eef4fd;border-radius:12px;padding:9px 12px;margin:7px 0;line-height:1.45}
+.regel b{color:#1d4d99}
+.merke{background:#f6f2e9;border-left:4px solid #d9bd6a;border-radius:0 10px 10px 0;padding:8px 12px;margin:8px 0;line-height:1.45;color:#4a4232}
+.dlist{font-size:.93rem;color:#4a5560;line-height:1.55;margin:4px 0}
+.nach{margin-top:14px;border-top:1px solid var(--line);padding-top:6px}
+.nachkopf{display:flex;align-items:center;gap:7px;width:100%;min-height:38px;padding:6px 2px;border:0;background:none;font:inherit;
+  font-weight:700;font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;cursor:pointer}
+.nachkopf:hover{color:var(--accent)}
+.nachkopf span{font-size:.9rem;line-height:1}
+.bar{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:nowrap;flex:0 0 auto;min-width:0}
+.bar .t{font-weight:600;color:var(--muted);flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.icon{border:none;background:none;font-size:.95rem;font-weight:600;cursor:pointer;padding:4px 10px;color:var(--muted);white-space:nowrap;
+  min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center;gap:4px;border-radius:10px}
+.icon:hover{background:var(--line)}
+@media (min-width:700px) and (min-aspect-ratio:11/10){
+  .card{flex-direction:row;gap:14px}
+  .stagewrap{flex:0 0 auto;min-width:0;height:100%;
+    width:min(calc((100vh - 104px) * 5 / 3), calc(100% - clamp(320px, 30%, 450px) - 14px));
+    width:min(calc((100dvh - 104px) * 5 / 3), calc(100% - clamp(320px, 30%, 450px) - 14px))}
+  .side{flex:1 1 0;min-width:0}
+}
+@media (max-width:699px){.zoombtn{display:block}}
+@media (max-width:699px), (max-aspect-ratio:11/10){
+  .stagewrap{width:100%;height:min(38vh, calc((100vw - 48px) * 0.6));height:min(38dvh, calc((100vw - 48px) * 0.6))}
+}
+@media (min-width:941px) and (max-height:900px){.wrap{padding-top:8px;gap:12px;padding-bottom:10px}.top{gap:6px 14px}.top .tabs .tab{height:34px}}
+@media (min-width:941px) and (max-height:820px){.wrap{padding-top:6px;gap:10px;padding-bottom:8px}.top{gap:5px 14px}.top .tabs .tab{height:32px}
+  .msg{font-size:.93rem;line-height:1.38}}
+@media (min-width:941px) and (max-height:720px){.msg{font-size:.88rem;line-height:1.32}.bil .rech{font-size:1.04rem}}
+@media (max-width:600px){
+  .fsbtn span{display:none}
+  .fsbtn{width:36px;padding:0;border-radius:999px}
+  h1{font-size:1.15rem}
+  .h1lg{display:none}
+  .wrap{padding:12px 12px 16px}
+  .stagewrap{height:min(34vh, calc((100vw - 40px) * 0.6));height:min(34dvh, calc((100vw - 40px) * 0.6))}
+}
+/* Ganz schmale Geräte: Der Titel weicht, damit die vier Knöpfe danebenpassen.
+   Steht zuunterst, weil sonst die 600-px-Regel weiter oben gewinnen würde. */
+@media (max-width:360px){h1{font-size:1rem}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1 title="Stand 06.10.2026">Knoten<span class="h1lg"> und Maschen</span></h1>
+    <div class="tabs" id="tabs"></div>
+    <div class="tools">
+      <a class="fsbtn heim" href="index.html" title="Zur Übersicht" aria-label="Zur Übersicht"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.65 12 2.45l9 7.2"/><path d="M5.6 8.45v10h12.8v-10"/><path d="M9.9 18.45v-5.2h4.2v5.2"/></svg><span>Übersicht</span></a>
+      <button class="fsbtn" id="fsBtn" hidden aria-label="Vollbild"></button>
+      <button class="fsbtn hilfebtn" id="einstBtn" aria-label="Einstellungen" title="Einstellungen">⚙</button>
+      <button class="fsbtn hilfebtn" id="helpBtn" aria-label="Anleitung" title="Anleitung">?</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="stagewrap"><div id="stage"></div>
+      <button class="zoombtn" id="zoomBtn" title="Bild vergrössern">🔍</button></div>
+    <div class="side">
+      <div class="bar"><span class="t" id="bartext"></span>
+        <button class="icon" data-act="neu" title="Andere Schaltung">↺ <span id="neuwort">Andere Schaltung</span></button></div>
+      <div class="panel" id="panel"></div>
+    </div>
+  </div>
+</div>
+<div id="einst" class="modal" hidden>
+  <div class="mcard">
+    <div class="mhead"><b>⚙ Einstellungen</b><button class="icon" data-einst="zu" aria-label="Schliessen">✕</button></div>
+    <div id="einstText"></div>
+    <div class="row"><button class="btn primary" data-einst="zu">Fertig</button></div>
+  </div>
+</div>
+<div id="hilfe" class="modal" hidden>
+  <div class="mcard">
+    <div class="mhead"><b id="hilfeTitel"></b><button class="icon" data-hilfe="zu" aria-label="Schliessen">✕</button></div>
+    <div id="hilfeText"></div>
+    <div class="row"><button class="btn primary" data-hilfe="zu">Alles klar</button></div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   Knoten und Maschen
+   Gehört zur Familie «Stromkreis – Werkzeuge» und schliesst an
+   «Grössen im Stromkreis» an: Dort hat die Klasse gesehen, dass im
+   Lämpchen keine Ladung verbraucht wird. Genau daraus folgt die
+   Knotenregel – sie bekommt hier nur ihren Namen.
+
+   Gezeichnet wird wie im Lehrmittel: eine obere und eine untere
+   Sammelschiene, dazwischen senkrechte Zweige. Zweig 0 ganz links
+   trägt die Spannungsquelle und die Lampe, die in Serie zu allem liegt.
+
+   Fliessrichtung: aus der Quelle nach oben durch die Serielampe, auf
+   der OBEREN Schiene nach rechts – dort teilt sich der Strom. Durch
+   die Zweige nach unten, auf der UNTEREN Schiene nach links zurück –
+   dort sammelt er sich wieder.
+
+   Geprüft wird immer das, was im Bild STEHT. Darum trägt der Plan auch
+   die Stromstärken der Schienenstücke; sonst wäre ein verstellter
+   Zweigstrom nirgends nachrechenbar.
+   ============================================================ */
+
+const TEILE=[['knoten','Knoten'],['maschen','Maschen'],['pruefen','Prüfen']];
+const G={teil:'knoten', gesehenK:false, gesehenM:false, wahl:null, lampe:null, nachOffen:false, lauf:null,
+         einstOffen:false, rZeigen:true, plan:null,
+         auf:null, aufNo:0, geloest:0, phase:'frage', pick:null, trefferId:null, fertig:false};
+const AUFGABEN=8;
+
+/* ---------- Zeichenbausteine (aus der Familie übernommen) ---------- */
+const COL={red:'#d8322b',black:'#2a2d31',blue:'#2563c9',yellow:'#e9c11b'};
+const DEFS=`<defs>
+<radialGradient id="glow"><stop offset="0" stop-color="#fff6b0" stop-opacity=".95"/><stop offset=".45" stop-color="#ffd84a" stop-opacity=".5"/><stop offset="1" stop-color="#ffd84a" stop-opacity="0"/></radialGradient>
+<pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><rect width="20" height="20" fill="#f6f2e9"/><circle cx="10" cy="10" r="1.3" fill="#ddd5c3"/></pattern>
+<linearGradient id="bat" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a6886"/><stop offset="1" stop-color="#2c3e50"/></linearGradient>
+<marker id="pfeil" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#44505a"/></marker>
+</defs>`;
+function rpath(pts,r=18){
+  let d=`M${pts[0][0]},${pts[0][1]}`;
+  for(let i=1;i<pts.length-1;i++){
+    const [x0,y0]=pts[i-1],[x1,y1]=pts[i],[x2,y2]=pts[i+1];
+    const d1=Math.hypot(x1-x0,y1-y0), d2=Math.hypot(x2-x1,y2-y1);
+    if(!d1||!d2){d+=` L${x1},${y1}`;continue;}
+    const rr=Math.min(r,d1/2,d2/2);
+    d+=` L${x1+(x0-x1)/d1*rr},${y1+(y0-y1)/d1*rr} Q${x1},${y1} ${x1+(x2-x1)/d2*rr},${y1+(y2-y1)/d2*rr}`;
+  }
+  const l=pts[pts.length-1]; return d+` L${l[0]},${l[1]}`;
+}
+function wire(pts,color){
+  const d=rpath(pts);
+  return `<path d="${d}" fill="none" stroke="rgba(0,0,0,.35)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="${d}" fill="none" stroke="${COL[color]}" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="${d}" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>`;
+}
+function mixc(a,b,t){
+  const h=c=>[1,3,5].map(i=>parseInt(c.substr(i,2),16)), A=h(a), B=h(b);
+  return '#'+A.map((v,i)=>Math.round(v+(B[i]-v)*t).toString(16).padStart(2,'0')).join('');
+}
+function lampSVG(c,hell,sc){
+  if(sc&&sc!==1) return `<g transform="translate(${c.x} ${c.y}) scale(${sc}) translate(${-c.x} ${-c.y})">${lampSVG(c,hell)}</g>`;
+  const {x,y}=c, bx=x+58, h=Math.max(0,Math.min(1,hell===undefined?1:hell)), gl=Math.pow(h,0.55);
+  let s=`<circle cx="${bx}" cy="${y}" r="${Math.round(36+28*gl)}" fill="url(#glow)" opacity="${Math.round(gl*100)/100}"/>`;
+  s+=`<rect x="${x+12}" y="${y-9}" width="20" height="18" rx="3" fill="#8a8f96"/>`;
+  const glas=mixc('#e8eef2','#ffe066',gl), rand=mixc('#98a4ad','#d9a400',gl), dra=mixc('#6b7780','#b35c00',gl);
+  s+=`<circle cx="${bx}" cy="${y}" r="27" fill="${glas}" stroke="${rand}" stroke-width="2"/>
+  <path d="M${bx-18},${y-10} L${bx-3},${y-7} l5,3 l-5,3 l5,3 l-5,3 L${bx-15},${y+9}" fill="none" stroke="${dra}" stroke-width="1.8" stroke-linejoin="round"/>`;
+  s+=`<rect x="${x-14}" y="${y-31}" width="28" height="62" rx="6" fill="#4a5058"/>`;
+  return s;
+}
+/* Die Spannungsquelle steht senkrecht im Zweig – darum eine eigene Zeichnung.
+   Die Aufschrift bleibt waagrecht, sonst müsste man den Kopf drehen. */
+function quelleSVG(x,y,txt){
+  return `<rect x="${x-14}" y="${y-78}" width="28" height="16" rx="3" fill="#b89436"/>
+  <rect x="${x-14}" y="${y+62}" width="28" height="16" rx="3" fill="#b89436"/>
+  <rect x="${x-40}" y="${y-66}" width="80" height="132" rx="10" fill="url(#bat)"/>
+  <text x="${x}" y="${y+7}" text-anchor="middle" font-size="21" font-weight="700" fill="#fff">${txt}</text>
+  <text x="${x}" y="${y-38}" text-anchor="middle" font-size="24" font-weight="800" fill="#ff9a8f">+</text>
+  <text x="${x}" y="${y+52}" text-anchor="middle" font-size="24" font-weight="800" fill="#d5dde3">−</text>`;
+}
+const knob=(x,y)=>`<circle cx="${x}" cy="${y}" r="7" fill="#d9b44a" stroke="#8a6d1f" stroke-width="2"/><circle cx="${x}" cy="${y}" r="2" fill="#6b5418"/>`;
+const lbl=(x,y,t,anchor,size)=>`<text x="${x}" y="${y}" text-anchor="${anchor||'middle'}" font-size="${size||15}" font-weight="700" fill="#44505a" stroke="#f6f2e9" stroke-width="4" paint-order="stroke" stroke-linejoin="round">${t}</text>`;
+const wert=(x,y,t,col,anchor,size)=>`<text x="${x}" y="${y}" text-anchor="${anchor||'middle'}" font-size="${size||17}" font-weight="700" fill="${col||'#1D2935'}" stroke="#f6f2e9" stroke-width="4.5" paint-order="stroke" stroke-linejoin="round">${t}</text>`;
+
+let VB={x:0,y:0,w:800,h:480};
+function fitVB(cx,cy,cw,ch){
+  const el=document.getElementById('stage'), r=el?el.getBoundingClientRect():null;
+  let ar=(r&&r.width>4&&r.height>4)?r.width/r.height:cw/ch;
+  ar=Math.max(0.55,Math.min(4.5,ar));
+  let x=cx,y=cy,w=cw,h=ch;
+  if(ar>cw/ch){ w=ch*ar; x=cx-(w-cw)/2; }
+  else { h=cw/ar; y=cy-(h-ch)*0.5; }
+  const r1=n=>Math.round(n*10)/10;
+  const px=(r&&r.width>4)?r.width/w:1;
+  VB={x:r1(x),y:r1(y),w:r1(w),h:r1(h),r:r1(Math.max(8,16/px))};
+  return VB;
+}
+const vbAttr=v=>`${v.x} ${v.y} ${v.w} ${v.h}`;
+
+/* ============================================================
+   Der Rechenkern
+   ============================================================ */
+const WAHL=a=>a[Math.floor(Math.random()*a.length)];
+const SUM=a=>a.reduce((x,y)=>x+y,0);
+const IDX='₁₂₃₄₅₆₇₈₉';
+const Lname=n=>'L'+(IDX[n-1]||n);
+
+const teilerVon=n=>{const t=[];for(let i=1;i<=n;i++) if(n%i===0) t.push(i);return t;};
+const FORMEN=[{id:'a',tief:[1,1]},{id:'b',tief:[1,1,1]},{id:'c',tief:[1,2]},{id:'d',tief:[1,2,1]}];
+const UP_WAHL=[6,8,9,10,12,14,15,16,18,20,21,24,27,28,30,36];
+const U_SCHOEN=[9,10,12,14,15,16,18,20,21,24,25,27,28,30,32,35,36,40,42];
+
+/* Die Schaltung wird vom WIDERSTAND her aufgebaut, nicht vom Strom.
+   Nur so sind Stromstärke, Spannung und Widerstand gleichzeitig ganze Zahlen –
+   und nur dann lässt sich die ungleiche Aufteilung am Knoten erklären statt
+   bloss behaupten. Teilt sich der Strom nämlich immer gleichmässig auf, lernt
+   die Klasse die falsche Regel «am Knoten halbiert sich der Strom».
+
+   Parallelteil: alle Zweige liegen an derselben Spannung Up.
+     Zweig j mit Widerstand Rj führt Ij = Up ÷ Rj  →  Rj muss Up teilen.
+   Zweig mit zwei Lampen: beide führen Ij, die Teilspannungen müssen durch Ij teilbar sein.
+   Serielampe: R1 = Us ÷ Iges  →  Us muss durch Iges teilbar sein.
+
+   Die brauchbaren Bausätze werden einmal beim Start gesucht, danach nur noch gewürfelt. */
+function baukasten(tief){
+  const n=tief.length, out=[];
+  for(const Up of UP_WAHL){
+    const T=teilerVon(Up).filter(r=>r>=2);          // 1 Ω sähe nach Kurzschluss aus
+    const pruefe=(Rz)=>{
+      const I=Rz.map(r=>Up/r);
+      if(new Set(I).size!==n) return;                        // die Zweige sollen sich unterscheiden
+      if(Math.max(...I)>5*Math.min(...I)) return;            // keine entarteten Verhältnisse
+      const Iges=SUM(I);
+      if(Iges<3||Iges>14) return;
+      for(let k=2;k<=5;k++){
+        const Us=Iges*k, U=Up+Us;
+        if(Us>1.6*Up||Up>4*Us) continue;                     // beide Teile bleiben sichtbar gross
+        if(!U_SCHOEN.includes(U)) continue;
+        const varianten=tief.map((t,j)=>{
+          if(t===1) return [[Up]];
+          const Ij=I[j], m=[];
+          for(let a=2*Ij;a<Up;a+=Ij){ const b=Up-a;          // jede Lampe mindestens 2 Ω
+            if(b%Ij===0&&a!==b&&b>=2*Ij) m.push([a,b]); }
+          return m;
+        });
+        if(varianten.some(v=>!v.length)) continue;
+        out.push({Up,Us,U,Iges,R1:k,Rz,I,varianten});
+      }
+    };
+    const komb=(start,acc)=>{
+      if(acc.length===n){ pruefe(acc); return; }
+      for(let i=start;i<T.length;i++) komb(i+1,acc.concat(T[i]));
+    };
+    komb(0,[]);
+  }
+  return out;
+}
+const KASTEN={}; FORMEN.forEach(f=>{ KASTEN[f.id]=baukasten(f.tief); });
+let letzteForm='';
+
+function bauen(formId){
+  let form;
+  if(formId) form=FORMEN.find(f=>f.id===formId);
+  else { for(let v=0;v<30;v++){ form=WAHL(FORMEN); if(form.id!==letzteForm) break; } }
+  letzteForm=form.id;
+  const b=WAHL(KASTEN[form.id]), n=form.tief.length;
+  const lampen=[{nr:1,zweig:0,pos:0,I:b.Iges,U:b.Us,R:b.R1}];
+  let nr=2;
+  form.tief.forEach((t,j)=>{
+    const teil=WAHL(b.varianten[j]), Ij=b.I[j];
+    teil.forEach((u,p)=>lampen.push({nr:nr++,zweig:j+1,pos:p,I:Ij,U:u,R:u/Ij}));
+  });
+  /* seg[j] = Strom auf der Schiene zwischen Zweig j und Zweig j+1.
+     seg[0] ist der Gesamtstrom, seg[n-1] gehört zum letzten Zweig. */
+  const seg=[]; for(let j=0;j<n;j++) seg.push(SUM(b.I.slice(j)));
+  return {form:form.id,tief:form.tief,n,U:b.U,I:b.Iges,seg,lampen,heil:true,falsch:null};
+}
+/* Im Code heissen die senkrechten Stränge «zweig», in der Aufschrift heissen sie
+   «Weg». Das ist Absicht: «Weg» ist das Wort, mit dem «Grössen» und die
+   «Blackbox» dasselbe benennen – «in Serie liegen alle Lampen auf demselben
+   Weg, parallel hat jede ihren eigenen». Das Lehrmittel kennt nur den
+   «Verzweigungspunkt», nicht den «Zweig». «Grössen» hält es im Code genauso. */
+const zweigLampen=(K,j)=>K.lampen.filter(l=>l.zweig===j).sort((a,b)=>a.pos-b.pos);
+const zweigStrom=(K,j)=>zweigLampen(K,j)[0].I;
+
+/* Knoten entstehen nur dort, wo wirklich drei Leitungen zusammentreffen:
+   bei den Zweigen 1..n-1. Beim letzten Zweig biegt die Schiene bloss ab. */
+function knoten(K){
+  const out=[];
+  for(let j=1;j<=K.n-1;j++){
+    out.push({id:'o'+j,schiene:'oben',zweig:j,
+      hinein:[{was:'von links',I:K.seg[j-1]}],
+      hinaus:[{was:'in den Weg',I:zweigStrom(K,j)},{was:'nach rechts',I:K.seg[j]}]});
+  }
+  for(let j=1;j<=K.n-1;j++){
+    out.push({id:'u'+j,schiene:'unten',zweig:j,
+      hinein:[{was:'aus dem Weg',I:zweigStrom(K,j)},{was:'von rechts',I:K.seg[j]}],
+      hinaus:[{was:'nach links',I:K.seg[j-1]}]});
+  }
+  return out;
+}
+const maschen=K=>K.tief.map((t,j)=>({id:'m'+(j+1),zweig:j+1,
+  lampen:[K.lampen[0],...zweigLampen(K,j+1)]}));
+
+/* Der Weg einer Masche als Streckenzug, mit den Lampen als Stationen.
+   Gegangen wird genau so, wie es im Lehrmittel steht: vom Minuspol zum Pluspol.
+   Im Teil «Maschen» sind keine Strompfeile eingeblendet, es widerspricht also
+   nichts. Die Reihenfolge der Lampen ist dadurch eine andere als in der Summe
+   oben – das schadet nicht, im Gegenteil: Es zeigt, dass die Reihenfolge für
+   die Regel gleichgültig ist. */
+function maschenWeg(K,j){
+  const x=zweigX(j), punkte=[[BX,QY+78],[BX,BY],[x,BY]], stationen=[];
+  zweigLampen(K,j).slice().reverse().forEach(l=>{ punkte.push([x,lampenPlatz(K,l).y]);
+    stationen.push({i:punkte.length-1,lampe:l}); });
+  punkte.push([x,TY],[BX,TY],[BX,L1Y]);
+  stationen.push({i:punkte.length-1,lampe:K.lampen[0]});
+  punkte.push([BX,QY-78]);
+  return {punkte,stationen,ziel:punkte.length-1};
+}
+const knotenName=(K,id)=>{ const a=knoten(K); return 'ABCD'[a.findIndex(k=>k.id===id)]||'?'; };
+const maschenFarbe=j=>['var(--m1)','var(--m2)','var(--m3)'][(j-1)%3];
+const maschenFarbeHex=j=>['#2563c9','#c2318f','#1f9e6e'][(j-1)%3];
+
+function bilanz(K){
+  const schlimm=[];
+  knoten(K).forEach(k=>{
+    const a=SUM(k.hinein.map(x=>x.I)), b=SUM(k.hinaus.map(x=>x.I));
+    if(a!==b) schlimm.push({regel:'knoten',id:k.id,hinein:a,hinaus:b});
+  });
+  maschen(K).forEach(m=>{
+    const s=SUM(m.lampen.map(l=>l.U));
+    if(s!==K.U) schlimm.push({regel:'masche',id:m.id,summe:s,quelle:K.U});
+  });
+  return schlimm;
+}
+const stimmtKnoten=(K,k)=>SUM(k.hinein.map(x=>x.I))===SUM(k.hinaus.map(x=>x.I));
+const stimmtMasche=(K,m)=>SUM(m.lampen.map(l=>l.U))===K.U;
+
+function verstellen(w){ const d=WAHL([-2,-1,1,2]); return w+d>=1?w+d:w+Math.abs(d); }
+/* Entweder stimmt alles, oder genau ein Wert im Bild ist verstellt.
+   Zweigstrom nur bei den Zweigen 1..n-1: beim letzten Zweig gäbe es keinen
+   Knoten, an dem man es sehen könnte. Die Serielampe bleibt unangetastet,
+   sonst kippen alle Maschen auf einmal. */
+function aufgabe(heil,formId){
+  const K=bauen(formId);
+  if(heil) return K;
+  K.heil=false;
+  if(K.n>=2&&Math.random()<0.5){
+    const j=1+Math.floor(Math.random()*(K.n-1));
+    const alt=zweigStrom(K,j), neu=verstellen(alt);
+    zweigLampen(K,j).forEach(l=>l.I=neu);
+    K.falsch={art:'knoten',zweig:j,lampe:zweigLampen(K,j)[0].nr,alt,neu};
+  }else{
+    const l=WAHL(K.lampen.filter(x=>x.zweig>0));
+    const alt=l.U; l.U=verstellen(alt);
+    K.falsch={art:'masche',zweig:l.zweig,lampe:l.nr,alt,neu:l.U};
+  }
+  return K;
+}
+
+/* ============================================================
+   Das Bild
+   ============================================================ */
+const TY=110, BY=440;                 // obere und untere Sammelschiene
+const BX=150, X0=390, DX=235;         // Quellenzweig, erster Parallelzweig, Abstand
+const QY=345, L1Y=196;                // Quelle und Serielampe im Zweig 0
+const zweigX=j=>j===0?BX:X0+(j-1)*DX;
+const lampSc=0.84;
+
+function lampenPlatz(K,l){
+  const x=zweigX(l.zweig);
+  if(l.zweig===0) return {x,y:L1Y};
+  const tief=K.tief[l.zweig-1];
+  if(tief===1) return {x,y:Math.round((TY+BY)/2)};
+  const h=(BY-TY)/tief;
+  return {x,y:Math.round(TY+(l.pos+0.5)*h)};
+}
+/* Alle Lämpchen leuchten gleich hell. Vorher richtete sich die Helligkeit nach
+   der Leistung P = U · I – das stimmt zwar, war aber im Teil «Knoten» nicht
+   nachprüfbar, weil dort die Spannung nicht steht. Eine Lampe mit viel Strom
+   konnte dann schwächer leuchten als eine mit wenig, und das Bild legte den
+   falschen Schluss nahe. Ein Schaltplan muss über Helligkeit nichts sagen;
+   die gehört in «Grössen» zu Leistung und Widerstand. */
+const HELL=0.92;
+function helligkeit(){ return HELL; }
+
+function bildSVG(){
+  const K=G.plan, teil=G.teil, n=K.n;
+  const RX=zweigX(n);
+  const B={x:60,y:30,w:RX+160-60,h:500};
+  const V=fitVB(B.x,B.y,B.w,B.h);
+  let g=`<svg viewBox="${vbAttr(V)}" xmlns="http://www.w3.org/2000/svg">${DEFS}
+  <rect x="${V.x+3}" y="${V.y+3}" width="${V.w-6}" height="${V.h-6}" rx="${V.r}" fill="url(#dots)" stroke="#e2dccd" stroke-width="2"/>`;
+
+  /* Gewählte Masche: breites blasses Band hinter den Leitungen.
+     Läuft gerade ein Umlauf, ist nur das Stück bis zur erreichten Station gefärbt. */
+  const maschePfad=()=>{
+    const j=+G.wahl.slice(1), x=zweigX(j), c=maschenFarbeHex(j);
+    if(G.lauf&&G.lauf.m===G.wahl){
+      const w=maschenWeg(K,j);
+      const bis=G.lauf.s<=0?0:(G.lauf.s>w.stationen.length?w.ziel:w.stationen[G.lauf.s-1].i);
+      return {d:rpath(w.punkte.slice(0,Math.max(2,bis+1))),c,weg:w};
+    }
+    return {d:rpath([[BX,TY],[x,TY],[x,BY],[BX,BY],[BX,TY]]),c};
+  };
+  const zeigMasche=teil!=='knoten'&&G.wahl&&G.wahl[0]==='m';
+  if(zeigMasche){
+    const {d,c}=maschePfad();
+    g+=`<path d="${d}" fill="none" stroke="${c}" stroke-width="34" stroke-opacity=".2"
+      stroke-linecap="round" stroke-linejoin="round"/>`;
+  }
+
+  // Schienen und Zweige
+  g+=wire([[BX,TY],[RX,TY]],'red');
+  g+=wire([[BX,BY],[RX,BY]],'black');
+  /* Die Leitung läuft bis in die MITTE der Lampe und endet nicht davor.
+     Die Fassung wird danach darüber gezeichnet und deckt das Ende zu. Sonst
+     klafft zwischen Leitung und Fassung eine Lücke – die Fassung ist durch
+     lampSc verkleinert und reicht nicht mehr so weit wie früher die festen 40 px. */
+  g+=wire([[BX,TY],[BX,L1Y]],'red')+wire([[BX,L1Y],[BX,QY-78]],'red');
+  g+=wire([[BX,QY+78],[BX,BY]],'black');
+  for(let j=1;j<=n;j++){
+    const x=zweigX(j), ls=zweigLampen(K,j);
+    let y=TY;
+    ls.forEach(l=>{ const p=lampenPlatz(K,l); g+=wire([[x,y],[x,p.y]],y===TY?'red':'black'); y=p.y; });
+    g+=wire([[x,y],[x,BY]],'black');
+  }
+
+  // … und eine gestrichelte Linie darüber, damit der Umlauf auch auf dem
+  // Beamer eindeutig zu sehen ist. Liegt vor den Leitungen, aber hinter den Lampen.
+  if(zeigMasche){
+    const {d,c,weg}=maschePfad();
+    g+=`<path d="${d}" fill="none" stroke="${c}" stroke-width="4.5" stroke-opacity=".95"
+      stroke-dasharray="14 9" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }
+
+  // Quelle und Lampen. Die Beschriftung steht rechts neben der Quelle:
+  // links davon ist das Zeichenfeld zu Ende.
+  g+=quelleSVG(BX,QY,K.U+' V')+lbl(BX+50,QY-4,'Spannungs-','start')+lbl(BX+50,QY+15,'quelle','start');
+  K.lampen.forEach(l=>{
+    const p=lampenPlatz(K,l);
+    g+=lampSVG(p,helligkeit(),lampSc);
+    g+=lbl(p.x-26,p.y-34,Lname(l.nr),'end',16);
+    const zx=p.x+94, falsch=!K.heil&&K.falsch&&K.falsch.lampe===l.nr;
+    /* Der Widerstand steht nur im Teil «Knoten» dabei – dort erklärt er, warum
+       sich der Strom ungleich aufteilt. In «Maschen» geht es um Spannungen, und
+       in «Prüfen» würde er die Aufgabe verraten: An der verstellten Lampe ginge
+       R · I = U nicht mehr auf, und man hätte den Fehler ohne die Regeln. */
+    let zeilen=[];
+    if(teil==='knoten'){ zeilen=[[l.I+' A','#1d4d99']];
+      if(G.rZeigen) zeilen.push([l.R+' Ω','#5A6672']); }
+    else if(teil==='maschen') zeilen=[[l.U+' V','#9b1c1c']];
+    else zeilen=[[l.I+' A','#1d4d99'],[l.U+' V','#9b1c1c']];
+    zeilen.forEach((z,i)=>{ g+=wert(zx,p.y-((zeilen.length-1)*11)+i*22+6,z[0],z[1],'start'); });
+    if(falsch&&G.phase==='fertig') g+=`<circle cx="${p.x+58}" cy="${p.y}" r="33" fill="none" stroke="#B8322A" stroke-width="3.5" stroke-dasharray="6 5"/>`;
+    if(teil==='knoten'&&G.lampe===l.nr) g+=`<circle cx="${p.x+58}" cy="${p.y}" r="30" fill="none" stroke="#2E6DB4" stroke-width="3.5"/>`;
+  });
+
+  /* Stromstärken auf den Schienenstücken, mit Fliessrichtung.
+     Der Pfeil steht unmittelbar HINTER dem Knoten, aus dem das Stück herausführt –
+     so liest man die Bilanz am Knoten ab, ohne über die halbe Schiene zu schauen.
+     Oben fliesst der Strom nach rechts, unten nach links; darum steht der Pfeil
+     oben rechts vom Knoten und unten links davon. */
+  if(teil!=='maschen'){
+    const AB=36, LN=54;                 // Abstand zum Knotenpunkt, Länge des Pfeils
+    for(let j=0;j<n;j++){
+      const o=zweigX(j)+AB;
+      g+=`<line x1="${o}" y1="${TY-17}" x2="${o+LN}" y2="${TY-17}" stroke="#44505a" stroke-width="2" marker-end="url(#pfeil)"/>`;
+      g+=wert(o+LN/2,TY-26,K.seg[j]+' A','#1d4d99');
+      const u=zweigX(j+1)-AB;
+      g+=`<line x1="${u}" y1="${BY+21}" x2="${u-LN}" y2="${BY+21}" stroke="#44505a" stroke-width="2" marker-end="url(#pfeil)"/>`;
+      g+=wert(u-LN/2,BY+42,K.seg[j]+' A','#1d4d99');
+    }
+    /* Und derselbe Pfeil senkrecht in den Zweig hinein, gleich unter dem Knoten.
+       Erst damit stehen am Knoten alle drei Werte beieinander: hinein, in den
+       Zweig, weiter. Der Pfeil steht NEBEN der Leitung – auf ihr wäre er nicht
+       zu sehen – und seine Länge richtet sich nach der Luft bis zur ersten
+       Fassung, denn in einem Zweig mit zwei Lampen ist davon wenig da. */
+    for(let j=1;j<=n;j++){
+      const x=zweigX(j), ls=zweigLampen(K,j), I=zweigStrom(K,j);
+      const ers=lampenPlatz(K,ls[0]), letz=lampenPlatz(K,ls[ls.length-1]);
+      // oben: gleich unter dem Knoten, aus dem der Strom in den Zweig abbiegt
+      const lnO=Math.max(24,Math.min(LN,(ers.y-31*lampSc-TY)-26));
+      g+=`<line x1="${x+22}" y1="${TY+20}" x2="${x+22}" y2="${TY+20+lnO}" stroke="#44505a" stroke-width="2" marker-end="url(#pfeil)"/>`;
+      g+=wert(x+32,TY+20+lnO/2+5,I+' A','#1d4d99','start');
+      /* unten: gleich ÜBER dem Knoten, in dem der Strom wieder zusammenfliesst.
+         Ohne ihn liest sich der untere Knoten anders als der obere – dort stünde
+         der Beitrag aus dem Zweig nur weit oben beim Lämpchen. Zugleich zeigt er,
+         dass im Lämpchen nichts verloren geht: oben und unten dieselbe Zahl. */
+      const lnU=Math.max(24,Math.min(LN,(BY-(letz.y+31*lampSc))-26));
+      g+=`<line x1="${x+22}" y1="${BY-20-lnU}" x2="${x+22}" y2="${BY-20}" stroke="#44505a" stroke-width="2" marker-end="url(#pfeil)"/>`;
+      g+=wert(x+32,BY-20-lnU/2+5,I+' A','#1d4d99','start');
+    }
+  }
+
+  // Knoten: grüne Punkte wie im Lehrmittel, antippbar
+  knoten(K).forEach(k=>{
+    const x=zweigX(k.zweig), y=k.schiene==='oben'?TY:BY, an=G.wahl===k.id;
+    const ok=stimmtKnoten(K,k), zeig=(teil==='pruefen'&&G.phase==='fertig');
+    const c=zeig&&!ok?'#B8322A':'#1b9e63';
+    g+=`<circle cx="${x}" cy="${y}" r="${an?16:12}" fill="${c}" stroke="#ffffff" stroke-width="${an?4:3}"/>`;
+    if(an) g+=`<circle cx="${x}" cy="${y}" r="24" fill="none" stroke="${c}" stroke-width="3"/>`;
+    // Die Buchstaben nur dort, wo mit den Knoten gearbeitet wird – im Teil
+    // «Maschen» wären sie bloss zusätzliche Zeichen im Bild.
+    if(teil!=='maschen') g+=lbl(x,y+(k.schiene==='oben'?-30:44),knotenName(K,k.id),'middle',16);
+    g+=`<circle data-knoten="${k.id}" cx="${x}" cy="${y}" r="30" fill="#000" fill-opacity="0"/>`;
+  });
+  /* Im Teil «Maschen» steht unter jedem Zweig, wie viel Spannung an ihm liegt.
+     Ohne das bleibt unerklärt, warum bei den Lampen verschiedene Zahlen stehen:
+     An jedem Zweig liegt dieselbe Spannung, aber zwei Lampen in Serie teilen
+     sie unter sich auf. Unterhalb der Schiene ist in diesem Teil Platz –
+     die Strompfeile sind hier ausgeblendet. */
+  if(teil==='maschen'){
+    const Up=K.U-K.lampen[0].U;
+    for(let j=1;j<=n;j++){
+      const x=zweigX(j)+28, ls=zweigLampen(K,j);
+      g+=lbl(x,BY+34,'Weg '+j,'middle',14);
+      g+=wert(x,BY+56,ls.length>1?ls.map(l=>l.U+' V').join(' + ')+' = '+Up+' V':Up+' V','#9b1c1c','middle',16);
+    }
+  }
+  /* Im Teil «Knoten» ist eine Lampe das Ziel – sie zeigt ihre Rechnung.
+     In den anderen Teilen ist es der ganze Zweig, dort wählt er die Masche.
+     Beides am selben Ort geht nicht, darum je nach Teil das eine oder das andere. */
+  if(teil==='knoten'){
+    if(G.rZeigen) K.lampen.forEach(l=>{ const p=lampenPlatz(K,l);
+      g+=`<rect data-lampe="${l.nr}" x="${p.x-30}" y="${p.y-36}" width="120" height="72" fill="#000" fill-opacity="0"/>`; });
+  }else{
+    for(let j=1;j<=n;j++){
+      const x=zweigX(j);
+      g+=`<rect data-masche="m${j}" x="${x-36}" y="${TY+18}" width="132" height="${BY-TY-36}" fill="#000" fill-opacity="0"/>`;
+    }
+  }
+  g+=knob(BX,TY)+knob(BX,BY)+knob(RX,TY)+knob(RX,BY);
+  /* Die Marke des Umlaufs ganz zuletzt – sonst deckt die Fassung der Lampe sie
+     halb zu, und man sieht nicht mehr, wo man gerade steht. */
+  if(zeigMasche&&G.lauf){
+    const {c,weg}=maschePfad(), s=G.lauf.s;
+    if(weg){
+      const pt=s<=0?weg.punkte[0]
+        :(s>weg.stationen.length?weg.punkte[weg.ziel]:weg.punkte[weg.stationen[s-1].i]);
+      g+=`<circle cx="${pt[0]}" cy="${pt[1]}" r="20" fill="#f6f2e9" fill-opacity=".55" stroke="${c}" stroke-width="4"/>`;
+      g+=`<circle cx="${pt[0]}" cy="${pt[1]}" r="7" fill="${c}" stroke="#fff" stroke-width="2.5"/>`;
+      if(s<=0) g+=lbl(pt[0]-32,pt[1]+6,'Start','end',16);
+      if(s>weg.stationen.length) g+=lbl(pt[0]-32,pt[1]+6,'Ziel','end',16);
+    }
+  }
+  return g+'</svg>';
+}
+
+/* ============================================================
+   Die Texte – Begriffe und Regelsätze wie im Lehrmittel
+   ============================================================ */
+const R_KNOTEN='Für jeden Knoten eines Stromkreises gilt: Die <b>Summe der hineinfliessenden Ströme</b> ist genauso gross wie die <b>Summe der hinausfliessenden Ströme</b>.';
+const R_MASCHE='Für jede Masche eines Stromkreises gilt: Die <b>Summe der Spannungen in der Masche</b> ist gleich gross wie die <b>Spannung der Spannungsquelle</b>.';
+const D_KNOTEN='Einen <b>Verzweigungspunkt</b> in einem Stromkreis nennt man «Knoten». Im Bild sind das die grünen Punkte.';
+const D_MASCHE='Eine <b>Masche</b> ist ein geschlossener Stromkreis. Jede Masche beginnt beim Minuspol und endet beim Pluspol der Spannungsquelle.';
+const KIRCHHOFF='Weil die Knotenregel und die Maschenregel von <b>Gustav Robert Kirchhoff</b> entdeckt wurden, nennt man sie auch die <b>kirchhoffschen Regeln</b>.';
+const BRUECKE='In «Grössen im Stromkreis» hast du gesehen: Im Lämpchen wird keine Ladung verbraucht. Am Knoten ist es dasselbe – dort geht keine Ladung verloren, und es kommt auch keine dazu. Darum muss alles wieder hinausfliessen, was hineinfliesst.';
+
+/* Ein Bruch als Zähler über Nenner – wird für jede Division gebraucht. */
+const bruch=(oben,unten)=>`<span class="bruch"><span>${oben}</span><span>${unten}</span></span>`;
+const merke=t=>`<div class="merke">📌 <b>Merke:</b> ${t}</div>`;
+const regelKasten=t=>`<div class="regel">${t}</div>`;
+const nachschlagen=(...t)=>{ const a=t.filter(Boolean); if(!a.length) return '';
+  return `<div class="nach"><button class="nachkopf" data-act="nachAuf" aria-expanded="${G.nachOffen?'true':'false'}"><span>${G.nachOffen?'▾':'▸'}</span>Zum Nachschlagen</button>${G.nachOffen?a.join(''):''}</div>`; };
+
+/* ---------- Teil «Knoten» ---------- */
+function knotenPanel(){
+  const K=G.plan, ks=knoten(K);
+  let p=regelKasten(D_KNOTEN);
+  p+=`<p class="lead">Tippe einen <b>grünen Punkt</b> im Bild an – oder hier einen Knopf. Dann siehst du, was dort hinein- und was hinausfliesst.${
+    G.rZeigen?' Tippst du eine <b>Lampe</b> an, siehst du, wie ihre Stromstärke zustande kommt.':''}</p>`;
+  if(G.lampe!==null) p+=lampenRechnung();
+  p+=`<div class="wahl">`+ks.map(k=>`<button data-act="wahl" data-v="${k.id}" class="${G.wahl===k.id?'on':''}">
+      <span class="pkt" style="background:var(--knot)"></span>Knoten ${knotenName(K,k.id)}</button>`).join('')+`</div>`;
+  const k=ks.find(x=>x.id===G.wahl);
+  if(k){
+    const a=SUM(k.hinein.map(x=>x.I)), b=SUM(k.hinaus.map(x=>x.I));
+    p+=`<div class="bil"><div class="kopf">Knoten ${knotenName(K,k.id)} · ${k.schiene==='oben'?'obere':'untere'} Leitung</div>
+      <div class="rech">${k.hinein.map(x=>x.I+' A').join(' + ')}<span class="gleich">=</span>${k.hinaus.map(x=>x.I+' A').join(' + ')}</div>
+      <div class="was">hinein: ${k.hinein.map(x=>x.was+' '+x.I+' A').join(', ')}<br>hinaus: ${k.hinaus.map(x=>x.was+' '+x.I+' A').join(', ')}</div>
+      <div class="was"><b>${a} A fliessen hinein, ${b} A fliessen hinaus.</b></div></div>`;
+    p+=merke(R_KNOTEN);
+    if(k.schiene==='oben'&&G.rZeigen) p+=aufteilung();
+  }else{
+    p+=`<p class="dlist">Die Pfeile an den Leitungen zeigen, wohin der Strom fliesst. Oben teilt er sich auf, unten sammelt er sich wieder.</p>`;
+    if(G.rZeigen) p+=aufteilung();
+  }
+  p+=nachschlagen(`<div class="dlist">${BRUECKE}</div>`,`<div class="dlist">${KIRCHHOFF}</div>`);
+  return p;
+}
+/* Die Rechnung zu einer angetippten Lampe – in der Schreibweise des Lehrmittels,
+   das an der Steckdosenleiste genauso vorrechnet: I = U ÷ R mit Zahlen und
+   Einheiten in einer Kette. Die Serielampe führt den ganzen Strom, bei ihr ist
+   die Spannung das Gesuchte; in den Zweigen ist es umgekehrt. */
+const IDXn=n=>IDX[n-1]||n;
+function lampenRechnung(){
+  const K=G.plan, l=K.lampen.find(x=>x.nr===G.lampe);
+  if(!l) return '';
+  const n=IDXn(l.nr), Up=K.U-K.lampen[0].U;
+  let kopf,kette,was;
+  if(l.zweig===0){
+    kopf=`${Lname(l.nr)} liegt in Serie zu allem`;
+    kette=`R${n} = ${bruch('U'+n,'I')} = ${bruch(l.U+' V',l.I+' A')} = <b>${l.R} Ω</b>`;
+    was=`Durch ${Lname(l.nr)} fliesst der ganze Strom: ${l.I} A. Über ihr fallen ${l.U} V ab, `+
+        `die restlichen ${Up} V liegen am Parallelteil.`;
+  }else{
+    const ls=zweigLampen(K,l.zweig), allein=ls.length===1;
+    kopf=`${Lname(l.nr)} im Weg ${l.zweig}`;
+    kette=`I${n} = ${bruch('U'+n,'R'+n)} = ${bruch(l.U+' V',l.R+' Ω')} = <b>${l.I} A</b>`;
+    was=allein
+      ? `Am Weg ${l.zweig} liegen ${Up} V. Mit ${l.R} Ω fliessen dort ${l.I} A.`
+      : `Der Weg ${l.zweig} trägt ${ls.length} Lampen in Serie; über ${Lname(l.nr)} fallen ${l.U} V ab. `+
+        `Durch beide fliesst dieselbe Stromstärke: ${l.I} A.`;
+  }
+  return `<div class="bil"><div class="kopf">${kopf}</div>
+    <div class="rech">${kette}</div><div class="was">${was}</div>
+    <div class="was">Gegeben: ${l.U} V · ${l.I} A · ${l.R} Ω — es gilt <b>R = ${bruch('U','I')}</b></div></div>`;
+}
+/* Warum nicht halbe-halbe? Ohne diese Antwort nimmt die Klasse leicht die
+   falsche Regel mit, am Knoten teile sich der Strom gleichmässig auf.
+   Die Zahlen stammen aus der gezeigten Schaltung, nicht aus einem Beispiel. */
+function aufteilung(){
+  const K=G.plan;
+  const z=[...Array(K.n)].map((_,j)=>({j:j+1,I:zweigStrom(K,j+1),
+      R:SUM(zweigLampen(K,j+1).map(l=>l.R))}))
+    .sort((a,b)=>a.R-b.R);
+  const klein=z[0], gross=z[z.length-1];
+  return `<div class="regel"><b>Warum nicht gleichmässig?</b> Der Strom teilt sich nicht
+    halbe-halbe auf, sondern nach dem <b>Widerstand</b>. Je kleiner der Widerstand eines
+    Wegs, desto mehr Strom fliesst hindurch. Hier hat Weg ${klein.j} nur
+    ${klein.R} Ω und führt ${klein.I} A, Weg ${gross.j} dagegen ${gross.R} Ω
+    und nur ${gross.I} A. An jedem Weg liegt dieselbe Spannung –
+    ${K.U-K.lampen[0].U} V – und es gilt <b>I = ${bruch('U','R')}</b></div>`;
+}
+
+/* ---------- Teil «Maschen» ---------- */
+function maschenPanel(){
+  const K=G.plan, ms=maschen(K);
+  let p=regelKasten(D_MASCHE);
+  p+=`<p class="lead">Tippe im Bild einen <b>Weg</b> an – oder hier einen Knopf. Die Masche leuchtet dann farbig auf.</p>`;
+  p+=`<div class="wahl">`+ms.map(m=>`<button data-act="wahl" data-v="${m.id}" class="${G.wahl===m.id?'on':''}">
+      <span class="pkt" style="background:${maschenFarbe(m.zweig)}"></span>Masche ${m.zweig}</button>`).join('')+`</div>`;
+  const m=ms.find(x=>x.id===G.wahl);
+  if(m){
+    const s=SUM(m.lampen.map(l=>l.U));
+    p+=`<div class="bil"><div class="kopf">Masche ${m.zweig} · über ${m.lampen.map(l=>Lname(l.nr)).join(' und ')}</div>
+      <div class="rech">${m.lampen.map(l=>l.U+' V').join(' + ')}<span class="${s===K.U?'gleich':'kippt'}">=</span>${K.U} V</div>
+      <div class="was">${m.lampen.map(l=>Lname(l.nr)+': '+l.U+' V').join(', ')} · Spannungsquelle: ${K.U} V</div></div>`;
+    p+=umlauf(m);
+    p+=merke(R_MASCHE);
+  }else{
+    p+=`<p class="dlist">In dieser Schaltung gibt es ${ms.length} Maschen – eine für jeden Weg. Jede führt über ${Lname(1)}, weil ${Lname(1)} in Serie zu allem liegt.</p>`;
+  }
+  p+=teilspannungen();
+  p+=nachschlagen(`<div class="dlist">${KIRCHHOFF}</div>`);
+  return p;
+}
+/* Warum stehen bei den Lampen verschiedene Spannungen? Die Antwort steht im
+   Lehrmittel in der Tabelle zu Serie- und Parallelschaltung – hier mit den
+   Zahlen der gezeigten Schaltung. Ohne sie bleiben die Zahlen willkürlich. */
+function teilspannungen(){
+  const K=G.plan, Up=K.U-K.lampen[0].U;
+  const mehr=K.tief.findIndex(t=>t>1);
+  let p=`<div class="regel"><b>Warum stehen verschiedene Spannungen?</b><br>
+    <b>Parallel:</b> An jedem der ${K.n} Wege liegt <b>dieselbe</b> Spannung – hier ${Up} V.
+    Darum steht bei Lampen auf verschiedenen Wegen oft dieselbe Zahl.`;
+  if(mehr>=0){
+    const ls=zweigLampen(K,mehr+1);
+    p+=`<br><b>In Serie:</b> Hängen auf einem Weg zwei Lampen hintereinander, <b>teilen</b> sie
+      diese Spannung unter sich auf. Auf Weg ${mehr+1}: ${ls.map(l=>Lname(l.nr)+' '+l.U+' V').join(' und ')},
+      zusammen ${Up} V.`;
+  }
+  p+=`<br>${Lname(1)} liegt vor der Verzweigung und bekommt die restlichen
+    ${K.lampen[0].U} V – zusammen ergeben beide Teile die ${K.U} V der Spannungsquelle.</div>`;
+  return p;
+}
+
+/* Der Umlauf Schritt für Schritt. Die Masche ist eine geschlossene Runde –
+   wo man einsteigt, ist für die Regel gleichgültig. Gegangen wird hier in
+   Fliessrichtung, weil alle Pfeile im Bild dorthin zeigen: vom Pluspol durch
+   die Lampen zurück zum Minuspol. Unterwegs zählen sich die Spannungen auf,
+   und beim Minuspol steht die Spannung der Spannungsquelle da. */
+function umlauf(m){
+  const K=G.plan, w=maschenWeg(K,m.zweig), an=G.lauf&&G.lauf.m===m.id;
+  if(!an) return `<div class="row"><button class="btn primary" data-act="laufAn">▶ Umlauf Schritt für Schritt</button></div>`;
+  const s=G.lauf.s, N=w.stationen.length;
+  const bisher=w.stationen.slice(0,Math.min(s,N)).map(st=>st.lampe);
+  const summe=SUM(bisher.map(l=>l.U));
+  let kopf,text;
+  if(s<=0){ kopf='Start beim Minuspol';
+    text=`Wir gehen die Masche ab – vom Minuspol zum Pluspol. Bis jetzt: <b>0 V</b>.`; }
+  else if(s<=N){ const l=w.stationen[s-1].lampe;
+    kopf=`Station ${s} von ${N}: ${Lname(l.nr)}`;
+    text=`Über ${Lname(l.nr)} fallen <b>${l.U} V</b> ab. Zusammen bisher: <b>${summe} V</b>.`; }
+  else { kopf='Ziel beim Pluspol';
+    text=`Die ganze Runde ergibt <b>${summe} V</b> – genau die Spannung der Spannungsquelle (${K.U} V).`; }
+  const rech=bisher.length
+    ? bisher.map(l=>l.U+' V').join(' + ')+(s>N?' = '+summe+' V':'')
+    : '0 V';
+  let p=`<div class="bil"><div class="kopf">${kopf}</div><div class="rech">${rech}</div>
+    <div class="was">${text}</div></div>`;
+  p+=`<div class="row">`;
+  if(s>0) p+=`<button class="btn" data-act="laufZur">‹ zurück</button>`;
+  if(s<=N) p+=`<button class="btn primary" data-act="laufVor">Weiter →</button>`;
+  else p+=`<button class="btn" data-act="laufAn">↺ nochmals</button>`;
+  p+=`<button class="btn" data-act="laufAus">Umlauf beenden</button></div>`;
+  return p;
+}
+
+/* ---------- Teil «Prüfen» ---------- */
+function neueAufgabe(){
+  /* Etwa jede dritte Schaltung ist heil – sonst wird «stimmt nicht» zur Gewohnheit. */
+  G.plan=aufgabe(Math.random()<0.34);
+  G.aufNo++; G.phase='frage'; G.pick=null; G.trefferId=null; G.wahl=null;
+}
+function pruefenPanel(){
+  const K=G.plan;
+  if(G.fertig) return `<p class="msg ok">🎉 Geschafft – du hast alle ${AUFGABEN} Schaltpläne geprüft.</p>
+    ${merke(R_KNOTEN)}${merke(R_MASCHE)}
+    <div class="row"><button class="btn primary" data-act="neuRunde">↺ Nochmals von vorne</button>
+    <button class="btn" data-act="teil" data-v="knoten">🔍 Zurück zu den Knoten</button></div>`;
+  let p='';
+  if(G.phase==='frage'){
+    p+=`<p class="lead"><b>Geht in diesem Schaltplan alles auf?</b> Prüfe jeden Knoten und jede Masche.</p>
+      <div class="mc">
+      <button class="opt" data-act="pick" data-v="1">Ja, alle Knoten und alle Maschen stimmen</button>
+      <button class="opt" data-act="pick" data-v="0">Nein, irgendwo geht es nicht auf</button></div>`;
+    p+=`<p class="dlist">Zur Erinnerung: Am Knoten muss so viel hinausfliessen, wie hineinfliesst. In der Masche müssen die Spannungen zusammen die Spannung der Spannungsquelle ergeben (${K.U} V).</p>`;
+    return p;
+  }
+  if(G.phase==='zeigen'){
+    p+=`<p class="lead"><b>Wo geht es nicht auf?</b> Tippe im Bild den Knoten oder den Weg an – oder wähle hier.</p>`;
+    p+=wahlKnoepfe();
+    p+=bilanzKasten();
+    p+=`<div class="row"><button class="btn primary" data-act="treffer" ${G.wahl?'':'disabled'}>Das ist die Stelle</button></div>`;
+    return p;
+  }
+  // fertig
+  const richtig=G.pick===(K.heil?1:0);
+  if(K.heil){
+    p+=`<p class="msg ${richtig?'ok':'bad'}">${richtig?'Stimmt – hier geht alles auf.':'Doch: In diesem Schaltplan geht alles auf.'}</p>`;
+    p+=`<p class="dlist">Alle ${knoten(K).length} Knoten und alle ${maschen(K).length} Maschen gehen auf. Du kannst sie unten nachrechnen.</p>`;
+    p+=alleBilanzen();
+    /* Nur wenn die Antwort danebenlag, kommen die Regeln dazu: Wer richtig
+       geurteilt hat, braucht sie nicht nochmals vorgesetzt zu bekommen. */
+    if(!richtig) p+=merke(R_KNOTEN)+merke(R_MASCHE);
+  }else{
+    const f=K.falsch, stelleOk=G.trefferOk;
+    if(G.pick!==0){
+      p+=`<p class="msg bad">Nicht ganz – hier geht etwas nicht auf.</p>`;
+    }else{
+      p+=`<p class="msg ${stelleOk?'ok':'bad'}">${stelleOk?'Richtig, genau dort geht es nicht auf.':'Es geht wirklich nicht auf – aber an einer anderen Stelle.'}</p>`;
+    }
+    p+=verletztKasten();
+    p+=merke(f.art==='knoten'?R_KNOTEN:R_MASCHE);
+  }
+  p+=`<div class="row"><button class="btn primary" data-act="weiter">Nächste Aufgabe →</button></div>`;
+  return p;
+}
+function wahlKnoepfe(){
+  const K=G.plan;
+  let p=`<div class="wahl">`+knoten(K).map(k=>`<button data-act="wahl" data-v="${k.id}" class="${G.wahl===k.id?'on':''}">
+      <span class="pkt" style="background:var(--knot)"></span>Knoten ${knotenName(K,k.id)}</button>`).join('')+`</div>`;
+  p+=`<div class="wahl">`+maschen(K).map(m=>`<button data-act="wahl" data-v="${m.id}" class="${G.wahl===m.id?'on':''}">
+      <span class="pkt" style="background:${maschenFarbe(m.zweig)}"></span>Masche ${m.zweig}</button>`).join('')+`</div>`;
+  return p;
+}
+function bilanzKasten(){
+  const K=G.plan; if(!G.wahl) return '';
+  if(G.wahl[0]==='m'){
+    const m=maschen(K).find(x=>x.id===G.wahl), s=SUM(m.lampen.map(l=>l.U));
+    return `<div class="bil"><div class="kopf">Masche ${m.zweig}</div>
+      <div class="rech">${m.lampen.map(l=>l.U+' V').join(' + ')} = ${s} V<span class="${s===K.U?'gleich':'kippt'}">${s===K.U?'=':'≠'}</span>${K.U} V</div></div>`;
+  }
+  const k=knoten(K).find(x=>x.id===G.wahl);
+  const a=SUM(k.hinein.map(x=>x.I)), b=SUM(k.hinaus.map(x=>x.I));
+  return `<div class="bil"><div class="kopf">Knoten ${knotenName(K,k.id)}</div>
+    <div class="rech">${k.hinein.map(x=>x.I+' A').join(' + ')}<span class="${a===b?'gleich':'kippt'}">${a===b?'=':'≠'}</span>${k.hinaus.map(x=>x.I+' A').join(' + ')}</div></div>`;
+}
+function verletztKasten(){
+  const K=G.plan, b=bilanz(K);
+  let p='';
+  b.forEach(x=>{
+    if(x.regel==='knoten'){
+      const k=knoten(K).find(y=>y.id===x.id);
+      p+=`<div class="bil"><div class="kopf">Die Knotenregel geht bei Knoten ${knotenName(K,x.id)} nicht auf</div>
+        <div class="rech">${k.hinein.map(y=>y.I+' A').join(' + ')}<span class="kippt">≠</span>${k.hinaus.map(y=>y.I+' A').join(' + ')}</div>
+        <div class="was">${x.hinein} A fliessen hinein, ${x.hinaus} A fliessen hinaus. Das sind ${Math.abs(x.hinein-x.hinaus)} A zu ${x.hinein>x.hinaus?'wenig':'viel'}.</div></div>`;
+    }else{
+      const m=maschen(K).find(y=>y.id===x.id);
+      p+=`<div class="bil"><div class="kopf">Die Maschenregel geht bei Masche ${m.zweig} nicht auf</div>
+        <div class="rech">${m.lampen.map(l=>l.U+' V').join(' + ')} = ${x.summe} V<span class="kippt">≠</span>${x.quelle} V</div>
+        <div class="was">Die Spannungsquelle hat ${x.quelle} V. In der Masche kommen ${x.summe} V zusammen.</div></div>`;
+    }
+  });
+  p+=`<p class="dlist">Im Bild ist die Lampe markiert, deren Wert nicht passt: ${Lname(K.falsch.lampe)}. Richtig wären ${K.falsch.alt} ${K.falsch.art==='knoten'?'A':'V'} statt ${K.falsch.neu} ${K.falsch.art==='knoten'?'A':'V'}.</p>`;
+  return p;
+}
+function alleBilanzen(){
+  const K=G.plan;
+  let p='';
+  knoten(K).forEach(k=>{ p+=`<div class="bil"><div class="kopf">Knoten ${knotenName(K,k.id)}</div>
+    <div class="rech">${k.hinein.map(x=>x.I+' A').join(' + ')}<span class="gleich">=</span>${k.hinaus.map(x=>x.I+' A').join(' + ')}</div></div>`; });
+  maschen(K).forEach(m=>{ p+=`<div class="bil"><div class="kopf">Masche ${m.zweig}</div>
+    <div class="rech">${m.lampen.map(l=>l.U+' V').join(' + ')}<span class="gleich">=</span>${K.U} V</div></div>`; });
+  return p;
+}
+
+/* ---------- Rahmen ---------- */
+function barText(){
+  const K=G.plan;
+  if(G.teil==='pruefen') return G.fertig?'Alle geprüft'
+    :`Plan ${Math.min(G.aufNo,AUFGABEN)} von ${AUFGABEN}`;
+  return `${knoten(K).length} Knoten · ${maschen(K).length} Maschen`;
+}
+function renderTabs(){
+  document.getElementById('tabs').innerHTML=TEILE.map(([id,l])=>
+    `<button class="tab ${G.teil===id?'on':''}" data-act="teil" data-v="${id}">${l}</button>`).join('');
+}
+function einstInhalt(){
+  let p=`<div class="dlist" style="font-weight:700;color:var(--muted);text-transform:uppercase;font-size:.78rem;letter-spacing:.03em">Für die Lehrperson</div>`;
+  p+=`<div class="row"><button class="btn ${G.rZeigen?'primary':''}" data-act="rZeigen">${G.rZeigen?'Widerstand wird gezeigt':'Widerstand zeigen'}</button></div>`;
+  p+=`<div class="dlist">Im Teil <b>Knoten</b> steht bei jeder Lampe ihr Widerstand, und daneben erklärt ein Kasten, warum sich der Strom <b>nicht</b> halbe-halbe aufteilt. Beim Start ist das an. Ausschalten, wenn die Klasse den Widerstand noch nicht hatte – die Knotenregel selbst kommt ohne ihn aus.</div>`;
+  p+=`<div class="dlist" style="font-weight:700;color:var(--muted);text-transform:uppercase;font-size:.78rem;letter-spacing:.03em;margin-top:10px">Für die Lehrperson · Direktlink</div>`;
+  p+=`<div class="dlist">Ein <b>Direktlink</b> auf diesen Teil endet auf <b>#${G.teil}</b>. Das steht immer schon in der Adresszeile – von dort kopieren und weitergeben.</div>`;
+  return p;
+}
+function render(){
+  /* Der Vollbild-Knopf meldet sich schon beim Aufbau der Seite – da steht die
+     erste Schaltung noch nicht. Ohne diese Bremse stirbt der ganze Start. */
+  if(!G.plan) return;
+  renderTabs();
+  document.getElementById('stage').innerHTML=bildSVG();
+  document.getElementById('panel').innerHTML=
+    G.teil==='knoten'?knotenPanel():G.teil==='maschen'?maschenPanel():pruefenPanel();
+  document.getElementById('bartext').textContent=barText();
+  document.getElementById('neuwort').textContent=G.teil==='pruefen'?'Neu starten':'Andere';
+  document.getElementById('einstText').innerHTML=einstInhalt();
+  document.getElementById('einst').hidden=!G.einstOffen;
+}
+
+/* ---------- Bedienung ---------- */
+function teilOeffnen(id){
+  if(id===G.teil) return;
+  G.teil=id; G.wahl=null; G.lauf=null; G.lampe=null;
+  if(id==='pruefen'){
+    /* Beim ersten Betreten eine Aufgabe stellen, sonst die angefangene behalten. */
+    if(G.aufNo===0||G.phase==='fertig') neueAufgabe();
+  }else{
+    /* Zum Erkunden immer eine heile Schaltung: In «Knoten» und «Maschen» soll
+       nichts versteckt falsch sein, dort wird die Regel gezeigt, nicht geprüft. */
+    if(!G.plan||!G.plan.heil) G.plan=bauen();
+  }
+  adresseNachfuehren();
+}
+function wahlSetzen(id){
+  G.lauf=null;
+  if(G.teil==='knoten'&&id[0]==='m') return;
+  if(G.teil==='maschen'&&id[0]!=='m') return;
+  if(G.teil==='pruefen'&&G.phase!=='zeigen') return;
+  G.wahl=G.wahl===id?null:id;
+}
+document.getElementById('stage').addEventListener('click',e=>{
+  const k=e.target.closest('[data-knoten]'), m=e.target.closest('[data-masche]'),
+        l=e.target.closest('[data-lampe]');
+  if(k) wahlSetzen(k.dataset.knoten);
+  else if(m) wahlSetzen(m.dataset.masche);
+  else if(l){ const nr=+l.dataset.lampe; G.lampe=G.lampe===nr?null:nr; }
+  else return;
+  render();
+});
+document.getElementById('einstBtn').onclick=()=>{ G.einstOffen=true; render(); };
+document.getElementById('einst').addEventListener('click',e=>{
+  if(e.target.id==='einst'||e.target.closest('[data-einst="zu"]')){ G.einstOffen=false; render(); } });
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]'); if(!b||b.closest('#stage')||b.disabled) return;
+  const v=b.dataset.v;
+  switch(b.dataset.act){
+    case 'teil': G.einstOffen=false; teilOeffnen(v); break;
+    case 'wahl': wahlSetzen(v); G.lampe=null; break;
+    case 'neu':
+      G.wahl=null; G.lauf=null; G.lampe=null;
+      if(G.teil==='pruefen'){ G.aufNo=0; G.geloest=0; G.fertig=false; neueAufgabe(); }
+      else G.plan=bauen();
+      break;
+    case 'nachAuf': G.nachOffen=!G.nachOffen; break;
+    case 'rZeigen': G.rZeigen=!G.rZeigen; if(!G.rZeigen) G.lampe=null; break;
+    case 'laufAn': G.lauf={m:G.wahl,s:0}; break;
+    case 'laufVor': if(G.lauf) G.lauf.s++; break;
+    case 'laufZur': if(G.lauf&&G.lauf.s>0) G.lauf.s--; break;
+    case 'laufAus': G.lauf=null; break;
+    case 'pick':
+      G.pick=+v;
+      if(G.pick===0&&!G.plan.heil) G.phase='zeigen';
+      else G.phase='fertig';
+      break;
+    case 'treffer': {
+      const K=G.plan, f=K.falsch;
+      let ok=false;
+      if(G.wahl&&G.wahl[0]==='m'){
+        const m=maschen(K).find(x=>x.id===G.wahl); ok=!stimmtMasche(K,m);
+      }else if(G.wahl){
+        const k=knoten(K).find(x=>x.id===G.wahl); ok=!stimmtKnoten(K,k);
+      }
+      G.trefferOk=ok; G.trefferId=G.wahl; G.phase='fertig';
+      break; }
+    case 'weiter':
+      G.geloest++;
+      if(G.aufNo>=AUFGABEN){ G.fertig=true; G.wahl=null; }
+      else neueAufgabe();
+      break;
+    case 'neuRunde': G.fertig=false; G.aufNo=0; G.geloest=0; neueAufgabe(); break;
+  }
+  render();
+});
+
+/* Vollbild: auf dem Tablet fällt die Adressleiste weg, im Unterricht lenkt weniger ab */
+const ICON_FS_ON  = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>';
+const ICON_FS_OFF = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>';
+const fsEl=()=>document.fullscreenElement||document.webkitFullscreenElement;
+const standalone=navigator.standalone===true||matchMedia('(display-mode: standalone)').matches;
+const fsMoeglich=!!(document.fullscreenEnabled||document.webkitFullscreenEnabled);
+const fsCan=!standalone&&fsMoeglich&&!!(document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen);
+const fsBtn=document.getElementById('fsBtn');
+function fsLabel(){
+  const on=!!fsEl();
+  document.documentElement.classList.toggle('fsmode',on);
+  fsBtn.innerHTML=(on?ICON_FS_OFF:ICON_FS_ON)+`<span>${on?'Vollbild beenden':'Vollbild'}</span>`;
+  fsBtn.setAttribute('aria-label',on?'Vollbild beenden':'Vollbild');
+  fsBtn.title=on?'Vollbild beenden':'Vollbild';
+  render();
+}
+if(fsCan){
+  fsBtn.hidden=false; fsLabel();
+  fsBtn.onclick=()=>{ const d=document, el=d.documentElement;
+    if(fsEl()){ (d.exitFullscreen||d.webkitExitFullscreen).call(d); return; }
+    try{ const r=(el.requestFullscreen||el.webkitRequestFullscreen).call(el);
+      if(r&&r.catch) r.catch(()=>{ fsBtn.hidden=true; });
+      setTimeout(()=>{ if(!fsEl()) fsBtn.hidden=true; },900);
+    }catch(e){ fsBtn.hidden=true; } };
+  document.addEventListener('fullscreenchange',fsLabel);
+  document.addEventListener('webkitfullscreenchange',fsLabel);
+}
+
+/* ---------- Kurzanleitung je Teil ---------- */
+const HELP={
+ knoten:['Knoten','<p>Einen <b>Verzweigungspunkt</b> in einem Stromkreis nennt man «Knoten» – im Bild die <b>grünen Punkte</b>.</p>'+
+   '<p>Tippe einen Knoten an. Dann steht daneben, was dort <b>hineinfliesst</b> und was <b>hinausfliesst</b>. Die Pfeile an den Leitungen zeigen die Richtung: Auf der oberen Leitung teilt sich der Strom auf, auf der unteren sammelt er sich wieder.</p>'+
+   '<p>Die Zahlen an den Leitungsstücken sind die Stromstärken dort. Damit kannst du jeden Knoten nachrechnen.</p>'+
+   '<p>Mit «↺ Andere Schaltung» kommt eine neue Schaltung mit neuen Zahlen.</p>'],
+ maschen:['Maschen','<p>Eine <b>Masche</b> ist ein geschlossener Stromkreis. Jede Masche beginnt beim Minuspol und endet beim Pluspol der Spannungsquelle.</p>'+
+   '<p>Tippe einen <b>Weg</b> an. Die Masche leuchtet dann farbig auf, und daneben steht die Rechnung: Alle Spannungen in der Masche zusammen ergeben die Spannung der Spannungsquelle.</p>'+
+   '<p>Jede Masche führt über L₁, weil L₁ in Serie zu allem liegt.</p>'],
+ pruefen:['Prüfen','<p>Hier ist ein Schaltplan schon ausgefüllt. Deine Aufgabe: <b>Geht alles auf?</b></p>'+
+   '<p>Prüfe jeden Knoten mit der Knotenregel und jede Masche mit der Maschenregel. Manchmal stimmt alles, manchmal ist genau ein Wert falsch.</p>'+
+   '<p>Sagst du «Nein», zeigst du danach die Stelle: Tippe den Knoten oder den Weg an, wo es nicht aufgeht.</p>']
+};
+const hilfeMem=new Set();
+const hilfeGesehen=n=>{ if(hilfeMem.has(n)) return true;
+  try{ return localStorage.getItem('knoten-hilfe-'+n)==='1'; }catch(e){ return false; } };
+const hilfeMerken=n=>{ hilfeMem.add(n); try{ localStorage.setItem('knoten-hilfe-'+n,'1'); }catch(e){} };
+function zeigeHilfe(n){
+  const [t,txt]=HELP[n]||HELP.knoten;
+  document.getElementById('hilfeTitel').textContent=t;
+  document.getElementById('hilfeText').innerHTML=txt;
+  document.getElementById('hilfe').hidden=false; hilfeMerken(n);
+}
+document.getElementById('helpBtn').onclick=()=>zeigeHilfe(G.teil);
+document.getElementById('hilfe').addEventListener('click',e=>{
+  if(e.target.id==='hilfe'||e.target.closest('[data-hilfe="zu"]')) document.getElementById('hilfe').hidden=true; });
+/* Escape schliesst immer nur das oberste Fenster – sonst verschwinden beide
+   auf einmal, und man landet unerwartet wieder in der Aufgabe. */
+addEventListener('keydown',e=>{ if(e.key!=='Escape') return;
+  if(G.einstOffen){ e.preventDefault(); G.einstOffen=false; render(); return; }
+  if(!document.getElementById('hilfe').hidden){ e.preventDefault();
+    document.getElementById('hilfe').hidden=true; } });
+function hilfeBeimErstenMal(){ if(!hilfeGesehen(G.teil)) zeigeHilfe(G.teil); }
+
+/* Lupe für kleine Bildschirme */
+const zoomBtn=document.getElementById('zoomBtn');
+zoomBtn.onclick=()=>{ const st=document.getElementById('stage');
+  const an=st.classList.toggle('zoom'); zoomBtn.textContent=an?'🔎':'🔍';
+  zoomBtn.title=an?'Bild verkleinern':'Bild vergrössern';
+  if(an) requestAnimationFrame(()=>{ st.scrollLeft=(st.scrollWidth-st.clientWidth)/2;
+    st.scrollTop=(st.scrollHeight-st.clientHeight)*0.5; });
+  else render(); };
+
+/* Fenstergrösse ändert den Bildausschnitt */
+let fitT=null;
+const refit=()=>{ clearTimeout(fitT); fitT=setTimeout(render,80); };
+addEventListener('resize',refit);
+addEventListener('orientationchange',refit);
+
+/* Direktlink auf einen Teil: «…knoten-und-maschen.html#maschen».
+   Gleiches Prinzip wie in den anderen Werkzeugen. replaceState statt
+   pushState: Der Zurück-Knopf führt aus dem Werkzeug hinaus. */
+function teilAusAdresse(){
+  const roh=decodeURIComponent((location.hash||'').replace('#','')).trim().toLowerCase();
+  if(!roh) return null;
+  for(const [id] of TEILE) if(roh===id) return id;
+  if(roh==='pruefung'||roh==='aufgaben') return 'pruefen';
+  if(roh==='masche') return 'maschen';
+  if(roh==='knoten'||roh==='knotenregel') return 'knoten';
+  if(roh==='maschenregel') return 'maschen';
+  return null;
+}
+function adresseNachfuehren(){
+  const neu='#'+G.teil;
+  if(decodeURIComponent(location.hash)!==neu){ try{ history.replaceState(null,'',neu); }catch(e){} }
+}
+addEventListener('hashchange',()=>{
+  const t=teilAusAdresse();
+  if(t===null) return;
+  if(t===G.teil){ adresseNachfuehren(); return; }
+  teilOeffnen(t); render(); hilfeBeimErstenMal();
+});
+
+const startTeil=teilAusAdresse();
+G.plan=bauen();
+if(startTeil!==null){ G.teil=startTeil; if(startTeil==='pruefen') neueAufgabe(); }
+adresseNachfuehren();
+render();
+requestAnimationFrame(render);
+hilfeBeimErstenMal();
+</script>
+
+</body>
+</html>

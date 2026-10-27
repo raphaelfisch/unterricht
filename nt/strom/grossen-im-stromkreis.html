@@ -1,0 +1,2546 @@
+<!DOCTYPE html>
+<html lang="de-CH">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Grössen">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Grössen im Stromkreis</title>
+<style>
+:root{--bg:#E6ECF1;--paper:#F8FAFB;--ink:#1D2935;--muted:#5A6672;--line:#C6D0D9;--btn:#FFFFFF;
+  --accent:#2E6DB4;--ok:#23794A;--bad:#B8322A}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+/* Muss vor allen display-Regeln stehen: sonst überschreibt eine Klasse das hidden-Attribut */
+[hidden]{display:none !important}
+button{font:inherit}
+html,body{height:100%}
+body{margin:0;font-family:system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;font-size:16px;line-height:1.45;
+  background:var(--bg);color:var(--ink);overflow:hidden;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+header,.top,.card{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.wrap{max-width:1700px;margin:0 auto;padding:12px 16px 16px;height:100vh;height:100dvh;display:flex;flex-direction:column;gap:18px;box-sizing:border-box}
+.top{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px 14px;flex:0 0 auto}
+.top h1{grid-column:1;grid-row:1;justify-self:start}
+.top .tabs{grid-column:2;grid-row:1;justify-self:center}
+.top .tools{grid-column:3;grid-row:1;justify-self:end}
+.top h1{justify-self:start}
+.top .fsbtn{justify-self:end}
+h1{font-size:1.5rem;margin:0;font-weight:700;letter-spacing:-.01em;white-space:nowrap}
+/* Die sechs Stufen: gleich breit, jede mit eigenem Rand */
+.top .tabs{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:3px;margin:0;
+  border:1px solid var(--line);border-radius:14px;padding:3px;background:var(--paper)}
+.top .tabs .tab{border:0;background:transparent;color:var(--ink);height:38px;padding:0 8px;font-size:.9rem;
+  display:flex;align-items:center;justify-content:center;border-radius:11px;
+  white-space:nowrap;text-align:center;overflow:hidden;text-overflow:ellipsis}
+.top .tabs .tab:hover:not(:disabled){background:#EEF2F7}
+.top .tabs .tab.on,.top .tabs .tab.on:hover{background:var(--ink);color:var(--paper)}
+.subtabs{display:flex;gap:6px;margin:6px 0 2px}
+.tools{display:flex;align-items:center;gap:12px}
+.fsbtn{margin-left:0;display:inline-flex;align-items:center;justify-content:center;gap:7px;font:inherit;font-size:.92rem;height:36px;
+  border:1px solid var(--line);background:var(--btn);color:var(--muted);padding:0 14px;border-radius:999px;cursor:pointer}
+.fsbtn:hover{border-color:var(--accent);color:var(--accent)}
+.hilfebtn{width:36px;height:36px;padding:0;border-radius:999px;font-weight:700;font-size:.92rem;justify-content:center}
+/* Zurück zur Übersicht – gleiche Form wie «?» und «⚙» */
+/* Haus statt Pfeil: Ein Pfeil kann auch «einen Schritt zurück» heissen.
+   Als Zeichnung statt als Schriftzeichen, damit es auf jedem Gerät gleich
+   sitzt. Spiegelsymmetrisch, also waagrecht von selbst mittig; senkrecht ist
+   die Zeichnung leicht angehoben, weil Wände und Tür mehr Tinte tragen als das Dach. */
+.heim{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+.heim svg{display:block}
+/* Wie beim Vollbild-Knopf: Solange Platz ist, steht das Wort dabei –
+   ein Pfeil allein sagt nicht, wohin er führt, und auf dem Tablet
+   gibt es keinen Mauszeiger, der den Tooltip zeigt. */
+@media (max-width:767px){.heim{width:36px;padding:0;border-radius:999px}.heim span{display:none}}
+/* Ganz schmale Geraete: Die vier runden Knoepfe muessen neben den Titel passen. */
+@media (max-width:430px){.tools{gap:8px}}
+.stagewrap{position:relative}
+/* Schwebende Bedienung über dem Zeichenfeld: weisse Pille mit Schatten,
+   damit sie klar nicht zum Stromkreis gehört – gleiche Sprache wie die Lupe. */
+.chip{position:absolute;right:10px;top:10px;z-index:2;display:inline-flex;align-items:center;gap:6px;
+  font:inherit;font-size:.9rem;font-weight:600;height:34px;padding:0 14px;border-radius:999px;cursor:pointer;
+  border:1.5px solid var(--line);background:#fff;color:var(--muted);box-shadow:0 2px 6px rgba(0,0,0,.12)}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.chip.an{border-color:var(--accent);color:#fff;background:var(--accent)}
+.chip.an:hover{background:#2559a0;border-color:#2559a0;color:#fff}
+/* Der Knopf richtet sich nach dem BILD, nicht nach dem Fenster: im Hochformat ist
+   das Fenster breit und das Bild trotzdem schmal. Darum wird die Stufe in
+   renderChip() aus der gemessenen Bildbreite bestimmt. */
+.chip.kurz{padding:0 12px}
+.chip.nur{width:40px;height:40px;padding:0;justify-content:center;font-size:1.15rem;right:10px;top:10px}  /* gleiche Grösse und Kante wie die Lupe unten rechts */
+@media (max-width:520px){.chip{font-size:.84rem;right:8px;top:8px}.chip:not(.nur){height:30px;padding:0 11px}}
+.zoombtn{display:none;position:absolute;right:10px;bottom:10px;width:40px;height:40px;border-radius:50%;
+  border:1.5px solid var(--ink);background:#fff;font-size:1.1rem;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.15)}
+#stage.zoom{overflow:auto}
+#stage.zoom svg{width:210%;height:auto;max-height:none}
+.modal{position:fixed;inset:0;z-index:60;background:rgba(18,24,30,.45);display:grid;place-items:center;padding:16px}
+.modal[hidden]{display:none}
+.mcard{background:var(--paper);border-radius:14px;padding:14px 16px 16px;max-width:440px;width:100%;
+  max-height:calc(100vh - 32px);overflow:auto;box-shadow:0 14px 40px rgba(0,0,0,.3)}
+.mhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.mhead b{font-size:1.05rem}
+.mcard p{margin:7px 0;line-height:1.5}
+.fsmode .wrap{max-width:none}
+@media (max-width:1560px){
+  .top{grid-template-columns:1fr auto}
+  .top .tools{grid-column:2}
+  .top .tabs{grid-column:1 / -1;grid-row:2;justify-self:stretch;width:100%}
+}
+@media (max-width:960px){
+  .top .tabs{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .top .tabs .tab{padding:0 4px}
+}
+.tab{border:1px solid var(--line);background:var(--btn);border-radius:999px;padding:7px 13px;font-size:.92rem;cursor:pointer;color:var(--ink)}
+.tab.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tab:disabled{opacity:.45;cursor:default}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:10px 12px;
+  flex:1;min-height:0;display:flex;flex-direction:column;gap:8px}
+.stagewrap{flex:0 0 auto;min-height:0}
+.side{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px}
+#stage{min-height:0;width:100%;height:100%}
+.panel{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:4px;margin:0}
+/* Stufe, Wassermodell und Neu starten bleiben immer auf einer Zeile */
+.bar{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:nowrap;flex:0 0 auto;min-width:0}
+.bar .t{font-weight:600;color:var(--muted);flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dots{display:flex;gap:4px;align-items:center;flex-wrap:nowrap;justify-content:flex-end;flex:0 0 auto}
+.icon{border:none;background:none;font-size:.95rem;font-weight:600;cursor:pointer;padding:4px 6px;color:var(--muted);white-space:nowrap}
+.icon.an{color:var(--accent)}
+#stage svg{width:100%;height:100%;display:block;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+[data-sw],[data-sw0],[data-sw2],[data-sw3],[data-lampe],[data-uhrtip]{cursor:pointer}
+.lead{margin:6px 0;font-size:1.02rem;line-height:1.45}
+.msg{padding:8px 11px;border-radius:12px;margin:6px 0;line-height:1.45}
+.msg.ok{background:#e6f6ec;color:#11683a}
+.msg.bad{background:#fdecec;color:#9b1c1c}
+.msg.info{background:#eef4fd;color:#1d4d99}
+.mc{display:flex;flex-direction:column;gap:6px;margin:6px 0}
+.opt{text-align:left;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--btn);font-size:.97rem;cursor:pointer;color:var(--ink)}
+.opt:disabled{cursor:default}
+.opt.pick{border-color:var(--accent);background:#eef4fd;box-shadow:inset 0 0 0 1px var(--accent)}
+.opt.right{border-color:var(--ok);background:#e6f6ec}
+.opt.wrongsel{border-color:var(--bad);background:#fdecec}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.btn{padding:9px 14px;border-radius:10px;border:1px solid var(--line);background:var(--btn);font:inherit;cursor:pointer;color:var(--ink)}
+.btn.primary{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:default}
+.sub{font-weight:700;color:var(--muted);font-size:.9rem;margin:10px 0 4px}
+.weg{background:#eef4fd;border-radius:12px;padding:8px 12px 10px;margin:8px 0}
+.wegtitel{font-weight:700;font-size:.9rem;color:#1d4d99;margin-bottom:2px;display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:30px}
+.zurueck{font:inherit;font-size:.85rem;font-weight:600;color:#1d4d99;background:#fff;border:1px solid #c3d6ef;border-radius:9px;padding:5px 11px;cursor:pointer;white-space:nowrap}
+.zurueck:hover{border-color:var(--accent)}
+.wegtext{line-height:1.45;color:var(--ink)}
+.einst{margin-top:10px;border-top:1px solid var(--line);padding-top:6px}
+.einst summary{cursor:pointer;color:var(--muted);font-size:.92rem;font-weight:600;list-style:none}
+.einst summary::-webkit-details-marker{display:none}
+.einst summary::before{content:"▸ "}
+.einst[open] summary::before{content:"▾ "}
+.dlist{font-size:.93rem;color:#4a5560;line-height:1.55;margin:4px 0}
+/* Bedienung und Anzeigen der Stufe 0 */
+.ctl{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:7px 0}
+.ctl .lab{font-size:.9rem;color:var(--muted);font-weight:600}
+.ctl .tab{padding:6px 12px}
+/* Führung: der eine erlaubte Knopf bekommt einen Ring – sonst sucht man ihn */
+.bedien.dran .tab:not(:disabled),.bedien.dran .btn:not(:disabled){box-shadow:0 0 0 3px #bcd4f2;border-color:var(--accent)}
+.bedien.dran .lab2{color:var(--accent)}
+.tbl{width:100%;border-collapse:collapse;font-size:.82rem;margin:6px 0;table-layout:fixed}
+.tbl th,.tbl td{border:1px solid var(--line);padding:3px 4px;text-align:right;overflow:hidden}
+.tbl th:first-child,.tbl td:first-child{text-align:left}
+.tbl th{background:#eef2f7;font-weight:700;color:var(--muted)}
+.tbl.t4 tr.jetzt td{background:#eef4fd;font-weight:700;color:var(--ink)}
+.dauer{display:flex;justify-content:space-between;gap:10px;margin:6px 0 2px;font-size:.95rem;color:#4a5560}
+.dauer b{color:var(--ink)}
+.skala.schluss{border-top:1px solid var(--line);padding-top:8px;margin-top:12px}
+/* Drei Lautstärken: blau = jetzt tun · sandfarben = merken · schlicht = nachschlagen */
+.merke{background:#f6f2e9;border-left:4px solid #d9bd6a;border-radius:0 10px 10px 0;padding:8px 12px;margin:8px 0;line-height:1.45;color:#4a4232}
+.bedien{background:#f2f5f8;border-radius:12px;padding:4px 10px 7px;margin:8px 0}
+.bedien .lab2{display:block;font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin:6px 0 0}
+.nach{margin-top:14px;border-top:1px solid var(--line);padding-top:6px}
+.nach>b{display:block;font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin-bottom:2px}
+.nachkopf{display:flex;align-items:center;gap:7px;width:100%;min-height:38px;padding:6px 2px;border:0;background:none;font:inherit;
+  font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;cursor:pointer;text-align:left}
+.nachkopf:hover{color:var(--accent)}
+.nachkopf span{font-size:.9rem;line-height:1}
+.nach .merke{margin:6px 0}
+.zuord{background:transparent;border-radius:0;padding:0;margin:8px 0;font-size:.93rem;line-height:1.45}
+.zuord b{display:block;color:var(--muted);font-size:.88rem;margin-bottom:2px}
+.zuord div{display:flex;gap:6px;color:#33404c}
+.zuord span{flex:0 0 38%;font-weight:600}
+/* Messfeld der Stufe 2: Ladung, Zeit, Ergebnis */
+.mess{display:grid;grid-template-columns:1fr 1fr 1.1fr;border:1px solid var(--line);border-radius:12px;background:#fff;margin:8px 0;overflow:hidden}
+.mess div{padding:5px 11px;border-left:1px solid var(--line)}
+.mess div:first-child{border-left:0}
+.mess span{display:block;font-size:.74rem;color:var(--muted);line-height:1.2}
+.mess b{font-size:1.02rem}
+.mess .erg{background:#eef4fd}
+.mess .erg b{color:#1d4d99}
+/* Spannungen zum Vergleich – nur zur Einordnung, nichts zum Einstellen */
+.skala{background:transparent;border:0;padding:0;margin:8px 0;font-size:.93rem}
+.skala b{display:block;font-size:.88rem;color:var(--muted);margin-bottom:2px}
+.skala div{display:flex;justify-content:space-between;gap:10px;color:#4a5560;line-height:1.55}
+.skala div span{font-weight:700;color:#33404c;white-space:nowrap}
+.skala p{margin:7px 0 0;font-size:.88rem;color:var(--muted);line-height:1.45}
+/* Offene Fragen sind in Stufe 0 der Auftrag, nicht Nachschlagewerk – darum im blauen Kasten */
+.wegfrag{margin-top:8px;border-top:1px solid #cddffa;padding-top:6px}
+.wegfrag>b{display:block;font-size:.88rem;color:#1d4d99;margin-bottom:2px}
+.fragl{margin:2px 0 0;padding-left:18px;font-size:.93rem;line-height:1.5;color:#33404c}
+.fraghin{margin:5px 0 0;font-size:.88rem;color:#5b6b80;font-style:italic}
+/* Steckbrief der Grösse: Name, Zeichen, Einheit */
+.steck{display:grid;grid-template-columns:1.7fr .6fr 1fr .6fr;border-radius:10px;background:#eef2f7;margin:6px 0;overflow:hidden}
+.steck div{padding:4px 11px;border-left:1px solid #dbe3ec}
+.steck div:first-child{border-left:0}
+.steck b{color:#33404c}
+.steck span{display:block;font-size:.74rem;color:var(--muted);line-height:1.2}
+.steck b{font-size:1.02rem}
+.dq{transform-box:fill-box;transform-origin:center}
+.dq.fl{animation:dp .6s ease-in-out 4}
+@keyframes dp{0%,100%{transform:scale(1)}50%{transform:scale(1.9)}}
+@media (min-width:941px) and (max-height:900px){.wrap{padding-top:8px;gap:12px;padding-bottom:10px}.top{gap:6px 14px}.top .tabs .tab{height:34px}}
+@media (min-width:941px) and (max-height:820px){.wrap{padding-top:6px;gap:10px;padding-bottom:8px}.top{gap:5px 14px}.top .tabs .tab{height:32px}
+  .msg{font-size:.93rem;line-height:1.38}}
+@media (min-width:941px) and (max-height:720px){.msg{font-size:.88rem;line-height:1.32}}
+@media (min-width:941px) and (max-height:670px){.wrap{padding-top:5px;gap:10px;padding-bottom:8px}}
+@media (min-width:700px) and (min-aspect-ratio:11/10){
+  .card{flex-direction:row;gap:14px}
+  /* Bildbreite folgt der Bildschirmhöhe (Seitenverhältnis 5:3), begrenzt durch den Platz für den Text */
+  .stagewrap{flex:0 0 auto;min-width:0;height:100%;
+    width:min(calc((100vh - 104px) * 5 / 3), calc(100% - clamp(320px, 28%, 430px) - 14px));
+    width:min(calc((100dvh - 104px) * 5 / 3), calc(100% - clamp(320px, 28%, 430px) - 14px))}
+  .side{flex:1 1 0;min-width:0}
+}
+@media (max-width:699px){.zoombtn{display:block}}
+@media (max-width:699px), (max-aspect-ratio:11/10){
+  .stagewrap{width:100%;height:min(38vh, calc((100vw - 48px) * 0.6));height:min(38dvh, calc((100vw - 48px) * 0.6))}
+  /* Mit Wassermodell braucht das Bild im Hochformat mehr Platz */
+  .wasser .stagewrap{height:min(50vh, calc((100vw - 48px) * 0.78));height:min(50dvh, calc((100vw - 48px) * 0.78))}
+}
+@media (max-width:600px){
+  .fsbtn span{display:none}
+  .fsbtn{width:36px;padding:0;border-radius:999px}
+  h1{font-size:1.15rem}
+  .h1lg{display:none}
+  .tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{flex:0 0 auto;font-size:.86rem;padding:6px 10px}
+  .wrap{padding:12px 12px 16px}
+  .stagewrap{height:min(34vh, calc((100vw - 40px) * 0.6));height:min(34dvh, calc((100vw - 40px) * 0.6))}
+}
+@media (max-width:520px){.top .tabs{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* Sehr schmale Telefone (320 px): Der Titel weicht, damit die vier Knöpfe
+   vollständig danebenpassen und keiner abgeschnitten wird. Steht zuunterst,
+   weil sonst die 600-px-Regel weiter unten gewinnen würde. */
+@media (max-width:360px){h1{font-size:1rem}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1 title="Stand 23.09.2026">Grössen<span class="h1lg"> im Stromkreis</span></h1>
+    <div class="tabs" id="tabs"></div>
+    <div class="tools">
+      <a class="fsbtn heim" href="index.html" title="Zur Übersicht" aria-label="Zur Übersicht"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.65 12 2.45l9 7.2"/><path d="M5.6 8.45v10h12.8v-10"/><path d="M9.9 18.45v-5.2h4.2v5.2"/></svg><span>Übersicht</span></a>
+      <button class="fsbtn" id="fsBtn" hidden aria-label="Vollbild"></button>
+      <button class="fsbtn hilfebtn" id="einstBtn" aria-label="Einstellungen" title="Einstellungen">⚙</button>
+      <button class="fsbtn hilfebtn" id="helpBtn" aria-label="Anleitung" title="Anleitung">?</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="stagewrap"><div id="stage"></div>
+      <button class="chip" id="wasserBtn" data-act="wasser" title="Wassermodell ein- oder ausblenden"></button>
+      <button class="zoombtn" id="zoomBtn" title="Bild vergrössern">🔍</button></div>
+    <div class="side">
+      <div class="panel" id="panel"></div>
+    </div>
+  </div>
+</div>
+<div id="einst" class="modal" hidden>
+  <div class="mcard">
+    <div class="mhead"><b>⚙ Einstellungen</b><button class="icon" data-einst="zu" aria-label="Schliessen">✕</button></div>
+    <div id="einstText"></div>
+    <div class="row"><button class="btn primary" data-einst="zu">Fertig</button></div>
+  </div>
+</div>
+<div id="hilfe" class="modal" hidden>
+  <div class="mcard">
+    <div class="mhead"><b id="hilfeTitel"></b><button class="icon" data-hilfe="zu" aria-label="Schliessen">✕</button></div>
+    <div id="hilfeText"></div>
+    <div class="row"><button class="btn primary" data-hilfe="zu">Alles klar</button></div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   Grössen im Stromkreis
+   Stufe 1 · Ladung  (Stufen 2–5 folgen)
+   Ein Punkt = 0,1 C. Das Lämpchen braucht 0,3 A,
+   also kommen an jeder Stelle 3 Punkte pro Sekunde vorbei (Echtzeit).
+   ============================================================ */
+
+const STUFEN=[[0,'Hell oder dunkel?'],[1,'Ladung'],[2,'Stromstärke'],[3,'Spannung'],[4,'Widerstand'],[5,'Leistung']];
+const BEREIT=[0,1,2,3,4,5];                     // Stufen, die schon gebaut sind
+const G={stufe:0, wasser:false, fuehrung:true, einstOffen:false, ladung:false, mess:false, nachOffen:false};
+const fmt1=x=>x.toFixed(1).replace('.',',');
+const fmt2=x=>(Math.abs(x)<0.995?x.toFixed(2):x.toFixed(2).replace(/0$/,'')).replace('.',',');
+
+/* ---------- Bildausschnitt an die Fenstergrösse anpassen (wie Fehlersuche) ---------- */
+let VB={x:0,y:0,w:800,h:480};
+function fitVB(cx,cy,cw,ch,topShare,maxExtra){
+  const el=document.getElementById('stage'), r=el?el.getBoundingClientRect():null;
+  let ar=(r&&r.width>4&&r.height>4)?r.width/r.height:cw/ch;
+  ar=Math.max(0.55,Math.min(4.5,ar));
+  let x=cx,y=cy,w=cw,h=ch;
+  if(ar>cw/ch){ w=ch*ar; x=cx-(w-cw)/2; }
+  else { h=Math.min(cw/ar, ch+(maxExtra===undefined?1e6:maxExtra)); y=cy-(h-ch)*(topShare===undefined?0.45:topShare); }
+  const r1=n=>Math.round(n*10)/10;
+  const px=(r&&r.width>4)?r.width/w:1;
+  VB={x:r1(x),y:r1(y),w:r1(w),h:r1(h),px,r:r1(Math.max(8,16/px))};
+  return VB;
+}
+const vbAttr=v=>`${v.x} ${v.y} ${v.w} ${v.h}`;
+
+/* ---------- Zeichenbausteine (aus der Fehlersuche übernommen) ---------- */
+const COL={red:'#d8322b',black:'#2a2d31',blue:'#2563c9',yellow:'#e9c11b'};
+const DEFS=`<defs>
+<radialGradient id="glow"><stop offset="0" stop-color="#fff6b0" stop-opacity=".95"/><stop offset=".45" stop-color="#ffd84a" stop-opacity=".5"/><stop offset="1" stop-color="#ffd84a" stop-opacity="0"/></radialGradient>
+<pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><rect width="20" height="20" fill="#f6f2e9"/><circle cx="10" cy="10" r="1.3" fill="#ddd5c3"/></pattern>
+<linearGradient id="bat" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a6886"/><stop offset="1" stop-color="#2c3e50"/></linearGradient>
+</defs>`;
+function rpath(pts,r=18){
+  let d=`M${pts[0][0]},${pts[0][1]}`;
+  for(let i=1;i<pts.length-1;i++){
+    const [x0,y0]=pts[i-1],[x1,y1]=pts[i],[x2,y2]=pts[i+1];
+    const d1=Math.hypot(x1-x0,y1-y0), d2=Math.hypot(x2-x1,y2-y1);
+    if(!d1||!d2){d+=` L${x1},${y1}`;continue;}
+    const rr=Math.min(r,d1/2,d2/2);
+    d+=` L${x1+(x0-x1)/d1*rr},${y1+(y0-y1)/d1*rr} Q${x1},${y1} ${x1+(x2-x1)/d2*rr},${y1+(y2-y1)/d2*rr}`;
+  }
+  const l=pts[pts.length-1]; return d+` L${l[0]},${l[1]}`;
+}
+function wire(pts,color){
+  const d=rpath(pts);
+  return `<path d="${d}" fill="none" stroke="rgba(0,0,0,.35)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="${d}" fill="none" stroke="${COL[color]}" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="${d}" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>`;
+}
+/* txt fehlt = «4,5 V» wie bisher */
+function batSVG(c,txt){
+  const {x,y}=c, t=(txt===undefined?'4,5 V':txt);
+  return `<rect x="${x-52}" y="${y-45}" width="14" height="12" rx="2" fill="#b89436"/><rect x="${x+38}" y="${y-45}" width="14" height="12" rx="2" fill="#b89436"/>
+  <rect x="${x-75}" y="${y-35}" width="150" height="70" rx="9" fill="url(#bat)"/>
+  <text x="${x}" y="${y+14}" text-anchor="middle" font-size="${t.length>6?17:19}" font-weight="700" fill="#fff">${t}</text>
+  <text x="${x-45}" y="${y-10}" text-anchor="middle" font-size="22" font-weight="800" fill="#ff9a8f">+</text>
+  <text x="${x+45}" y="${y-10}" text-anchor="middle" font-size="22" font-weight="800" fill="#d5dde3">−</text>`;
+}
+/* Mischung zweier Farben – für Helligkeiten zwischen dunkel und voll */
+function mixc(a,b,t){
+  const h=c=>[1,3,5].map(i=>parseInt(c.substr(i,2),16)), A=h(a), B=h(b);
+  return '#'+A.map((v,i)=>Math.round(v+(B[i]-v)*t).toString(16).padStart(2,'0')).join('');
+}
+/* Lämpchen an einer senkrechten Leitung: Fassung auf der Leitung, Birne rechts daneben –
+   genau dort, wo im Wassermodell das Rad läuft. hell: 0…1 · raus: herausgeschraubt */
+/* sc verkleinert das Lämpchen, damit bei drei in Serie die Leitung dazwischen sichtbar bleibt */
+const lampHalb=sc=>Math.round(31*(sc||1)+9);
+/* Stufe 0: Lämpchen und Wasserräder behalten IMMER dieselbe Grösse – sonst lesen
+   die Schülerinnen die Helligkeit als Folge der Grösse. Der Wert ist so gewählt,
+   dass auch drei Lämpchen in Serie mit sichtbarer Leitung dazwischen Platz haben. */
+const LSC=0.85, RRAD=32;
+const VORB=119;                       // nutzbare Innenbreite des Vorratsbalkens – an beiden Stellen dieselbe
+function lampSVG(c,lit,hell,raus,sc){
+  if(sc&&sc!==1) return `<g transform="translate(${c.x} ${c.y}) scale(${sc}) translate(${-c.x} ${-c.y})">${lampSVG(c,lit,hell,raus)}</g>`;
+  const {x,y}=c, bx=x+58, h=(hell===undefined?1:Math.max(0,Math.min(1,hell))), an=lit&&!raus&&h>0;
+  const gl=an?Math.pow(h,0.55):0;
+  let s='';
+  if(an) s+=`<circle cx="${bx}" cy="${y}" r="${Math.round(36+28*gl)}" fill="url(#glow)"${gl<1?` opacity="${Math.round(gl*100)/100}"`:''}/>`;
+  s+=`<rect x="${x+12}" y="${y-9}" width="20" height="18" rx="3" fill="#8a8f96"/>`;
+  const glas=an?mixc('#e8eef2','#ffe066',gl):'#e8eef2', rand=an?mixc('#98a4ad','#d9a400',gl):'#98a4ad',
+        dra=an?mixc('#6b7780','#b35c00',gl):'#6b7780';
+  const birne=(dx,dy,rot)=>`<g transform="translate(${dx},${dy}) rotate(${rot} ${bx} ${y})">
+    <circle cx="${bx}" cy="${y}" r="27" fill="${glas}" stroke="${rand}" stroke-width="2"/>
+    <path d="M${bx-18},${y-10} L${bx-3},${y-7} l5,3 l-5,3 l5,3 l-5,3 L${bx-15},${y+9}" fill="none" stroke="${dra}" stroke-width="1.8" stroke-linejoin="round"/></g>`;
+  s+= raus ? birne(36,-12,24) : birne(0,0,0);
+  s+=`<rect x="${x-14}" y="${y-31}" width="28" height="62" rx="6" fill="#4a5058"/>`;
+  if(raus) s+=`<rect x="${x+13}" y="${y-10}" width="16" height="20" rx="3" fill="#2b3036"/>`;
+  return s;
+}
+/* Umschalten wird bewegt gezeichnet: f läuft von 0 (offen) nach 1 (geschlossen).
+   Der Hebel sitzt in einer eigenen Gruppe und wird nur gedreht. */
+const WARTE='Das kommt gleich – mach zuerst, was oben in der Anleitung steht.';
+const ease=f=>f*f*(3-2*f);
+const swDeg=f=>-46*(1-ease(f));
+const venDeg=f=>-90*(1-ease(f));
+function swSVG(c,f,an){
+  const {x,y}=c, px=x-26;
+  return `<line x1="${x-50}" y1="${y}" x2="${x-26}" y2="${y}" stroke="#aeb4ba" stroke-width="4"/><line x1="${x+26}" y1="${y}" x2="${x+50}" y2="${y}" stroke="#aeb4ba" stroke-width="4"/>
+  <rect x="${x-46}" y="${y-15}" width="92" height="30" rx="6" fill="#8a6a4a" stroke="#654b32" stroke-width="2"/>
+  <rect x="${x-33}" y="${y-10}" width="13" height="20" rx="3" fill="#c3cad0" stroke="#87909a" stroke-width="1.5"/>
+  <rect x="${x+20}" y="${y-10}" width="13" height="20" rx="3" fill="#c3cad0" stroke="#87909a" stroke-width="1.5"/>
+  <g data-hebel transform="${drehT(swDeg(f),px,y)}">
+    <line x1="${px}" y1="${y}" x2="${px+52}" y2="${y}" stroke="#5c6570" stroke-width="9" stroke-linecap="round"/>
+    <line x1="${px}" y1="${y}" x2="${px+52}" y2="${y}" stroke="#e6ebef" stroke-width="5" stroke-linecap="round"/></g>
+  <circle cx="${px}" cy="${y}" r="5" fill="#6b7480"/>
+  <text data-swtxt x="${x}" y="${y+38}" text-anchor="middle" font-size="15" font-weight="700" fill="#44505a">Schalter ${an?'geschlossen':'offen'}</text>`;
+}
+const knob=(x,y)=>`<circle cx="${x}" cy="${y}" r="7" fill="#d9b44a" stroke="#8a6d1f" stroke-width="2"/><circle cx="${x}" cy="${y}" r="2" fill="#6b5418"/>`;
+
+/* ---------- Gemeinsamer Grundriss ----------
+   Stromkreis und Wassermodell haben dieselben Masse und dieselbe Bahn:
+   die Batterie steht dort, wo die Pumpe steht, der Schalter dort, wo das
+   Ventil sitzt, und jedes Lämpchen dort, wo sein Wasserrad läuft. */
+const GX=130, GTOP=104, GBOT=406;     // Steigleitung links, obere und untere Waagrechte
+const QX=225, QY=449, QD=430;         // Batterie bzw. Pumpe; QD = Bahn unter ihr hindurch
+const SX=250;                         // Schalter bzw. Ventil, auf der oberen Waagrechten
+const ZMESS=320;                      // Zählstellen auf den Waagrechten
+const ZX={1:[470],2:[430,590],3:[400,530,660]};   // senkrechte Strecken
+const mitte=(a,b)=>Math.round((a+b)/2*10)/10;
+function plaetze(n,par){              // Orte der Lämpchen bzw. der Wasserräder
+  if(par) return ZX[n].map(x=>({x,y:mitte(GTOP,GBOT)}));
+  const x=ZX[1][0], h=(GBOT-GTOP)/n;
+  return Array.from({length:n},(_,j)=>({x,y:Math.round((GTOP+(j+0.5)*h)*10)/10}));
+}
+const stufenY=n=>Array.from({length:n+1},(_,j)=>Math.round((GTOP+j*(GBOT-GTOP)/n)*10)/10);
+/* Bildausschnitt: nur so breit wie die Schaltung wirklich ist, damit sie gross bleibt.
+   Mit Wassermodell kommt dasselbe Feld daneben oder darunter dazu. */
+function layout(n,par,wasser,extra){
+  const B={x:96,y:16,w:((par?ZX[n][n-1]:ZX[1][0])+(par?110:200)+(extra||0))-96,h:496}, gap=44;
+  const r=document.getElementById('stage').getBoundingClientRect(), ok=r.width>4&&r.height>4;
+  const WW=B.w+gap, HH=B.h+gap;
+  const unten=wasser&&ok&&Math.min(r.width/B.w,r.height/(B.h+HH))>Math.min(r.width/(B.w+WW),r.height/B.h);
+  const V=fitVB(B.x,B.y,B.w+(wasser&&!unten?WW:0),B.h+(unten?HH:0),0.5);
+  const trenner=unten
+    ? `<line x1="${B.x+8}" y1="${B.y+B.h+gap/2}" x2="${B.x+B.w-8}" y2="${B.y+B.h+gap/2}" stroke="#ddd5c3" stroke-width="2" stroke-dasharray="7 7"/>`
+    : `<line x1="${B.x+B.w+gap/2}" y1="${B.y+8}" x2="${B.x+B.w+gap/2}" y2="${B.y+B.h-8}" stroke="#ddd5c3" stroke-width="2" stroke-dasharray="7 7"/>`;
+  return {B,V,unten,trenner,ox:unten?0:WW,oy:unten?HH:0};
+}
+/* Weg von der Quelle nach links und oben – bei beiden Modellen derselbe */
+const ZULEIT=[[QX,QD],[180,QD],[180,GBOT],[GX,GBOT],[GX,GTOP]];
+const ABLEIT=[[270,GBOT],[270,QD],[QX,QD]];
+
+const drehT=(deg,x,y)=>`rotate(${Math.round(deg*10)/10} ${x} ${y})`;
+/* Hebelstellung: swA läuft in gut einer Viertelsekunde von 0 nach 1.
+   Kontakt gibt es erst am Ende des Wegs – wie bei einem echten Schalter. */
+const SWZEIT=0.2;
+function easeSw(s,dt){ const z=s.closed?1:0;
+  if(s.swA===z) return false;
+  s.swA = s.swA<z ? Math.min(z,s.swA+dt/SWZEIT) : Math.max(z,s.swA-dt/SWZEIT);
+  return true; }
+const kontakt=s=>s.swA>=0.85;
+function hebelZeichnen(s){
+  const an=kontakt(s), st=document.getElementById('stage');
+  st.querySelectorAll('[data-hebel]').forEach(e=>e.setAttribute('transform',drehT(swDeg(s.swA),SX-26,GTOP)));
+  st.querySelectorAll('[data-vhebel]').forEach(e=>e.setAttribute('transform',drehT(venDeg(s.swA),SX,GTOP-34)));
+  st.querySelectorAll('[data-swtxt]').forEach(e=>e.textContent='Schalter '+(an?'geschlossen':'offen'));
+  st.querySelectorAll('[data-vtxt]').forEach(e=>e.textContent=an?'Ventil offen':'Ventil zu');
+}
+/* Oberschlächtiges Wasserrad: Schaufeln am Kranz, das Wasser fällt von oben hinein */
+function radSVG(x,y,R,attr,deg){
+  let g='';
+  for(let i=0;i<8;i++){ const a=i*45, t=a*Math.PI/180;
+    g+=`<line x1="${Math.round((x+R*0.34*Math.cos(t))*10)/10}" y1="${Math.round((y+R*0.34*Math.sin(t))*10)/10}" x2="${Math.round((x+R*0.86*Math.cos(t))*10)/10}" y2="${Math.round((y+R*0.86*Math.sin(t))*10)/10}" stroke="#a5825c" stroke-width="4"/>`;
+    g+=`<rect x="${x-5.5}" y="${Math.round((y-R)*10)/10}" width="11" height="${Math.round(R*0.46*10)/10}" rx="2" fill="#8a6a4a" stroke="#5e4630" stroke-width="1.6" transform="rotate(${a+90} ${x} ${y})"/>`; }
+  return `<g ${attr} transform="${drehT(deg,x,y)}">
+    <circle cx="${x}" cy="${y}" r="${R}" fill="none" stroke="#7a5c3e" stroke-width="3.5"/>
+    <circle cx="${x}" cy="${y}" r="${Math.round(R*0.34*10)/10}" fill="#f1ede3" stroke="#7a5c3e" stroke-width="3"/>
+    ${g}</g><circle cx="${x}" cy="${y}" r="5" fill="#5e4630"/>`;
+}
+/* Die Pumpe sitzt genau dort, wo im Stromkreis die Batterie steht */
+function pumpeSVG(deg){
+  return `<circle cx="${QX}" cy="${QY}" r="36" fill="url(#bat)"/><g data-pumpe transform="${drehT(deg,QX,QY)}">
+    ${[0,120,240].map(a=>{const t=a*Math.PI/180; return `<line x1="${QX}" y1="${QY}" x2="${Math.round((QX+24*Math.cos(t))*10)/10}" y2="${Math.round((QY+24*Math.sin(t))*10)/10}" stroke="#d6ecfa" stroke-width="6" stroke-linecap="round"/>`;}).join('')}
+    <circle cx="${QX}" cy="${QY}" r="6" fill="#fff"/></g>${lbl(QX,QY+37,'Pumpe hebt das Wasser')}`;
+}
+/* Kugelhahn, wie man ihn an einem Rohr sieht: Hebel längs zum Rohr heisst offen,
+   Hebel quer zum Rohr heisst zu. */
+function ventilSVG(x,y,f,an){
+  const hebel=`<g data-vhebel transform="${drehT(venDeg(f),x,y-34)}">
+    <rect x="${x-26}" y="${y-39.5}" width="52" height="11" rx="5.5" fill="#d8322b" stroke="#96201a" stroke-width="1.5"/></g>`;
+  return `<rect x="${x-31}" y="${y-14}" width="10" height="28" rx="2" fill="#7f8991" stroke="#69737b" stroke-width="1.5"/>
+  <rect x="${x+21}" y="${y-14}" width="10" height="28" rx="2" fill="#7f8991" stroke="#69737b" stroke-width="1.5"/>
+  <rect x="${x-23}" y="${y-18}" width="46" height="36" rx="8" fill="#aab4bc" stroke="#6f7a83" stroke-width="2"/>
+  <rect x="${x-19}" y="${y-14}" width="38" height="12" rx="6" fill="#c3ccd2" fill-opacity=".7"/>
+  <rect x="${x-4.5}" y="${y-32}" width="9" height="20" rx="2" fill="#7f8991" stroke="#69737b" stroke-width="1.5"/>
+  ${hebel}<circle cx="${x}" cy="${y-34}" r="6" fill="#8e99a2" stroke="#5f6a72" stroke-width="1.5"/>
+  ${lbl(x,y+37,an?'Ventil offen':'Ventil zu','middle','data-vtxt')}`;
+}
+function rohrSVG(d){ return `<path d="${d}" fill="none" stroke="#8fa9bd" stroke-width="24" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="${d}" fill="none" stroke="#d6ecfa" stroke-width="16" stroke-linejoin="round" stroke-linecap="round"/>`; }
+/* Der Antrieb ist ein UNTERSCHIED zwischen zwei Niveaus – darum ein Pfeil mit zwei
+   Spitzen zwischen den beiden Höhenlinien, nicht eine Höhe ab Boden. */
+function fallhoehe(x,y1,y2,txt){
+  return `<defs><marker id="sp" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+    <path d="M0 0 L10 5 L0 10 z" fill="#5b7186"/></marker></defs>
+  <line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" stroke="#5b7186" stroke-width="2.2" marker-start="url(#sp)" marker-end="url(#sp)"/>
+  <line x1="${x-9}" y1="${y1}" x2="${x+9}" y2="${y1}" stroke="#5b7186" stroke-width="2.2"/>
+  <line x1="${x-9}" y1="${y2}" x2="${x+9}" y2="${y2}" stroke="#5b7186" stroke-width="2.2"/>
+  <text x="${x}" y="${y1-14}" font-size="16" font-weight="700" fill="#44505a" text-anchor="middle">${txt}</text>`;
+}
+const hoehenlinie=(y,B)=>`<line x1="${B.x+8}" y1="${y}" x2="${B.x+B.w-8}" y2="${y}" stroke="#b9c6d2" stroke-width="1.5" stroke-dasharray="5 6"/>`;
+const wtitel=B=>'';   // Rohre, Pumpe und Höhenlinien sagen selbst, was es ist
+const lbl=(x,y,t,anchor,attr)=>`<text ${attr||''} x="${x}" y="${y}" text-anchor="${anchor||'middle'}" font-size="15" font-weight="700" fill="#44505a" stroke="#f6f2e9" stroke-width="4" paint-order="stroke" stroke-linejoin="round">${t}</text>`;
+
+/* ---------- Der Umlauf der Ladung ----------
+   Von + über den Schalter zum Lämpchen, weiter zu −, durch die Batterie zurück zu +.
+   Der Weg durch die Batterie liegt unter dem Batteriekörper. */
+const LOOP=ZULEIT.concat([[ZX[1][0],GTOP],[ZX[1][0],GBOT]],ABLEIT);
+/* Das Rohr braucht nur den Pfad, nicht die Vermessung. Einmal rechnen genügt –
+   sonst wird die ganze Bahn bei JEDEM Neuzeichnen neu ausgemessen, und das
+   fühlt sich beim Schliessen des Schalters wie eine Verzögerung an. */
+const LOOPD=rpath(LOOP);
+const OX=700, OY=500;   // Versatz des Wassermodells: nach rechts oder nach unten
+let LUT=[],LEN=0,NDOT=0,D=30,VPX=90,Z1=0,Z2=0;
+(function(){
+  const ns='http://www.w3.org/2000/svg', sv=document.createElementNS(ns,'svg'), p=document.createElementNS(ns,'path');
+  sv.setAttribute('width','0'); sv.setAttribute('height','0');
+  sv.style.cssText='position:absolute;visibility:hidden;left:0;top:0';
+  p.setAttribute('d',rpath(LOOP)); sv.appendChild(p); document.body.appendChild(sv);
+  LEN=p.getTotalLength();
+  for(let s=0;s<=Math.ceil(LEN);s++){ const q=p.getPointAtLength(Math.min(s,LEN)); LUT.push([Math.round(q.x*10)/10,Math.round(q.y*10)/10]); }
+  NDOT=Math.round(LEN/30); D=LEN/NDOT; VPX=3*D;   // 3 Punkte pro Sekunde = 0,3 A
+  const near=(x,y)=>{let b=0,bd=1e9; LUT.forEach((q,i)=>{const dd=(q[0]-x)**2+(q[1]-y)**2; if(dd<bd){bd=dd;b=i;}}); return b;};
+  Z1=near(ZMESS,GTOP);
+  Z2=Z1+Math.round((near(ZMESS,GBOT)-Z1)/D)*D;    // genau ganze Punktabstände weiter: beide Zählstellen zählen im selben Takt
+})();
+const ptAt=s=>LUT[Math.round(((s%LEN)+LEN)%LEN)]||LUT[0];
+
+/* ---------- Zustand Stufe 1 ---------- */
+const S1={tab:'erk',closed:false,swA:0,off:0,q:0,erk:1,erkFertig:false,justDone:false,msg:'',
+          task:null,taskNo:0,geloest:0,fertig:false,phase:'predict',pick:null,why:null,runT:0,flash:false};
+
+/* ---------- Aufgaben Stufe 1 ----------
+   Ablauf: vorhersagen → im Bild prüfen → begründen */
+const TASKF={
+ zaehl:()=>{ const n=[1.2,1.5,1.8,2.1][Math.floor(Math.random()*4)], N=fmt1(n);
+  return {run:'count',target:Math.round(n*10),hide2:true,
+   q:`Du schliesst den Schalter, bis Zählstelle ① genau ${N} C gezählt hat. Was zeigt dann Zählstelle ② hinter dem Lämpchen?`,
+   opts:[`Weniger als ${N} C`,`Genau ${N} C`,`Mehr als ${N} C`],c:1,
+   proof:`① und ② zeigen beide ${N} C.`,
+   why:[['Das Lämpchen braucht einen Teil der Ladung, um zu leuchten.','Dann müsste ② weniger zeigen als ①. Die beiden zeigen aber immer dasselbe.'],
+        ['Im Lämpchen wird keine Ladung verbraucht. Was hineinfliesst, fliesst auch wieder heraus.',null],
+        ['Die beiden Zählstellen sind gleich eingestellt.','Die Zählstellen zählen nur. Was sie zeigen, hängt davon ab, wie viel Ladung vorbeifliesst.']],wc:1,
+   merk:'Im Lämpchen wird keine Ladung verbraucht. Überall im Stromkreis fliesst gleich viel Ladung vorbei.'}; },
+ sofort:()=>({run:'close',hide2:false,
+   q:'Der Schalter ist offen. Gleich wird er geschlossen. Wann beginnt die Ladung beim Lämpchen zu fliessen?',
+   opts:['Erst, wenn Ladung von der Batterie bis zum Lämpchen gewandert ist','Sofort – überall im Stromkreis gleichzeitig','Zuerst beim Lämpchen, dann im Rest des Stromkreises'],c:1,
+   proof:'Alle Punkte setzen sich im selben Moment in Bewegung.',
+   why:[['Die Ladung fliesst sehr schnell.','Schau die Punkte an: Sie sind langsam. Das Lämpchen leuchtet trotzdem sofort, weil alle gleichzeitig losgehen.'],
+        ['Die Ladung ist schon überall im Kabel. Die Batterie setzt sie überall gleichzeitig in Bewegung.',null],
+        ['Das Lämpchen zieht die Ladung zu sich.','Dann würde sich die Ladung zuerst beim Lämpchen bewegen. Sie bewegt sich aber überall gleichzeitig.']],wc:1,
+   merk:'Die Ladung ist schon überall im Kabel. Beim Einschalten setzt sie sich überall gleichzeitig in Bewegung. Darum leuchtet das Lämpchen sofort, obwohl die Ladung langsam fliesst.'}),
+ offen:()=>({run:'show',hide2:false,
+   q:'Der Schalter ist offen, das Lämpchen ist dunkel. Wo ist jetzt Ladung?',
+   opts:['Nur in der Batterie','Überall im Stromkreis – in den Kabeln und im Lämpchen','Nirgends – ohne Strom gibt es keine Ladung'],c:1,
+   proof:'Die Punkte sind überall – sie stehen nur still.',
+   why:[['Die Ladung ist vom letzten Einschalten liegen geblieben.','Die Ladung ist immer im Kabel, auch in einem ganz neuen. Sie gehört zum Material.'],
+        ['Das Lämpchen hält die Ladung fest.','Die Ladung ist nicht nur beim Lämpchen, sondern überall im Kabel.'],
+        ['Die Ladung gehört zum Material der Kabel. Die Batterie setzt sie nur in Bewegung.',null]],wc:2,
+   merk:'Auch bei offenem Schalter ist die Ladung im ganzen Stromkreis. Sie steht nur still.'}),
+ geladen:()=>({run:'count',target:15,hide2:true,
+   q:'Man sagt: «Die Batterie ist geladen.» Zählstelle ① misst, wie viel Ladung aus der Batterie hinausfliesst, Zählstelle ②, wie viel wieder hineinfliesst. Was zeigt ② nach einer Weile?',
+   opts:['Weniger als ① – die Batterie gibt Ladung ab','Gleich viel wie ①','Mehr als ① – die Batterie saugt Ladung an'],c:1,
+   proof:'① zeigt 1,5 C – und ② ebenfalls 1,5 C.',
+   why:[['Die Ladung fliesst im Kreis. Die Batterie treibt sie nur an.',null],
+        ['Die Batterie gibt nach und nach ihre Ladung ab.','Die Batterie gibt keine Ladung ab: Was hinausfliesst, fliesst wieder hinein.'],
+        ['Die Ladung bleibt im Lämpchen hängen.','Dann müsste ② weniger zeigen als ①.']],wc:0,
+   merk:'Die Batterie gibt keine Ladung ab. Sie treibt die Ladung an, die schon im Stromkreis ist. «Geladen» heisst im Alltag: Die Batterie hat noch genug Antrieb. Mehr dazu in Stufe 3.'})
+};
+const ORDER=['zaehl','sofort','offen','geladen'];
+function newTask(){
+  const st=S1; st.task=TASKF[ORDER[st.taskNo%ORDER.length]](); st.taskNo++;
+  taskSetup();
+}
+function taskSetup(){
+  const st=S1; st.phase='predict'; st.pick=null; st.why=null; st.closed=false; st.q=0; st.msg=''; st.flash=false; st.runT=0;
+}
+const gefuehrtA=()=>G.fuehrung&&S1.geloest<2;
+const erkGefuehrt=()=>G.fuehrung&&!S1.erkFertig;
+function zwei_versteckt(){
+  const st=S1;
+  if(st.tab==='erk') return erkGefuehrt()&&st.erk<3;
+  return st.task&&st.task.hide2&&(st.phase==='predict'||st.phase==='ready');
+}
+
+/* ---------- Bild Stufe 1 ---------- */
+function counterSVG(x,y,no,id,val,col){
+  return `<rect x="${x-8}" y="${y-21}" width="16" height="42" rx="8" fill="${col}" fill-opacity=".08" stroke="${col}" stroke-width="3"/>
+  <line x1="${x}" y1="${y-21}" x2="${x}" y2="${y-43}" stroke="${col}" stroke-width="2"/>
+  <rect x="${x-46}" y="${y-80}" width="92" height="37" rx="9" fill="#fff" stroke="${col}" stroke-width="2"/>
+  <text x="${x-36}" y="${y-55}" font-size="16" font-weight="700" fill="${col}">${no}</text>
+  <text data-z="${id}" x="${x+38}" y="${y-54}" text-anchor="end" font-size="18" font-weight="700" fill="#1D2935">${val}</text>`;
+}
+function zVal(unit,second){ return (second&&zwei_versteckt())?'? '+unit:fmt1(S1.q/10)+' '+unit; }
+function dotsSVG(attr){
+  let s='';
+  for(let i=0;i<NDOT;i++){ const p=ptAt(i*D+S1.off);
+    s+=`<circle ${attr}="${i}" class="dq${S1.flash?' fl':''}" cx="${p[0]}" cy="${p[1]}" r="5.5" ${attr==='data-dq'
+      ?'fill="#FFD23F" stroke="#7a5600" stroke-width="1.5"':'fill="#2f8fd6" stroke="#ffffff" stroke-width="1.5"'}/>`; }
+  return s;
+}
+/* Wassermodell der Stufe 1 = dasselbe Höhenmodell wie in Stufe 0, mit einem Rad.
+   Die Tropfen laufen im selben Takt wie die Ladungspunkte: 3 pro Sekunde. */
+let W1B=null;
+function wasser1(){ if(!W1B) W1B=[bahn(LOOP,3)]; return W1B; }   // dieselbe Bahn wie die Ladung
+const takt1=()=>S1.off/D;                       // wie viele Punktabstände schon durchgelaufen sind
+const off1=b=>takt1()*b.D;
+function svg1(){
+  const st=S1, w=G.wasser, lit=kontakt(st), col='#2E6DB4';
+  const {B:BX,V,unten,trenner,ox,oy}=layout(1,false,w);
+  const LX=ZX[1][0], LY=mitte(GTOP,GBOT);
+  let s=`<svg viewBox="${vbAttr(V)}" xmlns="http://www.w3.org/2000/svg">${DEFS}<rect x="${V.x+3}" y="${V.y+3}" width="${V.w-6}" height="${V.h-6}" rx="${V.r}" fill="url(#dots)" stroke="#e2dccd" stroke-width="2"/>`;
+  // Stromkreis – derselbe Grundriss wie das Wassermodell
+  s+=wire([[180,GBOT],[GX,GBOT],[GX,GTOP],[SX-50,GTOP]],'red')+wire([[SX+50,GTOP],[LX,GTOP],[LX,LY-40]],'red');
+  s+=wire([[LX,LY+40],[LX,GBOT],[270,GBOT]],'black');
+  s+=lampSVG({x:LX,y:LY},lit)+lbl(LX+94,LY+6,'Lämpchen','start');
+  s+=`<g>${dotsSVG('data-dq')}</g>`;
+  s+=swSVG({x:SX,y:GTOP},st.swA,lit)+batSVG({x:QX,y:QY});
+  s+=knob(LX,LY-40)+knob(LX,LY+40)+knob(GX,GBOT)+knob(LX,GTOP)+knob(LX,GBOT);
+  s+=counterSVG(ZMESS,GTOP,'①','c1',zVal('C'),col)+counterSVG(ZMESS,GBOT,'②','c2',zVal('C',true),col);
+  s+=`<circle cx="106" cy="${GTOP-52}" r="5.5" fill="#FFD23F" stroke="#7a5600" stroke-width="1.5"/>
+      <text x="118" y="${GTOP-47}" font-size="14" font-weight="600" fill="#44505a">= 0,1 C</text>`;
+  s+=`<rect data-sw="S" x="${SX-50}" y="${GTOP-40}" width="100" height="90" fill="#000" fill-opacity="0"/>`;
+  // Wassermodell: gleicher Grundriss, gleiche Bahn, gleicher Takt
+  if(w){
+    const B=wasser1();
+    s+=trenner;
+    s+=`<g transform="translate(${ox},${oy})">${wtitel(BX)}
+    ${hoehenlinie(GTOP,BX)}${hoehenlinie(GBOT,BX)}
+    ${rohrSVG(LOOPD)}
+    <g>${B.map((b,c)=>{let t='';const o=off1(b);
+      for(let i=0;i<b.N;i++){const p=pAt(b,i*b.D+o);
+        t+=`<circle data-dw="${c}.${i}" cx="${p[0]}" cy="${p[1]}" r="5.5" fill="#2f8fd6" stroke="#ffffff" stroke-width="1.5"/>`;}
+      return t;}).join('')}</g>
+    ${radSVG(LX,LY,34,'data-wheel',takt1()*26)}${lbl(LX+48,LY+6,'Wasserrad','start')}
+    ${ventilSVG(SX,GTOP,st.swA,lit)}${pumpeSVG(takt1()*18)}
+    ${counterSVG(ZMESS,GTOP,'①','w1',zVal('L'),'#1d4d99')}${counterSVG(ZMESS,GBOT,'②','w2',zVal('L',true),'#1d4d99')}
+    <rect data-sw="S" x="${SX-50}" y="${GTOP-40}" width="100" height="90" fill="#000" fill-opacity="0"/>
+    </g>`;
+  }
+  return s+'</svg>';
+}
+
+/* ---------- Bewegung ohne neues Zeichnen ---------- */
+let DQ=[],DW=[],ZT={},WH=null,PU=null;
+function bind(){
+  const st=document.getElementById('stage');
+  DQ=[...st.querySelectorAll('[data-dq]')]; DW=[...st.querySelectorAll('[data-dw]')];
+  ZT={}; st.querySelectorAll('[data-z]').forEach(e=>ZT[e.dataset.z]=e);
+  WH=st.querySelector('[data-wheel]'); PU=st.querySelector('[data-pumpe]');
+}
+function draw(){
+  const st=S1;
+  DQ.forEach((el,i)=>{const p=ptAt(i*D+st.off); el.setAttribute('cx',p[0]); el.setAttribute('cy',p[1]);});
+  if(DW.length){ const B=wasser1();
+    DW.forEach(el=>{ const [c,i]=el.getAttribute('data-dw').split('.').map(Number), b=B[c]; if(!b) return;
+      const p=pAt(b,i*b.D+off1(b)); el.setAttribute('cx',p[0]); el.setAttribute('cy',p[1]); }); }
+  if(ZT.c1) ZT.c1.textContent=zVal('C'); if(ZT.c2) ZT.c2.textContent=zVal('C',true);
+  if(ZT.w1) ZT.w1.textContent=zVal('L'); if(ZT.w2) ZT.w2.textContent=zVal('L',true);
+  if(WH) WH.setAttribute('transform',drehT(takt1()*26,ZX[1][0],mitte(GTOP,GBOT)));
+  if(PU) PU.setAttribute('transform',drehT(takt1()*18,QX,QY));
+}
+function step(dt){
+  if(G.stufe===0) return step0(dt);
+  if(G.stufe===2) return step2(dt);
+  if(G.stufe===3) return step3(dt);
+  if(G.stufe===4) return step4(dt);
+  if(G.stufe===5) return step5(dt);
+  if(G.stufe!==1) return;
+  const st=S1; let neu=false;
+  const vorher=kontakt(st);
+  if(easeSw(st,dt)){ hebelZeichnen(st); if(kontakt(st)!==vorher) neu=true; }
+  if(kontakt(st)){
+    const o0=st.off, o1=o0+VPX*dt;
+    let c=Math.floor((o1-Z1)/D)-Math.floor((o0-Z1)/D);
+    st.off=o1%LEN;
+    if(st.tab==='auf'&&st.phase==='run'&&st.task.run==='count'&&st.q+c>=st.task.target){
+      c=st.task.target-st.q; st.closed=false; st.phase='why'; neu=true;
+    }
+    st.q+=c;
+    if(st.tab==='erk'&&erkGefuehrt()&&st.erk===2&&st.q>=20){ st.erk=3; neu=true; }
+    draw();
+  }
+  if(st.runT>0){ st.runT-=dt; if(st.runT<=0){ st.runT=0; st.flash=false; st.phase='why'; neu=true; } }
+  if(neu) render();
+}
+let last=performance.now();
+function frame(now){ step(Math.min(0.1,(now-last)/1000)); last=now; requestAnimationFrame(frame); }
+
+/* ---------- Text Stufe 1 ---------- */
+/* Aufbau wie die Karten im Lehrmittel: Grösse, Formelzeichen, Einheit, Abkürzung der Einheit */
+const STECK={1:['Elektrische Ladung','Q','Coulomb','C'],2:['Elektrische Stromstärke','I','Ampere','A'],
+  3:['Elektrische Spannung','U','Volt','V'],4:['Elektrischer Widerstand','R','Ohm','Ω'],
+  5:['Elektrische Leistung','P','Watt','W']};
+function steckbrief(n){ const [g,z,e,a]=STECK[n];
+  return `<div class="steck"><div><span>Grösse</span><b>${g}</b></div><div><span>Zeichen</span><b>${z}</b></div>
+  <div><span>Einheit</span><b>${e}</b></div><div><span>Abkürzung</span><b>${a}</b></div></div>`; }
+const ERK=[
+ 'Die gelben Punkte stehen für die <b>elektrische Ladung</b>. Sie ist schon überall im Stromkreis – auch jetzt, wo nichts leuchtet. <b>Schliesse den Schalter.</b>',
+ 'Alle Punkte bewegen sich <b>gleichzeitig</b> – auch die weit weg von der Batterie. Darum leuchtet das Lämpchen sofort. Die Zählstelle ① zählt, wie viel Ladung vorbeifliesst. Ein Punkt steht für 0,1 C. <b>Warte, bis ① 2,0 C zeigt.</b>',
+ 'Jetzt siehst du auch die Zählstelle ② hinter dem Lämpchen. <b>Vergleiche: Wie viel Ladung ist bei ② vorbeigeflossen?</b>'
+];
+const MERK1='Die Ladung ist schon überall im Stromkreis. Die Batterie treibt sie an. Im Lämpchen wird keine Ladung verbraucht – überall fliesst gleich viel.';
+/* aus dem Lehrmittel, Karte «Die elektrische Ladung Q» */
+const MERK1B='Ladungen können <b>negativ oder positiv</b> sein. Gleiche Ladungen <b>stossen sich ab</b>, unterschiedliche <b>ziehen sich an</b>.';
+/* Kopfzeile des geführten Erkundens. Ab Schritt 2 kann man einen Schritt zurück –
+   das Bild springt dann auf den Stand zurück, mit dem dieser Schritt beginnt. */
+function wegKopf(erk,ganz){
+  const g=ganz||3, n=Math.min(erk,g);
+  return `<div class="wegtitel"><span>Schritt ${n} von ${g}</span>${
+    n>1?'<button class="zurueck" data-act="erkZur" title="Einen Schritt zurück">‹ zurück</button>':''}</div>`;
+}
+/* Schritt 1 beginnt immer mit offenem Schalter, Schritt 2 mit geschlossenem –
+   so passt der Text wieder zum Bild. */
+function erkZurueck(){
+  const s={0:S0,1:S1,2:S2,3:S3,4:S4,5:S5}[G.stufe];
+  if(!s||s.tab!=='erk'||s.erk<2||s.erkFertig) return;
+  const zu=--s.erk===2;                 // Schritt 2: Stromkreis läuft bereits
+  s.msg=''; s.justDone=false; s.closed=zu; if(zu) s.swA=1;
+  if(G.stufe===0){ s.raus=[false,false,false]; s.vorrat=1; s.std=0; s.leer=false; s.raffer=false;
+    s.gelaufen={ser:false,par:false}; s.vergl=false; nullZaehler0();
+    // jeder Schritt beginnt mit dem Bild, das zu seinem Text passt
+    if(s.erk===3){ s.art='ser'; s.n=3; s.closed=true; } else { s.art='ser'; s.n=1; } }
+  else if(G.stufe===1){ s.q=0; }
+  else if(G.stufe===2){ s.q=0; s.t=0; s.laeuft=zu; s.v=1; s.mess='vor'; }
+  else if(G.stufe===3){ s.vergl=false; s.u=0; s.vpos='lampe'; }
+  else if(G.stufe===4){ s.d=0; s.probiert=zu?[true,false,false]:[false,false,false]; }
+  else { s.u=0; s.raffer=false; s.gelaufen=[false,false,false]; vorratNeu(); }
+}
+function erkPanel(){
+  const st=S1; let p='';
+  if(erkGefuehrt()){
+    p+=`<div class="weg">${wegKopf(st.erk)}<div class="wegtext">${ERK[st.erk-1]}</div></div>`;
+    if(st.erk===3) p+=`<div class="mc">
+      <button class="opt" data-act="cmp" data-v="0">② zeigt weniger als ①</button>
+      <button class="opt" data-act="cmp" data-v="1">② zeigt gleich viel wie ①</button>
+      <button class="opt" data-act="cmp" data-v="2">② zeigt mehr als ①</button></div>`;
+    if(st.msg) p+=`<p class="msg bad">${st.msg}</p>`;
+    return p;
+  }
+  if(st.justDone) p+=`<p class="msg ok">Genau: ② zeigt gleich viel wie ①.</p>`;
+  p+=`<p class="lead">Öffne und schliesse den Schalter und beobachte die Zählstellen. Ein Punkt steht für <b>0,1 C</b>.</p>`;
+  if(st.msg) p+=`<p class="msg info">${st.msg}</p>`;
+  return p;
+}
+const bedien1=()=>S1.tab==='erk'&&!(G.fuehrung&&!S1.erkFertig)
+  ? bedienen(`<div class="ctl"><button class="btn" data-act="null">↺ Zähler auf 0</button></div>`) : '';
+const SCHRITT=['Vorhersagen: Was glaubst du? Wähle eine Antwort.','Prüfen: Schau im Bild, was passiert.','Begründen: Warum ist das so?'];
+function aufPanel(){
+  const st=S1, t=st.task, g=gefuehrtA(); let p='';
+  if(st.fertig) return `<p class="msg ok">🎉 Geschafft – du hast alle ${ORDER.length} Aufgaben zur Ladung gelöst.</p>
+    ${merke(MERK1)}
+    <div class="row"><button class="btn primary" data-act="neuRunde">↺ Nochmals von vorne</button>
+    <button class="btn" data-act="tab" data-v="erk">🔍 Zurück zum Erkunden</button></div>`;
+  const nr={predict:1,ready:1,run:2,why:3,done:3}[st.phase];
+  if(g) p+=`<div class="weg"><div class="wegtitel">Schritt ${nr} von 3</div><div class="wegtext">${SCHRITT[nr-1]}</div></div>`;
+  else if(G.fuehrung&&st.geloest===2&&st.phase==='predict')
+    p+=`<p class="msg info">Ab jetzt ohne Anleitung – du kennst den Weg. Unter ⚙ Einstellungen kannst du sie wieder einschalten.</p>`;
+  p+=`<p class="lead"><b>${t.q}</b></p><div class="mc">`;
+  const offen=st.phase==='predict'||st.phase==='ready', aufgeloest=st.phase==='why'||st.phase==='done';
+  t.opts.forEach((o,i)=>{ let cl='opt';
+    if(aufgeloest){ if(i===t.c) cl+=' right'; else if(i===st.pick) cl+=' wrongsel'; }
+    else if(i===st.pick) cl+=' pick';
+    p+=`<button class="${cl}" data-act="pick" data-v="${i}" ${offen?'':'disabled'}>${o}</button>`; });
+  p+='</div>';
+  if(st.msg) p+=`<p class="msg info">${st.msg}</p>`;
+  if(st.phase==='ready') return p+`<div class="row"><button class="btn primary" data-act="prove">▶ Im Bild prüfen</button></div>`;
+  if(st.phase==='run') return p+`<p class="msg info">👀 Schau genau hin …</p>`;
+  if(!aufgeloest) return p;
+  const ok=st.pick===t.c;
+  p+=`<p class="msg ${ok?'ok':'bad'}">${ok?'Deine Vorhersage stimmt!':'Deine Vorhersage stimmt nicht.'} ${t.proof}</p>`;
+  p+=`<div class="sub">Warum ist das so?</div><div class="mc">`;
+  t.why.forEach(([o],i)=>{ let cl='opt';
+    if(st.phase==='done'){ if(i===t.wc) cl+=' right'; else if(i===st.why) cl+=' wrongsel'; }
+    p+=`<button class="${cl}" data-act="why" data-v="${i}" ${st.phase==='done'?'disabled':''}>${o}</button>`; });
+  p+='</div>';
+  if(st.phase!=='done') return p;
+  const wok=st.why===t.wc;
+  p+=`<p class="msg ${wok?'ok':'bad'}">${wok?'Genau.':'Nicht ganz. '+t.why[st.why][1]}</p>`;
+  p+=merke(t.merk);
+  return p+`<div class="row"><button class="btn primary" data-act="next">Nächste Aufgabe →</button></div>`;
+}
+/* Inhalt des Einstellungsfensters – erreichbar über ⚙ in der Kopfzeile,
+   damit er immer am selben Ort liegt und nie weggescrollt werden muss. */
+function einstInhalt(){
+  let p=`<div class="sub">Für Schülerinnen und Schüler</div>
+    <div class="row"><button class="btn ${G.fuehrung?'primary':''}" data-act="fuehr">${G.fuehrung?'Anleitung ist an':'Anleitung ist aus'}</button></div>
+    <div class="dlist">Die Schritt-für-Schritt-Anleitung erscheint beim ersten Erkunden und bei den ersten zwei Aufgaben. Einschalten startet sie von vorne.</div>`;
+  if(G.stufe===0) p+=`<div class="sub">Für die Lehrperson</div>
+    <div class="row"><button class="btn ${G.ladung?'primary':''}" data-act="zeigLadung">${G.ladung?'Ladung wird gezeigt':'Ladung zeigen'}</button>
+    <button class="btn ${G.mess?'primary':''}" data-act="zeigMess">${G.mess?'Messwerte werden gezeigt':'Messwerte zeigen'}</button></div>
+    <div class="dlist">Beides ist beim Start aus. «Ladung zeigen» blendet die Punkte und die Zählstellen ein, «Messwerte zeigen» eine Tabelle mit Spannung, Stromstärke und Leistung. Ohne diese Schalter kommt die Stufe ganz ohne Fachbegriffe aus.</div>`;
+  p+=`<div class="sub">Von vorne beginnen</div>
+    <div class="row"><button class="btn" data-act="reset">↺ Diese Stufe neu starten</button></div>
+    <div class="dlist">Setzt nur die offene Stufe zurück: Schaltung, Zähler, Batterie und – falls die Anleitung an ist – auch den ersten Schritt. Die anderen Stufen bleiben, wie sie sind.</div>`;
+  return p;
+}
+function panel1(){
+  const st=S1;
+  let p=`<div class="subtabs"><button class="tab ${st.tab==='erk'?'on':''}" data-act="tab" data-v="erk">🔍 Erkunden</button>
+         <button class="tab ${st.tab==='auf'?'on':''}" data-act="tab" data-v="auf">✏️ Aufgaben${zaehler(st,ORDER.length)}</button></div>`;
+  p= steckbrief(1)+p;
+  p+= st.tab==='erk' ? erkPanel()+bedien1() : aufPanel();
+  if(merkeZeit(st)) p+=merke(MERK1)+merke(MERK1B);
+  p+=nachschlagen(wasserTipp(st,'Dort kannst du sehen, was im Stromkreis fliesst.'),
+    G.wasser?`<div class="dlist">💧 <b>Die Pumpe hebt das Wasser hoch</b> – was die Batterie dafür tut, klären wir in Stufe 3.</div>${'<div class="zuord"><b>Im Wassermodell steht</b>\n    <div><span>die Pumpe</span>für die Batterie</div>\n    <div><span>das Ventil</span>für den Schalter</div>\n    <div><span>das Wasserrad</span>für das Lämpchen</div>\n    <div><span>das Wasser</span>für die Ladung</div>\n    <div><span>ein Liter</span>für ein Coulomb</div></div>'}`:'');
+  return p;
+}
+
+/* ============================================================
+   Stufe 0 · Hell oder dunkel?
+   Serie und Parallel als Phänomen – die Standardansicht kommt
+   ohne Fachbegriffe aus. Ladung, Messwerte und Wassermodell
+   sind zuschaltbar.
+   ============================================================ */
+const VORRAT_WH=4.05;                // Vorrat der Batterie in Wattstunden
+const RAFF=0.4, RAFF_A=1.25;         // Stunden pro Sekunde: von Hand gemächlich, in den Aufgaben schnell
+const raffTempo=()=>(S0.skript?RAFF_A:RAFF);
+const U0=4.5, R0=15;                 // idealisiert: 4,5 V, 15 Ω pro Lämpchen
+const P1=U0*U0/R0;                   // Leistung eines einzelnen Lämpchens: 1,35 W
+
+const S0={tab:'erk',art:'ser',n:1,raus:[false,false,false],closed:false,
+  S:0,aRad:0,aPumpe:0,swA:0,vergl:false,gelaufen:{ser:false,par:false},q:[0,0,0,0],vorrat:1,std:0,raffer:false,leer:false,
+  erk:1,erkFertig:false,justDone:false,msg:'',
+  task:null,taskNo:0,geloest:0,fertig:false,phase:'predict',pick:null,
+  skript:null,si:-1,sT:0,erg:{}};
+
+/* ---------- Was gerade fliesst ---------- */
+function konf0(){
+  const s=S0, n=s.n, par=s.art==='par';
+  const drin=[]; for(let k=0;k<n;k++) if(!s.raus[k]) drin.push(k);
+  const m=drin.length;
+  const unterbrochen = par ? m===0 : m<n;      // in Serie unterbricht ein fehlendes Lämpchen alles
+  const an = kontakt(s) && !unterbrochen && s.vorrat>0;
+  return {n,par,drin,m,an,
+    iHaupt: an?(par?m:1/n):0,                  // in Einheiten von 0,3 A
+    iZweig: an?(par?1:1/n):0,
+    pLampe: an?(par?1:1/(n*n)):0,              // in Einheiten von 1,35 W
+    pGes:   an?(par?m:1/n):0};
+}
+
+/* ---------- Bahnen für Ladung und Wasser ----------
+   Überall gleicher Punktabstand, nur das Tempo ist verschieden.
+   Damit an einer Verzweigung nichts entsteht oder verschwindet:
+   drei Zweige mit je einem Drittel Tempo = ein Hauptstrang mit vollem Tempo. */
+const MESSP=(()=>{const ns='http://www.w3.org/2000/svg',sv=document.createElementNS(ns,'svg'),p=document.createElementNS(ns,'path');
+  sv.setAttribute('width','0'); sv.setAttribute('height','0');
+  sv.style.cssText='position:absolute;visibility:hidden;left:0;top:0';
+  sv.appendChild(p); document.body.appendChild(sv); return p;})();
+function bahn(pts,f,ph){
+  const d=rpath(pts); MESSP.setAttribute('d',d);
+  const L=MESSP.getTotalLength(), lut=[];
+  for(let s=0;s<=Math.ceil(L);s++){ const q=MESSP.getPointAtLength(Math.min(s,L));
+    lut.push([Math.round(q.x*10)/10,Math.round(q.y*10)/10]); }
+  const N=Math.max(2,Math.round(L/30)), D=L/N;
+  return {d,L,N,D,lut,f:f||0,ph:(ph||0)*D,o:(ph||0)*D};
+}
+/* Der Stand jeder Bahn wird MITGEZÄHLT, nicht aus «Zeit mal Tempo» gerechnet.
+   Sonst springt beim Anhalten (Tempo 0) alles auf den Anfang zurück.
+   Über den Pfad-String findet eine neu gebaute Bahn ihren alten Stand wieder. */
+const STAND=new Map();
+const pAt=(b,s)=>b.lut[Math.round(((s%b.L)+b.L)%b.L)]||b.lut[0];
+const dotOff=b=>b.o;
+
+const raeder0=K=>plaetze(K.n,K.par).filter((p,k)=>K.par?K.drin.includes(k):true);
+let BH={key:'',v:null};
+/* Eine einzige Bahnenliste – Stromkreis und Wassermodell laufen darauf gleich.
+   Bei parallel trägt jedes Stück der Waagrechten nur den Strom der Zweige,
+   die noch dahinter liegen. So entsteht und verschwindet an keiner
+   Verzweigung ein Punkt. */
+/* Das Tempo steckt NICHT in der Bahn, sondern kommt erst beim Bewegen dazu.
+   Sonst müssten beim Ein- und Ausschalten alle Bahnen neu vermessen werden –
+   und das dauert so lange, dass es sich wie eine Verzögerung anfühlt. */
+const tempo0=K=>K.par?K.iZweig*3:K.iHaupt*3;
+function bahnen0(){
+  const K=konf0();
+  // nur was die GEOMETRIE ändert, gehört in den Schlüssel
+  const key=K.par?`p${K.n}${K.drin.join(',')}`:'s';
+  if(BH.key===key) return BH.v;
+  const B=[];
+  if(!K.par){
+    const x=ZX[1][0];
+    B.push(bahn(ZULEIT.concat([[x,GTOP],[x,GBOT]],ABLEIT),1));
+  } else {
+    const X=ZX[K.n];
+    // wie viele Zweige ab Stelle j noch folgen
+    const rest=j=>K.drin.filter(k=>k>=j).length;
+    B.push(bahn(ZULEIT.concat([[X[0],GTOP]]),rest(0)));
+    for(let j=0;j<K.n-1;j++) B.push(bahn([[X[j],GTOP],[X[j+1],GTOP]],rest(j+1)));
+    K.drin.forEach((k,i)=>B.push(bahn([[X[k],GTOP],[X[k],GBOT]],1,i/Math.max(1,K.m))));
+    for(let j=K.n-1;j>0;j--) B.push(bahn([[X[j],GBOT],[X[j-1],GBOT]],rest(j)));
+    B.push(bahn([[X[0],GBOT]].concat(ABLEIT),rest(0)));
+  }
+  B.forEach(b=>{ if(STAND.has(b.d)) b.o=STAND.get(b.d); });
+  BH={key,v:{L:B,W:B}}; return BH.v;
+}
+
+/* ---------- Bild der Stufe 0 ---------- */
+function punkte0(bahnen,pre,farbe,rand){
+  let s='';
+  bahnen.forEach((b,c)=>{ const o=dotOff(b);
+    for(let i=0;i<b.N;i++){ const p=pAt(b,i*b.D+o);
+      s+=`<circle ${pre}="${c}.${i}" cx="${p[0]}" cy="${p[1]}" r="5.5" fill="${farbe}" stroke="${rand}" stroke-width="1.5"/>`; } });
+  return s;
+}
+/* 78 Grad pro Sekunde bei vollem Durchfluss – gleich schnell wie in Stufe 1 */
+function svg0(){
+  const s=S0, K=konf0(), B=bahnen0();
+  const {B:BX,V,unten,trenner,ox,oy}=layout(K.n,K.par,G.wasser);
+  // in Serie hängen alle Lämpchen an der einen senkrechten Strecke, nicht an den Zweigplätzen
+  const P=plaetze(K.n,K.par), X=K.par?ZX[K.n]:[ZX[1][0]];
+  let g=`<svg viewBox="${vbAttr(V)}" xmlns="http://www.w3.org/2000/svg">${DEFS}<rect x="${V.x+3}" y="${V.y+3}" width="${V.w-6}" height="${V.h-6}" rx="${V.r}" fill="url(#dots)" stroke="#e2dccd" stroke-width="2"/>`;
+  /* --- Leitungen: derselbe Grundriss wie das Wassermodell --- */
+  const sc=LSC, hb=lampHalb(sc);
+  g+=wire([[180,GBOT],[GX,GBOT],[GX,GTOP],[SX-50,GTOP]],'red');
+  if(!K.par){
+    const x=X[0];
+    g+=wire([[SX+50,GTOP],[x,GTOP],[x,P[0].y-hb]],'red');
+    for(let k=0;k<K.n-1;k++) g+=wire([[x,P[k].y+hb],[x,P[k+1].y-hb]],'black');
+    g+=wire([[x,P[K.n-1].y+hb],[x,GBOT],[270,GBOT]],'black');
+  } else {
+    g+=wire([[SX+50,GTOP],[X[K.n-1],GTOP]],'red');
+    P.forEach(p=>{ g+=wire([[p.x,GTOP],[p.x,p.y-hb]],'red')+wire([[p.x,p.y+hb],[p.x,GBOT]],'black'); });
+    g+=wire([[X[K.n-1],GBOT],[270,GBOT]],'black');
+  }
+  /* --- Ladung (nur wenn zugeschaltet) --- */
+  if(G.ladung) g+=`<g>${punkte0(B.L,'data-l','#FFD23F','#7a5600')}</g>`;
+  /* --- Lämpchen, gedreht wie die Wasserräder auf den Fallstrecken --- */
+  P.forEach((c,k)=>{
+    g+=lampSVG(c,K.an,K.pLampe,s.raus[k],sc)+knob(c.x,c.y-hb)+knob(c.x,c.y+hb);
+    g+=`<rect data-lampe="${k}" x="${c.x-26}" y="${c.y-hb}" width="${Math.round(122*sc)}" height="${hb*2}" fill="#000" fill-opacity="0"/>`;
+  });
+  /* --- Schalter, Batterie, Vorrat --- */
+  g+=swSVG({x:SX,y:GTOP},s.swA,K.an||kontakt(s))+`<rect data-sw0 x="${SX-50}" y="${GTOP-40}" width="100" height="90" fill="#000" fill-opacity="0"/>`;
+  // In der Standardansicht steht keine Einheit auf der Batterie
+  g+=batSVG({x:QX,y:QY},(G.mess||G.ladung)?undefined:'Batterie')+knob(GX,GBOT);
+  if(K.par) X.forEach(x=>{ g+=knob(x,GTOP)+knob(x,GBOT); });
+  const vb=Math.max(0,Math.min(1,s.vorrat));
+  g+=`<rect x="${QX-62}" y="${QY-30}" width="124" height="16" rx="8" fill="#fff" stroke="#6b7480" stroke-width="1.5"/>
+  <rect data-vor x="${QX-59.5}" y="${QY-27.5}" width="${Math.round(VORB*vb*10)/10}" height="11" rx="5.5" fill="${vb<0.2?'#d8322b':'#23794A'}"/>
+  ${lbl(QX,QY+50,'Vorrat der Batterie')}`;
+  /* --- Zählstellen (nur mit Ladung) --- */
+  if(G.ladung){
+    const Z=zaehler0(K);
+    g+=counterSVG(ZMESS,GTOP,'①','k0',fmtZ(Z.haupt),'#2E6DB4');
+    if(K.par) K.drin.forEach((k,j)=>{ g+=counterSVG(X[k],205,'②③④'[j]||'②','k'+(j+1),fmtZ(Z.zweige[j]),'#2E6DB4'); });
+  }
+  /* --- Höhenmodell --- */
+  if(G.wasser){
+    g+=trenner+`<g transform="translate(${ox},${oy})">${wtitel(BX)}`;
+    (K.par?[GTOP,GBOT]:stufenY(K.n)).forEach(yy=>{ g+=hoehenlinie(yy,BX); });
+    B.W.forEach(b=>{ g+=rohrSVG(b.d); });
+    g+=`<g>${punkte0(B.W,'data-w','#2f8fd6','#ffffff')}</g>`;
+    // Wasserräder: genau dort, wo im Stromkreis die Lämpchen sitzen
+    raeder0(K).forEach((r,i)=>{ g+=radSVG(r.x,r.y,RRAD,`data-rad="${i}"`,s.aRad); });
+    g+=ventilSVG(SX,GTOP,s.swA,kontakt(s))+pumpeSVG(s.aPumpe)
+      +`<rect data-sw0 x="${SX-50}" y="${GTOP-40}" width="100" height="90" fill="#000" fill-opacity="0"/>`;
+    g+=`</g>`;
+  }
+  return g+'</svg>';
+}
+
+/* ---------- Bewegung ohne Neuzeichnen ---------- */
+let D0={l:[],w:[],z:{},raeder:[],pumpe:null,vor:null,std:null};
+function bind0(){
+  const st=document.getElementById('stage');
+  D0={l:[...st.querySelectorAll('[data-l]')],w:[...st.querySelectorAll('[data-w]')],z:{},
+      raeder:[...st.querySelectorAll('[data-rad]')],pumpe:st.querySelector('[data-pumpe]'),
+      vor:st.querySelector('[data-vor]'),std:document.querySelector('[data-std]')};
+  st.querySelectorAll('[data-z]').forEach(e=>D0.z[e.dataset.z]=e);
+}
+function setz(els,attr,bahnen){
+  els.forEach(el=>{ const [c,i]=el.getAttribute(attr).split('.').map(Number), b=bahnen[c]; if(!b) return;
+    const p=pAt(b,i*b.D+dotOff(b)); el.setAttribute('cx',p[0]); el.setAttribute('cy',p[1]); });
+}
+function draw0(){
+  const s=S0, K=konf0(), B=bahnen0();
+  if(D0.l.length) setz(D0.l,'data-l',B.L);
+  if(D0.w.length) setz(D0.w,'data-w',B.W);
+  const Z=zaehler0(K);
+  if(D0.z.k0) D0.z.k0.textContent=fmtZ(Z.haupt);
+  Z.zweige.forEach((v,j)=>{ if(D0.z['k'+(j+1)]) D0.z['k'+(j+1)].textContent=fmtZ(v); });
+  const raeder=raeder0(K);
+  D0.raeder.forEach((el,i)=>{ const r=raeder[i]; if(r) el.setAttribute('transform',drehT(s.aRad,r.x,r.y)); });
+  if(D0.pumpe) D0.pumpe.setAttribute('transform',drehT(s.aPumpe,QX,QY));
+  if(D0.vor) { const vb=Math.max(0,Math.min(1,s.vorrat));
+    D0.vor.setAttribute('width',Math.round(VORB*vb*10)/10); D0.vor.setAttribute('fill',vb<0.2?'#d8322b':'#23794A'); }
+  if(D0.std) D0.std.textContent=stdText();
+}
+function step0(dt){
+  const s=S0; let neu=false;
+  const vorher=kontakt(s);
+  if(easeSw(s,dt)){ hebelZeichnen(s); if(kontakt(s)!==vorher) neu=true; }
+  const K=konf0();
+  if(K.an){
+    const B=bahnen0();
+    s.S+=dt;
+    s.aRad+=dt*K.iZweig*78; s.aPumpe+=dt*K.iHaupt*54;
+    const T=tempo0(K);
+    B.L.forEach(b=>{ b.o+=dt*b.f*T*b.D; STAND.set(b.d,b.o); });
+    s.q[0]+=K.iHaupt*0.3*dt;
+    if(K.par) K.drin.forEach((k,j)=>{ s.q[j+1]+=K.iZweig*0.3*dt; });
+    if(s.raffer){
+      const r=raffTempo(), dv=dt*r*K.pGes*P1/VORRAT_WH;     // Abnahme proportional zur Gesamtleistung
+      if(dv>0&&s.vorrat-dv<=0){ s.std+=dt*r*(s.vorrat/dv); s.vorrat=0; s.raffer=false; s.leer=true; neu=true; }
+      else { s.std+=dt*r; s.vorrat-=dv; }
+      // ab einer halben Stunde zählt diese Schaltung als «gelaufen»
+      if(s.tab==='erk'&&!s.gelaufen[s.art]&&(s.std>=0.5||s.leer)){ s.gelaufen[s.art]=true; neu=true; }
+    }
+    draw0();
+  } else if(s.raffer&&!K.an){ s.raffer=false; neu=true; }
+  if(s.skript) neu=skriptSchritt(dt)||neu;
+  if(neu) render();
+}
+
+/* ---------- Ablauf der Aufgaben ---------- */
+function skriptAn(sk){ const s=S0; s.skript=sk; s.si=-1; s.erg={}; skriptWeiter(); }
+function skriptWeiter(){
+  const s=S0; s.si++;
+  if(s.si>=s.skript.length){ s.skript=null; s.raffer=false; s.phase='done'; return; }
+  const sc=s.skript[s.si];
+  if(sc.set){ if(sc.set.art!==undefined) s.art=sc.set.art;
+    if(sc.set.n!==undefined) s.n=sc.set.n;
+    if(sc.set.raus!==undefined) rausSetzen0(sc.set.raus);
+    if(sc.set.closed!==undefined) s.closed=sc.set.closed; }
+  s.vorrat=1; s.std=0; s.leer=false; s.raffer=!!sc.leer;   // jede Vorführung mit frischer Batterie
+  s.sT=sc.t||0;
+}
+function skriptSchritt(dt){
+  const s=S0, sc=s.skript[s.si];
+  if(sc.leer){ if(s.vorrat<=0){ if(sc.merke) s.erg[sc.merke]=s.std; skriptWeiter(); return true; } return false; }
+  s.sT-=dt; if(s.sT<=0){ skriptWeiter(); return true; }
+  return false;
+}
+
+/* ---------- Aufgaben der Stufe 0 ---------- */
+const AUF0={
+ hell:{q:'Drei Lämpchen in Serie oder drei Lämpchen parallel – wo leuchtet ein einzelnes Lämpchen heller?',
+   opts:['In Serie','Parallel','Überall gleich hell'],c:1,
+   sk:[{set:{art:'ser',n:3,raus:[0,0,0],closed:true},t:2.6,txt:'Drei in Serie …'},
+       {set:{art:'par',n:3,closed:true},t:2.6,txt:'Und jetzt drei parallel …'}],
+   merk:'Parallel leuchtet jedes Lämpchen so hell wie ein einzelnes. In Serie glimmen alle drei nur schwach.'},
+ vorrat:{q:'Beide Schaltungen bekommen eine frische Batterie. Welche Batterie ist zuerst leer?',
+   opts:['Die bei den drei in Serie','Die bei den drei parallel','Beide gleichzeitig'],c:1,
+   sk:[{set:{art:'par',n:3,raus:[0,0,0],closed:true},leer:true,merke:'par',txt:'Drei parallel im Zeitraffer …'},
+       {set:{art:'ser',n:3,closed:true},leer:true,merke:'ser',txt:'Und jetzt drei in Serie …'}],
+   merk:'Die hellen Lämpchen parallel leeren die Batterie am schnellsten. In Serie leuchten sie schwächer – dafür hält die Batterie viel länger.'},
+ rausPar:{q:'Drei Lämpchen parallel leuchten. Du schraubst das mittlere heraus. Was passiert mit den anderen beiden?',
+   opts:['Sie gehen auch aus','Sie leuchten gleich weiter','Sie leuchten heller'],c:1,
+   sk:[{set:{art:'par',n:3,raus:[0,0,0],closed:true},t:2,txt:'Alle drei leuchten …'},
+       {set:{raus:[0,1,0]},t:2.6,txt:'Das mittlere ist heraus …'}],
+   merk:'Parallel hat jedes Lämpchen seinen eigenen Weg. Fällt eines aus, leuchten die anderen unverändert weiter.'},
+ rausSer:{q:'Drei Lämpchen in Serie glimmen. Du schraubst das mittlere heraus. Was passiert mit den anderen beiden?',
+   opts:['Sie gehen auch aus','Sie glimmen gleich weiter','Sie leuchten heller'],c:0,
+   sk:[{set:{art:'ser',n:3,raus:[0,0,0],closed:true},t:2,txt:'Alle drei glimmen …'},
+       {set:{raus:[0,1,0]},t:2.6,txt:'Das mittlere ist heraus …'}],
+   merk:'In Serie führt nur ein einziger Weg durch alle Lämpchen. Fehlt eines, ist der Weg unterbrochen und alle sind dunkel.'},
+ weniger:{q:'Drei Lämpchen in Serie. Du nimmst eines ganz weg, so dass nur noch zwei in der Reihe hängen. Werden die beiden heller oder dunkler?',
+   opts:['Heller','Dunkler','Gleich hell'],c:0,
+   sk:[{set:{art:'ser',n:3,raus:[0,0,0],closed:true},t:2.4,txt:'Drei in Serie …'},
+       {set:{n:2},t:2.6,txt:'Jetzt nur noch zwei …'}],
+   merk:'Je weniger Lämpchen in einer Reihe hängen, desto heller leuchtet jedes einzelne.'}
+};
+const ORDER0=['hell','vorrat','rausPar','rausSer','weniger'];
+function nullZaehler0(){ S0.S=0; S0.q=[0,0,0,0]; }
+/* Was die Zählstellen anzeigen.
+   Intern ist ① immer genau die Summe der Zweige. Rundet man aber jede Zahl für
+   sich auf eine Nachkommastelle, widersprechen sich die Anzeigen: 1,74 wird zu
+   1,7 und 0,58 zu 0,6, und 3 × 0,6 ist nicht 1,7. Ein Kind, das nachrechnet,
+   sieht dann das Gegenteil dessen, was die Stufe zeigen will.
+   Darum: zuerst die Zweige runden, dann addieren. ① springt dafür in
+   0,3-Schritten – das ist richtig so, denn im Hauptdraht kommen die Punkte
+   dreimal so schnell vorbei. In Zehnteln gerechnet, damit nichts «verrutscht». */
+function zaehler0(K){
+  const q=S0.q;
+  if(!K.par) return {haupt:Math.round(q[0]*10), zweige:[]};
+  const z=K.drin.map((k,j)=>Math.round(q[j+1]*10));
+  return {haupt:z.reduce((a,b)=>a+b,0), zweige:z};
+}
+const fmtZ=zehntel=>fmt1(zehntel/10)+' C';
+/* Ein Lämpchen heraus- oder hineinzuschrauben ändert, welche Zweige eine
+   Zählstelle haben. Die Zähler beginnen darum von vorne – sonst steckte in ①
+   noch Ladung aus einem Zweig, der gar nicht mehr angezeigt wird, und die
+   Summe stimmte wieder nicht. */
+function rausSetzen0(neu){
+  const s=S0, vorher=s.raus.join();
+  s.raus=neu.map(Boolean);
+  if(s.raus.join()!==vorher) nullZaehler0();
+}
+/* «Von vorne» stellt auch die Bewegung auf den Anfang zurück */
+function standNull0(){ STAND.clear(); BH={key:'',v:null}; S0.aRad=0; S0.aPumpe=0; }
+/* Beim Wechsel der Schaltung eine volle Batterie – sonst lässt sich die Laufzeit nicht vergleichen */
+function vorratFrisch0(){ if(S0.tab!=='erk') return; S0.vorrat=1; S0.std=0; S0.leer=false; S0.raffer=false; }
+function newTask0(){ const s=S0; s.task=AUF0[ORDER0[s.taskNo%ORDER0.length]]; s.taskNo++; task0Setup(); }
+function task0Setup(){ const s=S0; s.phase='predict'; s.pick=null; s.msg=''; s.skript=null; s.raffer=false;
+  s.vorrat=1; s.std=0; s.leer=false; s.erg={}; }
+
+/* ---------- Text der Stufe 0 ---------- */
+function stdText(){ const s=S0;
+  return s.leer?`Leer nach ${fmt1(s.std)} Stunden`:(s.std>0?`Gelaufen: ${fmt1(s.std)} Stunden`:'Noch nicht gelaufen'); }
+function steuerung0(){
+  const s=S0, d=k=>erl0(k)?'':'disabled';
+  return `<div class="ctl"><span class="lab">Schaltung:</span>
+    <button class="tab ${s.art==='ser'?'on':''}" data-act="art" data-v="ser" ${d('ser')}>Serie</button>
+    <button class="tab ${s.art==='par'?'on':''}" data-act="art" data-v="par" ${d('par')}>Parallel</button></div>
+  <div class="ctl"><span class="lab">Lämpchen:</span>
+    ${[1,2,3].map(k=>`<button class="tab ${s.n===k?'on':''}" data-act="anz" data-v="${k}" ${d('n'+k)}>${k}</button>`).join('')}</div>
+  <div class="ctl"><button class="btn ${s.raffer?'primary':''}" data-act="raff" ${d('raff')}>${s.raffer?'⏸ Pause':'▶ Zeitraffer'}</button>
+    <button class="btn" data-act="neueBat" ${d('bat')}>🔋 Batterie wechseln</button>
+    <span class="lab" data-std>${stdText()}</span></div>`;
+}
+function messtabelle(){
+  const K=konf0(), s=S0;
+  const uL=K.an?(K.par?U0:U0/K.n):0, iL=K.an?uL/R0:0, pL=uL*iL;
+  const iG=K.an?(K.par?K.m*iL:iL):0, pG=U0*iG;
+  return `<table class="tbl"><tr><th></th><th>Spannung</th><th>Stromstärke</th><th>Leistung</th></tr>
+  <tr><td>ein Lämpchen</td><td>${fmt2(uL)} V</td><td>${fmt2(iL)} A</td><td>${fmt2(pL)} W</td></tr>
+  <tr><td>Batterie</td><td>${fmt2(K.an?U0:0)} V</td><td>${fmt2(iG)} A</td><td>${fmt2(pG)} W</td></tr></table>`;
+}
+const FRAGEN=`<ul class="fragl"><li>Warum leuchten die Lämpchen in Serie schwächer?</li>
+  <li>Warum hält die Batterie dann länger?</li>
+  <li>Wird in den Lämpchen etwas verbraucht? Wenn ja: was?</li>
+  <li>Was macht die Batterie – und was geht ihr mit der Zeit aus?</li></ul>`;
+const FRAGENKASTEN=`<div class="wegfrag"><b>Diese Fragen nimmst du mit</b>${FRAGEN}
+  <p class="fraghin">Wir klären sie in den nächsten Stufen.</p></div>`;
+function erk0Text(){
+  const s=S0;
+  if(s.erk===1) return 'Ein Lämpchen, sonst nichts. <b>Schliesse den Schalter</b> und schau dir die Helligkeit gut an – die ist der Massstab für alles Weitere.';
+  if(s.erk===2) return 'Jetzt <b>drei Lämpchen in Serie</b>: Stelle «Serie» und «3» ein und schliesse den Schalter.';
+  if(s.erk===3) return s.vergl
+    ? 'Du hast beides gesehen. <b>Schalte ruhig hin und her</b> zwischen Serie und Parallel – und beantworte dann die Frage.'
+    : 'Und nun <b>dasselbe parallel</b>: Stelle «Parallel» ein.';
+  const g=s.gelaufen;
+  if(g.ser&&g.par) return 'Du hast beides laufen lassen. <b>Wie lange hält die Batterie?</b> Beantworte die Frage.';
+  if(g.par||g.ser){
+    const fehlt=g.par?'ser':'par', bef=g.par?'Der Vorrat sinkt parallel schnell. ':'In Serie sinkt der Vorrat langsam. ';
+    return bef+(s.art===fehlt
+      ? 'Die Batterie ist wieder voll: <b>Starte den Zeitraffer nochmals</b> und vergleiche.'
+      : 'Stelle jetzt auf <b>'+(fehlt==='ser'?'Serie':'Parallel')+'</b> und lass den Zeitraffer nochmals laufen.');
+  }
+  return 'Genau – parallel leuchten sie so hell wie ein einzelnes Lämpchen. Jetzt die <b>Batterie</b>: Starte «▶ Zeitraffer» und schau, wie schnell ihr Vorrat sinkt. Danach dasselbe mit der anderen Schaltung.';
+}
+function erk0Panel(){
+  const s=S0; let p='';
+  if(G.fuehrung&&!s.erkFertig){
+    p+=`<div class="weg">${wegKopf(s.erk,4)}<div class="wegtext">${erk0Text()}</div></div>`;
+    if(s.erk===3&&s.vergl&&s.closed) p+=`<div class="mc">
+      <button class="opt" data-act="cmp0" data-v="0">In Serie leuchten sie heller</button>
+      <button class="opt" data-act="cmp0" data-v="1">Parallel leuchten sie heller</button>
+      <button class="opt" data-act="cmp0" data-v="2">Es macht keinen Unterschied</button></div>`;
+    if(s.erk===4){ p+=`<div class="dauer"><span>${s.art==='par'?'Parallel':'In Serie'}, ${s.n} Lämpchen</span><b>${stdText()}</b></div>`;
+      if(s.gelaufen.ser&&s.gelaufen.par) p+=`<div class="mc">
+      <button class="opt" data-act="cmp0b" data-v="0">Parallel hält die Batterie länger</button>
+      <button class="opt" data-act="cmp0b" data-v="1">In Serie hält die Batterie länger</button>
+      <button class="opt" data-act="cmp0b" data-v="2">Es macht keinen Unterschied</button></div>`; }
+    if(s.msg) p+=`<p class="msg bad">${s.msg}</p>`;
+    return p;
+  }
+  if(s.justDone) p+=`<p class="msg ok">Genau: In Serie hält die Batterie viel länger – mit drei Lämpchen neunmal so lange wie parallel.</p>`;
+  p+=`<div class="weg"><div class="wegtext">Probiere aus: Serie oder parallel, ein bis drei Lämpchen. Ein Lämpchen im Bild antippen schraubt es heraus.<br>
+    Die Zeit läuft nicht von selbst: Wie lange die Batterie hält, siehst du erst, wenn du <b>«▶ Zeitraffer» startest</b>.</div>${FRAGENKASTEN}</div>`;
+  if(s.msg) p+=`<p class="msg info">${s.msg}</p>`;
+  return p;
+}
+const MERK0='In Serie hängen alle Lämpchen hintereinander am selben Weg – sie leuchten schwächer, und die Batterie hält länger. Parallel hat jedes seinen eigenen Weg – alle leuchten voll hell, und die Batterie ist schneller leer.';
+const SCHRITT0=['Vorhersagen: Was glaubst du? Wähle eine Antwort.','Prüfen: Schau im Bild, was passiert.'];
+function auf0Panel(){
+  const s=S0, t=s.task, g=G.fuehrung&&s.geloest<2; let p='';
+  if(s.fertig) return `<p class="msg ok">🎉 Geschafft – du hast alle ${ORDER0.length} Aufgaben gelöst.</p>
+    ${merke("In Serie leuchten die Lämpchen schwächer, und die Batterie hält länger. Parallel leuchtet jedes voll hell, und die Batterie ist schneller leer.")}
+    <div class="weg">${FRAGENKASTEN}</div>
+    <div class="row"><button class="btn primary" data-act="neuRunde0">↺ Nochmals von vorne</button>
+    <button class="btn" data-act="tab0" data-v="erk">🔍 Zurück zum Erkunden</button></div>`;
+  const nr=(s.phase==='run'||s.phase==='done')?2:1;
+  if(g) p+=`<div class="weg"><div class="wegtitel">Schritt ${nr} von 2</div><div class="wegtext">${SCHRITT0[nr-1]}</div></div>`;
+  else if(G.fuehrung&&s.geloest===2&&s.phase==='predict')
+    p+=`<p class="msg info">Ab jetzt ohne Anleitung – du kennst den Weg.</p>`;
+  p+=`<p class="lead"><b>${t.q}</b></p><div class="mc">`;
+  const offen=s.phase==='predict'||s.phase==='ready';
+  t.opts.forEach((o,i)=>{ let cl='opt';
+    if(s.phase==='done'){ if(i===t.c) cl+=' right'; else if(i===s.pick) cl+=' wrongsel'; }
+    else if(i===s.pick) cl+=' pick';
+    p+=`<button class="${cl}" data-act="pick0" data-v="${i}" ${offen?'':'disabled'}>${o}</button>`; });
+  p+='</div>';
+  if(s.phase==='ready') return p+`<div class="row"><button class="btn primary" data-act="prove0">▶ Im Bild prüfen</button></div>`;
+  if(s.phase==='run') return p+`<p class="msg info">👀 ${(s.skript&&s.skript[s.si]&&s.skript[s.si].txt)||'Schau genau hin …'}</p>`;
+  if(s.phase!=='done') return p;
+  const ok=s.pick===t.c;
+  p+=`<p class="msg ${ok?'ok':'bad'}">${ok?'Deine Vorhersage stimmt!':'Deine Vorhersage stimmt nicht.'}</p>`;
+  if(s.erg.par!==undefined&&s.erg.ser!==undefined)
+    p+=`<p class="msg info">Parallel: leer nach ${fmt1(s.erg.par)} Stunden. In Serie: leer nach ${fmt1(s.erg.ser)} Stunden.</p>`;
+  p+=`<div class="merke">📌 <b>Beobachtung:</b> ${t.merk}</div>`;
+  return p+`<div class="row"><button class="btn primary" data-act="next0">Nächste Aufgabe →</button></div>`;
+}
+function panel0(){
+  const s=S0;
+  let p=`<div class="subtabs"><button class="tab ${s.tab==='erk'?'on':''}" data-act="tab0" data-v="erk">🔍 Erkunden</button>
+         <button class="tab ${s.tab==='auf'?'on':''}" data-act="tab0" data-v="auf">✏️ Aufgaben${zaehler(s,ORDER0.length)}</button></div>`;
+  p+= s.tab==='erk' ? erk0Panel()+bedienen(steuerung0(),s) : auf0Panel();
+  if(G.mess) p+=`<div class="sub">Messwerte</div>${messtabelle()}`;
+  if(merkeZeit(s)) p+=merke(MERK0);
+  p+=nachschlagen(wasserTipp(s,'Dort siehst du, woher der Unterschied zwischen Serie und Parallel kommt.'),
+    G.wasser?`<div class="dlist">💧 <b>Die Pumpe hebt das Wasser hoch</b> – was die Batterie dafür tut, klären wir in Stufe 3.</div>${'<div class="zuord"><b>Im Wassermodell steht</b>\n    <div><span>die Pumpe</span>für die Batterie</div>\n    <div><span>das Ventil</span>für den Schalter</div>\n    <div><span>jedes Wasserrad</span>für ein Lämpchen</div>\n    <div><span>die Fallhöhe</span>für den Antrieb – in Serie teilen sich die Räder die Höhe, parallel bekommt jedes die ganze</div></div>'}`:'');
+  return p;
+}
+
+/* ============================================================
+   Stufe 2 · Stromstärke
+   I = Q ÷ t – wie viel Ladung pro Sekunde an einer Stelle
+   vorbeifliesst. Das Amperemeter wird in Serie eingebaut.
+   ============================================================ */
+const VERBR=[['kleines Lämpchen','klein',0.1,0.30],['mittleres Lämpchen','mittel',0.3,0.72],['grosses Lämpchen','gross',0.6,1]];
+const AMX=ZX[1][0], AMY={vor:170,nach:346}, UHR={x:252,y:252,r:46};
+const S2={tab:'erk',closed:false,swA:0,off:0,q:0,t:0,laeuft:false,v:1,mess:'vor',
+  erk:1,erkFertig:false,justDone:false,msg:'',
+  task:null,taskNo:0,geloest:0,fertig:false,phase:'predict',pick:null,runT:0,skript:null,si:-1,sT:0};
+const I2=()=>kontakt(S2)?VERBR[S2.v][2]:0;
+const Imess=()=>{ const s=S2; return (s.t>0.05)?s.q/s.t:null; };   // gemessen: Ladung durch Zeit
+
+/* ---------- Bild ---------- */
+function amSVG(x,y,txt,farbe,titel){
+  return `<circle cx="${x}" cy="${y}" r="31" fill="#fff" stroke="${farbe}" stroke-width="3"/>
+  <circle cx="${x}" cy="${y}" r="25" fill="none" stroke="${farbe}" stroke-width="1" stroke-opacity=".35"/>
+  <text data-am x="${x}" y="${y+6}" text-anchor="middle" font-size="16" font-weight="700" fill="#1D2935">${txt}</text>
+  ${lbl(x-42,y+5,titel,'end')}`;
+}
+function uhrSVG(){
+  const s=S2, w=(s.t%10)/10*360;
+  return `<circle cx="${UHR.x}" cy="${UHR.y}" r="${UHR.r}" fill="#fff" stroke="#44505a" stroke-width="3"/>
+  <circle cx="${UHR.x}" cy="${UHR.y-UHR.r-4}" r="6" fill="${s.laeuft?'#23794A':'#8a939b'}"/>
+  <line data-zeiger x1="${UHR.x}" y1="${UHR.y}" x2="${UHR.x}" y2="${UHR.y-34}" stroke="#d8322b" stroke-width="2.5" stroke-linecap="round" transform="${drehT(w,UHR.x,UHR.y)}"/>
+  <text data-uhr x="${UHR.x}" y="${UHR.y+8}" text-anchor="middle" font-size="20" font-weight="700" fill="#1D2935" stroke="#fff" stroke-width="4" paint-order="stroke">${fmt1(s.t)} s</text>
+  ${lbl(UHR.x,UHR.y+UHR.r+20,s.laeuft?'Stoppuhr läuft':'Stoppuhr')}
+  <rect data-uhrtip x="${UHR.x-UHR.r}" y="${UHR.y-UHR.r}" width="${UHR.r*2}" height="${UHR.r*2}" rx="${UHR.r}" fill="#000" fill-opacity="0"/>`;
+}
+function svg2(){
+  const s=S2, lit=kontakt(s), I=I2(), col='#2E6DB4';
+  const {B:BX,V,unten,trenner,ox,oy}=layout(1,false,G.wasser,80);
+  const LX=ZX[1][0], LY=mitte(GTOP,GBOT), ay=AMY[s.mess], vor=s.mess==='vor';
+  let g=`<svg viewBox="${vbAttr(V)}" xmlns="http://www.w3.org/2000/svg">${DEFS}<rect x="${V.x+3}" y="${V.y+3}" width="${V.w-6}" height="${V.h-6}" rx="${V.r}" fill="url(#dots)" stroke="#e2dccd" stroke-width="2"/>`;
+  g+=wire([[180,GBOT],[GX,GBOT],[GX,GTOP],[SX-50,GTOP]],'red');
+  // Das Amperemeter liegt in der Leitung – vor oder nach dem Lämpchen
+  if(vor){ g+=wire([[SX+50,GTOP],[LX,GTOP],[LX,ay-31]],'red')+wire([[LX,ay+31],[LX,LY-40]],'red')
+             +wire([[LX,LY+40],[LX,GBOT],[270,GBOT]],'black'); }
+  else   { g+=wire([[SX+50,GTOP],[LX,GTOP],[LX,LY-40]],'red')+wire([[LX,LY+40],[LX,ay-31]],'black')
+             +wire([[LX,ay+31],[LX,GBOT],[270,GBOT]],'black'); }
+  g+=lampSVG({x:LX,y:LY},lit,VERBR[s.v][3])+lbl(LX+94,LY+6,VERBR[s.v][0],'start');
+  g+=`<g>${dots2('data-d2')}</g>`;
+  g+=swSVG({x:SX,y:GTOP},s.swA,lit)+batSVG({x:QX,y:QY});
+  g+=knob(LX,LY-40)+knob(LX,LY+40)+knob(GX,GBOT)+knob(LX,GTOP)+knob(LX,GBOT);
+  g+=amSVG(LX,ay,fmt2(I)+' A',col,'Amperemeter');
+  g+=counterSVG(ZMESS,GTOP,'①','z2',fmt1(s.q)+' C',col);
+  g+=uhrSVG();
+  g+=`<circle cx="106" cy="${GTOP-52}" r="5.5" fill="#FFD23F" stroke="#7a5600" stroke-width="1.5"/>
+      <text x="118" y="${GTOP-47}" font-size="14" font-weight="600" fill="#44505a">= 0,1 C</text>`;
+  g+=`<rect data-sw2 x="${SX-50}" y="${GTOP-40}" width="100" height="90" fill="#000" fill-opacity="0"/>`;
+  if(G.wasser){
+    g+=trenner+`<g transform="translate(${ox},${oy})">${wtitel(BX)}
+    ${hoehenlinie(GTOP,BX)}${hoehenlinie(GBOT,BX)}${rohrSVG(LOOPD)}
+    <g>${dots2('data-w2')}</g>
+    ${radSVG(LX,LY,34,'data-wheel2',s.off/D*26)}${lbl(LX+48,LY+6,'Wasserrad','start')}
+    ${ventilSVG(SX,GTOP,s.swA,lit)}${pumpeSVG(s.off/D*18)}
+    ${amSVG(LX,ay,fmt2(I)+' L/s','#1d4d99','Durchflussmesser')}
+    ${counterSVG(ZMESS,GTOP,'①','w2l',fmt1(s.q)+' L','#1d4d99')}
+    <rect data-sw2 x="${SX-50}" y="${GTOP-40}" width="100" height="90" fill="#000" fill-opacity="0"/>
+    </g>`;
+  }
+  return g+'</svg>';
+}
+function dots2(attr){
+  let s='';
+  for(let i=0;i<NDOT;i++){ const p=ptAt(i*D+S2.off);
+    s+=`<circle ${attr}="${i}" cx="${p[0]}" cy="${p[1]}" r="5.5" ${attr==='data-d2'
+      ?'fill="#FFD23F" stroke="#7a5600"':'fill="#2f8fd6" stroke="#ffffff"'} stroke-width="1.5"/>`; }
+  return s;
+}
+
+/* ---------- Bewegung ---------- */
+let D2={q:[],w:[],z:{},am:[],uhr:null,zeiger:null,rad:null,pumpe:null};
+function bind2(){
+  const st=document.getElementById('stage');
+  D2={q:[...st.querySelectorAll('[data-d2]')],w:[...st.querySelectorAll('[data-w2]')],z:{},
+      am:[...st.querySelectorAll('[data-am]')],uhr:st.querySelector('[data-uhr]'),
+      zeiger:st.querySelector('[data-zeiger]'),rad:st.querySelector('[data-wheel2]'),
+      pumpe:st.querySelector('[data-pumpe]')};
+  st.querySelectorAll('[data-z]').forEach(e=>D2.z[e.dataset.z]=e);
+}
+function draw2(){
+  const s=S2, I=I2();
+  const setz2=els=>els.forEach((el,i)=>{const p=ptAt(i*D+s.off); el.setAttribute('cx',p[0]); el.setAttribute('cy',p[1]);});
+  setz2(D2.q); setz2(D2.w);
+  if(D2.z.z2) D2.z.z2.textContent=fmt1(s.q)+' C';
+  if(D2.z.w2l) D2.z.w2l.textContent=fmt1(s.q)+' L';
+  D2.am.forEach((el,i)=>el.textContent=fmt2(I)+(i===0?' A':' L/s'));
+  if(D2.uhr) D2.uhr.textContent=fmt1(s.t)+' s';
+  if(D2.zeiger) D2.zeiger.setAttribute('transform',drehT((s.t%10)/10*360,UHR.x,UHR.y));
+  if(D2.rad) D2.rad.setAttribute('transform',drehT(s.off/D*26,ZX[1][0],mitte(GTOP,GBOT)));
+  if(D2.pumpe) D2.pumpe.setAttribute('transform',drehT(s.off/D*18,QX,QY));
+}
+function step2(dt){
+  const s=S2; let neu=false;
+  const vorher=kontakt(s);
+  if(easeSw(s,dt)){ hebelZeichnen(s); if(kontakt(s)!==vorher) neu=true; }
+  if(kontakt(s)){ s.off=(s.off+I2()*10*D*dt)%LEN; }
+  if(s.laeuft){
+    if(!s.closed){ s.laeuft=false; s.msg='Bei offenem Schalter fliesst nichts – die Messung wurde gestoppt.'; neu=true; }
+    else if(kontakt(s)){ s.q+=I2()*dt; s.t+=dt;
+      const sc=s.skript&&s.skript[s.si];
+      if(sc&&sc.bis&&s.t>=sc.bis){ s.q=I2()*sc.bis; s.t=sc.bis; s.laeuft=false; neu=true; } }
+  }
+  if(kontakt(s)||s.laeuft) draw2();
+  if(s.skript) neu=skript2(dt)||neu;
+  if(neu) render();
+}
+function skript2(dt){
+  const s=S2, sc=s.skript[s.si];
+  if(sc.bis){ if(!s.laeuft&&s.t>=sc.bis){ weiter2(); return true; } return false; }
+  s.sT-=dt; if(s.sT<=0){ weiter2(); return true; }
+  return false;
+}
+function weiter2(){
+  const s=S2; s.si++;
+  if(s.si>=s.skript.length){ s.skript=null; s.laeuft=false; s.phase='done'; return; }
+  const sc=s.skript[s.si];
+  if(sc.set){ if(sc.set.v!==undefined) s.v=sc.set.v; if(sc.set.mess!==undefined) s.mess=sc.set.mess;
+              if(sc.set.closed!==undefined) s.closed=sc.set.closed; }
+  if(sc.bis){ s.q=0; s.t=0; s.laeuft=true; }
+  s.sT=sc.t||0;
+}
+
+/* ---------- Aufgaben ---------- */
+const AUF2={
+ rechnen:()=>{ const v=[0,1,2][Math.floor(Math.random()*3)], I=VERBR[v][2], t=[4,5][Math.floor(Math.random()*2)], q=I*t;
+   return {set:{v},q:`An der Zählstelle fliessen in ${t} Sekunden ${fmt1(q)} C vorbei. Wie gross ist die Stromstärke?`,
+     opts:[fmt2(I/2)+' A',fmt2(I)+' A',fmt2(I*2)+' A'],c:1,
+     sk:[{set:{v,closed:true},bis:t}],
+     merk:`Stromstärke ist Ladung durch Zeit: ${fmt1(q)} C ÷ ${t} s = ${fmt2(I)} A. Als Formel: I = Q ÷ t.`}; },
+ ladung:()=>{ const t=5, I=0.3, q=I*t;
+   return {set:{v:1},q:`Das Amperemeter zeigt 0,3 A. Wie viel Ladung fliesst in ${t} Sekunden an der Zählstelle vorbei?`,
+     opts:['0,3 C',fmt1(q)+' C','15 C'],c:1,
+     sk:[{set:{v:1,closed:true},bis:t}],
+     merk:`0,3 A heisst 0,3 C pro Sekunde. In ${t} Sekunden sind das ${fmt1(q)} C. Umgekehrt gilt also Q = I · t.`}; },
+ groesser:()=>({set:{v:0},q:'Im Stromkreis hängt das kleine Lämpchen. Du wechselst auf das grosse. Was macht die Stromstärke?',
+   opts:['Sie wird kleiner','Sie bleibt gleich','Sie wird grösser'],c:2,
+   sk:[{set:{v:0,closed:true},t:2.4},{set:{v:2},t:2.8}],
+   merk:'Das grosse Lämpchen lässt mehr Ladung pro Sekunde durch – die Stromstärke ist grösser. Man sieht es auch an den Punkten: Sie laufen schneller.'}),
+ gleich:()=>({set:{v:1,mess:'vor'},q:'Das Amperemeter sitzt vor dem Lämpchen. Du baust es nach dem Lämpchen ein. Was zeigt es dann?',
+   opts:['Weniger als vorher','Genau gleich viel','Mehr als vorher'],c:1,
+   sk:[{set:{v:1,mess:'vor',closed:true},t:2.6},{set:{mess:'nach'},t:3}],
+   merk:'Die Stromstärke ist im ganzen Stromkreis gleich gross – vor und nach dem Lämpchen. Im Lämpchen wird ja keine Ladung verbraucht.'})
+};
+const ORDER2=['rechnen','ladung','groesser','gleich'];
+function newTask2(){ const s=S2; s.task=AUF2[ORDER2[s.taskNo%ORDER2.length]](); s.taskNo++; task2Setup(); }
+function task2Setup(){ const s=S2; s.phase='predict'; s.pick=null; s.msg=''; s.skript=null; s.laeuft=false;
+  s.q=0; s.t=0; s.closed=false;
+  if(s.task&&s.task.set){ if(s.task.set.v!==undefined) s.v=s.task.set.v; if(s.task.set.mess!==undefined) s.mess=s.task.set.mess; } }
+
+/* ---------- Text ---------- */
+const ERK2=[
+ 'Die Zählstelle ① zählt die Ladung, die Stoppuhr die Zeit. <b>Schliesse den Schalter und starte die Messung.</b>',
+ 'Läuft. <b>Warte ein paar Sekunden und stoppe dann.</b>',
+ 'Jetzt rechne: <b>Ladung ÷ Zeit</b>. Vergleiche dein Ergebnis mit dem Amperemeter.'
+];
+const MERK2='Die Stromstärke sagt, wie viel Ladung pro Sekunde an einer Stelle vorbeifliesst: I = Q ÷ t. Ein Ampere ist ein Coulomb pro Sekunde. Das Amperemeter wird in Serie eingebaut – der ganze Strom fliesst hindurch.';
+function messfeld(){
+  const s=S2, I=Imess();
+  return `<div class="mess"><div><span>Ladung Q</span><b>${fmt1(s.q)} C</b></div>
+  <div><span>Zeit t</span><b>${fmt1(s.t)} s</b></div>
+  <div class="erg"><span>Q ÷ t</span><b>${I===null?'–':fmt2(I)+' A'}</b></div></div>`;
+}
+function erl2(k){
+  const s=S2;
+  if(s.tab==='auf') return s.phase!=='run';
+  if(!G.fuehrung||s.erkFertig) return true;
+  if(s.erk===1) return k==='sw'||k==='mess';
+  if(s.erk===2) return k==='mess';
+  return false;
+}
+function steuerung2(){
+  const s=S2, d=k=>erl2(k)?'':'disabled';
+  return `<div class="ctl"><span class="lab">Lämpchen:</span>
+    ${VERBR.map((v,i)=>`<button class="tab ${s.v===i?'on':''}" data-act="verbr" data-v="${i}" ${d('verbr')}>${v[1]}</button>`).join('')}</div>
+  <div class="ctl"><span class="lab">Amperemeter:</span>
+    <button class="tab ${s.mess==='vor'?'on':''}" data-act="ampos" data-v="vor" ${d('pos')}>vor dem Lämpchen</button>
+    <button class="tab ${s.mess==='nach'?'on':''}" data-act="ampos" data-v="nach" ${d('pos')}>nach dem Lämpchen</button></div>
+  <div class="ctl"><button class="btn ${s.laeuft?'primary':''}" data-act="mess2" ${d('mess')}>${s.laeuft?'⏸ Messung stoppen':'▶ Messung starten'}</button>
+    <button class="btn" data-act="mnull" ${d('null')}>↺ auf 0</button></div>`;
+}
+function erk2Panel(){
+  const s=S2; let p='';
+  if(G.fuehrung&&!s.erkFertig){
+    p+=`<div class="weg">${wegKopf(s.erk)}<div class="wegtext">${ERK2[Math.min(s.erk,3)-1]}</div></div>`;
+    p+=messfeld();
+    if(s.erk===3) p+=`<div class="mc">
+      <button class="opt" data-act="cmp2" data-v="0">Das Amperemeter zeigt weniger</button>
+      <button class="opt" data-act="cmp2" data-v="1">Das Amperemeter zeigt dasselbe</button>
+      <button class="opt" data-act="cmp2" data-v="2">Das Amperemeter zeigt mehr</button></div>`;
+    if(s.msg) p+=`<p class="msg bad">${s.msg}</p>`;
+    return p;
+  }
+  if(s.justDone) p+=`<p class="msg ok">Genau: Ladung ÷ Zeit ergibt dasselbe wie das Amperemeter.</p>`;
+  p+=messfeld();
+  if(s.msg) p+=`<p class="msg info">${s.msg}</p>`;
+  return p;
+}
+function auf2Panel(){
+  const s=S2, t=s.task, g=G.fuehrung&&s.geloest<2; let p='';
+  if(s.fertig) return `<p class="msg ok">🎉 Geschafft – du hast alle ${ORDER2.length} Aufgaben zur Stromstärke gelöst.</p>
+    ${merke(MERK2)}
+    <div class="row"><button class="btn primary" data-act="neuRunde2">↺ Nochmals von vorne</button>
+    <button class="btn" data-act="tab2" data-v="erk">🔍 Zurück zum Erkunden</button></div>`;
+  const nr=(s.phase==='run'||s.phase==='done')?2:1;
+  if(g) p+=`<div class="weg"><div class="wegtitel">Schritt ${nr} von 2</div><div class="wegtext">${SCHRITT0[nr-1]}</div></div>`;
+  p+=`<p class="lead"><b>${t.q}</b></p><div class="mc">`;
+  const offen=s.phase==='predict'||s.phase==='ready';
+  t.opts.forEach((o,i)=>{ let cl='opt';
+    if(s.phase==='done'){ if(i===t.c) cl+=' right'; else if(i===s.pick) cl+=' wrongsel'; }
+    else if(i===s.pick) cl+=' pick';
+    p+=`<button class="${cl}" data-act="pick2" data-v="${i}" ${offen?'':'disabled'}>${o}</button>`; });
+  p+='</div>';
+  p+=messfeld();
+  if(s.phase==='ready') return p+`<div class="row"><button class="btn primary" data-act="prove2">▶ Im Bild prüfen</button></div>`;
+  if(s.phase==='run') return p+`<p class="msg info">👀 Schau genau hin …</p>`;
+  if(s.phase!=='done') return p;
+  const ok=s.pick===t.c;
+  p+=`<p class="msg ${ok?'ok':'bad'}">${ok?'Deine Antwort stimmt!':'Deine Antwort stimmt nicht.'}</p>`;
+  p+=merke(t.merk);
+  return p+`<div class="row"><button class="btn primary" data-act="next2">Nächste Aufgabe →</button></div>`;
+}
+function panel2(){
+  const s=S2;
+  let p=`<div class="subtabs"><button class="tab ${s.tab==='erk'?'on':''}" data-act="tab2" data-v="erk">🔍 Erkunden</button>
+         <button class="tab ${s.tab==='auf'?'on':''}" data-act="tab2" data-v="auf">✏️ Aufgaben${zaehler(s,ORDER2.length)}</button></div>`;
+  p= steckbrief(2)+p;
+  p+= s.tab==='erk' ? erk2Panel()+bedienen(steuerung2(),s) : auf2Panel();
+  if(merkeZeit(s)) p+=merke(MERK2);
+  p+=nachschlagen(wasserTipp(s,'Dort misst ein Durchflussmesser, wie viel pro Sekunde vorbeikommt.'),
+    G.wasser?`<div class="dlist">💧 Im Wassermodell misst der Durchflussmesser <b>Liter pro Sekunde</b> – genau wie das Amperemeter Coulomb pro Sekunde misst.</div>`:'');
+  return p;
+}
+
+/* ============================================================
+   Stufe 3 · Spannung
+   Die Spannung gibt an, wie gross der Antrieb der Ladung ist.
+   Das Voltmeter wird parallel eingebaut – zum Lämpchen oder zur
+   Batterie –, das Amperemeter dagegen in Serie.
+   ============================================================ */
+const BATT3=[1.5,3,4.5];                  // gestapelte Zellen
+const VMY=mitte(GTOP,GBOT), VMX=380, VBX=QX, VBY=330;
+const S3={tab:'erk',closed:false,swA:0,off:0,u:0,vpos:'lampe',vergl:false,
+  erk:1,erkFertig:false,justDone:false,msg:'',
+  task:null,taskNo:0,geloest:0,fertig:false,phase:'predict',pick:null,skript:null,si:-1,sT:0};
+const U3=()=>BATT3[S3.u];
+const I3=()=>kontakt(S3)?Math.round(U3()/R0*100)/100:0;      // 15 Ω: 0,1 / 0,2 / 0,3 A
+const P3=()=>U3()*U3()/R0/(4.5*4.5/R0);                      // Helligkeit, 4,5 V = voll
+
+function batStapelSVG(n,txt){
+  let s=batSVG({x:QX,y:QY},txt), b=36, g=7, w=n*b+(n-1)*g;
+  for(let i=0;i<n;i++){ const x=QX-w/2+i*(b+g);
+    s+=`<rect x="${x}" y="${QY-30}" width="${b}" height="16" rx="4" fill="#dfe7ee" stroke="#8a99a8" stroke-width="1.5"/>
+    <rect x="${x+b-6}" y="${QY-26}" width="4" height="8" rx="1" fill="#8a99a8"/>`; }
+  return s;
+}
+function svg3(){
+  const s=S3, lit=kontakt(s), U=lit?U3():0, I=I3(), col='#2E6DB4';
+  const {B:BX,V,unten,trenner,ox,oy}=layout(1,false,G.wasser,80);
+  const LX=ZX[1][0], LY=mitte(GTOP,GBOT), amy=AMY.vor, lampe=s.vpos==='lampe';
+  let g=`<svg viewBox="${vbAttr(V)}" xmlns="http://www.w3.org/2000/svg">${DEFS}<rect x="${V.x+3}" y="${V.y+3}" width="${V.w-6}" height="${V.h-6}" rx="${V.r}" fill="url(#dots)" stroke="#e2dccd" stroke-width="2"/>`;
+  g+=wire([[180,GBOT],[GX,GBOT],[GX,GTOP],[SX-50,GTOP]],'red');
+  g+=wire([[SX+50,GTOP],[LX,GTOP],[LX,amy-31]],'red')+wire([[LX,amy+31],[LX,LY-40]],'red')
+    +wire([[LX,LY+40],[LX,GBOT],[270,GBOT]],'black');
+  // Voltmeter hängt parallel – mit zwei Leitungen neben dem Bauteil
+  const vd=(a,b)=>`<path d="${rpath(a)}" fill="none" stroke="rgba(0,0,0,.3)" stroke-width="7" stroke-linecap="round"/>
+    <path d="${rpath(a)}" fill="none" stroke="#2563c9" stroke-width="4.5" stroke-linecap="round"/>${b||''}`;
+  if(lampe) g+=vd([[LX,LY-40],[VMX,LY-40],[VMX,LY-31]])+vd([[LX,LY+40],[VMX,LY+40],[VMX,LY+31]]);
+  else      g+=vd([[180,GBOT],[180,VBY],[VBX-31,VBY]])+vd([[270,GBOT],[270,VBY],[VBX+31,VBY]]);
+  g+=`<g>${dots3('data-d3')}</g>`;
+  g+=lampSVG({x:LX,y:LY},lit,P3())+lbl(LX+94,LY+6,'Lämpchen','start');
+  g+=swSVG({x:SX,y:GTOP},s.swA,lit)+batStapelSVG(s.u+1,fmt1(U3())+' V');
+  g+=knob(LX,LY-40)+knob(LX,LY+40)+knob(GX,GBOT)+knob(LX,GTOP)+knob(LX,GBOT);
+  g+=amSVG(LX,amy,fmt2(I)+' A',col,'Amperemeter');
+  const vx=lampe?VMX:VBX, vy=lampe?VMY:VBY;
+  g+=amSVG(vx,vy,fmt1(U)+' V','#23794A','')+lbl(vx,vy-44,'Voltmeter')
+    +lbl(vx,vy+54,lampe?'parallel zum Lämpchen':'parallel zur Batterie');
+  g+=`<circle cx="106" cy="${GTOP-52}" r="5.5" fill="#FFD23F" stroke="#7a5600" stroke-width="1.5"/>
+      <text x="118" y="${GTOP-47}" font-size="14" font-weight="600" fill="#44505a">= 0,1 C</text>`;
+  g+=`<rect data-sw3 x="${SX-50}" y="${GTOP-40}" width="100" height="90" fill="#000" fill-opacity="0"/>`;
+  if(G.wasser){
+    g+=trenner+`<g transform="translate(${ox},${oy})">
+    ${hoehenlinie(GTOP,BX)}${hoehenlinie(GBOT,BX)}${rohrSVG(LOOPD)}
+    ${fallhoehe(632,GTOP,GBOT,'Fallhöhe')}
+    <g>${dots3('data-w3')}</g>
+    ${radSVG(LX,LY,34,'data-wheel3',s.off/D*26)}${lbl(LX+48,LY+6,'Wasserrad','start')}
+    ${ventilSVG(SX,GTOP,s.swA,lit)}${pumpeSVG(s.off/D*18)}
+    ${amSVG(LX,amy,fmt2(I)+' L/s','#1d4d99','Durchflussmesser')}
+    ${amSVG(vx,vy,fmt1(U)+' m','#23794A','')}${lbl(vx,vy-44,'Höhenmesser')}
+    <rect data-sw3 x="${SX-50}" y="${GTOP-40}" width="100" height="90" fill="#000" fill-opacity="0"/>
+    </g>`;
+  }
+  return g+'</svg>';
+}
+function dots3(attr){
+  let s='';
+  for(let i=0;i<NDOT;i++){ const p=ptAt(i*D+S3.off);
+    s+=`<circle ${attr}="${i}" cx="${p[0]}" cy="${p[1]}" r="5.5" ${attr==='data-d3'
+      ?'fill="#FFD23F" stroke="#7a5600"':'fill="#2f8fd6" stroke="#ffffff"'} stroke-width="1.5"/>`; }
+  return s;
+}
+let D3={q:[],w:[],am:[],rad:null,pumpe:null};
+function bind3(){
+  const st=document.getElementById('stage');
+  D3={q:[...st.querySelectorAll('[data-d3]')],w:[...st.querySelectorAll('[data-w3]')],
+      am:[...st.querySelectorAll('[data-am]')],rad:st.querySelector('[data-wheel3]'),
+      pumpe:st.querySelector('[data-pumpe]')};
+}
+function draw3(){
+  const s=S3;
+  const setz3=els=>els.forEach((el,i)=>{const p=ptAt(i*D+s.off); el.setAttribute('cx',p[0]); el.setAttribute('cy',p[1]);});
+  setz3(D3.q); setz3(D3.w);
+  if(D3.rad) D3.rad.setAttribute('transform',drehT(s.off/D*26,ZX[1][0],mitte(GTOP,GBOT)));
+  if(D3.pumpe) D3.pumpe.setAttribute('transform',drehT(s.off/D*18,QX,QY));
+}
+function step3(dt){
+  const s=S3; let neu=false;
+  const vorher=kontakt(s);
+  if(easeSw(s,dt)){ hebelZeichnen(s); if(kontakt(s)!==vorher) neu=true; }
+  if(kontakt(s)){ s.off=(s.off+I3()*10*D*dt)%LEN; draw3(); }
+  if(s.skript){ s.sT-=dt; if(s.sT<=0){ weiter3(); neu=true; } }
+  if(neu) render();
+}
+function weiter3(){
+  const s=S3; s.si++;
+  if(s.si>=s.skript.length){ s.skript=null; s.phase='done'; return; }
+  const sc=s.skript[s.si];
+  if(sc.set){ if(sc.set.u!==undefined) s.u=sc.set.u; if(sc.set.vpos!==undefined) s.vpos=sc.set.vpos;
+              if(sc.set.closed!==undefined) s.closed=sc.set.closed; }
+  s.sT=sc.t||0;
+}
+const AUF3={
+ doppelt:()=>({set:{u:0},q:'Im Stromkreis steckt eine Batterie mit 1,5 V. Du stapelst auf 3,0 V. Was macht die Stromstärke?',
+   opts:['Sie bleibt gleich','Sie verdoppelt sich','Sie halbiert sich'],c:1,
+   sk:[{set:{u:0,vpos:'lampe',closed:true},t:2.6},{set:{u:1},t:3}],
+   merk:'Doppelte Spannung heisst doppelter Antrieb: aus 0,10 A werden 0,20 A. Mehr Spannung treibt die Ladung stärker an.'}),
+ gleich:()=>({set:{u:2,vpos:'lampe'},q:'Das Voltmeter hängt parallel zum Lämpchen und zeigt 4,5 V. Du hängst es parallel zur Batterie. Was zeigt es dann?',
+   opts:['Weniger als vorher','Genau gleich viel','Mehr als vorher'],c:1,
+   sk:[{set:{u:2,vpos:'lampe',closed:true},t:2.6},{set:{vpos:'batterie'},t:3}],
+   merk:'In diesem Stromkreis liegt die ganze Spannung der Batterie am Lämpchen. Darum zeigt das Voltmeter an beiden Orten dasselbe.'}),
+ hell:()=>({set:{u:0},q:'Bei welcher Spannung leuchtet das Lämpchen am hellsten?',
+   opts:['1,5 V','3,0 V','4,5 V'],c:2,
+   sk:[{set:{u:0,vpos:'lampe',closed:true},t:2},{set:{u:1},t:2},{set:{u:2},t:2.6}],
+   merk:'Je grösser die Spannung, desto grösser die Stromstärke – und desto heller das Lämpchen.'}),
+ einbau:()=>({set:{u:2,vpos:'lampe'},q:'Wie wird ein Voltmeter eingebaut?',
+   opts:['In Serie, in die Leitung hinein – wie das Amperemeter','Parallel, mit zwei Leitungen neben das Bauteil','Es spielt keine Rolle'],c:1,
+   sk:[{set:{u:2,vpos:'lampe',closed:true},t:3},{set:{vpos:'batterie'},t:3}],
+   merk:'Das Voltmeter wird parallel eingebaut, neben das Lämpchen oder neben die Batterie. Es misst den Unterschied zwischen zwei Punkten. Das Amperemeter dagegen liegt in Serie mitten in der Leitung, weil der ganze Strom hindurchfliessen muss.'})
+};
+const ORDER3=['doppelt','gleich','hell','einbau'];
+function newTask3(){ const s=S3; s.task=AUF3[ORDER3[s.taskNo%ORDER3.length]](); s.taskNo++; task3Setup(); }
+function task3Setup(){ const s=S3; s.phase='predict'; s.pick=null; s.msg=''; s.skript=null; s.closed=false;
+  if(s.task&&s.task.set){ if(s.task.set.u!==undefined) s.u=s.task.set.u; if(s.task.set.vpos!==undefined) s.vpos=s.task.set.vpos; } }
+function erk3Text(){
+  const s=S3;
+  if(s.erk===1) return 'Im Stromkreis steckt eine einzige Batterie mit 1,5 V. <b>Schliesse den Schalter</b> und merke dir Helligkeit und Amperemeter.';
+  if(s.erk===2) return 'Jetzt <b>stapeln</b>: Wähle bei «Batterie» <b>4,5 V</b>. Schau, was Amperemeter, Helligkeit und Punkte machen.';
+  return s.vergl
+    ? 'Du hast das Voltmeter an beiden Orten gesehen. <b>Hänge es ruhig hin und her</b> – und beantworte dann: Was zeigt es an der Batterie?'
+    : 'Das Voltmeter hängt <b>parallel zum Lämpchen</b> und zeigt 4,5 V. <b>Hänge es an die Batterie.</b>';
+}
+/* Nur zum Einordnen der Grössenordnung – bewusst ohne Schalter und ohne Stromkreis */
+const SKALA3=`<div class="skala"><b>So viel Spannung steckt drin</b>
+  <div>Batterie im Taschenlampen-Format<span>1,5 V</span></div>
+  <div>Ladegerät am USB-Kabel<span>5 V</span></div>
+  <div>Autobatterie<span>12 V</span></div>
+  <div>Steckdose zu Hause<span>230 V</span></div>
+  <div>Fahrleitung der SBB<span>15 000 V</span></div>
+  <p>Im Werkzeug bleiben wir bei den Batterien. Ab der Steckdose wird es lebensgefährlich – dort probiert man nichts aus.</p></div>`;
+/* Wo das Modell aufhört: Der Umdreh-Test. Ehrlicher als jede Beteuerung,
+   dass die Analogie "passt". */
+const GRENZE3=`<div class="skala"><b>Wo das Wassermodell aufhört</b>
+  <div>Taschenlampe umdrehen<span>leuchtet weiter</span></div>
+  <div>Wasserkreislauf umdrehen<span>bleibt stehen</span></div>
+  <p>Beim Wasser ist die Höhe wirklich oben. Im Stromkreis gibt es kein Oben – dort zählt nur der Unterschied zwischen den zwei Anschlüssen. Und ein Unterschied bleibt derselbe, wie herum du das Bild auch drehst.</p></div>`;
+const MERK3B='Die Batterie macht einen <b>Unterschied</b> zwischen ihren beiden Anschlüssen – so wie die Pumpe einen Höhenunterschied macht. Dieser Unterschied ist die Spannung. Darum hat das Voltmeter zwei Kabel: Es misst immer <b>zwischen zwei Stellen</b>, nie an einer.';
+const MERK3='Die Spannung gibt an, wie gross der Antrieb der Ladung im Stromkreis ist. Sie wird in Volt gemessen. Mehr Spannung heisst mehr Stromstärke. Das Voltmeter wird parallel eingebaut, das Amperemeter in Serie.';
+function erl3(k){
+  const s=S3;
+  if(s.tab==='auf') return s.phase!=='run';
+  if(!G.fuehrung||s.erkFertig) return true;
+  if(s.erk===1) return k==='sw'||k==='u0';
+  if(s.erk===2) return k==='u2'||k==='sw';
+  return k==='vbat'||k==='vlam';
+}
+function steuerung3(){
+  const s=S3, d=k=>erl3(k)?'':'disabled';
+  return `<div class="ctl"><span class="lab">Batterie:</span>
+    ${BATT3.map((u,i)=>`<button class="tab ${s.u===i?'on':''}" data-act="ubat" data-v="${i}" ${d('u'+i)}>${fmt1(u)} V</button>`).join('')}</div>
+  <div class="ctl"><span class="lab">Voltmeter:</span>
+    <button class="tab ${s.vpos==='lampe'?'on':''}" data-act="vpos" data-v="lampe" ${d('vlam')}>am Lämpchen</button>
+    <button class="tab ${s.vpos==='batterie'?'on':''}" data-act="vpos" data-v="batterie" ${d('vbat')}>an der Batterie</button></div>`;
+}
+function erk3Pruefen(){
+  const s=S3; if(!G.fuehrung||s.erkFertig) return;
+  if(s.erk===1&&s.closed&&s.u===0) s.erk=2;
+  else if(s.erk===2&&s.closed&&s.u===2) s.erk=3;
+  if(s.erk===3&&s.vpos==='batterie') s.vergl=true;   // ab jetzt darf frei verglichen werden
+}
+function erk3Panel(){
+  const s=S3; let p='';
+  if(G.fuehrung&&!s.erkFertig){
+    p+=`<div class="weg">${wegKopf(s.erk)}<div class="wegtext">${erk3Text()}</div></div>`;
+    if(s.erk===3&&s.vergl&&kontakt(s)) p+=`<div class="mc">
+      <button class="opt" data-act="cmp3" data-v="0">Weniger als am Lämpchen</button>
+      <button class="opt" data-act="cmp3" data-v="1">Genau gleich viel</button>
+      <button class="opt" data-act="cmp3" data-v="2">Mehr als am Lämpchen</button></div>`;
+    if(s.msg) p+=`<p class="msg bad">${s.msg}</p>`;
+    return p;
+  }
+  if(s.justDone) p+=`<p class="msg ok">Genau: Die ganze Spannung der Batterie liegt am Lämpchen.</p>`;
+  p+=`<p class="lead">Staple Batterien und beobachte Voltmeter, Amperemeter und Helligkeit.</p>`;
+  if(s.msg) p+=`<p class="msg info">${s.msg}</p>`;
+  return p;
+}
+function auf3Panel(){
+  const s=S3, t=s.task, g=G.fuehrung&&s.geloest<2; let p='';
+  if(s.fertig) return `<p class="msg ok">🎉 Geschafft – du hast alle ${ORDER3.length} Aufgaben zur Spannung gelöst.</p>
+    ${merke(MERK3)}
+    <div class="row"><button class="btn primary" data-act="neuRunde3">↺ Nochmals von vorne</button>
+    <button class="btn" data-act="tab3" data-v="erk">🔍 Zurück zum Erkunden</button></div>`;
+  const nr=(s.phase==='run'||s.phase==='done')?2:1;
+  if(g) p+=`<div class="weg"><div class="wegtitel">Schritt ${nr} von 2</div><div class="wegtext">${SCHRITT0[nr-1]}</div></div>`;
+  p+=`<p class="lead"><b>${t.q}</b></p><div class="mc">`;
+  const offen=s.phase==='predict'||s.phase==='ready';
+  t.opts.forEach((o,i)=>{ let cl='opt';
+    if(s.phase==='done'){ if(i===t.c) cl+=' right'; else if(i===s.pick) cl+=' wrongsel'; }
+    else if(i===s.pick) cl+=' pick';
+    p+=`<button class="${cl}" data-act="pick3" data-v="${i}" ${offen?'':'disabled'}>${o}</button>`; });
+  p+='</div>';
+  if(s.phase==='ready') return p+`<div class="row"><button class="btn primary" data-act="prove3">▶ Im Bild prüfen</button></div>`;
+  if(s.phase==='run') return p+`<p class="msg info">👀 Schau genau hin …</p>`;
+  if(s.phase!=='done') return p;
+  const ok=s.pick===t.c;
+  p+=`<p class="msg ${ok?'ok':'bad'}">${ok?'Deine Antwort stimmt!':'Deine Antwort stimmt nicht.'}</p>`;
+  p+=merke(t.merk);
+  return p+`<div class="row"><button class="btn primary" data-act="next3">Nächste Aufgabe →</button></div>`;
+}
+function panel3(){
+  const s=S3;
+  let p=`<div class="subtabs"><button class="tab ${s.tab==='erk'?'on':''}" data-act="tab3" data-v="erk">🔍 Erkunden</button>
+         <button class="tab ${s.tab==='auf'?'on':''}" data-act="tab3" data-v="auf">✏️ Aufgaben${zaehler(s,ORDER3.length)}</button></div>`;
+  p= steckbrief(3)+p;
+  p+= s.tab==='erk' ? erk3Panel()+bedienen(steuerung3(),s) : auf3Panel();
+  if(merkeZeit(s)) p+=merke(MERK3B)+merke(MERK3);
+  // Reihenfolge: erst erklaeren, was das Modell zeigt, dann, wo es aufhoert
+  p+=nachschlagen(wasserTipp(s,'Dort siehst du den Antrieb als Fallhöhe.'),
+    G.wasser?`<div class="dlist">💧 Im Wassermodell steht die <b>Fallhöhe</b> für den Antrieb: Je höher die Pumpe das Wasser hebt, desto mehr fliesst. Der Höhenmesser hängt wie das Voltmeter <b>neben</b> der Strecke, der Durchflussmesser wie das Amperemeter <b>in</b> der Leitung.</div>`:'',
+    GRENZE3,
+    SKALA3);
+  return p;
+}
+
+/* ============================================================
+   Stufe 4 · Widerstand
+   Ein Drahtstück in Serie vor dem Lämpchen: dick, mittel, dünn.
+   Die Spannung bleibt fest bei 4,5 V – nur der Widerstand ändert.
+   Zuerst qualitativ (je grösser R, desto kleiner I), dann R = U ÷ I.
+   Bewusst OHNE Wärmeanzeige: Bei fester Spannung wird ein grösserer
+   Widerstand weniger warm – eine Anzeige würde die verbreitete
+   Fehlvorstellung nur festigen.
+   ============================================================ */
+const DRAHT=[['dick',0,22,16],['mittel',7.5,11,9],['dünn',30,3.5,4]];
+//            Name  Zusatz-R  Drahtdicke  lichte Weite im Rohr
+const DX=385, DL=96;                       // Ort und Länge des Drahtstücks auf der oberen Leitung
+const R4=()=>R0+DRAHT[S4.d][1];            // 15 / 22,5 / 45 Ω
+const I4v=d=>Math.round(U0/(R0+DRAHT[d][1])*1000)/1000;   // 0,3 / 0,2 / 0,1 A
+const I4=()=>kontakt(S4)?I4v(S4.d):0;
+const P4h=()=>{ const i=U0/R4(); return i*i*R0/P1; };      // Helligkeit: 1 / 0,44 / 0,11
+const fmtR=v=>v%1===0?String(v):fmt1(v);
+const S4={tab:'erk',closed:false,swA:0,off:0,d:0,probiert:[false,false,false],
+  erk:1,erkFertig:false,justDone:false,msg:'',
+  task:null,taskNo:0,geloest:0,fertig:false,phase:'predict',pick:null,skript:null,si:-1,sT:0};
+
+/* Das Drahtstück: gleiche Länge, nur die Ader ist verschieden dick. */
+function drahtSVG(x,y,i){
+  const [nam,,dick]=DRAHT[i];
+  return `<rect x="${x-DL/2}" y="${y-23}" width="${DL}" height="46" rx="9" fill="#f6f1e4" stroke="#b6a684" stroke-width="2"/>
+  <line x1="${x-DL/2+8}" y1="${y}" x2="${x+DL/2-8}" y2="${y}" stroke="#b5762f" stroke-width="${dick}" stroke-linecap="round"/>
+  ${knob(x-DL/2,y)}${knob(x+DL/2,y)}${lbl(x,y-36,nam+'er Draht')}`;
+}
+/* Im Wassermodell dasselbe als Engstelle. Die Wände liegen ÜBER den Tropfen,
+   so sieht man sie sich durchzwängen. */
+function engeSVG(x,y,i){
+  const w=DRAHT[i][3], a=x-DL/2, b=x+DL/2, o=20;
+  const wand=(s)=>`<path d="${'M'+a+' '+(y+s*12)+' L'+(x-o)+' '+(y+s*w/2)+' L'+(x+o)+' '+(y+s*w/2)+' L'+b+' '+(y+s*12)+' L'+b+' '+(y+s*26)+' L'+a+' '+(y+s*26)+' z'}" fill="#8fa9bd" stroke="#6f8ba1" stroke-width="1.5" stroke-linejoin="round"/>`;
+  return wand(-1)+wand(1)+lbl(x,y-36,'Engstelle: '+DRAHT[i][0]);
+}
+function svg4(){
+  const s=S4, lit=kontakt(s), I=I4(), col='#2E6DB4';
+  const {B:BX,V,unten,trenner,ox,oy}=layout(1,false,G.wasser,80);
+  const LX=ZX[1][0], LY=mitte(GTOP,GBOT), amy=AMY.nach;
+  let g=`<svg viewBox="${vbAttr(V)}" xmlns="http://www.w3.org/2000/svg">${DEFS}<rect x="${V.x+3}" y="${V.y+3}" width="${V.w-6}" height="${V.h-6}" rx="${V.r}" fill="url(#dots)" stroke="#e2dccd" stroke-width="2"/>`;
+  g+=wire([[180,GBOT],[GX,GBOT],[GX,GTOP],[SX-50,GTOP]],'red');
+  g+=wire([[SX+50,GTOP],[DX-DL/2,GTOP]],'red')+wire([[DX+DL/2,GTOP],[LX,GTOP],[LX,LY-40]],'red')
+    +wire([[LX,LY+40],[LX,amy-31]],'black')+wire([[LX,amy+31],[LX,GBOT],[270,GBOT]],'black');
+  g+=`<g>${dots4('data-d4')}</g>`;
+  g+=lampSVG({x:LX,y:LY},lit,P4h())+lbl(LX+94,LY+6,'Lämpchen','start');
+  g+=drahtSVG(DX,GTOP,s.d)+`<rect data-draht x="${DX-DL/2-6}" y="${GTOP-30}" width="${DL+12}" height="60" fill="#000" fill-opacity="0"/>`;
+  g+=swSVG({x:SX,y:GTOP},s.swA,lit)+batSVG({x:QX,y:QY},fmt1(U0)+' V');
+  g+=knob(LX,LY-40)+knob(LX,LY+40)+knob(GX,GBOT)+knob(LX,GTOP)+knob(LX,GBOT);
+  g+=amSVG(LX,amy,fmt2(I)+' A',col,'Amperemeter');
+  g+=`<rect data-sw4 x="${SX-50}" y="${GTOP-40}" width="100" height="90" fill="#000" fill-opacity="0"/>`;
+  if(G.wasser){
+    g+=trenner+`<g transform="translate(${ox},${oy})">
+    ${hoehenlinie(GTOP,BX)}${hoehenlinie(GBOT,BX)}${rohrSVG(LOOPD)}
+    <g>${dots4('data-w4')}</g>
+    ${engeSVG(DX,GTOP,s.d)}
+    ${radSVG(LX,LY,34,'data-wheel4',s.off/D*26)}${lbl(LX+48,LY+6,'Wasserrad','start')}
+    ${ventilSVG(SX,GTOP,s.swA,lit)}${pumpeSVG(s.off/D*18)}
+    ${amSVG(LX,amy,fmt2(I)+' L/s','#1d4d99','Durchflussmesser')}
+    <rect data-sw4 x="${SX-50}" y="${GTOP-40}" width="100" height="90" fill="#000" fill-opacity="0"/>
+    </g>`;
+  }
+  return g+'</svg>';
+}
+function dots4(attr){
+  let s='';
+  for(let i=0;i<NDOT;i++){ const p=ptAt(i*D+S4.off);
+    s+=`<circle ${attr}="${i}" cx="${p[0]}" cy="${p[1]}" r="5.5" ${attr==='data-d4'
+      ?'fill="#FFD23F" stroke="#7a5600"':'fill="#2f8fd6" stroke="#ffffff"'} stroke-width="1.5"/>`; }
+  return s;
+}
+let D4={q:[],w:[],rad:null,pumpe:null};
+function bind4(){
+  const st=document.getElementById('stage');
+  D4={q:[...st.querySelectorAll('[data-d4]')],w:[...st.querySelectorAll('[data-w4]')],
+      rad:st.querySelector('[data-wheel4]'),pumpe:st.querySelector('[data-pumpe]')};
+}
+function draw4(){
+  const s=S4;
+  const setz=els=>els.forEach((el,i)=>{const p=ptAt(i*D+s.off); el.setAttribute('cx',p[0]); el.setAttribute('cy',p[1]);});
+  setz(D4.q); setz(D4.w);
+  if(D4.rad) D4.rad.setAttribute('transform',drehT(s.off/D*26,ZX[1][0],mitte(GTOP,GBOT)));
+  if(D4.pumpe) D4.pumpe.setAttribute('transform',drehT(s.off/D*18,QX,QY));
+}
+function step4(dt){
+  const s=S4; let neu=false;
+  const vorher=kontakt(s);
+  if(easeSw(s,dt)){ hebelZeichnen(s); if(kontakt(s)!==vorher) neu=true; }
+  if(kontakt(s)){ s.off=(s.off+I4()*10*D*dt)%LEN; draw4(); }
+  if(s.skript){ s.sT-=dt; if(s.sT<=0){ weiter4(); neu=true; } }
+  if(neu) render();
+}
+function weiter4(){
+  const s=S4; s.si++;
+  if(s.si>=s.skript.length){ s.skript=null; s.phase='done'; return; }
+  const sc=s.skript[s.si];
+  if(sc.set){ if(sc.set.closed!==undefined) s.closed=sc.set.closed;
+              if(sc.set.d!==undefined) s.d=sc.set.d;
+              merkProbiert(); }
+  s.sT=sc.t||0;
+}
+function merkProbiert(){ if(kontakt(S4)||S4.closed) S4.probiert[S4.d]=true; }
+
+/* Die Tabelle füllt sich beim Ausprobieren – so steht der Zusammenhang
+   nebeneinander und nicht nur nacheinander. */
+function tabelle4(){
+  const s=S4;
+  let r=DRAHT.map((d,i)=>{
+    const da=s.probiert[i], I=I4v(i), R=R0+d[1], jetzt=i===s.d?' class="jetzt"':'';
+    return `<tr${jetzt}><td>${d[0]}</td><td>${da?fmt2(I)+' A':'–'}</td><td>${da?fmtR(R)+' Ω':'–'}</td></tr>`;
+  }).join('');
+  return `<table class="tbl t4"><tr><th>Draht</th><th>Stromstärke I</th><th>R = 4,5 V ÷ I</th></tr>${r}</table>`;
+}
+const ERK4=[
+ 'Vor dem Lämpchen steckt ein <b>dickes</b> Drahtstück. <b>Schliesse den Schalter</b> und merke dir Helligkeit und Amperemeter.',
+ 'Jetzt ein <b>dünnes</b> Drahtstück: Stelle «dünn» ein. Schau, was mit der Stromstärke und der Helligkeit passiert.',
+ 'Probiere auch den <b>mittleren</b> Draht – und beantworte dann die Frage.'
+];
+const MERK4='Der Widerstand sagt, wie stark ein Bauteil den Strom hemmt. Je grösser der Widerstand R, desto kleiner die Stromstärke I. Gerechnet wird er aus Spannung und Stromstärke: <b>R = U ÷ I</b>. Ein Ohm ist ein Volt pro Ampere.';
+const MERK4B='Auch die drei Lämpchen aus Stufe 2 waren drei Widerstände: das kleine 45 Ω, das mittlere 15 Ω, das grosse 7,5 Ω. Je kleiner das Lämpchen, desto <b>grösser</b> sein Widerstand – und desto weniger Strom fliesst.';
+function erl4(k){
+  const s=S4;
+  if(s.tab==='auf') return s.phase!=='run';
+  if(!G.fuehrung||s.erkFertig) return true;
+  if(s.erk===1) return k==='sw'||k==='d0';
+  if(s.erk===2) return k==='sw'||k==='d2';
+  return k==='d1'||(s.probiert[1]&&(k==='d0'||k==='d2'));
+}
+function erk4Pruefen(){
+  const s=S4; merkProbiert();
+  if(!G.fuehrung||s.erkFertig) return;
+  if(s.erk===1&&s.closed&&s.d===0) s.erk=2;
+  else if(s.erk===2&&s.closed&&s.d===2) s.erk=3;
+}
+function steuerung4(){
+  const s=S4, dd=k=>erl4(k)?'':'disabled';
+  return `<div class="ctl"><span class="lab">Drahtstück:</span>
+    ${DRAHT.map((d,i)=>`<button class="tab ${s.d===i?'on':''}" data-act="draht" data-v="${i}" ${dd('d'+i)}>${d[0]}</button>`).join('')}</div>`;
+}
+function erk4Panel(){
+  const s=S4; let p='';
+  if(G.fuehrung&&!s.erkFertig){
+    p+=`<div class="weg">${wegKopf(s.erk)}<div class="wegtext">${ERK4[Math.min(s.erk,3)-1]}</div></div>`;
+    p+=tabelle4();
+    if(s.erk===3&&s.probiert[1]) p+=`<div class="mc">
+      <button class="opt" data-act="cmp4" data-v="0">Je dünner der Draht, desto mehr Strom fliesst</button>
+      <button class="opt" data-act="cmp4" data-v="1">Je dünner der Draht, desto weniger Strom fliesst</button>
+      <button class="opt" data-act="cmp4" data-v="2">Der Draht ändert nichts an der Stromstärke</button></div>`;
+    if(s.msg) p+=`<p class="msg bad">${s.msg}</p>`;
+    return p;
+  }
+  if(s.justDone) p+=`<p class="msg ok">Genau: Je dünner der Draht, desto grösser sein Widerstand – und desto weniger Strom fliesst.</p>`;
+  p+=`<p class="lead">Tausche die Drahtstücke und beobachte Amperemeter und Helligkeit.</p>`+tabelle4();
+  if(s.msg) p+=`<p class="msg info">${s.msg}</p>`;
+  return p;
+}
+const AUF4={
+ duenn:()=>({set:{d:0},q:'Der dicke Draht steckt drin. Du tauschst ihn gegen den dünnen. Was macht die Stromstärke?',
+   opts:['Sie bleibt gleich','Sie wird kleiner','Sie wird grösser'],c:1,
+   sk:[{set:{d:0,closed:true},t:2.6},{set:{d:2},t:3}],
+   merk:'Der dünne Draht hemmt den Strom stärker: aus 0,30 A werden 0,10 A. Mehr Widerstand heisst weniger Stromstärke.'}),
+ rechnen:()=>({set:{d:1},q:'Die Batterie hat 4,5 V, das Amperemeter zeigt 0,20 A. Wie gross ist der Widerstand?',
+   opts:['0,9 Ω','22,5 Ω','9 Ω'],c:1,
+   sk:[{set:{d:1,closed:true},t:3.2}],
+   merk:'R = U ÷ I = 4,5 V ÷ 0,20 A = 22,5 Ω. Widerstand ist Spannung geteilt durch Stromstärke.'}),
+ hell:()=>({set:{d:2},q:'Bei welchem Drahtstück leuchtet das Lämpchen am hellsten?',
+   opts:['beim dicken','beim mittleren','beim dünnen'],c:0,
+   sk:[{set:{d:2,closed:true},t:2},{set:{d:1},t:2},{set:{d:0},t:2.6}],
+   merk:'Der dicke Draht hat den kleinsten Widerstand. Dann fliesst am meisten Strom, und das Lämpchen leuchtet am hellsten.'}),
+ gross:()=>({set:{d:0},q:'Welches Drahtstück hat den grössten Widerstand?',
+   opts:['das dicke','das mittlere','das dünne'],c:2,
+   sk:[{set:{d:0,closed:true},t:2},{set:{d:1},t:2},{set:{d:2},t:2.6}],
+   merk:'Je dünner der Draht, desto grösser sein Widerstand: 15 Ω, 22,5 Ω, 45 Ω. Beim dünnen fliesst am wenigsten Strom.'})
+};
+const ORDER4=['duenn','rechnen','hell','gross'];
+function newTask4(){ const s=S4; s.task=AUF4[ORDER4[s.taskNo%ORDER4.length]](); s.taskNo++; task4Setup(); }
+function task4Setup(){ const s=S4; s.phase='predict'; s.pick=null; s.msg=''; s.skript=null; s.closed=false;
+  if(s.task&&s.task.set&&s.task.set.d!==undefined) s.d=s.task.set.d; }
+function auf4Panel(){
+  const s=S4, t=s.task, g=G.fuehrung&&s.geloest<2; let p='';
+  if(s.fertig) return `<p class="msg ok">🎉 Geschafft – du hast alle ${ORDER4.length} Aufgaben zum Widerstand gelöst.</p>
+    ${merke(MERK4)}
+    <div class="row"><button class="btn primary" data-act="neuRunde4">↺ Nochmals von vorne</button>
+    <button class="btn" data-act="tab4" data-v="erk">🔍 Zurück zum Erkunden</button></div>`;
+  const nr=(s.phase==='run'||s.phase==='done')?2:1;
+  if(g) p+=`<div class="weg"><div class="wegtitel">Schritt ${nr} von 2</div><div class="wegtext">${SCHRITT0[nr-1]}</div></div>`;
+  p+=`<p class="lead"><b>${t.q}</b></p><div class="mc">`;
+  const offen=s.phase==='predict'||s.phase==='ready';
+  t.opts.forEach((o,i)=>{ let cl='opt';
+    if(s.phase==='done'){ if(i===t.c) cl+=' right'; else if(i===s.pick) cl+=' wrongsel'; }
+    else if(i===s.pick) cl+=' pick';
+    p+=`<button class="${cl}" data-act="pick4" data-v="${i}" ${offen?'':'disabled'}>${o}</button>`; });
+  p+='</div>'+tabelle4();
+  if(s.phase==='ready') return p+`<div class="row"><button class="btn primary" data-act="prove4">▶ Im Bild prüfen</button></div>`;
+  if(s.phase==='run') return p+`<p class="msg info">👀 Schau genau hin …</p>`;
+  if(s.phase!=='done') return p;
+  const ok=s.pick===t.c;
+  p+=`<p class="msg ${ok?'ok':'bad'}">${ok?'Deine Antwort stimmt!':'Deine Antwort stimmt nicht.'}</p>`;
+  p+=merke(t.merk);
+  return p+`<div class="row"><button class="btn primary" data-act="next4">Nächste Aufgabe →</button></div>`;
+}
+function panel4(){
+  const s=S4;
+  let p=`<div class="subtabs"><button class="tab ${s.tab==='erk'?'on':''}" data-act="tab4" data-v="erk">🔍 Erkunden</button>
+         <button class="tab ${s.tab==='auf'?'on':''}" data-act="tab4" data-v="auf">✏️ Aufgaben${zaehler(s,ORDER4.length)}</button></div>`;
+  p= steckbrief(4)+p;
+  p+= s.tab==='erk' ? erk4Panel()+bedienen(steuerung4(),s) : auf4Panel();
+  if(merkeZeit(s)) p+=merke(MERK4)+merke(MERK4B);
+  p+=nachschlagen(wasserTipp(s,'Dort ist der Widerstand eine Engstelle im Rohr.'),
+    G.wasser?`<div class="dlist">💧 Im Wassermodell ist der Widerstand eine <b>Engstelle</b>: Je enger die Stelle, desto weniger fliesst durch – bei gleich bleibender Fallhöhe. Der dicke Draht ist das weite Rohr, der dünne die enge Stelle.</div>`:'');
+  return p;
+}
+function bild4(e){
+  const s=S4;
+  if(s.tab==='auf'&&s.phase==='run') return;
+  if(e.target.closest('[data-draht]')){
+    const n=[1,2].map(k=>(s.d+k)%3).find(i=>erl4('d'+i));
+    if(n===undefined){ s.msg=WARTE; render(); return; }
+    s.d=n; s.msg=''; erk4Pruefen(); render(); return; }
+  if(e.target.closest('[data-sw4]')){ if(!erl4('sw')){ s.msg=WARTE; render(); return; }
+    s.closed=!s.closed; s.msg=''; erk4Pruefen(); render(); }
+}
+
+/* ============================================================
+   Stufe 5 · Leistung
+   P = U · I. Beide Faktoren ändern sich mit dem Batteriestapel,
+   darum sieht man, dass die Leistung ein Produkt ist.
+   Der Vorratsbalken aus Stufe 0 kommt zurück – jetzt mit einer Zahl
+   daneben: Die Leistung sagt, wie schnell der Vorrat leer wird.
+   ============================================================ */
+const RAFF5=0.6, RAFF5_A=1.5;        // Stunden pro Sekunde: von Hand, in den Aufgaben
+const raff5=()=>(S5.skript?RAFF5_A:RAFF5);
+const S5={tab:'erk',closed:false,swA:0,off:0,u:0,vorrat:1,std:0,raffer:false,leer:false,gelaufen:[false,false,false],
+  erk:1,erkFertig:false,justDone:false,msg:'',
+  task:null,taskNo:0,geloest:0,fertig:false,phase:'predict',pick:null,skript:null,si:-1,sT:0};
+const U5=()=>BATT3[S5.u];
+const I5=()=>kontakt(S5)?Math.round(U5()/R0*100)/100:0;
+const P5=()=>Math.round(U5()*I5()*1000)/1000;              // 0,15 / 0,60 / 1,35 W
+const P5voll=()=>Math.round(U5()*U5()/R0*1000)/1000;       // auch bei offenem Schalter: was es zöge
+const DAUER5=()=>Math.round(VORRAT_WH/P5voll()*10)/10;     // 27,0 / 6,8 / 3,0 Stunden
+const std5=()=>S5.leer?`Leer nach ${fmt1(S5.std)} Stunden`
+  :(S5.std>0?`Gelaufen: ${fmt1(S5.std)} Stunden`:'Noch nicht gelaufen');
+
+function svg5(){
+  const s=S5, lit=kontakt(s), I=I5(), col='#2E6DB4';
+  const {B:BX,V,unten,trenner,ox,oy}=layout(1,false,G.wasser,80);
+  const LX=ZX[1][0], LY=mitte(GTOP,GBOT), amy=AMY.nach, VMX=380, VMY=mitte(GTOP,GBOT);
+  let g=`<svg viewBox="${vbAttr(V)}" xmlns="http://www.w3.org/2000/svg">${DEFS}<rect x="${V.x+3}" y="${V.y+3}" width="${V.w-6}" height="${V.h-6}" rx="${V.r}" fill="url(#dots)" stroke="#e2dccd" stroke-width="2"/>`;
+  g+=wire([[180,GBOT],[GX,GBOT],[GX,GTOP],[SX-50,GTOP]],'red');
+  g+=wire([[SX+50,GTOP],[LX,GTOP],[LX,LY-40]],'red')
+    +wire([[LX,LY+40],[LX,amy-31]],'black')+wire([[LX,amy+31],[LX,GBOT],[270,GBOT]],'black');
+  g+=`<g>${dots5('data-d5')}</g>`;
+  g+=lampSVG({x:LX,y:LY},lit,U5()*U5()/R0/P1)+lbl(LX+94,LY+6,'Lämpchen','start');
+  g+=swSVG({x:SX,y:GTOP},s.swA,lit)+batStapelSVG(s.u+1,fmt1(U5())+' V');
+  g+=knob(LX,LY-40)+knob(LX,LY+40)+knob(GX,GBOT)+knob(LX,GTOP)+knob(LX,GBOT);
+  g+=amSVG(LX,amy,fmt2(I)+' A',col,'Amperemeter');
+  g+=amSVG(VMX,VMY,fmt1(lit?U5():0)+' V','#23794A','')+lbl(VMX,VMY-44,'Voltmeter');
+  g+=vlead([[LX,LY-40],[VMX,LY-40],[VMX,VMY-31]])+vlead([[LX,LY+40],[VMX,LY+40],[VMX,VMY+31]]);
+  g+=vorratSVG(s.vorrat);
+  g+=`<rect data-sw5 x="${SX-50}" y="${GTOP-40}" width="100" height="90" fill="#000" fill-opacity="0"/>`;
+  if(G.wasser){
+    g+=trenner+`<g transform="translate(${ox},${oy})">
+    ${hoehenlinie(GTOP,BX)}${hoehenlinie(GBOT,BX)}${rohrSVG(LOOPD)}
+    ${fallhoehe(632,GTOP,GBOT,'Fallhöhe')}
+    <g>${dots5('data-w5')}</g>
+    ${radSVG(LX,LY,34,'data-wheel5',s.off/D*26)}${lbl(LX+48,LY+6,'Wasserrad','start')}
+    ${ventilSVG(SX,GTOP,s.swA,lit)}${pumpeSVG(s.off/D*18)}
+    ${amSVG(LX,amy,fmt2(I)+' L/s','#1d4d99','Durchflussmesser')}
+    ${amSVG(VMX,VMY,fmt1(lit?U5():0)+' m','#23794A','')}${lbl(VMX,VMY-44,'Höhenmesser')}
+    <rect data-sw5 x="${SX-50}" y="${GTOP-40}" width="100" height="90" fill="#000" fill-opacity="0"/>
+    </g>`;
+  }
+  return g+'</svg>';
+}
+/* Zwei Leitungen neben das Bauteil – wie in Stufe 3 */
+const vlead=a=>`<path d="${rpath(a)}" fill="none" stroke="rgba(0,0,0,.3)" stroke-width="7" stroke-linecap="round"/>
+  <path d="${rpath(a)}" fill="none" stroke="#2563c9" stroke-width="4.5" stroke-linecap="round"/>`;
+/* Derselbe Balken wie in Stufe 0 – jetzt mit einer Zahl dazu */
+function vorratSVG(v){
+  const vb=Math.max(0,Math.min(1,v));
+  return `<rect x="${QX-62}" y="${QY-52}" width="124" height="16" rx="8" fill="#fff" stroke="#6b7480" stroke-width="1.5"/>
+  <rect data-vor5 x="${QX-59.5}" y="${QY-49.5}" width="${Math.round(VORB*vb*10)/10}" height="11" rx="5.5" fill="${vb<0.2?'#d8322b':'#23794A'}"/>
+  ${lbl(QX,QY+50,'Vorrat der Batterie')}`;
+}
+function dots5(attr){
+  let s='';
+  for(let i=0;i<NDOT;i++){ const p=ptAt(i*D+S5.off);
+    s+=`<circle ${attr}="${i}" cx="${p[0]}" cy="${p[1]}" r="5.5" ${attr==='data-d5'
+      ?'fill="#FFD23F" stroke="#7a5600"':'fill="#2f8fd6" stroke="#ffffff"'} stroke-width="1.5"/>`; }
+  return s;
+}
+let D5={q:[],w:[],rad:null,pumpe:null,vor:null,std:null};
+function bind5(){
+  const st=document.getElementById('stage');
+  D5={q:[...st.querySelectorAll('[data-d5]')],w:[...st.querySelectorAll('[data-w5]')],
+      rad:st.querySelector('[data-wheel5]'),pumpe:st.querySelector('[data-pumpe]'),
+      vor:st.querySelector('[data-vor5]'),std:document.querySelector('[data-std5]')};
+}
+function draw5(){
+  const s=S5;
+  const setz=els=>els.forEach((el,i)=>{const p=ptAt(i*D+s.off); el.setAttribute('cx',p[0]); el.setAttribute('cy',p[1]);});
+  setz(D5.q); setz(D5.w);
+  if(D5.rad) D5.rad.setAttribute('transform',drehT(s.off/D*26,ZX[1][0],mitte(GTOP,GBOT)));
+  if(D5.pumpe) D5.pumpe.setAttribute('transform',drehT(s.off/D*18,QX,QY));
+  if(D5.vor){ const vb=Math.max(0,Math.min(1,s.vorrat));
+    D5.vor.setAttribute('width',Math.round(VORB*vb*10)/10); D5.vor.setAttribute('fill',vb<0.2?'#d8322b':'#23794A'); }
+  if(D5.std) D5.std.textContent=std5();
+}
+function step5(dt){
+  const s=S5; let neu=false;
+  const vorher=kontakt(s);
+  if(easeSw(s,dt)){ hebelZeichnen(s); if(kontakt(s)!==vorher) neu=true; }
+  if(kontakt(s)){
+    s.off=(s.off+I5()*10*D*dt)%LEN;
+    if(s.raffer){
+      const r=raff5(), dv=dt*r*P5()/VORRAT_WH;
+      if(dv>0&&s.vorrat-dv<=0){ s.std+=dt*r*(s.vorrat/dv); s.vorrat=0; s.raffer=false; s.leer=true; neu=true; }
+      else { s.std+=dt*r; s.vorrat-=dv; }
+      // ab einer halben Stunde zählt diese Batterie als verglichen
+      if(s.tab==='erk'&&!s.gelaufen[s.u]&&(s.std>=0.5||s.leer)){ s.gelaufen[s.u]=true; neu=true; }
+    }
+    draw5();
+  } else if(s.raffer){ s.raffer=false; neu=true; }
+  if(s.skript){ s.sT-=dt; if(s.sT<=0){ weiter5(); neu=true; } }
+  if(neu) render();
+}
+function weiter5(){
+  const s=S5; s.si++;
+  if(s.si>=s.skript.length){ s.skript=null; s.raffer=false; s.phase='done'; return; }
+  const sc=s.skript[s.si];
+  if(sc.set){ if(sc.set.u!==undefined){ s.u=sc.set.u; vorratNeu(); }
+              if(sc.set.closed!==undefined) s.closed=sc.set.closed;
+              if(sc.set.raffer!==undefined) s.raffer=sc.set.raffer; }
+  s.sT=sc.t||0;
+}
+function vorratNeu(){ S5.vorrat=1; S5.std=0; S5.leer=false; }
+const verglichen5=()=>S5.gelaufen.filter(Boolean).length;
+
+function rechenfeld5(){
+  const s=S5, lit=kontakt(s);
+  return `<div class="mess m5"><div><span>Spannung U</span><b>${fmt1(lit?U5():0)} V</b></div>
+  <div><span>Stromstärke I</span><b>${fmt2(I5())} A</b></div>
+  <div class="erg"><span>P = U · I</span><b>${fmt2(P5())} W</b></div></div>
+  <div class="dauer"><span>Vorrat reicht für</span><b>${fmt1(DAUER5())} Stunden</b></div>`;
+}
+function steuerung5(){
+  const s=S5, d=k=>erl5(k)?'':'disabled';
+  return `<div class="ctl"><span class="lab">Batterie:</span>
+    ${BATT3.map((u,i)=>`<button class="tab ${s.u===i?'on':''}" data-act="ubat5" data-v="${i}" ${d('u'+i)}>${fmt1(u)} V</button>`).join('')}</div>
+  <div class="ctl"><button class="btn ${s.raffer?'primary':''}" data-act="raff5" ${d('raff')}>${s.raffer?'⏸ Zeitraffer anhalten':'▶ Zeitraffer'}</button>
+    <button class="btn" data-act="vneu5" ${d('neu')}>🔋 Batterie wechseln</button></div>
+  <div class="ctl"><span class="lab" data-std5>${std5()}</span></div>`;
+}
+const ERK5=[
+ 'Eine Batterie mit <b>1,5 V</b>. <b>Schliesse den Schalter</b> und schau auf Spannung, Stromstärke und ihr Produkt.',
+ 'Jetzt <b>stapeln</b>: Wähle bei «Batterie» <b>4,5 V</b>. Beide Zahlen werden grösser – schau, was das mit der Leistung macht.'
+];
+function erk5Text(){
+  const s=S5, v=verglichen5();
+  if(s.erk<3) return ERK5[s.erk-1];
+  if(v>=2) return 'Du hast zwei Batterien verglichen. <b>Beantworte jetzt die Frage.</b>';
+  if(v===1) return 'So schnell sinkt der Vorrat bei dieser Batterie. Wähle jetzt eine <b>andere Batterie</b> – sie ist dann wieder voll – und lass den <b>Zeitraffer</b> nochmals laufen.';
+  return 'Lass jetzt mit <b>▶ Zeitraffer</b> die Zeit laufen und beobachte den Vorrat.';
+}
+const MERK5='Die Leistung sagt, wie viel Energie pro Sekunde umgesetzt wird: <b>P = U · I</b>. Sie wird in Watt gemessen. Ein Watt ist ein Volt mal ein Ampere.';
+const MERK5B='Die Leistung sagt zugleich, <b>wie schnell der Vorrat der Batterie leer wird</b>. Im Vorrat steckt Energie – das ist es, was im Lämpchen verbraucht wird. Die Ladung dagegen fliesst immer im Kreis und bleibt erhalten.';
+function erl5(k){
+  const s=S5;
+  if(s.tab==='auf') return s.phase!=='run';
+  if(!G.fuehrung||s.erkFertig) return true;
+  if(s.erk===1) return k==='sw'||k==='u0';
+  if(s.erk===2) return k==='u2'||k==='sw';
+  return k==='raff'||k==='neu'||k==='u0'||k==='u1'||k==='u2';
+}
+function erk5Pruefen(){
+  const s=S5; if(!G.fuehrung||s.erkFertig) return;
+  if(s.erk===1&&s.closed&&s.u===0) s.erk=2;
+  else if(s.erk===2&&s.closed&&s.u===2) s.erk=3;
+}
+function erk5Panel(){
+  const s=S5; let p='';
+  if(G.fuehrung&&!s.erkFertig){
+    p+=`<div class="weg">${wegKopf(s.erk)}<div class="wegtext">${erk5Text()}</div></div>`;
+    p+=rechenfeld5();
+    if(s.erk===3) p+=`<div class="dauer"><span>Batterie ${fmt1(U5())} V</span><b>${std5()}</b></div>`;
+    if(s.erk===3&&verglichen5()>=2) p+=`<div class="mc">
+      <button class="opt" data-act="cmp5" data-v="0">Bei grosser Leistung hält der Vorrat länger</button>
+      <button class="opt" data-act="cmp5" data-v="1">Bei grosser Leistung ist der Vorrat schneller leer</button>
+      <button class="opt" data-act="cmp5" data-v="2">Die Leistung ändert nichts am Vorrat</button></div>`;
+    if(s.msg) p+=`<p class="msg bad">${s.msg}</p>`;
+    return p;
+  }
+  if(s.justDone) p+=`<p class="msg ok">Genau: Je grösser die Leistung, desto schneller ist der Vorrat leer.</p>`;
+  p+=`<p class="lead">Staple Batterien und schau, was mit der Leistung und mit dem Vorrat passiert.</p>`+rechenfeld5();
+  if(s.msg) p+=`<p class="msg info">${s.msg}</p>`;
+  return p;
+}
+const AUF5={
+ rechnen:()=>({set:{u:1},q:'Die Batterie hat 3,0 V, das Amperemeter zeigt 0,20 A. Wie gross ist die Leistung?',
+   opts:['0,60 W','15 W','1,50 W'],c:0,
+   sk:[{set:{u:1,closed:true},t:3.2}],
+   merk:'P = U · I = 3,0 V · 0,20 A = 0,60 W. Leistung ist Spannung mal Stromstärke.'}),
+ doppelt:()=>({set:{u:0},q:'Von 1,5 V auf 3,0 V: Was macht die Leistung?',
+   opts:['Sie bleibt gleich','Sie wird doppelt so gross','Sie wird viermal so gross'],c:2,
+   sk:[{set:{u:0,closed:true},t:2.6},{set:{u:1},t:3}],
+   merk:'Aus 0,15 W werden 0,60 W – viermal so viel. Doppelte Spannung heisst auch doppelte Stromstärke, und beide gehen ins Produkt ein.'}),
+ laufzeit:()=>({set:{u:2},q:'Bei welcher Batterie hält der Vorrat am längsten?',
+   opts:['bei 1,5 V','bei 3,0 V','bei 4,5 V'],c:0,
+   sk:[{set:{u:2,closed:true,raffer:true},t:3},{set:{u:0,raffer:true},t:3.4}],
+   merk:'Bei 4,5 V ist der Vorrat nach 3,0 Stunden leer, bei 1,5 V erst nach 27 Stunden. Kleine Leistung heisst lange Laufzeit.'}),
+ aus:()=>({set:{u:2},q:'Der Schalter wird geöffnet. Wie gross ist dann die Leistung?',
+   opts:['0 W','1,35 W','Das kann man nicht sagen'],c:0,
+   sk:[{set:{u:2,closed:true},t:2.6},{set:{closed:false},t:3}],
+   merk:'Ohne Stromstärke keine Leistung: P = 4,5 V · 0 A = 0 W. Die Spannung ist weiterhin da, aber es fliesst nichts.'}),
+ haus:()=>({rechnen:true,set:{u:2},q:'Ein Wasserkocher trägt auf dem Typenschild 2000 W. Er hängt an der Steckdose mit 230 V. Wie viel Strom fliesst?',
+   opts:['rund 8,7 A','rund 0,12 A','rund 460 A'],c:0,
+   merk:'I = P ÷ U = 2000 W ÷ 230 V ≈ 8,7 A. Dieselbe Formel, nur umgestellt – und genau so rechnest du in der Fehlersuche weiter.'})
+};
+const ORDER5=['rechnen','doppelt','laufzeit','aus','haus'];
+function newTask5(){ const s=S5; s.task=AUF5[ORDER5[s.taskNo%ORDER5.length]](); s.taskNo++; task5Setup(); }
+function task5Setup(){ const s=S5; s.phase='predict'; s.pick=null; s.msg=''; s.skript=null; s.closed=false; s.raffer=false;
+  if(s.task&&s.task.set&&s.task.set.u!==undefined) s.u=s.task.set.u;
+  vorratNeu(); }
+function auf5Panel(){
+  const s=S5, t=s.task, g=G.fuehrung&&s.geloest<2; let p='';
+  if(s.fertig) return `<p class="msg ok">🎉 Geschafft – du hast alle ${ORDER5.length} Aufgaben zur Leistung gelöst.</p>
+    ${merke(MERK5)}
+    <div class="row"><button class="btn primary" data-act="neuRunde5">↺ Nochmals von vorne</button>
+    <button class="btn" data-act="tab5" data-v="erk">🔍 Zurück zum Erkunden</button></div>`;
+  const nr=(s.phase==='run'||s.phase==='done')?2:1;
+  if(g) p+=`<div class="weg"><div class="wegtitel">Schritt ${nr} von 2</div><div class="wegtext">${
+    t.rechnen?['Rechnen: Überlege zuerst, was herauskommt.','Kontrollieren: Stimmt deine Rechnung?'][nr-1]:SCHRITT0[nr-1]}</div></div>`;
+  p+=`<p class="lead"><b>${t.q}</b></p><div class="mc">`;
+  const offen=s.phase==='predict'||s.phase==='ready';
+  t.opts.forEach((o,i)=>{ let cl='opt';
+    if(s.phase==='done'){ if(i===t.c) cl+=' right'; else if(i===s.pick) cl+=' wrongsel'; }
+    else if(i===s.pick) cl+=' pick';
+    p+=`<button class="${cl}" data-act="pick5" data-v="${i}" ${offen?'':'disabled'}>${o}</button>`; });
+  p+='</div>';
+  if(!t.rechnen) p+=rechenfeld5();
+  if(s.phase==='ready') return p+`<div class="row"><button class="btn primary" data-act="prove5">${t.rechnen?'✓ Antwort prüfen':'▶ Im Bild prüfen'}</button></div>`;
+  if(s.phase==='run') return p+`<p class="msg info">👀 Schau genau hin …</p>`;
+  if(s.phase!=='done') return p;
+  const ok=s.pick===t.c;
+  p+=`<p class="msg ${ok?'ok':'bad'}">${ok?'Deine Antwort stimmt!':'Deine Antwort stimmt nicht.'}</p>`;
+  p+=merke(t.merk);
+  return p+`<div class="row"><button class="btn primary" data-act="next5">Nächste Aufgabe →</button></div>`;
+}
+/* Die Brücke ins Haus: nur zum Nachschlagen, hier wird nichts ausprobiert. */
+const HAUS5=`<div class="skala"><b>Im Haus: 230 V aus der Steckdose</b>
+  <div>Wasserkocher<span>2000 W</span></div>
+  <div>Kaffeemaschine<span>1500 W</span></div>
+  <div>Mikrowelle<span>900 W</span></div>
+  <div>Toaster<span>800 W</span></div>
+  <div>Kühlschrank<span>100 W</span></div>
+  <div>LED-Lampe<span>8 W</span></div>
+  <p>Die Wattzahl steht auf dem <b>Typenschild</b> des Geräts. Daraus wird der Strom gerechnet: I = P ÷ U. Beim Wasserkocher sind das 2000 W ÷ 230 V ≈ 8,7 A. Eine Haussicherung hält meist 10 A oder 13 A aus – darum darf nicht alles gleichzeitig am selben Stromkreis hängen. An der Steckdose selbst wird nichts ausprobiert: Ab 230 V ist es lebensgefährlich.</p></div>`;
+/* Der Bogen schliesst sich dort, wo er in Stufe 0 aufgespannt wurde. */
+const FERTIG5=`<div class="skala schluss"><b>Jetzt sind deine Fragen von Stufe 0 beantwortet</b>
+  <div>Warum leuchten die Lämpchen in Serie schwächer?<span>Sie teilen sich die Spannung</span></div>
+  <div>Warum hält die Batterie dann länger?<span>Weil die Leistung kleiner ist</span></div>
+  <div>Wird in den Lämpchen etwas verbraucht?<span>Nicht die Ladung – die Energie</span></div>
+  <div>Was macht die Batterie eigentlich?<span>Sie macht den Unterschied und gibt Energie ab</span></div>
+  <p>Und damit ist auch klar, was im Vorrat der Batterie steckt: Energie.</p></div>`;
+function panel5(){
+  const s=S5;
+  let p=`<div class="subtabs"><button class="tab ${s.tab==='erk'?'on':''}" data-act="tab5" data-v="erk">🔍 Erkunden</button>
+         <button class="tab ${s.tab==='auf'?'on':''}" data-act="tab5" data-v="auf">✏️ Aufgaben${zaehler(s,ORDER5.length)}</button></div>`;
+  p= steckbrief(5)+p;
+  p+= s.tab==='erk' ? erk5Panel()+bedienen(steuerung5(),s) : auf5Panel();
+  if(merkeZeit(s)) p+=merke(MERK5)+merke(MERK5B);
+  p+=nachschlagen(wasserTipp(s,'Dort ist die Leistung Fallhöhe mal Durchfluss.'),
+    G.wasser?`<div class="dlist">💧 Im Wassermodell ist es dasselbe Produkt: <b>Fallhöhe mal Durchfluss</b>. Viel Wasser, das tief fällt, treibt das Rad stark an – so wie viel Strom bei hoher Spannung viel Leistung bringt.</div>`:'',
+    HAUS5, merkeZeit(s)?FERTIG5:'');
+  return p;
+}
+function bild5(e){
+  const s=S5;
+  if(s.tab==='auf'&&s.phase==='run') return;
+  if(e.target.closest('[data-sw5]')){ if(!erl5('sw')){ s.msg=WARTE; render(); return; }
+    s.closed=!s.closed; s.msg=''; erk5Pruefen(); render(); }
+}
+
+/* ---------- Rahmen ---------- */
+const zaehler=(o,n)=>o.fertig?' ✓':(o.taskNo?` ${o.taskNo}/${n}`:'');
+/* Aufbau jeder Stufe: erst was zu tun ist, dann die Bedienung, dann Anzeigen, zuletzt Nachschlagen */
+const merke=t=>`<div class="merke">📌 <b>Merke:</b> ${t}</div>`;
+/* Während der Führung bleibt der Merksatz weg – er verrät sonst die Antwort. */
+const merkeZeit=o=>o.tab==='erk'&&!(G.fuehrung&&!o.erkFertig);
+/* Das Wassermodell wird nur einmal angeboten – dann, wenn es etwas nützt: nach dem
+   geführten Erkunden, und nur solange es ausgeblendet ist. Ist es eingeblendet,
+   steht an derselben Stelle die Erklärung dazu. */
+const wasserTipp=(o,grund)=>(G.wasser||!merkeZeit(o))?''
+  :`<div class="dlist">💧 <b>Wassermodell:</b> Mit dem Knopf 💧 über dem Bild läuft derselbe Kreislauf zusätzlich mit Wasser. ${grund}</div>`;
+/* Ist in diesem Schritt gar nichts einzustellen, fällt die ganze Gruppe weg –
+   eine Box voller grauer Knöpfe hilft niemandem. */
+const bedienen=(t,o)=>{ if(!/<button(?![^>]*disabled)/.test(t)) return '';
+  const dran=o&&G.fuehrung&&o.tab==='erk'&&!o.erkFertig;
+  return `<div class="bedien${dran?' dran':''}"><span class="lab2">${dran?'Das ist jetzt dran':'Einstellen'}</span>${t}</div>`; };
+const block=(titel,...t)=>{ const a=t.filter(Boolean); return a.length?`<div class="nach"><b>${titel}</b>${a.join('')}</div>`:''; };
+/* Nachschlagen ist eingeklappt: Es steht bereit, drängt sich aber nicht vor die
+   Bedienung. Der Merksatz gehört NICHT hierher – er ist das Ergebnis der Stufe
+   und bleibt offen. Der Zustand gilt für alle Stufen und hält bis zum Neuladen. */
+const nachschlagen=(...t)=>{ const a=t.filter(Boolean); if(!a.length) return '';
+  return `<div class="nach"><button class="nachkopf" data-act="nachAuf" aria-expanded="${G.nachOffen?'true':'false'}"><span>${G.nachOffen?'▾':'▸'}</span>Zum Nachschlagen</button>${G.nachOffen?a.join(''):''}</div>`; };
+function curStufe(){ return G.stufe; }
+function renderTabs(){
+  document.getElementById('tabs').innerHTML=STUFEN.map(([n,l])=>{
+    const ok=BEREIT.includes(n);
+    return `<button class="tab ${curStufe()===n?'on':''}" data-stufe="${n}" ${ok?'':'disabled title="folgt"'}>${n} · ${l}</button>`; }).join('');
+  const on=document.querySelector('.tabs .tab.on');
+  if(on&&on.parentElement.scrollWidth>on.parentElement.clientWidth) on.scrollIntoView({block:'nearest',inline:'center'});
+}
+function renderChip(){
+  const b=document.getElementById('wasserBtn'), st=document.getElementById('stage');
+  const w=st?st.getBoundingClientRect().width:0;
+  const lang='Wassermodell '+(G.wasser?'ausblenden':'einblenden');
+  const stufe=(w&&w<520)?'nur':((w&&w<820)?'kurz':'lang');
+  b.className='chip'+(G.wasser?' an':'')+(stufe==='lang'?'':' '+stufe);
+  // Die Aufschrift sagt den ZUSTAND, nicht die Handlung – sonst liest man sie als Zustand und irrt sich.
+  // Was ein Druck bewirkt, steht im title und kommt aus der gefüllten Fläche.
+  b.textContent= stufe==='nur'?'💧'
+    :(stufe==='kurz'?'💧 Wassermodell '+(G.wasser?'an':'aus')
+    :'💧 Wassermodell ist '+(G.wasser?'an':'aus'));
+  b.title=lang; b.setAttribute('aria-label',lang); b.setAttribute('aria-pressed',G.wasser?'true':'false');
+}
+/* ===== Direktlinks: …#3-spannung öffnet gleich die dritte Stufe =====
+   replaceState statt location.hash, sonst sammelt der Zurück-Knopf jeden
+   Stufenwechsel als eigenen Schritt. */
+const KUERZEL={0:'hell-oder-dunkel',1:'ladung',2:'stromstaerke',3:'spannung',4:'widerstand',5:'leistung'};
+let hashStumm=false;
+function adresse(){
+  if(hashStumm) return;
+  const h='#'+G.stufe+'-'+KUERZEL[G.stufe];
+  // In einer Vorschau (eingebettete Seite) darf die Adresse nicht geändert
+  // werden – das Werkzeug soll deswegen nicht stehen bleiben.
+  if(location.hash!==h){ try{ history.replaceState(null,'',h); }catch(e){} }
+}
+function ausAdresse(){
+  const m=/^#?(\d)/.exec(location.hash||'');
+  if(!m) return false;
+  const n=Number(m[1]);
+  if(!BEREIT.includes(n)) return false;
+  G.stufe=n; return true;
+}
+addEventListener('hashchange',()=>{ if(ausAdresse()){ hashStumm=true; render(); hashStumm=false; adresse(); } });
+
+function render(){
+  adresse();
+  document.documentElement.classList.toggle('wasser',G.wasser);
+  renderTabs(); renderChip();
+  const st=G.stufe;
+  document.getElementById('stage').innerHTML= st===0?svg0():st===2?svg2():st===3?svg3():st===4?svg4():st===5?svg5():svg1();
+  document.getElementById('panel').innerHTML= st===0?panel0():st===2?panel2():st===3?panel3():st===4?panel4():st===5?panel5():panel1();
+  if(st===0) bind0(); else if(st===2) bind2(); else if(st===3) bind3(); else if(st===4) bind4(); else if(st===5) bind5(); else bind();
+  document.getElementById('einstText').innerHTML=einstInhalt();
+  document.getElementById('einst').hidden=!G.einstOffen;
+}
+
+/* ---------- Interaktion ---------- */
+function erl1(){
+  const st=S1;
+  if(st.tab==='auf') return st.phase==='done';
+  if(!G.fuehrung||st.erkFertig) return true;
+  return st.erk===1;
+}
+function schalter(){
+  const st=S1;
+  if(st.tab==='auf'&&st.phase!=='done'){ st.msg='In den Aufgaben schaltet «Im Bild prüfen» für dich.'; render(); return; }
+  if(!erl1()){ st.msg=WARTE; render(); return; }
+  st.closed=!st.closed; st.msg=''; st.justDone=false;
+  if(st.tab==='erk'&&erkGefuehrt()&&st.erk===1&&st.closed) st.erk=2;
+  render();
+}
+/* Stufe 0: Schalter und Lämpchen im Bild */
+/* Geführtes Erkunden: In jedem Schritt ist nur aktiv, was gerade dran ist. */
+function erl0(k){
+  const s=S0;
+  if(s.tab==='auf') return s.phase!=='run';
+  if(!G.fuehrung||s.erkFertig) return true;
+  if(s.erk===1) return k==='sw';
+  if(s.erk===2) return k==='sw'||k==='ser'||k==='n3';
+  if(s.erk===3) return k==='par'||(s.vergl&&k==='ser');
+  return k==='raff'||k==='bat'||k==='ser'||k==='par';
+}
+function erk0Pruefen(){
+  const s=S0; if(!G.fuehrung||s.erkFertig) return;
+  if(s.erk===1&&s.closed&&s.n===1) s.erk=2;
+  else if(s.erk===2&&s.closed&&s.n===3&&s.art==='ser') s.erk=3;
+  if(s.erk===3&&s.art==='par'&&s.n===3) s.vergl=true;
+}
+function bild0(e){
+  const s=S0;
+  if(s.tab==='auf'&&s.phase==='run'){ s.msg=''; return; }
+  const l=e.target.closest('[data-lampe]');
+  if(l){ if(!erl0('lampe')){ s.msg=WARTE; render(); return; }
+         const k=+l.dataset.lampe; rausSetzen0(s.raus.map((v,i)=>i===k?!v:v)); s.msg=''; render(); return; }
+  if(e.target.closest('[data-sw0]')){ if(!erl0('sw')){ s.msg=WARTE; render(); return; }
+    s.closed=!s.closed; s.msg=''; erk0Pruefen(); render(); }
+}
+/* Stufe 2: Schalter und Stoppuhr im Bild */
+function bild2(e){
+  const s=S2;
+  if(s.tab==='auf'&&s.phase==='run') return;
+  if(e.target.closest('[data-uhrtip]')){ if(!erl2('mess')){ s.msg=WARTE; render(); return; } messUm(); return; }
+  if(e.target.closest('[data-sw2]')){ if(!erl2('sw')){ s.msg=WARTE; render(); return; }
+    s.closed=!s.closed; s.msg='';
+    if(!s.closed) s.laeuft=false;
+    if(G.fuehrung&&!s.erkFertig&&s.erk===1&&s.closed&&s.laeuft) s.erk=2;
+    render();
+  }
+}
+function messUm(){
+  const s=S2;
+  if(s.laeuft){ s.laeuft=false; if(G.fuehrung&&!s.erkFertig&&s.erk===2&&s.t>=1) s.erk=3; }
+  else if(!s.closed){ s.msg='Schliesse zuerst den Schalter.'; }
+  else { s.q=0; s.t=0; s.laeuft=true; s.msg='';
+         if(G.fuehrung&&!s.erkFertig&&s.erk===1) s.erk=2; }
+  render();
+}
+function bild3(e){
+  const s=S3;
+  if(s.tab==='auf'&&s.phase==='run') return;
+  if(e.target.closest('[data-sw3]')){ if(!erl3('sw')){ s.msg=WARTE; render(); return; }
+    s.closed=!s.closed; s.msg=''; erk3Pruefen(); render(); }
+}
+document.getElementById('stage').addEventListener('click',e=>{
+  if(G.stufe===0) return bild0(e);
+  if(G.stufe===2) return bild2(e);
+  if(G.stufe===3) return bild3(e);
+  if(G.stufe===4) return bild4(e);
+  if(G.stufe===5) return bild5(e);
+  if(e.target.closest('[data-sw]')) schalter();
+});
+document.getElementById('einstBtn').onclick=()=>{ G.einstOffen=true; render(); };
+document.getElementById('einst').addEventListener('click',e=>{
+  if(e.target.id==='einst'||e.target.closest('[data-einst="zu"]')){ G.einstOffen=false; render(); } });
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act],[data-stufe]'); if(!b||b.closest('#stage')||b.disabled) return;
+  if(b.dataset.stufe){ const n=+b.dataset.stufe; if(BEREIT.includes(n)){ G.stufe=n; render(); hilfeBeimErstenMal(); } return; }
+  const st=S1, v=b.dataset.v;
+  switch(b.dataset.act){
+    case 'tab':
+      if(v===st.tab) break;
+      st.tab=v; st.msg=''; st.justDone=false; st.flash=false; st.runT=0;
+      if(v==='auf'&&!st.fertig){ if(!st.task||st.phase==='done') newTask(); else taskSetup(); }
+      else { st.closed=false; st.q=0; }
+      break;
+    case 'reset':
+      G.einstOffen=false;
+      if(G.stufe===5){
+        S5.msg=''; S5.justDone=false; S5.skript=null; S5.closed=false; S5.off=0; S5.raffer=false; vorratNeu();
+        if(S5.tab==='erk'){ if(!S5.erkFertig){ S5.erk=1; S5.gelaufen=[false,false,false]; } S5.u=0; } else task5Setup();
+        break;
+      }
+      if(G.stufe===4){
+        S4.msg=''; S4.justDone=false; S4.skript=null; S4.closed=false; S4.off=0;
+        if(S4.tab==='erk'){ if(!S4.erkFertig){ S4.erk=1; S4.probiert=[false,false,false]; } S4.d=0; } else task4Setup();
+        break;
+      }
+      if(G.stufe===3){
+        S3.msg=''; S3.justDone=false; S3.skript=null; S3.closed=false; S3.off=0;
+        if(S3.tab==='erk'){ if(!S3.erkFertig){ S3.erk=1; S3.vergl=false; } S3.u=0; S3.vpos='lampe'; } else task3Setup();
+        break;
+      }
+      if(G.stufe===2){
+        S2.msg=''; S2.justDone=false; S2.skript=null; S2.laeuft=false; S2.q=0; S2.t=0; S2.closed=false; S2.off=0;
+        if(S2.tab==='erk'){ if(!S2.erkFertig) S2.erk=1; S2.v=1; S2.mess='vor'; } else task2Setup();
+        break;
+      }
+      if(G.stufe===0){
+        S0.msg=''; S0.justDone=false; S0.skript=null; S0.raffer=false; S0.raus=[false,false,false];
+        S0.closed=false; S0.vorrat=1; S0.std=0; S0.leer=false; nullZaehler0(); standNull0();
+        if(S0.tab==='erk'){ if(!S0.erkFertig){ S0.erk=1; S0.vergl=false; S0.gelaufen={ser:false,par:false}; } S0.art='ser'; S0.n=1; } else task0Setup();
+        break;
+      }
+      if(st.tab==='erk'){ st.closed=false; st.q=0; st.msg=''; st.justDone=false; if(!st.erkFertig) st.erk=1; }
+      else taskSetup();
+      break;
+    case 'erkZur': erkZurueck(); break;
+    case 'nachAuf': G.nachOffen=!G.nachOffen;
+      // nach dem Neuzeichnen die Kopfzeile nach oben holen, damit das Aufgeklappte sichtbar wird
+      if(G.nachOffen) requestAnimationFrame(()=>{ const k=document.querySelector('#panel .nachkopf');
+        if(k) k.scrollIntoView({block:'start',behavior:'smooth'}); });
+      break;
+    case 'wasser': G.wasser=!G.wasser; break;
+    case 'zeigLadung': G.ladung=!G.ladung; break;
+    case 'zeigMess': G.mess=!G.mess; break;
+    case 'fuehr':
+      G.fuehrung=!G.fuehrung;
+      if(G.fuehrung){
+        st.erkFertig=false; st.erk=1; st.geloest=0; st.justDone=false; if(st.tab==='erk'){ st.closed=false; st.q=0; }
+        S0.erkFertig=false; S0.erk=1; S0.vergl=false; S0.gelaufen={ser:false,par:false}; S0.geloest=0; S0.justDone=false;
+        S2.erkFertig=false; S2.erk=1; S2.geloest=0; S2.justDone=false;
+        S3.erkFertig=false; S3.erk=1; S3.vergl=false; S3.geloest=0; S3.justDone=false;
+        S4.erkFertig=false; S4.erk=1; S4.probiert=[false,false,false]; S4.geloest=0; S4.justDone=false;
+        S5.erkFertig=false; S5.erk=1; S5.gelaufen=[false,false,false]; S5.geloest=0; S5.justDone=false;
+      }
+      break;
+    /* ---- Stufe 0 ---- */
+    case 'tab0':
+      if(v===S0.tab) break;
+      S0.tab=v; S0.msg=''; S0.justDone=false; S0.skript=null; S0.raffer=false;
+      if(v==='auf'&&!S0.fertig){ if(!S0.task||S0.phase==='done') newTask0(); else task0Setup(); }
+      break;
+    case 'art': S0.art=v; S0.raus=[false,false,false]; nullZaehler0(); vorratFrisch0(); erk0Pruefen(); break;
+    case 'anz': S0.n=+v; S0.raus=[false,false,false]; nullZaehler0(); vorratFrisch0(); erk0Pruefen(); break;
+    case 'raff': S0.raffer=!S0.raffer; if(S0.raffer&&S0.vorrat<=0) S0.msg='Die Batterie ist leer – wechsle sie zuerst.'; break;
+    case 'neueBat': S0.vorrat=1; S0.std=0; S0.leer=false; S0.msg=''; break;
+    case 'cmp0':
+      if(+v===1){ S0.erk=4; S0.msg=''; vorratFrisch0(); S0.gelaufen={ser:false,par:false}; }
+      else S0.msg='Schau nochmals hin: Vergleiche mit der Helligkeit des einzelnen Lämpchens vom Anfang.';
+      break;
+    case 'cmp0b':
+      if(+v===1){ S0.erk=5; S0.erkFertig=true; S0.justDone=true; S0.msg=''; }
+      else S0.msg='Vergleiche nochmals die Stunden: Wie lange lief sie parallel, wie lange in Serie?';
+      break;
+    case 'pick0': if(S0.phase==='predict'||S0.phase==='ready'){ S0.pick=+v; S0.phase='ready'; S0.msg=''; } break;
+    case 'prove0': S0.phase='run'; nullZaehler0(); standNull0(); skriptAn(S0.task.sk); break;
+    case 'next0': S0.geloest++; if(S0.taskNo>=ORDER0.length) S0.fertig=true; else newTask0(); break;
+    case 'neuRunde0': S0.fertig=false; S0.taskNo=0; newTask0(); break;
+    /* ---- Stufe 2 ---- */
+    case 'tab2':
+      if(v===S2.tab) break;
+      S2.tab=v; S2.msg=''; S2.justDone=false; S2.skript=null; S2.laeuft=false; S2.q=0; S2.t=0;
+      if(v==='auf'&&!S2.fertig){ if(!S2.task||S2.phase==='done') newTask2(); else task2Setup(); }
+      break;
+    case 'verbr': S2.v=+v; S2.q=0; S2.t=0; S2.laeuft=false; S2.msg=''; break;
+    case 'ampos': S2.mess=v; break;
+    case 'mess2': messUm(); return;
+    case 'mnull': S2.q=0; S2.t=0; S2.laeuft=false; S2.msg=''; break;
+    case 'cmp2':
+      if(+v===1){ S2.erk=4; S2.erkFertig=true; S2.justDone=true; S2.msg=''; }
+      else S2.msg='Vergleiche nochmals: Was steht im Amperemeter, und was ergibt Ladung ÷ Zeit?';
+      break;
+    case 'pick2': if(S2.phase==='predict'||S2.phase==='ready'){ S2.pick=+v; S2.phase='ready'; S2.msg=''; } break;
+    case 'prove2': S2.phase='run'; S2.q=0; S2.t=0; S2.si=-1; S2.skript=S2.task.sk; weiter2(); break;
+    case 'next2': S2.geloest++; if(S2.taskNo>=ORDER2.length) S2.fertig=true; else newTask2(); break;
+    case 'neuRunde2': S2.fertig=false; S2.taskNo=0; newTask2(); break;
+    /* ---- Stufe 3 ---- */
+    case 'tab3':
+      if(v===S3.tab) break;
+      S3.tab=v; S3.msg=''; S3.justDone=false; S3.skript=null;
+      if(v==='auf'&&!S3.fertig){ if(!S3.task||S3.phase==='done') newTask3(); else task3Setup(); }
+      break;
+    case 'ubat': S3.u=+v; S3.msg=''; erk3Pruefen(); break;
+    case 'vpos': S3.vpos=v; S3.msg=''; erk3Pruefen(); break;
+    case 'cmp3':
+      if(+v===1){ S3.erk=4; S3.erkFertig=true; S3.justDone=true; S3.msg=''; }
+      else S3.msg='Vergleiche nochmals: Was stand am Lämpchen, was steht jetzt an der Batterie?';
+      break;
+    case 'pick3': if(S3.phase==='predict'||S3.phase==='ready'){ S3.pick=+v; S3.phase='ready'; S3.msg=''; } break;
+    case 'prove3': S3.phase='run'; S3.si=-1; S3.skript=S3.task.sk; weiter3(); break;
+    case 'next3': S3.geloest++; if(S3.taskNo>=ORDER3.length) S3.fertig=true; else newTask3(); break;
+    case 'neuRunde3': S3.fertig=false; S3.taskNo=0; newTask3(); break;
+    /* ---- Stufe 4 ---- */
+    case 'tab4':
+      if(v===S4.tab) break;
+      S4.tab=v; S4.msg=''; S4.justDone=false; S4.skript=null;
+      if(v==='auf'&&!S4.fertig){ if(!S4.task||S4.phase==='done') newTask4(); else task4Setup(); }
+      break;
+    case 'draht': S4.d=+v; S4.msg=''; erk4Pruefen(); break;
+    case 'cmp4':
+      if(+v===1){ S4.erk=4; S4.erkFertig=true; S4.justDone=true; S4.msg=''; }
+      else S4.msg='Schau nochmals in die Tabelle: Wie viel Strom fliesst beim dicken, wie viel beim dünnen Draht?';
+      break;
+    case 'pick4': if(S4.phase==='predict'||S4.phase==='ready'){ S4.pick=+v; S4.phase='ready'; S4.msg=''; } break;
+    case 'prove4': S4.phase='run'; S4.si=-1; S4.skript=S4.task.sk; weiter4(); break;
+    case 'next4': S4.geloest++; if(S4.taskNo>=ORDER4.length) S4.fertig=true; else newTask4(); break;
+    case 'neuRunde4': S4.fertig=false; S4.taskNo=0; newTask4(); break;
+    /* ---- Stufe 5 ---- */
+    case 'tab5':
+      if(v===S5.tab) break;
+      S5.tab=v; S5.msg=''; S5.justDone=false; S5.skript=null; S5.raffer=false;
+      if(v==='auf'&&!S5.fertig){ if(!S5.task||S5.phase==='done') newTask5(); else task5Setup(); }
+      break;
+    case 'ubat5': S5.u=+v; S5.msg=''; S5.raffer=false; vorratNeu(); erk5Pruefen(); break;   // jeder Vergleich ist ein bewusster Lauf
+    case 'raff5': S5.raffer=!S5.raffer; if(S5.raffer&&S5.leer) vorratNeu(); S5.msg=''; break;
+    case 'vneu5': vorratNeu(); S5.raffer=false; S5.msg=''; break;
+    case 'cmp5':
+      if(+v===1){ S5.erk=4; S5.erkFertig=true; S5.justDone=true; S5.msg=''; }
+      else S5.msg='Vergleiche nochmals die Stunden: Wie lange hielt die eine Batterie, wie lange die andere?';
+      break;
+    case 'pick5': if(S5.phase==='predict'||S5.phase==='ready'){ S5.pick=+v; S5.phase='ready'; S5.msg=''; } break;
+    case 'prove5':
+      if(S5.task.rechnen){ S5.phase='done'; break; }
+      S5.phase='run'; S5.si=-1; S5.skript=S5.task.sk; weiter5(); break;
+    case 'next5': S5.geloest++; if(S5.taskNo>=ORDER5.length) S5.fertig=true; else newTask5(); break;
+    case 'neuRunde5': S5.fertig=false; S5.taskNo=0; newTask5(); break;
+    case 'null': st.q=0; st.justDone=false; break;
+    case 'cmp':
+      if(+v===1){ st.erk=4; st.erkFertig=true; st.justDone=true; st.msg=''; }
+      else st.msg='Schau nochmals genau hin: Vergleiche die Zahlen bei ① und ②.';
+      break;
+    case 'pick': if(st.phase==='predict'||st.phase==='ready'){ st.pick=+v; st.phase='ready'; st.msg=''; } break;
+    case 'prove': {
+      const t=st.task; st.msg=''; st.phase='run';
+      if(t.run==='count'){ st.q=0; st.closed=true; }
+      else if(t.run==='close'){ st.q=0; st.closed=true; st.flash=true; st.runT=3; }
+      else { st.flash=true; st.runT=2.6; }
+      break; }
+    case 'why': if(st.phase==='why'){ st.why=+v; st.phase='done'; } break;
+    case 'next': st.geloest++; if(st.taskNo>=ORDER.length) st.fertig=true; else newTask(); break;
+    case 'neuRunde': st.fertig=false; st.taskNo=0; newTask(); break;
+  }
+  render();
+});
+
+/* Vollbild: auf dem Tablet fällt die Adressleiste weg, im Unterricht lenkt weniger ab */
+const ICON_FS_ON  = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>';
+const ICON_FS_OFF = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>';
+const fsEl=()=>document.fullscreenElement||document.webkitFullscreenElement;
+const standalone=navigator.standalone===true||matchMedia('(display-mode: standalone)').matches;
+/* Nicht am Gerät festmachen, sondern nachfragen, ob der Browser es kann.
+   Auf dem iPhone sagt Safari nein, auf dem iPad je nach Version ja.
+   Als Web-App vom Home-Bildschirm ist ohnehin schon alles Vollbild. */
+const fsMoeglich=!!(document.fullscreenEnabled||document.webkitFullscreenEnabled);
+const fsCan=!standalone&&fsMoeglich&&!!(document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen);
+const fsBtn=document.getElementById('fsBtn');
+function fsLabel(){
+  const on=!!fsEl();
+  document.documentElement.classList.toggle('fsmode',on);
+  fsBtn.innerHTML=(on?ICON_FS_OFF:ICON_FS_ON)+`<span>${on?'Vollbild beenden':'Vollbild'}</span>`;
+  fsBtn.setAttribute('aria-label',on?'Vollbild beenden':'Vollbild');
+  fsBtn.title=on?'Vollbild beenden':'Vollbild';
+  render();
+}
+if(fsCan){
+  fsBtn.hidden=false; fsLabel();
+  fsBtn.onclick=()=>{ const d=document, el=d.documentElement;
+    if(fsEl()){ (d.exitFullscreen||d.webkitExitFullscreen).call(d); return; }
+    try{ const r=(el.requestFullscreen||el.webkitRequestFullscreen).call(el);
+      if(r&&r.catch) r.catch(()=>{ fsBtn.hidden=true; });
+      // Meldet der Browser Vollbild, tut es aber nicht: Knopf verschwinden lassen
+      setTimeout(()=>{ if(!fsEl()) fsBtn.hidden=true; },900);
+    }catch(e){ fsBtn.hidden=true; } };
+  document.addEventListener('fullscreenchange',fsLabel);
+  document.addEventListener('webkitfullscreenchange',fsLabel);
+}
+
+/* ---------- Kurzanleitung pro Stufe ---------- */
+const HELP={
+ 0:['Hell oder dunkel?','<p>Zwei Arten, mehrere Lämpchen anzuschliessen: <b>in Serie</b> hintereinander am selben Weg, oder <b>parallel</b>, jedes auf seinem eigenen Weg.</p>'+
+   '<p>Stelle die Schaltung ein, schliesse den Schalter und schau, wie hell die Lämpchen leuchten. Ein <b>Lämpchen antippen</b> schraubt es heraus und wieder hinein.</p>'+
+   '<p>Der Balken an der Batterie zeigt ihren <b>Vorrat</b>. Was da drin steckt, klären wir später. Mit «▶ Zeitraffer» läuft die Zeit schnell, so siehst du, wie lange die Batterie hält.</p>'+
+   '<p>Es geht hier nur ums Beobachten. Die Erklärungen kommen in den nächsten Stufen – die offenen Fragen stehen im blauen Kasten beim Erkunden.</p>'],
+ 3:['Spannung','<p>Die <b>Spannung</b> gibt an, wie gross der <b>Antrieb</b> der Ladung im Stromkreis ist. Sie wird in Volt (V) gemessen.</p>'+
+   '<p>Du kannst <b>Batterien stapeln</b>: 1,5 V, 3,0 V oder 4,5 V. Schau, was das mit der Stromstärke und der Helligkeit macht.</p>'+
+   '<p>Das <b>Voltmeter</b> wird <b>parallel</b> eingebaut – mit zwei Leitungen neben das Lämpchen oder neben die Batterie. Es misst den Unterschied zwischen zwei Punkten. Das <b>Amperemeter</b> liegt dagegen in Serie mitten in der Leitung.</p>'],
+ 5:['Leistung','<p>Die <b>Leistung</b> sagt, wie viel Energie pro Sekunde umgesetzt wird. Sie wird in Watt (W) gemessen und aus zwei Grössen gerechnet: <b>P = U · I</b>.</p>'+
+   '<p><b>Staple Batterien</b>: Spannung und Stromstärke werden beide grösser – und die Leistung wächst noch schneller.</p>'+
+   '<p>Mit «▶ Zeitraffer» siehst du am Balken, wie schnell der <b>Vorrat</b> der Batterie sinkt. Je grösser die Leistung, desto kürzer reicht er.</p>'+
+   '<p>Unter «Zum Nachschlagen» findest du Geräte aus dem Haushalt mit ihrer Wattzahl – dort wird aus P und U die Stromstärke gerechnet.</p>'],
+ 4:['Widerstand','<p>Der <b>Widerstand</b> sagt, wie stark ein Bauteil den Strom hemmt. Er wird in Ohm (Ω) gemessen.</p>'+
+   '<p>Vor dem Lämpchen steckt ein <b>Drahtstück</b>: dick, mittel oder dünn. Tippe es im Bild an oder wähle es unter «Einstellen». Die Spannung bleibt immer bei 4,5 V.</p>'+
+   '<p>Je <b>dünner</b> der Draht, desto <b>grösser</b> sein Widerstand – und desto <b>weniger</b> Strom fliesst. Die Tabelle füllt sich, sobald du ein Drahtstück ausprobiert hast.</p>'+
+   '<p>Gerechnet wird der Widerstand aus beidem: <b>R = U ÷ I</b>.</p>'],
+ 2:['Stromstärke','<p>Die <b>Stromstärke</b> sagt, wie viel Ladung pro Sekunde an einer Stelle vorbeifliesst. Man rechnet sie aus Ladung und Zeit aus: <b>I = Q ÷ t</b>.</p>'+
+   '<p>Die <b>Zählstelle ①</b> zählt die Ladung, die <b>Stoppuhr</b> die Zeit. Tippe die Stoppuhr an, um eine Messung zu starten und zu stoppen.</p>'+
+   '<p>Das <b>Amperemeter</b> zeigt dieselbe Stromstärke direkt an. Es wird <b>in Serie</b> eingebaut: Es liegt in der Leitung, der ganze Strom fliesst hindurch. Du kannst es vor oder nach dem Lämpchen einbauen.</p>'+
+   '<p>Mit den drei Verbrauchern siehst du, wie sich die Stromstärke ändert.</p>'],
+ 1:['Ladung','<p>Im Stromkreis fliesst <b>elektrische Ladung</b>. Die gelben Punkte zeigen sie: Ein Punkt steht für 0,1 Coulomb (C).</p>'+
+   '<p>Die <b>Zählstellen</b> ① und ② zählen, wie viel Ladung an ihnen vorbeigeflossen ist.</p>'+
+   '<p><b>Erkunden:</b> Probiere geführt aus, was passiert. <b>Aufgaben:</b> Zuerst vorhersagen, dann im Bild prüfen, dann begründen.</p>'+
+   '<p>Mit «💧 Wassermodell» siehst du zusätzlich einen Wasserkreislauf, der genau gleich funktioniert.</p>']
+};
+const hilfeMem=new Set();
+const hilfeGesehen=n=>{ if(hilfeMem.has(n)) return true;
+  try{ return localStorage.getItem('grossen-hilfe-'+n)==='1'; }catch(e){ return false; } };
+const hilfeMerken=n=>{ hilfeMem.add(n);
+  try{ localStorage.setItem('grossen-hilfe-'+n,'1'); }catch(e){} };
+function zeigeHilfe(n){
+  const [t,txt]=HELP[n]||HELP[1];
+  document.getElementById('hilfeTitel').textContent=`Stufe ${n} · ${t}`;
+  document.getElementById('hilfeText').innerHTML=txt;
+  document.getElementById('hilfe').hidden=false; hilfeMerken(n);
+}
+document.getElementById('helpBtn').onclick=()=>zeigeHilfe(curStufe());
+document.getElementById('hilfe').addEventListener('click',e=>{
+  if(e.target.id==='hilfe'||e.target.closest('[data-hilfe="zu"]')) document.getElementById('hilfe').hidden=true; });
+/* Escape schliesst immer nur das oberste Fenster – sonst verschwinden beide
+   auf einmal, und man landet unerwartet wieder in der Aufgabe. */
+addEventListener('keydown',e=>{ if(e.key!=='Escape') return;
+  if(G.einstOffen){ e.preventDefault(); G.einstOffen=false; render(); return; }
+  if(!document.getElementById('hilfe').hidden){ e.preventDefault();
+    document.getElementById('hilfe').hidden=true; } });
+function hilfeBeimErstenMal(){ const n=curStufe(); if(!hilfeGesehen(n)) zeigeHilfe(n); }
+
+/* Lupe für kleine Bildschirme */
+const zoomBtn=document.getElementById('zoomBtn');
+zoomBtn.onclick=()=>{ const st=document.getElementById('stage');
+  const an=st.classList.toggle('zoom'); zoomBtn.textContent=an?'🔎':'🔍';
+  zoomBtn.title=an?'Bild verkleinern':'Bild vergrössern';
+  if(an) requestAnimationFrame(()=>{ st.scrollLeft=(st.scrollWidth-st.clientWidth)/2;
+    st.scrollTop=(st.scrollHeight-st.clientHeight)*0.5; });
+  else render(); };
+
+/* Fenstergrösse ändert den Bildausschnitt */
+let fitT=null;
+const refit=()=>{ clearTimeout(fitT); fitT=setTimeout(render,80); };
+addEventListener('resize',refit);
+addEventListener('orientationchange',refit);
+
+ausAdresse();
+render();
+requestAnimationFrame(render);
+requestAnimationFrame(frame);
+hilfeBeimErstenMal();
+</script>
+
+</body>
+</html>

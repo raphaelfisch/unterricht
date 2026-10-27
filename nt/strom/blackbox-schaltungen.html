@@ -1,0 +1,1842 @@
+<!DOCTYPE html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Blackbox">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Blackbox-Schaltungen</title>
+<style>
+:root{
+  --bg:#E6ECF1; --paper:#F8FAFB; --ink:#1D2935; --muted:#5A6672; --line:#C6D0D9; --grid:#E3E9EE;
+  --live:#E08E00; --lamp:255,186,0; --off:#A9B0B8; --strip:#3A3F45; --hole:#141619;
+  --ok:#23794A; --bad:#B8322A; --sel:#2E6DB4; --selbg:rgba(46,109,180,.10); --btn:#FFFFFF;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#131920; --paper:#1B232B; --ink:#E4EAEF; --muted:#98A5B0; --line:#34414C; --grid:#232D36;
+    --live:#FFB12E; --off:#5E6670; --strip:#0E1114; --hole:#000;
+    --ok:#5BC48A; --bad:#F07368; --sel:#6FA8E8; --selbg:rgba(111,168,232,.14); --btn:#222C35;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#131920; --paper:#1B232B; --ink:#E4EAEF; --muted:#98A5B0; --line:#34414C; --grid:#232D36;
+  --live:#FFB12E; --off:#5E6670; --strip:#0E1114; --hole:#000;
+  --ok:#5BC48A; --bad:#F07368; --sel:#6FA8E8; --selbg:rgba(111,168,232,.14); --btn:#222C35;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+/* iPad: kein Doppeltipp-Zoom, kein Markieren beim langen Drücken, kein grauer Tipp-Blitz */
+body{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.board,aside,header{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+input{-webkit-user-select:text;user-select:text}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;font-size:16px;line-height:1.45}
+header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px 14px;padding:12px 16px 18px;max-width:1700px;margin:0 auto}
+header h1{grid-column:1;grid-row:1;justify-self:start}
+header .tabs{grid-column:2;grid-row:1;justify-self:center}
+header .headtools{grid-column:3;grid-row:1;justify-self:end}
+/* Sobald es in einer Zeile eng wird: Tabs in die zweite Zeile über die ganze Breite */
+@media (max-width:1400px){
+  header{grid-template-columns:1fr auto}
+  header .headtools{grid-column:2}
+  header .tabs{grid-column:1 / -1;grid-row:2;justify-self:stretch;width:100%}
+}
+h1{font-size:1.5rem;margin:0;font-weight:700;letter-spacing:-.01em;white-space:nowrap}
+/* drei gleich breite Tabs; auf schmalen Bildschirmen über die ganze Breite */
+.tabs{display:inline-grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px;border:1px solid var(--line);border-radius:14px;padding:3px;background:var(--paper)}
+.tab{font:inherit;border:0;background:transparent;color:var(--ink);height:38px;padding:0 12px;border-radius:11px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:.9rem;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tab:hover{background:#EEF2F7}
+.tab .sm{display:none}
+@media (max-width:940px){.tab{padding:0 4px}}
+/* Handy: kurzer Titel, alle drei Knöpfe gleich hoch und rund */
+@media (max-width:600px){
+  h1{font-size:1.15rem}.h1lg{display:none}
+  header .b.fs,header .b.help{width:36px;height:36px;padding:0;border-radius:999px;justify-content:center}
+  header .b.fs span{display:none}}
+@media (max-width:600px){.tab .lg{display:none}.tab .sm{display:inline}}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.headtools{display:flex;align-items:center;gap:12px}
+@media (min-width:941px){
+}
+.b.fs{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:36px;padding:0 14px;font-size:.92rem;border-radius:999px;color:var(--muted)}
+.b.help{width:36px;height:36px;padding:0;border-radius:999px;font-weight:700;font-size:.92rem;display:inline-grid;place-items:center;color:var(--muted)}
+/* Zurück zur Übersicht – gleiche Form wie «?» */
+/* Haus statt Pfeil: Ein Pfeil kann auch «einen Schritt zurück» heissen.
+   Als Zeichnung statt als Schriftzeichen, damit es auf jedem Gerät gleich
+   sitzt. Spiegelsymmetrisch, also waagrecht von selbst mittig; senkrecht ist
+   die Zeichnung leicht angehoben, weil Wände und Tür mehr Tinte tragen als das Dach. */
+.heim{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+.heim svg{display:block}
+/* Wie beim Vollbild-Knopf: Solange Platz ist, steht das Wort dabei. */
+@media (max-width:767px){.heim{width:36px;padding:0;border-radius:999px}.heim span{display:none}}
+@media (max-width:430px){.headtools{gap:8px}}
+/* Einstellungsfenster – gleiche Form wie in den anderen zwei Werkzeugen */
+.modal{position:fixed;inset:0;z-index:60;background:rgba(18,24,30,.45);display:grid;place-items:center;padding:16px}
+.modal[hidden]{display:none}
+.mcard{background:var(--paper);color:var(--ink);border-radius:14px;padding:14px 16px 16px;max-width:440px;width:100%;
+  max-height:calc(100vh - 32px);overflow:auto;box-shadow:0 14px 40px rgba(0,0,0,.3)}
+.mhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.mhead b{font-size:1.05rem}
+.mclose{font:inherit;border:none;background:none;font-size:.95rem;font-weight:600;cursor:pointer;padding:4px 6px;color:var(--muted)}
+.msub{font-weight:700;color:var(--muted);font-size:.9rem;margin:10px 0 4px}
+.mzeile{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}
+.mtext{font-size:.93rem;color:#4a5560;line-height:1.55;margin:4px 0}
+/* Popup nach dem Neuladen */
+.toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:40;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  background:var(--paper);color:var(--ink);border:1px solid var(--line);border-radius:14px;padding:12px 14px 12px 18px;
+  box-shadow:0 12px 32px rgba(0,0,0,.25);max-width:calc(100vw - 24px)}
+.toastbtns{display:flex;gap:6px;margin-left:auto}
+/* Geführte Tour */
+#tour{position:fixed;inset:0;z-index:50;pointer-events:none}
+.tblock{position:fixed;pointer-events:auto;background:transparent}
+.thole{position:fixed;border-radius:12px;pointer-events:none;
+  box-shadow:0 0 0 2px rgba(255,255,255,.95),0 0 0 9999px rgba(12,18,24,.64);
+  transition:left .25s ease,top .25s ease,width .25s ease,height .25s ease}
+.tbubble{position:fixed;pointer-events:auto;background:var(--paper);color:var(--ink);border-radius:14px;
+  padding:12px 16px 14px;width:min(340px,calc(100vw - 24px));box-shadow:0 12px 32px rgba(0,0,0,.35);
+  transition:left .25s ease,top .25s ease}
+.thead{display:flex;align-items:center;gap:8px}
+.tdots{flex:1;display:flex;gap:6px}
+.tdots i{width:8px;height:8px;border-radius:50%;background:var(--line)}
+.tdots i.on{background:var(--sel)}
+.tskip{font:inherit;font-size:.88rem;color:var(--muted);background:none;border:0;padding:4px 2px;cursor:pointer;text-decoration:underline}
+.ttext{margin:8px 0 12px;line-height:1.45}
+.tfoot{display:flex;justify-content:flex-end;gap:8px}
+@media (prefers-reduced-motion:reduce){.thole,.tbubble{transition:none}}
+@media (min-width:941px) and (max-width:1220px){
+  header{gap:10px 16px}
+  .tab{padding-left:8px;padding-right:8px}
+
+}
+main{display:grid;grid-template-columns:minmax(0,1fr) 392px;gap:18px;padding:0 16px 16px;max-width:1700px;margin:0 auto}
+.fsmode header,.fsmode main{max-width:none}
+@media (max-width:940px){main{grid-template-columns:1fr}}
+@media (max-width:600px){main{padding:0 12px 16px}header{padding-left:12px;padding-right:12px}}
+.board{background-color:var(--paper);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:22px 22px;border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;min-width:0}
+.canvas{flex:1;display:flex;align-items:center;justify-content:center;min-height:300px;overflow:auto;min-width:0}
+.stage{display:flex;align-items:stretch;gap:0;flex:1;min-width:0}
+.device{flex:none;display:flex;flex-direction:column;align-items:stretch;
+  padding-right:20px;margin-right:20px;border-right:1.5px dashed var(--line)}
+.device .cap{text-align:left;margin:2px 4px 0}
+#devbox{flex:1;display:flex;align-items:center;justify-content:center}
+.planwrap{flex:1;display:flex;flex-direction:column;min-width:0;position:relative}
+.cap{margin:0 0 6px;font-size:.88rem;color:var(--muted);text-align:center}
+.cap b{color:var(--ink)}
+.plancap{text-align:left;margin:2px 4px 0}
+@media (max-width:940px){.canvas{min-height:210px}.stage{flex-direction:column;gap:10px}
+  .device{padding:0 0 12px;margin:0;border-right:0;border-bottom:1.5px dashed var(--line)}}
+.canvas{position:relative}
+.canvas svg{display:block;max-width:100%;height:auto}
+/* Bildschirme ab Tablet-Breite: Seite hat genau Fensterhöhe, der Schaltplan passt sich in beide Richtungen an */
+@media (min-width:941px){
+  html{height:100%;overflow:hidden;overscroll-behavior:none}
+  body{position:fixed;inset:0;height:100vh;height:100dvh;height:var(--app-h,100dvh);display:flex;flex-direction:column;overflow:hidden;overscroll-behavior:none}
+  aside{overscroll-behavior:contain}
+  header{width:100%}
+  main{flex:1;min-height:0;width:100%;grid-template-rows:minmax(0,1fr)}
+  .board{min-height:0}
+  .stage{min-height:0}
+  .canvas{min-height:0}
+  .canvas svg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);max-width:100%;max-height:100%}
+  aside{max-height:100%;overflow-y:auto;align-self:stretch}
+  main.entry aside{align-self:start}
+}
+/* Lupe – gleiche Form, Stelle und Schwelle wie in «Grössen» und in der «Fehlersuche».
+   Auf dem Telefon liegt das Brett über dem Panel und wird darum klein; die Lupe
+   bläst den Schaltplan auf 210 % und macht das Brett scrollbar. */
+.zoombtn{display:none;position:absolute;right:10px;bottom:10px;width:40px;height:40px;border-radius:50%;
+  border:1.5px solid var(--ink);background:var(--btn);color:var(--ink);font-size:1.1rem;cursor:pointer;
+  box-shadow:0 2px 6px rgba(0,0,0,.15);z-index:2}
+@media (max-width:699px){.zoombtn{display:block}}
+.canvas.zoom{overflow:auto;justify-content:flex-start;align-items:flex-start;flex:0 0 auto}
+.canvas.zoom svg{position:static!important;transform:none!important;
+  width:210%!important;max-width:none!important;height:auto!important;max-height:none!important;flex:0 0 auto}
+/* Merksatz – dieselbe Sandfarbe wie in «Grössen» und in der «Fehlersuche» */
+.merke{background:#f6f2e9;border-left:4px solid #d9bd6a;border-radius:0 10px 10px 0;padding:8px 12px;margin:8px 0;line-height:1.45;color:#4a4232}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .merke{background:#2a2620;border-left-color:#8a7434;color:#e2d9c4}}
+:root[data-theme="dark"] .merke{background:#2a2620;border-left-color:#8a7434;color:#e2d9c4}
+.hint{color:var(--muted);min-height:2.9em;margin:8px 4px 4px;font-size:.95rem}
+/* Rückgängig / Neu anfangen: rechts in der Titelzeile des Schaltplans */
+.planhead{display:flex;align-items:center;gap:8px;margin:0 0 4px}
+.planhead .plancap{flex:1;min-width:0;margin:0 4px}
+.tools{display:flex;gap:6px;flex:none}
+.tools .b{padding:5px 11px;font-size:.9rem;border-radius:9px}
+@media (max-width:600px){.tools .lbl,.planhead .capsub{display:none}.tools #tUndo{font-size:1.05rem;padding:3px 11px}}
+.b{font:inherit;border:1px solid var(--line);background:var(--btn);color:var(--ink);padding:9px 14px;border-radius:10px;cursor:pointer}
+.b:hover:not(:disabled){border-color:var(--sel)}
+.b:disabled{opacity:.35;cursor:default;pointer-events:none}
+.b.primary{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.b.quiet{background:transparent;border-color:transparent;color:var(--muted);text-decoration:underline;padding:7px 4px}
+:focus-visible{outline:3px solid var(--sel);outline-offset:2px}
+aside{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px;align-self:start}
+@media (min-width:941px){main:not(.entry) > aside{align-self:stretch}}
+h2{font-size:1.15rem;margin:0 0 10px}
+.sub{color:var(--muted);margin:6px 0 10px;font-size:.9rem}
+.chips{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.chip{font:inherit;font-size:.92rem;border:1px solid var(--line);background:var(--btn);color:var(--ink);
+  padding:6px 2px;border-radius:8px;cursor:pointer;white-space:nowrap;overflow:hidden;text-align:center}
+.chip.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.chip .tick{color:var(--ok);font-weight:700}
+.chip.on .tick{color:#7FE0AC}
+.lvlname{margin:8px 0 2px;font-weight:700}
+.proto{margin-top:8px;width:max-content;max-width:100%}
+.phead{display:grid;grid-template-columns:76px 1fr 1fr 18px;gap:0 7px;font-size:.78rem;color:var(--muted);padding:0 6px}
+.prow{display:grid;grid-template-columns:76px 1fr 1fr 18px;gap:0 7px;align-items:center;width:100%;min-height:35px;
+  font:inherit;color:var(--ink);text-align:left;background:transparent;border:1px solid transparent;
+  border-radius:9px;padding:3px 6px;cursor:pointer}
+.phead.solo,.prow.solo{grid-template-columns:76px auto}
+.prow:hover{background:var(--selbg)}
+.prow.on{border-color:var(--sel);background:var(--selbg)}
+.prow.static{cursor:default}
+.prow.static:hover{background:transparent}
+.prow.static.on,.prow.static.on:hover{background:var(--selbg);border-color:transparent}
+.bxpanel{display:flex;flex-direction:column;align-items:center;margin:4px 0 0}
+.bxpanel .cap{margin:2px 0 0}
+.codehead{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.codehead .lvlname{margin:0}
+.codetag{letter-spacing:.12em}
+.codein.big input{font-size:1.3rem;padding:10px 12px}
+/* Wenig Höhe (Tablet quer mit Adressleiste): alles etwas enger */
+@media (min-width:941px) and (max-height:900px){
+  header{padding-top:8px;padding-bottom:12px;gap:6px 14px}
+  .tab{height:34px}
+  main{gap:12px;padding-bottom:10px}
+}
+@media (min-width:941px) and (max-height:820px){
+  header{padding-top:6px;padding-bottom:10px;gap:5px 14px}
+  .tab{height:32px}
+  main{gap:10px;padding-bottom:8px}
+  aside{padding:11px 14px}
+  .chip{padding:4px 2px}
+  .lvlname{margin:5px 0 0}
+  .prow{min-height:30px;padding-top:1px;padding-bottom:1px}
+  .strip{padding:5px 6px}
+  .checkbar{margin-top:8px}
+  .kindbox,.predbox{margin-top:8px;padding:8px 10px 10px}
+  .predbox .sub{margin-bottom:6px}
+  .checkbar .b{padding:7px 12px}
+  .msg{margin-top:6px;font-size:.93rem;line-height:1.38}
+  .merke{padding:7px 10px;margin-top:6px;font-size:.93rem;line-height:1.38}
+  .bxpanel svg{width:auto!important;height:104px}
+}
+@media (min-width:941px) and (max-height:720px){
+  .bxpanel svg{height:88px}
+  .phead{line-height:1.2}
+  .msg{font-size:.88rem;line-height:1.32}
+  .merke{font-size:.88rem;line-height:1.32}
+}
+@media (min-width:941px) and (max-height:670px){
+  .bxpanel svg{height:74px}
+  .prow{min-height:27px}
+  .strip{padding:4px 6px}
+  .tab{height:32px}
+  header{padding-top:5px;padding-bottom:10px}
+  main{gap:10px;padding-bottom:8px}
+  .checkbar{margin-top:5px}
+  .kindbox,.predbox{margin-top:6px;padding:6px 9px 8px}
+  .predq{margin-bottom:5px;font-size:.9rem}
+  .predbox .sub{margin-top:5px}
+  .proto{margin-top:4px}
+  .bxpanel .cap{margin-top:0}
+  .msg{margin-top:4px}
+  .merke{margin-top:4px;padding:6px 9px}
+  .predline{gap:8px}
+  .lvlname{margin-top:3px}
+  .chip{padding:3px 2px}
+  aside{padding-top:8px;padding-bottom:7px}
+}
+/* Knacken: Blackbox links (wie «Aussen» beim Bauen), Vermutung rechts */
+@media (min-width:941px){
+  main.knack{grid-template-columns:392px minmax(0,1fr)}
+  main.knack aside{order:-1}
+}
+/* Schmale Bildschirme: Blackbox → eigener Schaltplan → Vergleich und Prüfen */
+@media (max-width:940px){
+  aside{display:contents}
+  .sideA,.sideB{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px}
+  .sideA:empty,.sideB:empty{display:none}
+  .sideA{order:1} .board{order:2} .sideB{order:3}
+  .sideB > .proto:first-child{margin-top:0}
+  main.entry .sideA{justify-self:center;width:100%;max-width:460px}
+}
+/* Code-Tab ohne geladenen Code: nur die Eingabe, mittig */
+main.entry{grid-template-columns:minmax(0,1fr)}
+main.entry aside{justify-self:center;align-self:start;width:100%;max-width:460px;margin-top:8vh;padding:22px}
+@media (max-width:940px){main.entry aside{margin-top:4px}}
+.prow .lbl{font-size:.9rem}
+.strip{display:inline-flex;gap:5px;background:var(--strip);padding:6px 7px;border-radius:4px;justify-self:start}
+.dot{width:15px;height:15px;border-radius:50%;flex:none}
+.dot.out{background:var(--hole)}
+.dot.dark{background:var(--off)}
+.dot.lit{background:rgb(var(--lamp))}
+.nums{display:flex;gap:5px;padding:0 7px;font-size:.66rem;color:var(--muted)}
+/* Vorhersage: Punkte antippen, dann aufdecken */
+.predbox{margin-top:10px;padding:10px 12px 12px;border:1px solid var(--line);border-radius:12px;background:var(--btn)}
+.predq{margin:0 0 8px;font-size:.95rem}
+.predrow{display:inline-flex;flex-direction:column;gap:2px;margin-bottom:6px}
+.strip.pred{padding:7px}
+.pdot{border:0;padding:0;cursor:pointer}
+.pdot.unset{background:transparent;box-shadow:inset 0 0 0 2px var(--muted)}
+.predline{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap}
+.predbox .sub{margin:8px 0 0}
+
+.nums span{width:15px;text-align:center}
+.mark{font-weight:700;text-align:center}
+.mark.ok{color:var(--ok)} .mark.bad{color:var(--bad)}
+.ghosttext{display:flex;align-items:center;height:27px;color:var(--muted);font-size:.85rem}
+/* Knacken-Tabelle: Spaltentitel mittig über den Leisten */
+.phead .col{display:flex;flex-direction:column;align-items:center}
+.prow.static > .strip,.prow.static > .ghosttext{justify-self:center}
+.kind{margin:12px 6px 0}
+.kindbox{margin-top:12px;padding:10px 12px 12px;border:1px solid var(--line);border-radius:12px;background:var(--btn)}
+.kindbtns{display:flex;gap:8px;flex-wrap:wrap}
+.kindbtns .b.ok{background:#E8F5EC;border-color:#2E7D4F;color:#1E5B38}
+.kindbtns .b.bad{background:#FBECEC;border-color:#C0392B;color:#8E2A20}
+.code{font-size:1.7rem;font-weight:700;letter-spacing:.14em;margin:2px 0 2px}
+.coderow{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.b.copy{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;min-width:124px;justify-content:center}
+.b.copy.ok{color:var(--ok);border-color:var(--ok)}
+.b.paste{display:inline-flex;align-items:center;gap:6px;padding:9px 11px;flex:none}
+@media (max-width:420px){.b.paste span{display:none}}
+.checkbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px}
+.msg{margin:8px 0 0;min-height:1.2em}
+.msg.ok{color:var(--ok)} .msg.bad{color:var(--bad)}
+.msg:empty{display:none}
+details{margin-top:12px;border-top:1px solid var(--line);padding-top:8px}
+summary{cursor:pointer;color:var(--muted);font-size:.9rem}
+.codein{display:flex;gap:8px;margin-top:8px}
+input[type=text]{font:inherit;color:var(--ink);background:var(--btn);border:1px solid var(--line);
+  border-radius:10px;padding:8px 10px;flex:1;min-width:0;text-transform:uppercase;letter-spacing:.1em}
+input[type=text]::placeholder{text-transform:none;letter-spacing:normal}
+[hidden]{display:none!important}
+
+/* Schaltplan */
+.w{stroke:var(--ink);stroke-width:2.2;stroke-linecap:round;fill:none}
+.w.on{stroke:var(--live);stroke-width:3.4}
+.jn{fill:var(--ink)}
+.lb{stroke:var(--ink);stroke-width:2.2}
+.lx{stroke:var(--ink);stroke-width:1.8;fill:none}
+.glow{fill:rgb(var(--lamp))}
+.ghostlamp{fill:none;stroke:var(--muted);stroke-width:2;stroke-dasharray:4 4}
+.lout{font-size:10px;fill:var(--muted);text-anchor:middle}
+.hit{fill:transparent;cursor:pointer}
+.hit:focus{outline:none}
+.hit:focus-visible{stroke:var(--sel);stroke-width:2.5}
+.hl{fill:var(--selbg);stroke:var(--sel);stroke-width:2;stroke-dasharray:6 5}
+.bat{stroke:var(--ink);stroke-linecap:butt}
+.blabel{font-size:13px;fill:var(--muted);text-anchor:middle}
+.pm{font-size:15px;font-weight:700;fill:var(--ink);text-anchor:middle}
+/* Nummern-Badge */
+.nb{fill:var(--paper);stroke:var(--sel);stroke-width:2;cursor:pointer}
+.nb.static{stroke:var(--line);stroke-width:1.5;cursor:default;pointer-events:none}
+.nb.sw{fill:var(--sel);stroke:var(--sel)}
+.nt{font-size:13px;font-weight:700;fill:var(--ink);text-anchor:middle;pointer-events:none}
+.nb.sw ~ .nt,.nt.sw{fill:#fff}
+.db{fill:var(--paper);stroke:var(--bad);stroke-width:1.6;cursor:pointer}
+.dx{stroke:var(--bad);stroke-width:2.2;stroke-linecap:round;fill:none;pointer-events:none}
+/* Plus-Plätze */
+.pbg{fill:var(--paper);stroke:var(--muted);stroke-width:1.8;stroke-dasharray:3.5 3}
+.pc{stroke:var(--muted);stroke-width:2.2;stroke-linecap:round}
+.plus.hot .pbg{stroke:var(--sel);stroke-dasharray:none;stroke-width:2.4}
+.plus.hot .pc{stroke:var(--sel);stroke-width:3}
+.phit{fill:transparent;cursor:pointer;touch-action:none}
+.phit:focus{outline:none}
+.phit:focus-visible{stroke:var(--sel);stroke-width:2.5}
+/* Blackbox-Gerät */
+.bxbody{fill:var(--strip);stroke:#8A9099;stroke-opacity:.45}
+.bxsock{fill:#8A9099}
+.bxhole{fill:var(--hole)}
+.bxglass{stroke:#6E757E;stroke-width:1.6}
+.bxwire{stroke:var(--ink);stroke-width:2.2;fill:none;stroke-linecap:round}
+.bxlbl{font-size:11px;fill:#C9D0D8;text-anchor:middle}
+.bxhit{fill:transparent;cursor:pointer}
+.bxq{font-size:15px;font-weight:700;fill:#6B7480;text-anchor:middle}
+/* Sehr schmale Telefone (320 px): Der Titel weicht, damit die vier Knöpfe
+   vollständig danebenpassen und keiner abgeschnitten wird. Steht zuunterst,
+   weil sonst die 600-px-Regel weiter unten gewinnen würde. */
+@media (max-width:360px){h1{font-size:1rem}}
+</style>
+</head>
+<body>
+<header>
+  <h1 title="Stand 23.09.2026">Blackbox<span class="h1lg">-Schaltungen</span></h1>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" data-mode="ueben" aria-selected="true">Üben</button>
+    <button class="tab" role="tab" data-mode="bauen" aria-selected="false"><span class="lg">Blackbox bauen</span><span class="sm">Bauen</span></button>
+    <button class="tab" role="tab" data-mode="code" aria-selected="false"><span class="lg">Code knacken</span><span class="sm">Knacken</span></button>
+  </div>
+  <div class="headtools"><a class="b fs heim" href="index.html" title="Zur Übersicht" aria-label="Zur Übersicht"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.65 12 2.45l9 7.2"/><path d="M5.6 8.45v10h12.8v-10"/><path d="M9.9 18.45v-5.2h4.2v5.2"/></svg><span>Übersicht</span></a><button class="b fs" id="fsBtn" hidden aria-label="Vollbild"></button><button class="b help" id="einstBtn" aria-label="Einstellungen" title="Einstellungen">⚙</button><button class="b help" id="helpBtn" aria-label="Anleitung" title="Anleitung">?</button></div>
+</header>
+
+<main>
+  <section class="board">
+    <div class="stage">
+      <div class="device" id="device"><p class="cap" id="devcap"></p><div id="devbox"></div></div>
+      <div class="planwrap">
+        <div class="planhead"><p class="cap plancap" id="plancap"></p>
+          <div class="tools">
+            <button class="b" id="tUndo" aria-label="Rückgängig" title="Rückgängig"><span aria-hidden="true">↶</span><span class="lbl"> Rückgängig</span></button>
+            <button class="b" id="tNew">Neu anfangen</button>
+          </div>
+        </div>
+        <div class="canvas" id="canvas"></div>
+        <button class="zoombtn" id="zoomBtn" title="Bild vergrössern">🔍</button>
+      </div>
+    </div>
+    <p class="hint" id="hint"></p>
+  </section>
+
+  <aside id="side"><div class="sideA" id="sideA"></div><div class="sideB" id="sideB"></div></aside>
+</main>
+
+<!-- Eigenes Popup nach dem Neuladen (statt einer Browsermeldung) -->
+<div class="toast" id="toast" hidden role="status">
+  <span>Du bist wieder da, wo du aufgehört hast.</span>
+  <div class="toastbtns"><button class="b quiet" id="toastReset">Neu beginnen</button><button class="b primary" id="toastOk">OK</button></div>
+</div>
+
+<!-- Einstellungen: alles, was nicht zum Üben gehört, liegt hinter dem Zahnrad -->
+<div id="einst" class="modal" hidden>
+  <div class="mcard">
+    <div class="mhead"><b>⚙ Einstellungen</b><button class="mclose" data-einst="zu" aria-label="Schliessen">✕</button></div>
+    <div class="msub">Für die Lehrperson</div>
+    <div class="mzeile"><button class="b" id="brightBtn" data-einst="hell"></button></div>
+    <p class="mtext" id="brightText"></p>
+    <div class="msub">Von vorne beginnen</div>
+    <div class="mzeile"><button class="b" id="neuBtn" data-einst="neu"></button></div>
+    <p class="mtext" id="neuText"></p>
+    <div class="mzeile"><button class="b primary" data-einst="zu">Fertig</button></div>
+  </div>
+</div>
+
+<!-- Geführte Tour: Rest abgedunkelt, erklärter Teil hell und bedienbar -->
+<div id="tour" hidden>
+  <div class="tblock" id="tbT"></div><div class="tblock" id="tbB"></div>
+  <div class="tblock" id="tbL"></div><div class="tblock" id="tbR"></div>
+  <div class="thole" id="thole"></div>
+  <div class="tbubble" id="tbubble" role="dialog" aria-modal="true" aria-labelledby="ttext">
+    <div class="thead"><span class="tdots" id="tdots"></span><button class="tskip" id="tSkip">Überspringen</button></div>
+    <p class="ttext" id="ttext"></p>
+    <div class="tfoot"><button class="b" id="tBack">Zurück</button><button class="b primary" id="tNext">Weiter</button></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ===================== Modell =====================
+   Schaltung als Baum: Lampe {t:'L',n}, Serie {t:'S',c:[…]}, Parallel {t:'P',c:[…]}.
+   Wurzel ist immer eine Serie. Jede Lampe hat Widerstand 1, die Batterie Spannung 1.
+   Ausgedrehte Lampe = unterbrochene Stelle (unendlicher Widerstand).            */
+const EPS = 1e-9, MAXL = 5;
+const L = n => ({t:'L', n});
+const S = (...c) => ({t:'S', c});
+const P = (...c) => ({t:'P', c});
+const clone = t => JSON.parse(JSON.stringify(t));
+
+function lampsOf(node, out = []) {
+  if (node.t === 'L') out.push(node); else node.c.forEach(c => lampsOf(c, out));
+  return out;
+}
+const count = t => lampsOf(t).length;
+function allNodes(node, out = []) { out.push(node); if (node.t !== 'L') node.c.forEach(c => allNodes(c, out)); return out; }
+function findParent(node, target, parent = null) {
+  if (node === target) return parent;
+  if (node.t === 'L') return undefined;
+  for (const c of node.c) { const r = findParent(c, target, node); if (r !== undefined) return r; }
+  return undefined;
+}
+function resist(node, rem) {
+  if (node.t === 'L') return node.n === rem ? Infinity : 1;
+  if (node.t === 'S') return node.c.reduce((s, c) => s + resist(c, rem), 0);
+  const g = node.c.reduce((s, c) => s + 1 / resist(c, rem), 0);
+  return g === 0 ? Infinity : 1 / g;
+}
+function currents(root, rem) {
+  const map = new Map();
+  (function go(node, I) {
+    map.set(node, I);
+    if (node.t === 'L') return;
+    if (node.t === 'S') { node.c.forEach(c => go(c, I)); return; }
+    const R = resist(node, rem), U = isFinite(R) ? I * R : 0;
+    node.c.forEach(c => { const r = resist(c, rem); go(c, isFinite(r) ? U / r : 0); });
+  })(root, (() => { const R = resist(root, rem); return isFinite(R) ? 1 / R : 0; })());
+  return map;
+}
+/* Wert pro Lampe: -1 ausgedreht, 0 dunkel, >0 Leistung (1 = volle Helligkeit) */
+function lampValues(root, rem) {
+  const cur = currents(root, rem), v = {};
+  lampsOf(root).forEach(l => { const I = cur.get(l); v[l.n] = l.n === rem ? -1 : (I > EPS ? I * I : 0); });
+  return {cur, v};
+}
+function pattern(root) {
+  const n = count(root), rows = [];
+  for (let r = 1; r <= n; r++) { const {v} = lampValues(root, r); rows.push(Array.from({length:n}, (_, j) => v[j+1])); }
+  return rows;
+}
+const litOf = v => v < 0 ? -1 : (v > EPS ? 1 : 0);
+const keyOf = rows => rows.map(r => r.map(litOf).join(',')).join('|');
+function canon(node) {
+  if (node.t === 'L') return 'L' + node.n;
+  return node.t + '(' + node.c.map(canon).sort().join(',') + ')';
+}
+
+function norm(node, isRoot) {
+  if (node.t === 'L') return node;
+  const kids = [];
+  for (let c of node.c) { c = norm(c, false); if (c.t === node.t) kids.push(...c.c); else kids.push(c); }
+  node.c = kids;
+  return (!isRoot && kids.length === 1) ? kids[0] : node;
+}
+/* kind 'S': neue Lampe in Serie direkt nach target; 'P': neue Lampe parallel zu target */
+function addLamp(tree, target, kind) {
+  const nl = L(count(tree) + 1), par = findParent(tree, target);
+  if (par === null) {
+    if (kind === 'S') tree.c.push(nl); else tree.c = [P(S(...tree.c), nl)];
+  } else {
+    const i = par.c.indexOf(target);
+    if (par.t === kind) par.c.splice(i + 1, 0, nl);
+    else par.c[i] = kind === 'S' ? S(target, nl) : P(target, nl);
+  }
+  return norm(tree, true);
+}
+function removeLamp(tree, num) {
+  if (count(tree) <= 1) return null;
+  const lamp = lampsOf(tree).find(l => l.n === num);
+  if (!lamp) return null;
+  const par = findParent(tree, lamp);
+  par.c.splice(par.c.indexOf(lamp), 1);
+  tree = norm(tree, true);
+  lampsOf(tree).sort((a, b) => a.n - b.n).forEach((l, i) => l.n = i + 1);
+  return tree;
+}
+/* Gibt es eine Umnummerierung der eigenen Schaltung, die zum Muster passt? */
+function permute(n, fn) {
+  const a = Array.from({length:n}, (_, i) => i + 1);
+  (function go(k) {
+    if (k === n) return fn(a);
+    for (let i = k; i < n; i++) {
+      [a[k], a[i]] = [a[i], a[k]];
+      go(k + 1);
+      [a[k], a[i]] = [a[i], a[k]];
+    }
+  })(0);
+}
+function canRenumber(tree, rows) {
+  const ls = lampsOf(tree), orig = ls.map(l => l.n), key = keyOf(rows);
+  let found = false;
+  permute(ls.length, p => {
+    if (found) return;
+    ls.forEach((l, i) => l.n = p[i]);
+    if (keyOf(pattern(tree)) === key) found = true;
+  });
+  ls.forEach((l, i) => l.n = orig[i]);
+  return found;
+}
+/* Neue Lampe parallel zu den Kindern i..j einer Reihe */
+function addParallelRange(tree, series, i, j) {
+  const nl = L(count(tree) + 1);
+  const span = series.c.slice(i, j + 1);
+  series.c.splice(i, span.length, P(span.length === 1 ? span[0] : S(...span), nl));
+  return norm(tree, true);
+}
+/* Serie, parallel oder gemischt – für die Frage nach dem Lösen */
+function kindOf(tree) {
+  if (tree.c.every(c => c.t === 'L')) return 'S';
+  if (tree.c.length === 1 && tree.c[0].t === 'P' && tree.c[0].c.every(c => c.t === 'L')) return 'P';
+  return 'M';
+}
+const KIND_NAME = {S:'eine <b>Serieschaltung</b>', P:'eine <b>Parallelschaltung</b>', M:'eine <b>gemischte Schaltung</b>'};
+const MERKE = {
+  S:'In der Serieschaltung liegen alle Lampen auf demselben Weg. Dreht man eine heraus, gehen alle aus.',
+  P:'In der Parallelschaltung hat jede Lampe ihren eigenen Weg zur Batterie. Die anderen leuchten weiter.',
+  M:'Lampen auf demselben Weg gehen zusammen aus. Wer einen eigenen Weg zur Batterie hat, leuchtet weiter.'
+};
+/* Gleiche Bauform wie in «Grössen im Stromkreis», damit ein Merksatz in beiden
+   Werkzeugen gleich aussieht und gleich gelesen wird. */
+const merke = t => `<div class="merke">📌 <b>Merke:</b> ${t}</div>`;
+function kindText(tree) {
+  const n = count(tree);
+  if (n < 2) return 'Eine einzelne Lampe.';
+  if (tree.c.every(c => c.t === 'L')) return 'Das ist eine <b>Serieschaltung</b>.';
+  if (tree.c.length === 1 && tree.c[0].t === 'P' && tree.c[0].c.every(c => c.t === 'L'))
+    return 'Das ist eine <b>Parallelschaltung</b>.';
+  return 'Das ist eine <b>Serie- und Parallelschaltung</b>.';
+}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function randomTree(n) {
+  let t = S(L(1));
+  for (let k = 2; k <= n; k++) {
+    const nodes = allNodes(t);
+    t = addLamp(t, nodes[Math.floor(Math.random() * nodes.length)], Math.random() < .5 ? 'S' : 'P');
+  }
+  const perm = shuffle(Array.from({length:n}, (_, i) => i + 1));
+  lampsOf(t).forEach((l, i) => l.n = perm[i]);
+  return t;
+}
+function findSolution(rows) {
+  const n = rows.length, key = keyOf(rows), tries = n >= 5 ? 40000 : 10000;
+  for (let i = 0; i < tries; i++) { const t = randomTree(n); if (keyOf(pattern(t)) === key) return t; }
+  return null;
+}
+function findAlt(rows, notCanon) {
+  const n = rows.length, key = keyOf(rows), tries = 6000;
+  for (let i = 0; i < tries; i++) {
+    const t = randomTree(n);
+    if (keyOf(pattern(t)) === key && canon(t) !== notCanon) return t;
+  }
+  return null;
+}
+
+/* Code: Anzahl Lampen + Leuchtmuster + Prüfzeichen */
+const ABC = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+function encode(rows) {
+  const n = rows.length, bits = [];
+  bits.push(((n - 2) >> 1) & 1, (n - 2) & 1);
+  rows.forEach((row, r) => row.forEach((v, j) => { if (j !== r) bits.push(v > EPS ? 1 : 0); }));
+  while (bits.length % 5) bits.push(0);
+  let s = '', sum = 0;
+  for (let i = 0; i < bits.length; i += 5) {
+    let v = 0; for (let k = 0; k < 5; k++) v = v * 2 + bits[i + k];
+    sum += v; s += ABC[v];
+  }
+  return s + ABC[sum % 32];
+}
+function decode(str) {
+  const vals = str.toUpperCase().replace(/[^A-Z0-9]/g, '').split('').map(ch => ABC.indexOf(ch));
+  if (vals.length < 2 || vals.includes(-1)) return null;
+  const chk = vals.pop();
+  if (vals.reduce((a, b) => a + b, 0) % 32 !== chk) return null;
+  const bits = [];
+  vals.forEach(v => { for (let k = 4; k >= 0; k--) bits.push((v >> k) & 1); });
+  const n = bits[0] * 2 + bits[1] + 2, need = 2 + n * (n - 1);
+  if (Math.ceil(need / 5) !== vals.length || n < 2 || n > MAXL) return null;
+  let p = 2;
+  return Array.from({length:n}, (_, r) => Array.from({length:n}, (_, j) => j === r ? -1 : bits[p++]));
+}
+
+/* ===================== Aufgaben ===================== */
+const LEVELS = [
+  {c:'1', name:'Alles oder nichts',        make:()=>S(L(1),L(2),L(3))},
+  {c:'2', name:'Jede für sich',            make:()=>S(P(L(1),L(2),L(3)))},
+  {c:'3', name:'Eine und zwei',            make:()=>S(L(1),P(L(2),L(3)))},
+  {c:'4', name:'Vier Lampen',              make:()=>S(L(1),P(L(2),L(3)),L(4))},
+  {c:'5', name:'Verschachtelt',            make:()=>S(L(1),P(S(L(2),L(3)),L(4)),L(5))},
+  {c:'★', name:'Mehr als eine Lösung',     make:()=>S(P(L(1),L(2)),P(L(3),L(4))),
+          note:'Zu dieser Blackbox passen sogar <b>vier</b> verschiedene Schaltpläne. Findest du noch einen?'},
+  {c:'🎲', name:'Zufall',                  rnd:true}
+];
+
+/* ===================== Zustand ===================== */
+/* Drei Tabs: 'ueben' (Aufgabe 1), 'bauen' (2a/b), 'code' (2c).
+   'ueben' und 'code' sind Knack-Tabs mit je eigener Blackbox und eigenem Fortschritt. */
+const newKnack = () => ({task:null, seen:new Set(), check:null, tip:0, extra:null,
+                         foundCanon:null, foundTree:null, swapArmed:false, boxRem:null, taskName:'',
+                         pred:null, predMsg:null, kindAns:null});
+const st = {
+  mode:'ueben', bright:false,
+  trees:{ueben:S(L(1)), bauen:S(L(1),L(2),L(3)), code:S(L(1))},
+  undo:{ueben:[], bauen:[], code:[]},
+  removed:{ueben:null, bauen:null, code:null},
+  knack:{ueben:newKnack(), code:newKnack(), bauen:newKnack()},
+  swapFrom:null, hover:null, plusList:[],
+  lvl:0, solved:new Set(), rndN:5, codeText:'', codeErr:'', predHelp:false,
+  drag:null, suppressClick:false, bounds:null, vb:null
+};
+/* st.task, st.check … zeigen immer auf den Fortschritt des aktuellen Tabs */
+['task','seen','check','tip','extra','foundCanon','foundTree','swapArmed','boxRem','taskName','pred','predMsg','kindAns'].forEach(k =>
+  Object.defineProperty(st, k, {get:() => st.knack[st.mode][k], set:v => { st.knack[st.mode][k] = v; }}));
+const isKnack = () => st.mode !== 'bauen';
+const armedNow = () => isKnack() && st.swapArmed;
+const $ = id => document.getElementById(id);
+const T = () => st.trees[st.mode];
+const setT = t => { st.trees[st.mode] = t; };
+const pushUndo = () => { st.undo[st.mode].push(clone(T())); if (st.undo[st.mode].length > 40) st.undo[st.mode].shift(); };
+
+/* ===================== Geometrie ===================== */
+const LW=58, LH=58, R=15, PW=32, PH=36, PADX=26, VG=10;
+function measure(node, m) {
+  let d;
+  if (node.t === 'L') d = {w:LW+PW, h:LH+PH, cy:LH/2};
+  else if (node.t === 'S') {
+    let w = 0, cy = 0, below = 0;
+    node.c.forEach(c => { const q = measure(c, m); w += q.w; cy = Math.max(cy, q.cy); below = Math.max(below, q.h - q.cy); });
+    d = {w, h:cy + below, cy};
+  } else {
+    let innerW = 0, y = 0; const sp = [];
+    node.c.forEach((c, i) => {
+      const q = measure(c, m);
+      innerW = Math.max(innerW, q.w);
+      if (i) y += VG;
+      sp.push({off:y, q}); y += q.h;
+    });
+    const first = sp[0].off + sp[0].q.cy, last = sp[sp.length-1].off + sp[sp.length-1].q.cy;
+    d = {w:PADX + innerW + 14 + PW, h:y + PH, cy:(first + last) / 2, innerW, sp};
+  }
+  m.set(node, d); return d;
+}
+const f = x => Math.round(x * 10) / 10;
+
+/* ===================== Schaltplan zeichnen ===================== */
+function drawCircuit() {
+  const tree = T(), m = new Map();
+  const d = measure(tree, m);
+  const rootBelow = tree.c.length >= 2 && count(tree) < MAXL;
+  const totH = d.h + (rootBelow ? PH : 0);
+  const {cur, v} = lampValues(tree, st.removed[st.mode]);
+  const full = count(tree) >= MAXL;
+  const c = {m, cur, v, W:[], Won:[], D:[], Lp:[], H:[], B:[], PL:[], bounds:new Map(), plus:[]};
+
+  const line = (x1,y1,x2,y2,on) =>
+    (on?c.Won:c.W).push(`<line class="w${on?' on':''}" x1="${f(x1)}" y1="${f(y1)}" x2="${f(x2)}" y2="${f(y2)}"/>`);
+  const dot = (x,y) => c.D.push(`<circle class="jn" cx="${f(x)}" cy="${f(y)}" r="3.6"/>`);
+  const plus = (x, y, node, kind, label) => {
+    if (full) return;
+    let series = null, idx = -1;
+    if (kind === 'P' && node !== tree) {
+      const par = findParent(tree, node);
+      if (par && par.t === 'S' && par.c.length >= 2) { series = par; idx = par.c.indexOf(node); }
+    }
+    c.plus.push({node, kind, label, series, idx});
+    const k = c.plus.length - 1, hot = st.hover === k ? ' hot' : '';
+    c.PL.push(
+      `<g class="plus${hot}" data-p="${k}">` +
+      `<circle class="pbg" cx="${f(x)}" cy="${f(y)}" r="11"/>` +
+      `<path class="pc" d="M${f(x-5)} ${f(y)}H${f(x+5)}M${f(x)} ${f(y-5)}V${f(y+5)}"/>` +
+      `<circle class="phit" cx="${f(x)}" cy="${f(y)}" r="17" tabindex="0" role="button" aria-label="${label}"/>` +
+      `</g>`);
+  };
+
+  function draw(node, x, ytop) {
+    const q = m.get(node), cy = ytop + q.cy, on = (cur.get(node) || 0) > EPS;
+    c.bounds.set(node, {x, y:ytop, w:q.w, h:q.h, cy});
+    if (node.t === 'L') {
+      const cx = x + LW/2, val = v[node.n];
+      line(x, cy, cx - R, cy, on); line(cx + R, cy, x + q.w, cy, on);
+      let g = '';
+      if (val < 0) {
+        g += `<circle class="ghostlamp" cx="${f(cx)}" cy="${f(cy)}" r="${R}"/>`;
+        g += `<text class="lout" x="${f(cx)}" y="${f(cy + R + 15)}">ausgedreht</text>`;
+      } else {
+        const lit = val > EPS, t = lit ? lampLevel(val) : 0, c = lampRGB(t);
+        // Kein Schein: leuchtend = gelb wie auf dem Arbeitsblatt. Mit «Helligkeit zeigen» zusätzlich Strahlen (lang = hell)
+        if (lit && brightOn()) g += rays(cx, cy, R + 4, 14 * t, 8);
+        g += `<circle class="lb" cx="${f(cx)}" cy="${f(cy)}" r="${R}" style="fill:${lit ? c : 'var(--paper)'}"/>`;
+        const kk = R * .7071;
+        g += `<path class="lx" d="M${f(cx-kk)} ${f(cy-kk)}L${f(cx+kk)} ${f(cy+kk)}M${f(cx+kk)} ${f(cy-kk)}L${f(cx-kk)} ${f(cy+kk)}"/>`;
+      }
+      c.Lp.push(g);
+      c.H.push(`<rect class="hit" data-l="${node.n}" x="${f(x)}" y="${f(cy-LH/2)}" width="${LW}" height="${LH}" rx="8" tabindex="0" role="button" aria-label="Lampe ${node.n} ${val<0?'einschrauben':'ausdrehen'}"/>`);
+      // Nummern-Badge: immer antippbar, zwei Nummern nacheinander = Lampen tauschen
+      const bx = cx, by = cy - R - 14, sw = st.swapFrom === node.n ? ' sw' : '';
+      c.H.push(`<g data-num="${node.n}"><circle class="nb${sw}" cx="${f(bx)}" cy="${f(by)}" r="11" tabindex="0" role="button" aria-label="Nummer ${node.n} tauschen"/>` +
+               `<text class="nt${sw}" x="${f(bx)}" y="${f(by+5)}">${node.n}</text></g>`);
+      if (val < 0 && count(tree) > 1) {
+        const dx = cx + R + 12, dy = cy - R + 1;
+        c.H.push(`<g data-del="${node.n}"><circle class="db" cx="${f(dx)}" cy="${f(dy)}" r="10" tabindex="0" role="button" aria-label="Lampe ${node.n} aus der Schaltung nehmen"/>` +
+                 `<path class="dx" d="M${f(dx-4)} ${f(dy-4)}L${f(dx+4)} ${f(dy+4)}M${f(dx+4)} ${f(dy-4)}L${f(dx-4)} ${f(dy+4)}"/></g>`);
+      }
+      plus(x + LW + PW/2, cy, node, 'S', `Lampe in Serie nach Lampe ${node.n}`);
+      plus(cx, ytop + LH + PH/2, node, 'P', `Lampe parallel zu Lampe ${node.n}`);
+    } else if (node.t === 'S') {
+      let cx = x;
+      node.c.forEach(ch => { const qq = m.get(ch); draw(ch, cx, cy - qq.cy); cx += qq.w; });
+    } else {
+      const lr = x + 12, innerX = x + PADX, rr = innerX + q.innerW + 2;
+      const br = [];
+      q.sp.forEach((s, i) => {
+        const ch = node.c[i], sy = ytop + s.off + s.q.cy, bon = (cur.get(ch) || 0) > EPS;
+        const bx = innerX + (q.innerW - s.q.w) / 2;   // kürzere Zweige mittig
+        draw(ch, bx, ytop + s.off);
+        line(lr, sy, bx, sy, bon);
+        line(bx + s.q.w, sy, rr, sy, bon);
+        br.push({y:sy, on:bon});
+      });
+      line(x, cy, lr, cy, on); line(rr, cy, x + q.w, cy, on);
+      const pts = [...new Set([cy, ...br.map(b => b.y)])].sort((a,b) => a-b);
+      for (let i = 0; i < pts.length - 1; i++) {
+        const a = pts[i], b = pts[i+1];
+        const son = b <= cy + 1e-6 ? br.some(z => z.y <= a + 1e-6 && z.on) : br.some(z => z.y >= b - 1e-6 && z.on);
+        line(lr, a, lr, b, son); line(rr, a, rr, b, son);
+      }
+      dot(lr, cy); dot(rr, cy);
+      br.slice(1, -1).forEach(z => { dot(lr, z.y); dot(rr, z.y); });
+      const ns = lampsOf(node).map(l => l.n).sort((a,b) => a-b).join(', ');
+      plus(x + q.w - PW/2, cy, node, 'S', `Lampe in Serie nach der Gruppe ${ns}`);
+      plus((lr + rr)/2, ytop + q.h - PH/2, node, 'P', `Lampe parallel zur Gruppe ${ns}`);
+    }
+  }
+
+  const ox = 74, oy = 46;
+  draw(tree, ox, oy);
+  if (rootBelow) plus(ox + d.w/2, oy + totH - PH/2, tree, 'P', 'Lampe parallel zur ganzen Schaltung');
+
+  const rcy = oy + d.cy, lx = ox - 32, rx = ox + d.w + 32, yb = oy + totH + 46, mx = (lx + rx)/2;
+  const ron = (cur.get(tree) || 0) > EPS;
+  line(lx, rcy, ox, rcy, ron); line(ox + d.w, rcy, rx, rcy, ron);
+  line(lx, rcy, lx, yb, ron); line(rx, rcy, rx, yb, ron);
+  line(lx, yb, mx - 7, yb, ron); line(mx + 7, yb, rx, yb, ron);
+  const bat =
+    `<line class="bat" x1="${f(mx-7)}" y1="${f(yb-17)}" x2="${f(mx-7)}" y2="${f(yb+17)}" stroke-width="2.4"/>` +
+    `<line class="bat" x1="${f(mx+7)}" y1="${f(yb-8)}" x2="${f(mx+7)}" y2="${f(yb+8)}" stroke-width="6"/>` +
+    `<text class="pm" x="${f(mx-19)}" y="${f(yb-12)}">+</text>` +
+    `<text class="pm" x="${f(mx+19)}" y="${f(yb-12)}">−</text>` +
+    `<text class="blabel" x="${f(mx)}" y="${f(yb+34)}">Batterie 4,5 V</text>`;
+
+  st.plusList = c.plus;
+  st.bounds = c.bounds;
+  const vx = lx - 40, vw = rx - lx + 80, vh = yb + 48;
+  st.vb = {vx, vw};
+  $('canvas').innerHTML =
+    `<svg viewBox="${f(vx)} 0 ${f(vw)} ${f(vh)}" width="${Math.round(vw*1.3)}" height="${Math.round(vh*1.3)}" style="aspect-ratio:${f(vw)} / ${f(vh)}" role="img" aria-label="Schaltplan">` +
+    c.B.join('') + c.W.join('') + c.Won.join('') + c.D.join('') + c.Lp.join('') + bat +
+    c.H.join('') + c.PL.join('') + `</svg>`;
+  sizePlan();
+  drawHint(full);
+}
+
+/* Hochformat/Handy: Grösse des Schaltplans selbst in Pixeln setzen.
+   Safari (auch Chrome auf dem iPad) behält sonst beim Verkleinern die volle
+   Höhe aus dem height-Attribut – unten entsteht ein leerer Streifen. */
+const PLAN_MAX = 1.8;        // höchstens so viel grösser als die Normalgrösse
+function sizePlan() {
+  const svg = $('canvas').querySelector('svg'); if (!svg) return;
+  const c = $('canvas'), w0 = +svg.getAttribute('width'), h0 = +svg.getAttribute('height');
+  const wide = matchMedia('(min-width:941px)').matches;
+  const availW = c.clientWidth || w0;
+  // Querformat: der Plan füllt den ganzen Kasten. Hochformat: Breite füllen,
+  // Höhe aber höchstens halber Bildschirm, damit die Tabelle sichtbar bleibt.
+  const availH = wide ? (c.clientHeight || h0) : window.innerHeight * 0.5;
+  const s = Math.min(availW / w0, availH / h0, PLAN_MAX);
+  svg.style.width = Math.round(w0 * s) + 'px';
+  svg.style.height = Math.round(h0 * s) + 'px';
+}
+window.addEventListener('resize', sizePlan);
+
+function drawHint(full) {
+  let h;
+  if (st.swapFrom) h = `Lampe ${st.swapFrom} ist gewählt. Tippe jetzt die Nummer der Lampe an, mit der sie tauschen soll.`;
+  else if (st.hover !== null && st.plusList[st.hover]) {
+    const p = st.plusList[st.hover];
+    h = p.kind === 'S' ? 'Hier kommt die neue Lampe <b>in Serie</b> dazu: ' + p.label.replace(/^Lampe in Serie /, '')
+                       : 'Hier kommt die neue Lampe <b>parallel</b> dazu: ' + p.label.replace(/^Lampe parallel /, '');
+    if (p.series) h += ' Zieh zur Seite, um mehrere Lampen einzuschliessen.';
+  }
+  else if (st.removed[st.mode] && count(T()) > 1)
+    h = `Lampe ${st.removed[st.mode]} ist ausgedreht. Mit dem roten <b>×</b> nimmst du sie ganz aus der Schaltung.`;
+  else if (armedNow())
+    h = 'Tippe zwei <b>Nummern</b> nacheinander an, um die beiden Lampen zu vertauschen.';
+  else if (full) h = 'Mehr als fünf Lampen passen nicht auf die Blackbox. Dreh eine Lampe aus, dann kannst du sie mit dem roten <b>×</b> herausnehmen.';
+  else h = 'Tippe ein <b>+</b>, um eine Lampe einzubauen, eine <b>Lampe</b>, um sie aus- oder einzudrehen, ' +
+           'und nacheinander zwei <b>Nummern</b>, um die Lampen zu tauschen.';
+  $('hint').innerHTML = h;
+}
+
+/* ===================== Helligkeit =====================
+   Leistung P (1 = allein an der Batterie). Jede Halbierung soll gleich stark auffallen,
+   darum logarithmisch: P = 1 → 1, 1/4 → 0,71, 1/25 → 0,32, 1/64 (schwächste mit 5 Lampen) → 0,12.
+   Dargestellt wie eine echte Glühlampe: schwach = bernstein und kleiner Schein,
+   hell = gelb und grosser, kräftiger Schein.                                        */
+/* Im Tab «Code knacken» gibt es keine Helligkeit: der Code enthält nur an/aus wie das Arbeitsblatt */
+const brightOn = () => st.bright && st.mode !== 'code';
+function lampLevel(P) {
+  if (!brightOn()) return 1;
+  const s = 1 + Math.log(P) / Math.log(64);   // 1/64 = schwächste Lampe, die mit 5 Lampen vorkommt
+  return Math.max(.12, Math.min(1, .12 + .88 * s));
+}
+const LAMP_STOPS = [[0, [253, 236, 150]], [.5, [255, 214, 72]], [1, [255, 186, 0]]];
+/* Strahlen um eine leuchtende Lampe: schwach = keine, voll = lange.
+   upper = nur obere Hälfte (Lampe auf der Blackbox sitzt in der Fassung) */
+function rays(cx, cy, r0, len, n, upper) {
+  if (len < 2.5) return '';
+  let d = '';
+  for (let i = 0; i < n; i++) {
+    const a = upper ? Math.PI * (1 + (i + .5) / n) : (2 * Math.PI * i / n + Math.PI / n);
+    const c = Math.cos(a), si = Math.sin(a);
+    if (!upper && si < -.7) continue;       // nach oben frei lassen: dort sitzt das Nummernschild
+    d += `M${f(cx + c * r0)} ${f(cy + si * r0)}L${f(cx + c * (r0 + len))} ${f(cy + si * (r0 + len))}`;
+  }
+  return `<path d="${d}" style="stroke:#E3A600;stroke-width:2.2;stroke-linecap:round;fill:none"/>`;
+}
+function lampRGB(t, a) {
+  let i = 0; while (i < LAMP_STOPS.length - 2 && t > LAMP_STOPS[i + 1][0]) i++;
+  const [t0, c0] = LAMP_STOPS[i], [t1, c1] = LAMP_STOPS[i + 1], k = Math.max(0, Math.min(1, (t - t0) / (t1 - t0)));
+  const c = c0.map((v, j) => Math.round(v + (c1[j] - v) * k));
+  return a === undefined ? `rgb(${c.join(',')})` : `rgba(${c.join(',')},${a.toFixed(2)})`;
+}
+
+/* ===================== Blackbox-Gerät ===================== */
+function boxSVG(n, vals, clickable, scale = 1.15) {
+  const BW = 46, MX = 20, W = n*BW + 2*MX, TOP = 52, BH = 46, H = TOP + BH + 44;
+  let s = '';
+  s += `<rect class="bxbody" x="${MX-8}" y="${TOP}" width="${W-2*MX+16}" height="${BH}" rx="6"/>`;
+  for (let i = 0; i < n; i++) {
+    const cx = MX + BW/2 + i*BW, v = vals[i], out = v === -1, unknown = v === -2;
+    s += `<rect class="${out?'bxhole':'bxsock'}" x="${f(cx-11)}" y="${TOP-11}" width="22" height="13" rx="2"/>`;
+    const lit = !out && !unknown && v > EPS, br = lit ? lampLevel(v) : 0;
+    const fill = out ? 'none' : (lit ? lampRGB(br) : 'var(--off)');
+    if (out) {
+      s += `<g transform="translate(${f(cx+17)},${TOP-38}) rotate(22)">` +
+           `<circle class="bxglass" cx="0" cy="0" r="12" fill="var(--off)" opacity=".85"/>` +
+           `<rect x="-6" y="10" width="12" height="9" rx="1.5" fill="#8A9099"/></g>`;
+    } else {
+      if (lit && brightOn()) s += rays(cx, TOP - 27, 15, 9 * br, 7, true);
+      s += `<circle class="bxglass" cx="${f(cx)}" cy="${TOP-27}" r="12" fill="${unknown ? 'var(--strip)' : fill}"/>`;
+      if (unknown) s += `<text class="bxq" x="${f(cx)}" y="${TOP-22}">?</text>`;
+      s += `<rect x="${f(cx-6)}" y="${TOP-16}" width="12" height="7" rx="1.5" fill="#8A9099"/>`;
+    }
+    s += `<text class="bxlbl" x="${f(cx)}" y="${TOP+29}">${i+1}</text>`;
+    if (clickable) s += `<rect class="bxhit" data-bulb="${i+1}" x="${f(cx-BW/2+2)}" y="${TOP-46}" width="${BW-4}" height="${BH+46}" rx="6" tabindex="0" role="button" aria-label="Lampe ${i+1} ${out?'einschrauben':'ausdrehen'}"/>`;
+  }
+  const yb = H - 20, lx = MX - 2, rx = W - MX + 2, mx = W/2;
+  s += `<path class="bxwire" d="M${lx} ${TOP+BH}V${yb}H${f(mx-7)}"/>`;
+  s += `<path class="bxwire" d="M${rx} ${TOP+BH}V${yb}H${f(mx+7)}"/>`;
+  s += `<line class="bat" x1="${f(mx-7)}" y1="${yb-13}" x2="${f(mx-7)}" y2="${yb+13}" stroke-width="2.2"/>`;
+  s += `<line class="bat" x1="${f(mx+7)}" y1="${yb-7}" x2="${f(mx+7)}" y2="${yb+7}" stroke-width="5"/>`;
+  return `<svg viewBox="0 0 ${W} ${H}" width="${Math.round(Math.min(W*scale, 330))}" height="${Math.round(Math.min(W*scale, 330)*H/W)}" style="width:${Math.min(W*scale, 330)}px" role="img" aria-label="Blackbox mit ${n} Lampen">${s}</svg>`;
+}
+
+/* ===================== Seitenleiste ===================== */
+function strip(vals) {
+  return `<span class="strip">` + vals.map(v => {
+    const cls = v < 0 ? 'out' : (v > EPS ? 'lit' : 'dark');
+    let b = '';
+    if (v > EPS && brightOn()) {
+      const t = lampLevel(v), c = lampRGB(t);
+      b = ` style="background:${c}"`;
+    }
+    return `<span class="dot ${cls}"${b}></span>`;
+  }).join('') + `</span>`;
+}
+const legend = n => `<span class="nums">${Array.from({length:n},(_, j) => `<span>${j+1}</span>`).join('')}</span>`;
+
+/* Arbeitsbereich links: beim Bauen aussen + innen nebeneinander,
+   beim Knacken nur die eigene Vermutung (die Blackbox steht rechts). */
+function renderBoard() {
+  if (st.mode === 'bauen') {
+    const tree = T(), n = count(tree);
+    const rem = st.removed.bauen, base = lampValues(tree, null).v;
+    const vals = rem ? pattern(tree)[rem-1] : Array.from({length:n}, (_, j) => base[j+1]);
+    $('device').hidden = false;
+    $('devcap').innerHTML = '<b>Aussen</b> — deine Blackbox';
+    $('devbox').innerHTML = boxSVG(n, vals, true);
+    $('plancap').innerHTML = '<b>Innen</b><span class="capsub"> — dein Schaltplan</span>';
+  } else {
+    $('device').hidden = true;
+    $('devbox').innerHTML = '';
+    $('plancap').innerHTML = '<b>Deine Vermutung</b><span class="capsub"> — was steckt in der Blackbox?</span>';
+  }
+}
+/* Die Blackbox beim Knacken: steht rechts, eigener Ausdreh-Zustand */
+function knackBox() {
+  const task = st.task, rem = st.boxRem, pr = st.pred;
+  const real = brightOn() && task.exact;
+  // Während der Vorhersage bleibt verdeckt, was wirklich leuchtet: alle anderen Lampen stehen auf «?»
+  const vals = pr ? Array.from({length:task.n}, (_, j) => j === pr.row-1 ? -1 : -2)
+                  : (rem && rem <= task.n) ? (real ? task.brows[rem-1] : task.rows[rem-1])
+                                           : (real ? task.ball : Array.from({length:task.n}, () => 1));
+  let cap = (st.seen.size || pr) ? '' : `<p class="cap">Tippe eine Lampe an, um sie auszudrehen.</p>`;
+  return `<div class="bxpanel"><div class="bxwrap">${boxSVG(task.n, vals, true, .84)}</div>${cap}${pr ? predPanel() : ''}` +
+         (st.predMsg && !pr ? `<p class="msg ${st.predMsg.ok ? 'ok' : ''}">${st.predMsg.text}</p>` : '') + `</div>`;
+}
+/* Erst vermuten, dann aufdecken (ab Übung 3 und beim Code knacken) */
+/* Vorhersage nur, wenn eine vollständige Vermutung dasteht: dann sagt der Plan etwas voraus,
+   statt dass geraten wird. Ab Übung 3 und beim Code knacken. */
+const predOnLevel = () => isKnack() && st.task && (st.mode === 'code' || st.lvl >= 2);
+const predOn = () => isKnack() && st.task && (st.mode === 'code' || st.lvl >= 2) && count(T()) === st.task.n;
+function predPanel() {
+  const pr = st.pred, n = st.task.n;
+  let dots = '';
+  for (let j = 0; j < n; j++) {
+    if (j === pr.row-1) { dots += `<span class="dot out" title="herausgedreht"></span>`; continue; }
+    const g = pr.g[j];
+    const cls = g === null ? 'unset' : (g ? 'lit' : 'dark');
+    dots += `<button class="dot pdot ${cls}" data-pg="${j}" aria-label="Lampe ${j+1}: ${g === null ? 'noch offen' : (g ? 'leuchtet weiter' : 'geht aus')}"></button>`;
+  }
+  const offen = pr.g.some((v, j) => j !== pr.row-1 && v === null);
+  return `<div class="predbox">` +
+    `<p class="predq">Lampe ${pr.row} ist heraus. <b>Was sagt dein Plan: Welche leuchten weiter?</b></p>` +
+    `<div class="predline"><div class="predrow">${legend(n)}<span class="strip pred">${dots}</span></div>` +
+    `<button class="b primary" id="revealBtn"${offen ? ' disabled' : ''}>Aufdecken</button></div>` +
+    (st.predHelp ? '' : `<p class="sub">Tippe die Punkte an: gelb heisst «leuchtet weiter», dunkel heisst «geht aus».</p>`) +
+    `</div>`;
+}
+function renderSideBauen() {
+  const tree = T(), n = count(tree), rem = st.removed.bauen;
+  const base = lampValues(tree, null).v, pat = pattern(tree);
+  let h = `<h2>Was leuchtet?</h2>`;
+  h += `<div class="proto"><div class="phead solo"><span></span>${legend(n)}</div>`;
+  h += `<button class="prow solo${rem === null ? ' on' : ''}" data-r="0"><span class="lbl">alle drin</span>${strip(Array.from({length:n},(_,j)=>base[j+1]))}</button>`;
+  pat.forEach((row, i) => {
+    h += `<button class="prow solo${rem === i+1 ? ' on' : ''}" data-r="${i+1}"><span class="lbl">Lampe ${i+1}</span>${strip(row)}</button>`;
+  });
+  h += `</div><p class="kind">${kindText(tree)}</p>`;
+  if (n >= 2) h += `<h2 style="margin-top:14px">Code weitergeben</h2>` +
+                   `<div class="coderow"><div class="code" id="codeOut">${encode(pat)}</div>` +
+                   `<button class="b copy" id="copyBtn" aria-label="Code kopieren">${ICON_COPY}<span>Kopieren</span></button></div>` +
+                   `<p class="sub">Unter «Code knacken» sieht man mit diesem Code nur deine Lampen, nicht deinen Schaltplan.</p>`;
+  setSide('', h);
+}
+/* Rechte Spalte beim Knacken: oben die Quelle der Blackbox (Übung oder Code), darunter die Blackbox selbst */
+function renderSideKnack() {
+  let h = '';
+  if (st.mode === 'ueben') {
+    h += `<div class="chips">`;
+    LEVELS.forEach((lv, i) => {
+      h += `<button class="chip${i === st.lvl ? ' on' : ''}" data-lvl="${i}" aria-label="Übung ${lv.name}">` +
+           `${lv.c}${st.solved.has(i) ? ' <span class="tick">✓</span>' : ''}</button>`;
+    });
+    h += `</div><p class="lvlname">${st.taskName}</p>`;
+  } else if (!st.task) {
+    h += `<h2>Code knacken</h2>` +
+         `<p class="sub">Gib den Code ein, den du von jemandem bekommen hast. Dann siehst du seine Blackbox.</p>` +
+         `<div class="codein big"><input type="text" id="codeIn" maxlength="8" autocomplete="off" ` +
+         `placeholder="Code, z. B. K6F" aria-label="Code" value="${st.codeText}">` +
+         (canPaste ? `<button class="b paste" id="pasteBtn" aria-label="Code einfügen">${ICON_PASTE}<span>Einfügen</span></button>` : '') +
+         `<button class="b primary" id="codeGo">Laden</button></div>` +
+         `<p class="msg ${st.codeErr ? 'bad' : ''}" id="codeMsg">${st.codeErr || ''}</p>`;
+    setSide(h, '');
+    return;
+  } else {
+    h += `<div class="codehead"><p class="lvlname">Blackbox mit Code <span class="codetag">${st.taskName}</span></p>` +
+         `<button class="b quiet" id="codeNew">anderer Code</button></div>`;
+  }
+
+  const task = st.task, tree = T(), n = count(tree);
+  const showOwn = task.n >= 4 ? !!st.check : true;
+  const own = (n === task.n) ? pattern(tree) : null;
+
+  h += knackBox();
+  const a = h; h = '';
+  h += `<div class="proto"><div class="phead"><span>ausgedreht</span>` +
+       `<span class="col">Blackbox${legend(task.n)}</span>` +
+       `<span class="col">${showOwn ? 'Dein Plan' + legend(task.n) : ''}</span><span></span></div>`;
+  task.rows.forEach((row, i) => {
+    const mk = st.check && st.check.rows ? (st.check.rows[i] ? '<span class="mark ok">✓</span>' : '<span class="mark bad">✗</span>') : '<span></span>';
+    const left = st.seen.has(i+1) ? strip(brightOn() && task.exact ? task.brows[i] : row) : `<span class="ghosttext">—</span>`;
+    const right = showOwn ? (own ? strip(own[i]) : `<span class="ghosttext">–</span>`) : `<span></span>`;
+    h += `<div class="prow static${st.boxRem === i+1 ? ' on' : ''}"><span class="lbl">Lampe ${i+1}</span>${left}${right}${mk}</div>`;
+  });
+  h += `</div>`;
+  if (n !== task.n && !st.check)
+    h += `<p class="sub">${countText(task.n, n)}` +
+         (st.seen.size >= 2 && predOnLevel() ? ' Bau jetzt eine erste Vermutung, dann kannst du voraussagen, was bei den anderen Lampen passiert.' : '') +
+         `</p>`;
+
+  h += `<div class="checkbar"><button class="b primary" id="checkBtn">Prüfen</button>`;
+  h += `<button class="b" id="tipBtn">Tipp</button>`;
+  if (st.tip >= 2) h += `<button class="b quiet" id="solBtn">Lösung zeigen</button>`;
+  h += `</div>`;
+  // Während der Vorhersage ist nur sie dran: ältere Meldungen kommen danach zurück
+  if (!st.pred) {
+    if (st.tip >= 1 && !(st.check && st.check.ok)) h += `<p class="msg">${tipText(st.tip)}</p>`;
+    if (st.check) h += `<p class="msg ${st.check.ok ? 'ok' : (st.check.info ? '' : 'bad')}">${st.check.text}</p>`;
+    if (st.extra) h += `<p class="msg">${st.extra}</p>`;
+    h += kindQuestion(tree, n);
+  }
+  setSide(a, h);
+}
+/* Nach dem Lösen: erst fragen, dann bestätigen – das ist Auftrag 1 vom Arbeitsblatt */
+function kindQuestion(tree, n) {
+  if (!(st.check && st.check.ok) || n < 2) return '';
+  const right = kindOf(tree), ans = st.kindAns;
+  let h = `<div class="kindbox"><p class="predq"><b>Was für eine Schaltung ist das?</b></p>` +
+          `<div class="kindbtns">` +
+          ['S','P','M'].map(k => `<button class="b${ans === k ? (k === right ? ' ok' : ' bad') : ''}" data-kind="${k}">` +
+            {S:'Serie', P:'Parallel', M:'Gemischt'}[k] + `</button>`).join('') + `</div>`;
+  // Der Merksatz gehört direkt unter die Antwort: Dort schaut das Kind gerade hin.
+  // Stand er unten am Schaltplan, musste der Blick quer über den Bildschirm springen.
+  if (ans === right) h += `<p class="msg ok">Richtig, das ist ${KIND_NAME[right]}.</p>` +
+                          merke(MERKE[right]);
+  else if (ans) h += `<p class="msg bad">Noch nicht. Dreh im Kopf eine Lampe heraus: Gehen dann alle anderen auch aus?</p>`;
+  return h + `</div>`;
+}
+/* Kopieren wie in anderen Apps: Symbol, kurze Bestätigung, danach wieder normal */
+const ICON_COPY = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>';
+const ICON_OK = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+function copyCode() {
+  const el = $('codeOut'); if (!el) return;
+  const text = el.textContent.trim();
+  const done = ok => {
+    const btn = $('copyBtn'); if (!btn) return;
+    btn.classList.toggle('ok', ok);
+    btn.innerHTML = ok ? `${ICON_OK}<span>Kopiert</span>` : `${ICON_COPY}<span>Nicht möglich</span>`;
+    clearTimeout(copyCode.t);
+    copyCode.t = setTimeout(() => {
+      const b2 = $('copyBtn'); if (!b2) return;
+      b2.classList.remove('ok'); b2.innerHTML = `${ICON_COPY}<span>Kopieren</span>`;
+    }, 1600);
+  };
+  const fallback = () => {       // ältere Browser oder Seite ohne sichere Verbindung
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      const ok = document.execCommand('copy'); ta.remove(); done(ok);
+    } catch (err) { done(false); }
+  };
+  if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(() => done(true), fallback);
+  else fallback();
+}
+/* Einfügen: Code aus der Zwischenablage holen und, wenn gültig, gleich laden */
+const ICON_PASTE = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4.5V3.5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><path d="M9 11h6M9 15h4"/></svg>';
+const canPaste = !!(navigator.clipboard && navigator.clipboard.readText && window.isSecureContext);
+async function pasteCode() {
+  let text = '';
+  try { text = await navigator.clipboard.readText(); }
+  catch (err) { st.codeErr = 'Einfügen wurde nicht erlaubt. Tippe den Code von Hand ein.'; render(); return; }
+  const clean = (text || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+  if (!clean || !decode(clean)) { st.codeErr = 'In der Zwischenablage ist kein gültiger Code. Kopiere ihn nochmals.'; render(); return; }
+  st.codeText = clean;
+  const inp = $('codeIn'); if (inp) inp.value = clean;
+  loadCode();                    // lädt direkt oder zeigt, was nicht stimmt
+}
+/* Teil A: Blackbox beobachten. Teil B: vergleichen und prüfen.
+   Auf schmalen Bildschirmen steht der eigene Schaltplan zwischen A und B. */
+function setSide(a, b) { $('sideA').innerHTML = a; $('sideB').innerHTML = b; }
+function lampList(a) {
+  if (a.length === 1) return 'Lampe ' + a[0];
+  return 'die Lampen ' + a.slice(0, -1).join(', ') + ' und ' + a[a.length-1];
+}
+function tipText(stage) {
+  if (stage === 1)
+    return 'Lampen, die <b>ausgehen</b>, wenn du eine andere ausdrehst, liegen mit ihr <b>in Serie</b>. Lampen, die <b>weiterleuchten</b>, haben einen <b>eigenen Weg</b> zur Batterie.';
+  const rows = st.task.rows;
+  // Die lehrreichste Zeile: möglichst beides zu sehen, sonst die mit den meisten dunklen Lampen
+  let best = 0, score = -1;
+  rows.forEach((row, i) => {
+    let lit = 0, dark = 0;
+    row.forEach((v, j) => { if (j !== i) (v > 0 ? lit++ : dark++); });
+    const s = Math.min(lit, dark) * 10 + dark;
+    if (s > score) { score = s; best = i; }
+  });
+  const lit = [], dark = [];
+  rows[best].forEach((v, j) => { if (j !== best) (v > 0 ? lit : dark).push(j+1); });
+  const head = `Schau die Zeile «Lampe ${best+1} ausgedreht» an: `;
+  if (!dark.length) return head + `alle anderen leuchten weiter. Lampe ${best+1} hat also einen <b>eigenen Weg</b> zur Batterie.`;
+  if (!lit.length)  return head + `alle anderen gehen aus. Lampe ${best+1} liegt also mit allen anderen <b>in Serie</b>.`;
+  return head + `${lampList(lit)} ${lit.length === 1 ? 'leuchtet' : 'leuchten'} weiter, ` +
+         `${lit.length === 1 ? 'liegt' : 'liegen'} also <b>nicht</b> in Serie mit Lampe ${best+1}. ` +
+         `${lampList(dark)} ${dark.length === 1 ? 'geht' : 'gehen'} aus, ` +
+         `${dark.length === 1 ? 'liegt' : 'liegen'} also mit ihr <b>in Serie</b>.`;
+}
+/* ===== Direktlinks: …#3-code öffnet gleich «Code knacken» =====
+   replaceState statt location.hash, sonst sammelt der Zurück-Knopf jeden
+   Wechsel zwischen den drei Teilen als eigenen Schritt. */
+const MODI = ['ueben', 'bauen', 'code'];
+let hashStumm = false;
+function adresse() {
+  if (hashStumm) return;
+  const i = MODI.indexOf(st.mode);
+  if (i < 0) return;
+  const h = '#' + (i + 1) + '-' + MODI[i];
+  // In einer Vorschau (eingebettete Seite) darf die Adresse nicht geändert
+  // werden – das Werkzeug soll deswegen nicht stehen bleiben.
+  if (location.hash !== h) { try { history.replaceState(null, '', h); } catch (e) {} }
+}
+function ausAdresse() {
+  const m = /^#?(\d)/.exec(location.hash || '');
+  if (!m) return false;
+  const i = Number(m[1]) - 1;
+  if (i < 0 || i >= MODI.length) return false;
+  st.mode = MODI[i]; st.swapFrom = null; st.hover = null;
+  return true;
+}
+addEventListener('hashchange', () => { if (ausAdresse()) { hashStumm = true; render(); hashStumm = false; adresse(); } });
+
+function render() {
+  adresse();
+  document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', b.dataset.mode === st.mode));
+  // Ohne geladenen Code gibt es nichts zu bauen: nur die Eingabe, zuoberst und mittig
+  const entry = st.mode === 'code' && !st.task;
+  document.querySelector('main').classList.toggle('entry', entry);
+  document.querySelector('main').classList.toggle('knack', isKnack() && !entry);
+  document.querySelector('.board').hidden = entry;
+  if (!$('einst').hidden) einstZeigen();
+  if (!entry) { drawCircuit(); renderBoard(); }
+  $('tUndo').disabled = st.undo[st.mode].length === 0;
+  $('tNew').disabled = canon(T()) === 'S(L1)' && !st.removed[st.mode];
+  if (st.mode === 'bauen') renderSideBauen(); else renderSideKnack();
+  if (entry && !tour) { const inp = $('codeIn'); if (inp && document.activeElement !== inp && !matchMedia('(pointer:coarse)').matches) inp.focus(); }
+  if (tour) requestAnimationFrame(tourPlace);
+  saveState();
+}
+
+/* ===================== Aufgabensteuerung ===================== */
+/* Setzt eine neue Blackbox im aktuellen Knack-Tab */
+function setTask(rows, sol, name, exact) {
+  st.knack[st.mode] = newKnack();
+  st.task = {n:rows.length, rows:rows.map(r => r.map(litOf)), sol, exact:!!exact};
+  // Bekannte Schaltung (Übungen): echte Helligkeiten der Blackbox mitspeichern
+  if (exact) { st.task.brows = pattern(sol); const v = lampValues(sol, null).v; st.task.ball = Array.from({length:rows.length}, (_, j) => v[j+1]); }
+  st.taskName = name;
+  st.trees[st.mode] = S(L(1)); st.undo[st.mode] = []; st.removed[st.mode] = null;
+  st.swapFrom = null;
+}
+function loadLevel(i) {
+  const lv = LEVELS[i];
+  let sol, name = lv.name;
+  if (lv.make) sol = lv.make();
+  else {
+    const n = st.rndN === 4 ? 5 : 4;
+    st.rndN = n;
+    const old = st.task ? keyOf(st.task.rows) : '';
+    for (let k = 0; k < 40; k++) { sol = randomTree(n); if (keyOf(pattern(sol)) !== old) break; }
+    name = `Zufall mit ${n === 4 ? 'vier' : 'fünf'} Lampen`;
+  }
+  st.lvl = i;
+  setTask(pattern(sol), sol, name, true);
+  render();
+}
+function loadCode() {
+  const raw = $('codeIn').value.trim().toUpperCase();
+  st.codeText = raw;
+  const rows = decode(raw);
+  if (!rows) { st.codeErr = 'Diesen Code gibt es nicht. Prüfe jedes Zeichen nochmals.'; render(); return; }
+  const sol = findSolution(rows);
+  if (!sol) { st.codeErr = 'Zu diesem Muster passt keine Schaltung aus Serie und Parallel.'; render(); return; }
+  st.codeErr = '';
+  setTask(rows, sol, raw, false);
+  render();
+}
+/* Leuchtet in beiden Schaltungen jede Lampe gleich hell – alle drin und bei jedem Ausdrehen? */
+function sameBrightness(a, b) {
+  const n = count(a); if (n !== count(b)) return false;
+  const eq = (x, y) => Math.abs(x - y) < 1e-6;
+  for (let r = 0; r <= n; r++) {
+    const va = lampValues(a, r || null).v, vb = lampValues(b, r || null).v;
+    for (let j = 1; j <= n; j++) if (!eq(va[j], vb[j])) return false;
+  }
+  return true;
+}
+/* Zahlen als Wörter, damit die Sätze stimmen: «eine Lampe», «zwei Lampen» */
+const ZAHL = ['keine', 'eine', 'zwei', 'drei', 'vier', 'fünf'];
+const lampenWort = k => `${ZAHL[k] || k} ${k === 1 ? 'Lampe' : 'Lampen'}`;
+function countText(soll, ist) {
+  return `Die Blackbox hat ${ZAHL[soll] || soll} Lampen, dein Plan ` +
+         (ist < soll ? `erst ${ZAHL[ist] || ist}.` : `${ZAHL[ist] || ist}.`);
+}
+function check() {
+  const task = st.task, tree = T(), n = count(tree);
+  // Wer noch nicht alle Lampen ausgedreht hat, kann es nicht wissen: erst messen, dann prüfen
+  const fehlt = [];
+  for (let i = 1; i <= task.n; i++) if (!st.seen.has(i)) fehlt.push(i);
+  if (fehlt.length) {
+    st.check = {ok:false, info:true, text:`Du hast ${lampList(fehlt)} noch nicht herausgedreht. ` +
+      `Probiere zuerst alle Lampen durch, dann siehst du, was zusammengehört.`};
+    st.extra = null; render(); return;
+  }
+  if (n !== task.n) {
+    const d = task.n - n;
+    st.check = {ok:false, text: countText(task.n, n) + ' ' +
+      (d > 0 ? `Bau noch ${lampenWort(d)} dazu.` : `Nimm ${lampenWort(-d)} heraus.`)};
+    render(); return;
+  }
+  const own = pattern(tree);
+  const rows = task.rows.map((row, i) => row.every((v, j) => v === litOf(own[i][j])));
+  const bad = rows.filter(x => !x).length;
+  if (bad) {
+    if (!st.swapArmed && canRenumber(tree, task.rows)) {
+      st.swapArmed = true;
+      st.check = {ok:false, info:true, rows, text:'Deine <b>Verdrahtung stimmt schon!</b> Nur sitzen die Lampen in den falschen Fassungen. ' +
+                                       'Die ✗ zeigen welche. Tippe zwei Nummern an, um sie zu tauschen.'};
+    } else if (st.swapArmed) {
+      st.check = {ok:false, rows, text:`Noch nicht: ${bad} ${bad === 1 ? 'Fassung ist' : 'Fassungen sind'} falsch besetzt. Tausche weiter.`};
+    } else {
+      st.check = {ok:false, rows, text:`Noch nicht: ${bad} ${bad === 1 ? 'Zeile stimmt' : 'Zeilen stimmen'} nicht. Schau dir die markierten Zeilen an.`};
+    }
+    st.extra = null;
+  } else {
+    const myCanon = canon(tree);
+    if (st.foundCanon && st.foundCanon !== myCanon) {
+      st.check = {ok:true, rows, text:'Auch richtig! Zwei verschiedene Schaltpläne, genau das gleiche Muster.'};
+      // Nur behaupten, was stimmt: unterscheiden sich die beiden wirklich in der Helligkeit?
+      if (st.foundTree && sameBrightness(st.foundTree, tree))
+        st.extra = 'Diese beiden kann man von aussen gar nicht unterscheiden, auch nicht an der <b>Helligkeit</b>: Jede Lampe leuchtet in beiden gleich hell.';
+      else
+        st.extra = st.mode === 'code'
+          ? 'Baut beide Schaltpläne im Tab «Blackbox bauen» und schaltet die <b>Helligkeit</b> ein: Dort seht ihr, dass sie trotzdem nicht gleich sind.'
+          : 'Schalte oben «Helligkeit zeigen» ein: dort siehst du, dass die beiden Schaltungen trotzdem nicht gleich sind.';
+    } else {
+      st.check = {ok:true, rows, text:'Richtig! Dein Schaltplan erzeugt genau dieses Muster.'};
+      for (let i = 1; i <= task.n; i++) st.seen.add(i);
+      st.foundCanon = myCanon; st.foundTree = clone(tree);
+      const lv = st.mode === 'ueben' ? LEVELS[st.lvl] : null;
+      if (lv && !lv.rnd) st.solved.add(st.lvl);
+      const alt = findAlt(task.rows, myCanon);
+      if (st.mode === 'code') {
+        // Partnerarbeit: direkt zu Auftrag 2d führen
+        st.extra = 'Vergleicht jetzt euren Schaltplan mit dem der anderen Person. <b>Sieht er gleich aus?</b>' +
+          (alt ? ' Zu diesem Code passen mehrere Schaltpläne. Baut beide im Tab «Blackbox bauen» und schaltet die <b>Helligkeit</b> ein. Was fällt euch auf?' : '');
+      } else {
+        st.extra = alt ? ((lv && lv.note) || 'Zusatzaufgabe: Es gibt noch einen anderen Schaltplan mit dem gleichen Muster. Findest du ihn?') : null;
+      }
+    }
+    // Mit «Helligkeit zeigen»: stimmt auch die Helligkeit? (nur bei bekannter Blackbox)
+    if (brightOn() && task.exact) {
+      const allOwn = lampValues(tree, null).v;
+      const same = (a, b) => Math.abs(a - b) < 1e-6;
+      const ok = task.ball.every((v, j) => same(v, allOwn[j+1])) &&
+                 task.brows.every((row, i) => row.every((v, j) => same(v, own[i][j])));
+      st.extra = ok ? 'Auch die <b>Helligkeit</b> stimmt überall. Das ist genau die Schaltung in der Blackbox.'
+                    : 'Aber schau auf die <b>Helligkeit</b>: Sie ist nicht überall gleich wie in der Blackbox. Findest du den Schaltplan, bei dem auch sie passt?';
+    }
+  }
+  render();
+}
+
+/* ===================== Ereignisse ===================== */
+function doSwap(num) {
+  if (st.swapFrom !== num) {
+    pushUndo();
+    const ls = lampsOf(T()), a = ls.find(l => l.n === st.swapFrom), b = ls.find(l => l.n === num);
+    if (a && b) { const t = a.n; a.n = b.n; b.n = t; }
+    st.check = null; st.kindAns = null;
+  }
+  st.swapFrom = null; render();
+}
+/* Lampe im eigenen Schaltplan (bzw. beim Bauen: in der eigenen Blackbox) */
+function tapLamp(num) {
+  if (st.swapFrom) return doSwap(num);
+  const r = st.removed[st.mode];
+  st.removed[st.mode] = (r === num) ? null : num;
+  render();
+}
+/* Lampe in der fremden Blackbox beim Knacken — unabhängig vom eigenen Plan */
+function tapBox(num) {
+  if (st.pred) return;                      // erst die Vorhersage abschliessen
+  if (predOn() && !st.seen.has(num)) {      // ab Übung 3: zuerst vermuten
+    st.pred = {row:num, g:Array.from({length:st.task.n}, () => null)};
+    st.boxRem = num; st.predMsg = null; render(); return;
+  }
+  st.boxRem = (st.boxRem === num) ? null : num;
+  st.seen.add(num);
+  render();
+}
+/* Vorhersage aufdecken: vergleichen, eintragen, kurz rückmelden */
+function reveal() {
+  const pr = st.pred; if (!pr) return;
+  const truth = st.task.rows[pr.row-1];
+  const falsch = [];
+  for (let j = 0; j < st.task.n; j++) {
+    if (j === pr.row-1) continue;
+    if (!!pr.g[j] !== (truth[j] > 0)) falsch.push(j+1);
+  }
+  st.pred = null; st.predHelp = true; st.seen.add(pr.row); st.boxRem = pr.row;
+  st.predMsg = falsch.length === 0
+    ? {ok:true, text:'Genau so, wie es dein Plan voraussagt.'}
+    : {ok:false, text: (falsch.length === 1 ? `Lampe ${falsch[0]} verhält sich anders` : `Die Lampen ${falsch.slice(0,-1).join(', ')} und ${falsch[falsch.length-1]} verhalten sich anders`) +
+                        `, als es dein Plan voraussagt. Dort stimmt dein Plan noch nicht.`};
+  render();
+}
+/* ===================== Ziehen: Klammer über mehrere Lampen ===================== */
+function visBox(node) {
+  const b = st.bounds && st.bounds.get(node);
+  if (!b) return null;
+  return node.t === 'L' ? {x:b.x, y:b.cy - LH/2, w:LW, h:LH}
+                        : {x:b.x, y:b.y, w:b.w - PW, h:b.h - PH};
+}
+function toSvgX(clientX) {
+  const svg = $('canvas').querySelector('svg');
+  if (!svg || !st.vb) return 0;
+  const r = svg.getBoundingClientRect();
+  return st.vb.vx + (clientX - r.left) / r.width * st.vb.vw;
+}
+const SVGNS = 'http://www.w3.org/2000/svg';
+function unionBox(nodes) {
+  let u = null;
+  nodes.forEach(n => {
+    const q = visBox(n); if (!q) return;
+    u = u ? {x:Math.min(u.x, q.x), y:Math.min(u.y, q.y),
+             r:Math.max(u.r, q.x + q.w), b:Math.max(u.b, q.y + q.h)}
+          : {x:q.x, y:q.y, r:q.x + q.w, b:q.y + q.h};
+  });
+  return u;
+}
+function showHl(box) {
+  const svg = $('canvas').querySelector('svg');
+  if (!svg || !box) return;
+  let r = svg.querySelector('.hl');
+  if (!r) { r = document.createElementNS(SVGNS, 'rect'); r.setAttribute('class', 'hl'); svg.insertBefore(r, svg.firstChild); }
+  r.setAttribute('x', f(box.x - 7)); r.setAttribute('y', f(box.y - 7));
+  r.setAttribute('width', f(box.r - box.x + 14)); r.setAttribute('height', f(box.b - box.y + 14));
+  r.setAttribute('rx', 10);
+}
+function clearHl() {
+  const svg = $('canvas').querySelector('svg');
+  if (svg) svg.querySelectorAll('.hl').forEach(n => n.remove());
+}
+function setHot(k, on) {
+  const g = $('canvas').querySelector(`[data-p="${k}"]`);
+  if (g) g.classList.toggle('hot', on);
+}
+function lampNums(nodes) {
+  const ns = [];
+  nodes.forEach(n => lampsOf(n).forEach(l => ns.push(l.n)));
+  return ns.sort((a, b) => a - b);
+}
+function dragPreview() {
+  if (!st.drag) return;
+  const {series} = st.drag.info, [a, b] = st.drag.range;
+  const span = series.c.slice(a, b + 1);
+  showHl(unionBox(span));
+  const ns = lampNums(span);
+  $('hint').innerHTML = ns.length === 1
+    ? `Neue Lampe <b>parallel</b> zu Lampe ${ns[0]}. Zieh zur Seite, um mehr Lampen einzuschliessen.`
+    : `Neue Lampe <b>parallel</b> zu den Lampen ${ns.slice(0, -1).join(', ')} und ${ns[ns.length-1]}.`;
+}
+function endDrag(apply) {
+  const d = st.drag; st.drag = null;
+  clearHl();
+  if (!d) return;
+  setHot(d.k, false);
+  if (!apply) { st.hover = null; drawHint(count(T()) >= MAXL); return; }
+  pushUndo();
+  if (d.range[1] > d.range[0]) setT(addParallelRange(T(), d.info.series, d.range[0], d.range[1]));
+  else setT(addLamp(T(), d.info.node, d.info.kind));
+  st.hover = null; st.swapFrom = null; st.check = null; st.kindAns = null;
+  const rem = st.removed[st.mode]; if (rem && rem > count(T())) st.removed[st.mode] = null;
+  st.suppressClick = true;
+  setTimeout(() => { st.suppressClick = false; }, 0);
+  render();
+}
+/* Verhindert, dass der Browser die Geste als Wischen deutet und abbricht */
+$('canvas').addEventListener('touchstart', e => {
+  if (e.target.closest('[data-p]')) e.preventDefault();
+}, {passive:false});
+$('canvas').addEventListener('pointerdown', e => {
+  const p = e.target.closest('[data-p]'); if (!p) return;
+  const k = +p.dataset.p, info = st.plusList[k];
+  if (!info) return;
+  st.hover = null;
+  st.drag = {info, k, range:[info.idx, info.idx]};
+  setHot(k, true);
+  const hit = p.querySelector('.phit');
+  try { hit.setPointerCapture(e.pointerId); } catch (err) {}
+  if (info.series) dragPreview();
+});
+$('canvas').addEventListener('pointermove', e => {
+  if (!st.drag || !st.drag.info.series) return;
+  const x = toSvgX(e.clientX), s = st.drag.info.series;
+  let best = st.drag.info.idx, bd = Infinity;
+  s.c.forEach((ch, i) => {
+    const q = visBox(ch); if (!q) return;
+    const d = Math.abs(x - (q.x + q.w / 2));
+    if (d < bd) { bd = d; best = i; }
+  });
+  const a = Math.min(st.drag.info.idx, best), b = Math.max(st.drag.info.idx, best);
+  if (a !== st.drag.range[0] || b !== st.drag.range[1]) { st.drag.range = [a, b]; dragPreview(); }
+});
+$('canvas').addEventListener('pointerup', () => endDrag(true));
+$('canvas').addEventListener('pointercancel', () => endDrag(false));
+
+$('canvas').addEventListener('click', e => {
+  const p = e.target.closest('[data-p]');
+  if (p) {
+    if (st.suppressClick) return;
+    const info = st.plusList[+p.dataset.p];
+    if (!info) return;
+    pushUndo();
+    setT(addLamp(T(), info.node, info.kind));
+    st.hover = null; st.swapFrom = null; st.check = null; st.kindAns = null;
+    const rem = st.removed[st.mode];
+    if (rem && rem > count(T())) st.removed[st.mode] = null;
+    render(); return;
+  }
+  const nb = e.target.closest('[data-num]');
+  if (nb) {
+    const num = +nb.dataset.num;
+    if (st.swapFrom) doSwap(num); else { st.swapFrom = num; render(); }
+    return;
+  }
+  const del = e.target.closest('[data-del]');
+  if (del) {
+    const t2 = removeLamp(clone(T()), +del.dataset.del);
+    if (t2) { pushUndo(); setT(t2); st.removed[st.mode] = null; st.swapFrom = null; st.check = null; st.kindAns = null; render(); }
+    return;
+  }
+  const l = e.target.closest('[data-l]');
+  if (l) { tapLamp(+l.dataset.l); return; }
+  if (st.swapFrom) { st.swapFrom = null; render(); }
+});
+$('canvas').addEventListener('keydown', e => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  if (!e.target.hasAttribute || !e.target.hasAttribute('tabindex')) return;
+  e.preventDefault();
+  e.target.dispatchEvent(new MouseEvent('click', {bubbles:true}));
+});
+$('canvas').addEventListener('pointerover', e => {
+  if (st.drag) return;
+  const p = e.target.closest('[data-p]'); if (!p) return;
+  const k = +p.dataset.p; if (st.hover === k) return;
+  if (st.hover !== null) setHot(st.hover, false);
+  st.hover = k; setHot(k, true);
+  const info = st.plusList[k];
+  if (info && info.kind === 'P') showHl(unionBox([info.node])); else clearHl();
+  drawHint(count(T()) >= MAXL);
+});
+$('canvas').addEventListener('pointerout', e => {
+  if (st.drag) return;
+  if (!e.target.closest('[data-p]')) return;
+  if (st.hover === null) return;
+  setHot(st.hover, false);
+  st.hover = null; clearHl();
+  drawHint(count(T()) >= MAXL);
+});
+$('tUndo').onclick = () => {
+  const stack = st.undo[st.mode]; if (!stack.length) return;
+  setT(stack.pop()); st.swapFrom = null; st.check = null; st.kindAns = null; st.hover = null;
+  const rem = st.removed[st.mode]; if (rem && rem > count(T())) st.removed[st.mode] = null;
+  render();
+};
+$('tNew').onclick = () => {
+  pushUndo(); setT(S(L(1))); st.removed[st.mode] = null; st.swapFrom = null; st.check = null; st.kindAns = null; render();
+};
+document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
+  st.mode = b.dataset.mode; st.swapFrom = null; st.hover = null; render();
+  maybeAutoTour();
+});
+/* Helligkeit liegt hinter dem Zahnrad, nicht in der Kopfzeile: Sie ist eine
+   Entscheidung der Lehrperson für die ganze Stunde, keine Taste zum Spielen. */
+function einstZeigen() {
+  const codeModus = st.mode === 'code';
+  const b = $('brightBtn');
+  b.textContent = st.bright ? 'Helligkeit wird gezeigt' : 'Helligkeit zeigen';
+  b.classList.toggle('primary', st.bright);
+  b.disabled = codeModus;
+  $('brightText').textContent = codeModus
+    ? 'Im Teil «Code knacken» bleiben die Lämpchen immer gleich hell – sonst wäre der Code schon verraten. Der Schalter wirkt dort nicht.'
+    : 'Ist die Helligkeit aus, siehst du nur, ob ein Lämpchen leuchtet oder nicht. Ist sie an, leuchten Lämpchen unterschiedlich hell – das verrät mehr über die Schaltung und macht die Aufgaben leichter.';
+  // «Von vorne beginnen» am selben Ort wie in den anderen zwei Werkzeugen
+  const n = $('neuBtn');
+  n.textContent = st.mode === 'ueben' ? '↺ Diese Übung neu starten'
+                : st.mode === 'bauen' ? '↺ Plan neu anfangen'
+                : '↺ Anderen Code laden';
+  n.disabled = st.mode === 'code' && !st.task;
+  $('neuText').textContent = st.mode === 'ueben'
+      ? 'Stellt diese Übung wieder her, wie sie am Anfang war. Die schon gelösten Übungen bleiben angekreuzt.'
+      : st.mode === 'bauen'
+      ? 'Setzt den Plan auf eine einzelne Lampe zurück. Die anderen Teile bleiben, wie sie sind.'
+      : 'Leert den geladenen Code, damit du einen anderen eingeben kannst.';
+}
+function einstNeu(){
+  if (st.mode === 'ueben') { loadLevel(st.lvl); return; }
+  if (st.mode === 'bauen') { pushUndo(); setT(S(L(1))); st.removed[st.mode] = null;
+    st.swapFrom = null; st.check = null; st.kindAns = null; render(); return; }
+  st.task = null; st.codeText = ''; st.codeErr = ''; render();
+}
+function einstOeffnen(auf) { $('einst').hidden = !auf; if (auf) einstZeigen(); }
+$('einstBtn').onclick = () => { if (tour) tourEnd(); einstOeffnen(true); };
+/* Lupe – gleiche Bedienung wie in den anderen zwei Werkzeugen */
+const zoomBtn = $('zoomBtn');
+zoomBtn.onclick = () => {
+  const c = $('canvas');
+  // Die Höhe festhalten, bevor das Bild wächst: sonst schiebt das Brett die
+  // halbe Seite nach unten, statt in sich zu scrollen – und die Lupe selbst
+  // rutscht aus dem Bild. In den anderen zwei Werkzeugen hat die Bildfläche
+  // von Haus aus eine feste Höhe, hier muss sie gemerkt werden.
+  if (!c.classList.contains('zoom')) c.style.height = c.getBoundingClientRect().height + 'px';
+  const an = c.classList.toggle('zoom');
+  if (!an) c.style.height = '';
+  zoomBtn.textContent = an ? '🔎' : '🔍';
+  zoomBtn.title = an ? 'Bild verkleinern' : 'Bild vergrössern';
+  zoomBtn.setAttribute('aria-pressed', an ? 'true' : 'false');
+  if (an) requestAnimationFrame(() => {
+    c.scrollLeft = (c.scrollWidth - c.clientWidth) / 2;
+    c.scrollTop = (c.scrollHeight - c.clientHeight) / 2;
+  });
+};
+$('einst').addEventListener('click', e => {
+  if (e.target.id === 'einst' || e.target.closest('[data-einst="zu"]')) { einstOeffnen(false); return; }
+  if (e.target.closest('[data-einst="hell"]')) { st.bright = !st.bright; einstZeigen(); render(); saveState(); return; }
+  if (e.target.closest('[data-einst="neu"]')) { einstOeffnen(false); einstNeu(); saveState(); }
+});
+
+/* Vollbild: auf dem Tablet fällt die Adressleiste weg, im Unterricht lenkt weniger ab */
+const ICON_FS_ON  = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>';
+const ICON_FS_OFF = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>';
+const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement;
+const standalone = navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
+/* Nicht am Gerät festmachen, sondern nachfragen, ob der Browser es kann.
+   Auf dem iPhone sagt Safari nein, auf dem iPad je nach Version ja.
+   Als Web-App vom Home-Bildschirm ist ohnehin schon alles Vollbild. */
+const fsMoeglich=!!(document.fullscreenEnabled||document.webkitFullscreenEnabled);
+const fsCan=!standalone&&fsMoeglich&&!!(document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen);
+function fsLabel() {
+  const on = !!fsEl();
+  document.documentElement.classList.toggle('fsmode', on);   // im Vollbild die ganze Breite nutzen
+  sizePlan();
+  $('fsBtn').innerHTML = (on ? ICON_FS_OFF : ICON_FS_ON) + `<span>${on ? 'Vollbild beenden' : 'Vollbild'}</span>`;
+  $('fsBtn').setAttribute('aria-label', on ? 'Vollbild beenden' : 'Vollbild');
+  $('fsBtn').title = on ? 'Vollbild beenden' : 'Vollbild';
+}
+if (fsCan) {
+  $('fsBtn').hidden = false; fsLabel();
+  $('fsBtn').onclick = () => {
+    const d = document, el = d.documentElement;
+    if (fsEl()) (d.exitFullscreen || d.webkitExitFullscreen).call(d);
+    else (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
+  };
+  document.addEventListener('fullscreenchange', fsLabel);
+  document.addEventListener('webkitfullscreenchange', fsLabel);
+}
+$('devbox').addEventListener('click', e => {
+  const bulb = e.target.closest('[data-bulb]');
+  if (bulb) tapLamp(+bulb.dataset.bulb);
+});
+$('devbox').addEventListener('keydown', e => {
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.closest('[data-bulb]')) {
+    e.preventDefault(); e.target.dispatchEvent(new MouseEvent('click', {bubbles:true}));
+  }
+});
+$('side').addEventListener('click', e => {
+  const lv = e.target.closest('[data-lvl]'); if (lv) return loadLevel(+lv.dataset.lvl);
+  const pg = e.target.closest('[data-pg]');          // Vorhersage: Punkt umstellen
+  if (pg && st.pred) {
+    const j = +pg.dataset.pg;
+    st.pred.g[j] = st.pred.g[j] === null ? true : !st.pred.g[j];
+    render(); return;
+  }
+  if (e.target.id === 'revealBtn') return reveal();
+  const kb = e.target.closest('[data-kind]');       // Frage nach der Art der Schaltung
+  if (kb) { st.kindAns = kb.dataset.kind; render(); return; }
+  const bulb = e.target.closest('[data-bulb]'); if (bulb) return tapBox(+bulb.dataset.bulb);
+  const row = e.target.closest('[data-r]');          // nur beim Bauen: Zeile = Lampe ausdrehen
+  if (row) {
+    const r = +row.dataset.r;
+    st.removed[st.mode] = (r === 0 || st.removed[st.mode] === r) ? null : r;
+    render(); return;
+  }
+  if (e.target.id === 'checkBtn') return check();
+  if (e.target.id === 'tipBtn') { st.tip = Math.min(st.tip + 1, 2); render(); return; }
+  if (e.target.id === 'solBtn') {
+    if (!st.task.sol) return;
+    pushUndo(); setT(clone(st.task.sol)); st.removed[st.mode] = null;
+    st.check = {ok:true, text:'Das ist eine mögliche Lösung. Vergleiche sie mit dem, was du gebaut hast.'};
+    st.extra = null; render(); return;
+  }
+  if (e.target.id === 'codeGo') return loadCode();
+  if (e.target.closest('#copyBtn')) return copyCode();
+  if (e.target.closest('#pasteBtn')) return pasteCode();
+  if (e.target.id === 'codeNew') {
+    st.knack.code = newKnack(); st.codeText = ''; st.codeErr = '';
+    st.trees.code = S(L(1)); st.undo.code = []; st.removed.code = null; st.swapFrom = null;
+    render();
+    const inp = $('codeIn'); if (inp) inp.focus();
+  }
+});
+$('side').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.id === 'codeIn') { e.preventDefault(); loadCode(); }
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.closest('[data-bulb]')) {
+    e.preventDefault(); e.target.dispatchEvent(new MouseEvent('click', {bubbles:true}));
+  }
+});
+$('side').addEventListener('input', e => { if (e.target.id === 'codeIn') st.codeText = e.target.value; });
+
+/* Nach dem Drehen: Safari behält teils alte Höhe und Scrollposition (Rand oben).
+   Darum sichtbare Höhe selbst messen und alles auf null setzen – mehrmals, weil
+   Safari die neue Grösse oft erst verspätet meldet. */
+function fitViewport() {
+  sizePlan();
+  const h = (window.visualViewport && visualViewport.height) || window.innerHeight;
+  document.documentElement.style.setProperty('--app-h', Math.round(h) + 'px');
+  if (matchMedia('(min-width:941px)').matches) {
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0; document.body.scrollTop = 0;
+  }
+}
+function fitSoon() { fitViewport(); [120, 350, 700].forEach(t => setTimeout(fitViewport, t)); }
+window.addEventListener('resize', fitSoon);
+window.addEventListener('orientationchange', fitSoon);
+if (window.visualViewport) visualViewport.addEventListener('resize', fitSoon);
+document.addEventListener('fullscreenchange', fitSoon);
+document.addEventListener('webkitfullscreenchange', fitSoon);
+fitViewport();
+
+/* ===================== Geführte Tour =====================
+   Pro Tab eine kurze Tour. Startet beim ersten Öffnen des Tabs von selbst,
+   danach jederzeit über «?». Der erklärte Teil bleibt hell und bedienbar. */
+const TOURS = {
+  ueben: [
+    {t:['.chips'], h:'<b>Wähle eine Übung.</b> Von 1 bis 5 wird es schwieriger. Bei ★ gibt es mehrere Lösungen, 🎲 macht eine neue Zufallsaufgabe.'},
+    {t:['.bxpanel'], h:'Das ist die <b>Blackbox</b>. Hineinschauen kannst du nicht. Tippe eine Lampe an, um sie <b>herauszudrehen</b>. Ab Übung 3 vermutest du zuerst, was passiert, und deckst dann auf.'},
+    {t:['#sideB .proto'], h:'Hier wird <b>notiert</b>, was du beobachtet hast. Dreh jede Lampe einmal heraus.'},
+    {t:['#canvas'], h:'Hier baust du deine <b>Vermutung</b>. Ein <b>+</b> rechts von einer Lampe baut in <b>Serie</b>, ein <b>+</b> darunter <b>parallel</b>. Ziehst du ein unteres <b>+</b> zur Seite, umfasst es mehrere Lampen.'},
+    {t:['#canvas [data-num]'], h:'Die <b>Nummer</b> sagt, in welcher Fassung der Blackbox die Lampe sitzt. Tippe zwei Nummern nacheinander an, um Lampen zu <b>tauschen</b>.'},
+    {t:['.checkbar'], h:'Fertig? Tippe auf <b>Prüfen</b>. Kommst du nicht weiter, hilft der <b>Tipp</b>.'}
+  ],
+  bauen: [
+    {t:['#device'], h:'<b>Aussen:</b> So sieht deine Blackbox für andere aus. Tippe eine Lampe an, um sie herauszudrehen.'},
+    {t:['#canvas'], h:'<b>Innen:</b> Hier baust du deine Schaltung. Ein <b>+</b> rechts baut in <b>Serie</b>, ein <b>+</b> darunter <b>parallel</b>.'},
+    {t:['#sideB .proto'], h:'Hier siehst du, was leuchtet, wenn eine Lampe herausgedreht ist.'},
+    {t:['.coderow','#sideB'], h:'<b>Kopiere den Code</b> und gib ihn weiter. Die andere Person gibt ihn unter «Code knacken» ein und versucht, deine Schaltung herauszufinden.'}
+  ],
+  code: [
+    {t:['.codein','.codehead'], h:'Gib hier den <b>Code</b> ein, den du bekommen hast, oder tippe auf <b>Einfügen</b>.'},
+    {t:[], h:'Danach geht es wie beim <b>Üben</b>: Blackbox beobachten, Vermutung bauen, prüfen.'}
+  ]
+};
+let tour = null;
+const tourSeenMem = new Set();
+function tourSeen(m) {
+  if (tourSeenMem.has(m)) return true;
+  try { return localStorage.getItem('blackbox-tour-' + m) === '1'; } catch (e) { return false; }
+}
+function tourMark(m) {
+  tourSeenMem.add(m);
+  try { localStorage.setItem('blackbox-tour-' + m, '1'); } catch (e) {}
+}
+function tourTarget() {
+  for (const sel of TOURS[tour.mode][tour.i].t) {
+    const el = document.querySelector(sel);
+    if (el && el.getClientRects().length) return el;
+  }
+  return null;
+}
+function tourStart(m) {
+  tour = {mode: m, i: 0, scrolled: -1};
+  $('tour').hidden = false;
+  tourShow();
+}
+function tourEnd() {
+  if (!tour) return;
+  tourMark(tour.mode);
+  tour = null;
+  $('tour').hidden = true;
+}
+function tourShow() {
+  const steps = TOURS[tour.mode], last = tour.i === steps.length - 1;
+  $('ttext').innerHTML = steps[tour.i].h;
+  $('tdots').innerHTML = steps.map((_, k) => `<i class="${k === tour.i ? 'on' : ''}"></i>`).join('');
+  $('tBack').hidden = tour.i === 0;
+  $('tNext').textContent = last ? 'Los geht’s' : 'Weiter';
+  tourPlace();
+  if (!matchMedia('(pointer:coarse)').matches) $('tNext').focus({preventScroll: true});
+}
+function tourPlace() {
+  if (!tour) return;
+  const vw = window.innerWidth, vh = window.innerHeight, pad = 6, gap = 12, m = 12;
+  const el = tourTarget();
+  // Gestapelte Ansicht (Handy/Tablet hoch): Ziel einmal pro Schritt ins Bild holen
+  if (el && tour.scrolled !== tour.i && !matchMedia('(min-width:941px)').matches) {
+    tour.scrolled = tour.i;
+    const rr = el.getBoundingClientRect();
+    if (rr.top < 70 || rr.bottom > vh - 200) { el.scrollIntoView({block: 'center'}); }
+  }
+  let r;
+  if (el) {
+    const b = el.getBoundingClientRect();
+    r = {l: Math.max(4, b.left - pad), t: Math.max(4, b.top - pad),
+         r: Math.min(vw - 4, b.right + pad), b: Math.min(vh - 4, b.bottom + pad)};
+  } else {
+    r = {l: vw / 2, t: vh / 2, r: vw / 2, b: vh / 2};
+  }
+  const hole = $('thole');
+  Object.assign(hole.style, {left: r.l + 'px', top: r.t + 'px', width: (r.r - r.l) + 'px', height: (r.b - r.t) + 'px'});
+  hole.style.opacity = el ? 1 : 0.999;
+  // Klicks ausserhalb des hellen Bereichs abfangen
+  const set = (id, l, t, w, h) => Object.assign($(id).style, {left: l + 'px', top: t + 'px', width: Math.max(0, w) + 'px', height: Math.max(0, h) + 'px'});
+  set('tbT', 0, 0, vw, r.t);
+  set('tbB', 0, r.b, vw, vh - r.b);
+  set('tbL', 0, r.t, r.l, r.b - r.t);
+  set('tbR', r.r, r.t, vw - r.r, r.b - r.t);
+  // Sprechblase: unter, über, rechts oder links vom Ziel – sonst unten am Rand
+  const bub = $('tbubble'), bw = bub.offsetWidth, bh = bub.offsetHeight;
+  const clampX = x => Math.min(Math.max(m, x), vw - bw - m);
+  const clampY = y => Math.min(Math.max(m, y), vh - bh - m);
+  let x, y;
+  if (!el) { x = (vw - bw) / 2; y = (vh - bh) / 2; }
+  else if (vh - r.b >= bh + gap + m) { y = r.b + gap; x = clampX((r.l + r.r) / 2 - bw / 2); }
+  else if (r.t >= bh + gap + m)      { y = r.t - gap - bh; x = clampX((r.l + r.r) / 2 - bw / 2); }
+  else if (vw - r.r >= bw + gap + m) { x = r.r + gap; y = clampY((r.t + r.b) / 2 - bh / 2); }
+  else if (r.l >= bw + gap + m)      { x = r.l - gap - bw; y = clampY((r.t + r.b) / 2 - bh / 2); }
+  else { x = (vw - bw) / 2; y = vh - bh - m; }
+  bub.style.left = Math.round(x) + 'px'; bub.style.top = Math.round(y) + 'px';
+}
+function maybeAutoTour() {
+  if (tour || tourSeen(st.mode)) return;
+  setTimeout(() => { if (!tour && !tourSeen(st.mode)) tourStart(st.mode); }, 350);
+}
+$('tNext').onclick = () => {
+  if (tour.i < TOURS[tour.mode].length - 1) { tour.i++; tourShow(); } else tourEnd();
+};
+$('tBack').onclick = () => { if (tour.i > 0) { tour.i--; tourShow(); } };
+$('tSkip').onclick = tourEnd;
+$('helpBtn').onclick = () => { if (tour) tourEnd(); tourStart(st.mode); };
+document.addEventListener('keydown', e => {
+  if (!$('einst').hidden) { if (e.key === 'Escape') { e.preventDefault(); einstOeffnen(false); } return; }
+  if (!tour) return;
+  if (e.key === 'Escape') { e.preventDefault(); tourEnd(); }
+  else if (e.key === 'ArrowRight') { e.preventDefault(); $('tNext').click(); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); $('tBack').click(); }
+});
+window.addEventListener('resize', () => { if (tour) requestAnimationFrame(tourPlace); });
+window.addEventListener('scroll', () => { if (tour) tourPlace(); }, {passive: true});
+
+/* ===================== Stand merken =====================
+   Beim Neuladen soll nichts verloren gehen: Tab, Schaltungen, Aufgaben und Fortschritt
+   werden laufend im Browser-Tab gemerkt (sessionStorage – gilt nur für diesen Tab,
+   auf geteilten iPads startet ein neuer Tab also frisch).                            */
+const SAVE_KEY = 'blackbox-stand-v1';
+function saveState() {
+  try {
+    const knack = {};
+    for (const m of ['ueben', 'bauen', 'code']) {
+      const k = st.knack[m];
+      knack[m] = Object.assign({}, k, {seen: [...k.seen]});
+    }
+    const undo = {};
+    for (const m in st.undo) undo[m] = st.undo[m].slice(-20);
+    sessionStorage.setItem(SAVE_KEY, JSON.stringify({
+      mode: st.mode, bright: st.bright, trees: st.trees, undo, removed: st.removed, knack,
+      lvl: st.lvl, solved: [...st.solved], rndN: st.rndN, codeText: st.codeText, predHelp: st.predHelp
+    }));
+  } catch (e) {}
+}
+function restoreState() {
+  let d;
+  try { d = JSON.parse(sessionStorage.getItem(SAVE_KEY) || 'null'); } catch (e) { return null; }
+  if (!d || !d.trees || !d.knack) return null;
+  try {
+    st.mode = d.mode; st.bright = !!d.bright; st.trees = d.trees; st.undo = d.undo; st.removed = d.removed;
+    for (const m of ['ueben', 'bauen', 'code']) {
+      const k = Object.assign(newKnack(), d.knack[m] || {});
+      k.seen = new Set(k.seen || []);
+      st.knack[m] = k;
+    }
+    st.lvl = d.lvl || 0; st.solved = new Set(d.solved || []); st.rndN = d.rndN || 5; st.codeText = d.codeText || ''; st.predHelp = !!d.predHelp;
+    if (!st.knack.ueben.task) { const cur = st.mode; st.mode = 'ueben'; loadLevel(st.lvl); st.mode = cur; }
+    const work = st.mode !== 'ueben' || st.lvl !== 0 || Object.values(st.undo).some(u => u.length) || st.solved.size;
+    return {work};
+  } catch (e) {
+    try { sessionStorage.removeItem(SAVE_KEY); } catch (e2) {}
+    return null;
+  }
+}
+function showToast() {
+  $('toast').hidden = false;
+  clearTimeout(showToast.t);
+  showToast.t = setTimeout(() => { $('toast').hidden = true; }, 7000);
+}
+$('toastOk').onclick = () => { $('toast').hidden = true; };
+$('toastReset').onclick = () => {
+  try { sessionStorage.removeItem(SAVE_KEY); } catch (e) {}
+  location.reload();
+};
+
+const restored = restoreState();
+if (!restored) loadLevel(0);
+ausAdresse();
+render();
+if (restored && restored.work) showToast();
+maybeAutoTour();
+</script>
+
+
+</body>
+</html>

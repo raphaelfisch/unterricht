@@ -1,0 +1,1624 @@
+<!DOCTYPE html>
+<html lang="de-CH">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Fehlersuche">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Fehlersuche im Stromkreis</title>
+<style>
+:root{--bg:#E6ECF1;--paper:#F8FAFB;--ink:#1D2935;--muted:#5A6672;--line:#C6D0D9;--btn:#FFFFFF;
+  --accent:#2E6DB4;--ok:#23794A;--bad:#B8322A}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+/* hidden muss hidden bleiben: sonst gewinnt .fsbtn{display:inline-flex} und
+   es steht ein leerer Kreis neben dem «?». */
+[hidden]{display:none !important}
+button{font:inherit}
+html,body{height:100%}
+body{margin:0;font-family:system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;font-size:16px;line-height:1.45;
+  background:var(--bg);color:var(--ink);overflow:hidden;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+header,.top,.card{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.wrap{max-width:1700px;margin:0 auto;padding:12px 16px 16px;height:100vh;height:100dvh;display:flex;flex-direction:column;gap:18px;box-sizing:border-box}
+.top{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px 14px;flex:0 0 auto}
+.top h1{grid-column:1;grid-row:1;justify-self:start}
+.top .tabs{grid-column:2;grid-row:1;justify-self:center}
+.top .tools{grid-column:3;grid-row:1;justify-self:end}
+.top h1{justify-self:start}
+.top .fsbtn{justify-self:end}
+h1{font-size:1.5rem;margin:0;font-weight:700;letter-spacing:-.01em;white-space:nowrap}
+/* Die sechs Stufen: gleich breit, jede mit eigenem Rand */
+.top .tabs{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:3px;margin:0;
+  border:1px solid var(--line);border-radius:14px;padding:3px;background:var(--paper)}
+.top .tabs .tab{border:0;background:transparent;color:var(--ink);height:38px;padding:0 8px;font-size:.9rem;
+  display:flex;align-items:center;justify-content:center;border-radius:11px;
+  white-space:nowrap;text-align:center;overflow:hidden;text-overflow:ellipsis}
+.top .tabs .tab:hover{background:#EEF2F7}
+.top .tabs .tab.on{background:var(--ink);color:var(--paper)}
+.subtabs{display:flex;gap:6px;margin:0 0 2px}
+.tools{display:flex;align-items:center;gap:12px}
+.fsbtn{margin-left:0;display:inline-flex;align-items:center;justify-content:center;gap:7px;font:inherit;font-size:.92rem;height:36px;
+  border:1px solid var(--line);background:var(--btn);color:var(--muted);padding:0 14px;border-radius:999px;cursor:pointer}
+.fsbtn:hover{border-color:var(--accent);color:var(--accent)}
+.hilfebtn{width:36px;height:36px;padding:0;border-radius:999px;font-weight:700;font-size:.92rem;justify-content:center}
+/* Zurück zur Übersicht – gleiche Form wie «?» */
+/* Haus statt Pfeil: Ein Pfeil kann auch «einen Schritt zurück» heissen.
+   Als Zeichnung statt als Schriftzeichen, damit es auf jedem Gerät gleich
+   sitzt. Spiegelsymmetrisch, also waagrecht von selbst mittig; senkrecht ist
+   die Zeichnung leicht angehoben, weil Wände und Tür mehr Tinte tragen als das Dach. */
+.heim{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+.heim svg{display:block}
+/* Wie beim Vollbild-Knopf: Solange Platz ist, steht das Wort dabei –
+   ein Pfeil allein sagt nicht, wohin er führt, und auf dem Tablet
+   gibt es keinen Mauszeiger, der den Tooltip zeigt. */
+@media (max-width:767px){.heim{width:36px;padding:0;border-radius:999px}.heim span{display:none}}
+/* Ganz schmale Geraete: Die vier runden Knoepfe muessen neben den Titel passen. */
+@media (max-width:430px){.tools{gap:8px}}
+.stagewrap{position:relative}
+.zoombtn{display:none;position:absolute;right:10px;bottom:10px;width:40px;height:40px;border-radius:50%;
+  border:1.5px solid var(--ink);background:#fff;font-size:1.1rem;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.15)}
+#stage.zoom{overflow:auto}
+#stage.zoom svg{width:210%;height:auto;max-height:none}
+.modal{position:fixed;inset:0;z-index:60;background:rgba(18,24,30,.45);display:grid;place-items:center;padding:16px}
+.modal[hidden]{display:none}
+.mcard{background:var(--paper);border-radius:14px;padding:14px 16px 16px;max-width:440px;width:100%;
+  max-height:calc(100vh - 32px);overflow:auto;box-shadow:0 14px 40px rgba(0,0,0,.3)}
+.mhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.mhead b{font-size:1.05rem}
+.mcard p{margin:7px 0;line-height:1.5}
+.fsmode .wrap{max-width:none}
+@media (max-width:1400px){
+  .top{grid-template-columns:1fr auto}
+  .top .tools{grid-column:2}
+  .top .tabs{grid-column:1 / -1;grid-row:2;justify-self:stretch;width:100%}
+}
+
+@media (max-width:960px){
+  .top .tabs{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .top .tabs .tab{padding:0 4px}
+}
+.tab{border:1px solid var(--line);background:var(--btn);border-radius:999px;padding:7px 13px;font-size:.92rem;cursor:pointer;color:var(--ink)}
+.tab.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tab:disabled{opacity:.45;cursor:default}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:10px 12px;
+  flex:1;min-height:0;display:flex;flex-direction:column;gap:8px}
+.stagewrap{flex:0 0 auto;min-height:0}
+.side{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px}
+#stage{min-height:0;width:100%;height:100%}
+.panel{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:4px;margin:0}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;flex:0 0 auto}
+.bar .t{font-weight:600;color:var(--muted)}
+.dots{display:flex;gap:6px;align-items:center}
+.dot{width:28px;height:28px;border-radius:50%;border:2px solid var(--line);background:#fff;font-size:.8rem;cursor:pointer;color:var(--ink)}
+.dot.on{border-color:var(--accent);color:var(--accent);font-weight:700}
+.dot.done{background:var(--ok);border-color:var(--ok);color:#fff}
+.icon{border:none;background:none;font-size:.95rem;font-weight:600;cursor:pointer;padding:4px 6px;color:var(--muted)}
+#stage svg{width:100%;height:100%;display:block;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+[data-el],[data-sw]{cursor:pointer}
+.lead{margin:6px 0;font-size:1.02rem;line-height:1.45}
+.msg{padding:8px 11px;border-radius:12px;margin:6px 0;line-height:1.45}
+.msg.ok{background:#e6f6ec;color:#11683a}
+.msg.bad{background:#fdecec;color:#9b1c1c}
+.msg.info{background:#eef4fd;color:#1d4d99}
+.hint{background:#fff7e0;color:#7a5600;padding:8px 11px;border-radius:12px;margin:6px 0}
+/* Merksatz – gleiche Bauform und Farbe wie in «Grössen» und in der «Blackbox» */
+.merke{background:#f6f2e9;border-left:4px solid #d9bd6a;border-radius:0 10px 10px 0;padding:8px 12px;margin:8px 0;line-height:1.45;color:#4a4232}
+.mc{display:flex;flex-direction:column;gap:6px;margin:6px 0}
+.opt{text-align:left;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--btn);font-size:.97rem;cursor:pointer;color:var(--ink)}
+.opt:disabled{cursor:default}
+.opt.right{border-color:var(--ok);background:#e6f6ec}
+.opt.wrongsel{border-color:var(--bad);background:#fdecec}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.btn{padding:9px 14px;border-radius:10px;border:1px solid var(--line);background:var(--btn);font:inherit;cursor:pointer;color:var(--ink)}
+.btn.primary{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:default}
+ul.res{margin:4px 0;padding-left:20px;line-height:1.5}
+.complaint{font-size:1.1rem;font-weight:700;margin:4px 0 6px}
+.proto{background:#f6f8fa;border-radius:12px;padding:8px 11px;margin:8px 0}
+.proto ul{list-style:none;margin:4px 0 0;padding:0}
+.proto li{padding:3px 0;line-height:1.4}
+.proto .res.good{color:#11683a;font-weight:600}
+.proto .res.badr{color:#9b1c1c;font-weight:600}
+.proto .res.neutral{color:#7b8792}
+.sub{font-weight:700;color:var(--muted);font-size:.9rem;margin:10px 0 4px}
+.weg{background:#eef4fd;border-radius:12px;padding:8px 12px 10px;margin:8px 0}
+.wegtitel{font-weight:700;font-size:.9rem;color:#1d4d99;margin-bottom:2px}
+.wegtext{line-height:1.45;color:var(--ink)}
+.rechnung{margin:2px 0 8px}
+.rechnung summary{cursor:pointer;color:var(--muted);font-size:.9rem;list-style:none}
+.rechnung summary::-webkit-details-marker{display:none}
+.rechnung summary::before{content:"▸ "}
+.rechnung[open] summary::before{content:"▾ "}
+.weg ol{margin:4px 0 0;padding-left:20px}
+.weg li{color:#7b8792;line-height:1.4;padding:2px 0}
+.weg li.on{color:var(--ink);font-weight:600}
+.weg li.ab{text-decoration:line-through;opacity:.6}
+.einst{margin-top:10px;border-top:1px solid var(--line);padding-top:6px}
+.einst summary{cursor:pointer;color:var(--muted);font-size:.92rem;font-weight:600;list-style:none}
+.einst summary::-webkit-details-marker{display:none}
+.einst summary::before{content:"▸ "}
+.einst[open] summary::before{content:"▾ "}
+.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:6px}
+.tbtn{text-align:left;padding:9px 11px;border-radius:10px;border:1px solid var(--line);background:var(--btn);font-size:.95rem;cursor:pointer;color:var(--ink);line-height:1.3}
+.tbtn:hover{border-color:var(--accent)}
+.meter{margin:10px 0 6px}
+.mbar{position:relative;height:26px;border-radius:9px;background:#eceff2;overflow:hidden}
+.mscale{position:relative;height:15px;font-size:.76rem;color:var(--muted)}
+.mover{position:absolute;right:8px;top:0;height:100%;display:flex;align-items:center;color:#fff;font-size:.9rem;letter-spacing:2px}
+.mzone{position:absolute;top:0;left:80%;right:0;height:100%;background:repeating-linear-gradient(45deg,#fbe3e3,#fbe3e3 7px,#f6d2d2 7px,#f6d2d2 14px)}
+.mfill{position:absolute;top:0;left:0;height:100%;border-radius:9px 0 0 9px;transition:width .25s}
+.mlimit{position:absolute;top:0;left:80%;width:3px;height:100%;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.45)}
+.mtick{position:absolute;left:80%;transform:translateX(-50%);white-space:nowrap;font-weight:700;color:#9b1c1c}
+.heat{height:7px;border-radius:4px;background:#f1e3cd;margin-top:6px;overflow:hidden}
+.hfill{height:100%;background:#f08c00;transition:width .2s}
+.mval{font-weight:700;margin-top:5px;font-size:1.05rem}
+.dlist{font-size:.93rem;color:#4a5560;line-height:1.55;margin:4px 0}
+.dlist .sum{font-weight:700;color:var(--ink);border-top:1px solid var(--line);display:inline-block;padding-top:3px;margin-top:3px}
+.blink{animation:blink .7s}
+@keyframes blink{0%,100%{opacity:.6}50%{opacity:.08}}
+@media (min-width:941px) and (max-height:900px){.wrap{padding-top:8px;gap:12px;padding-bottom:10px}.top{gap:6px 14px}.top .tabs .tab{height:34px}}
+@media (min-width:941px) and (max-height:820px){.wrap{padding-top:6px;gap:10px;padding-bottom:8px}.top{gap:5px 14px}.top .tabs .tab{height:32px}
+  .msg,.hint{font-size:.93rem;line-height:1.38}}
+@media (min-width:941px) and (max-height:720px){.msg,.hint{font-size:.88rem;line-height:1.32}}
+@media (min-width:941px) and (max-height:670px){.wrap{padding-top:5px;gap:10px;padding-bottom:8px}}
+@media (min-width:700px) and (min-aspect-ratio:11/10){
+  .card{flex-direction:row;gap:14px}
+  /* Bildbreite folgt der Bildschirmhöhe (Seitenverhältnis 5:3), begrenzt durch den Platz für den Text */
+  .stagewrap{flex:0 0 auto;min-width:0;height:100%;
+    width:min(calc((100vh - 104px) * 5 / 3), calc(100% - clamp(320px, 28%, 430px) - 14px));
+    width:min(calc((100dvh - 104px) * 5 / 3), calc(100% - clamp(320px, 28%, 430px) - 14px))}
+  .side{flex:1 1 0;min-width:0}
+}
+@media (max-width:699px){.zoombtn{display:block}}
+@media (max-width:699px), (max-aspect-ratio:11/10){
+  .stagewrap{width:100%;height:min(38vh, calc((100vw - 48px) * 0.6));height:min(38dvh, calc((100vw - 48px) * 0.6))}
+}
+@media (max-width:600px){
+  .fsbtn span{display:none}
+  .fsbtn{width:36px;padding:0;border-radius:999px}
+  h1{font-size:1.15rem}
+  .h1lg{display:none}
+  .tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{flex:0 0 auto;font-size:.86rem;padding:6px 10px}
+  .wrap{padding:12px 12px 16px}
+  .stagewrap{height:min(34vh, calc((100vw - 40px) * 0.6));height:min(34dvh, calc((100vw - 40px) * 0.6))}
+}
+@media (max-width:520px){.top .tabs{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* Sehr schmale Telefone (320 px): Der Titel weicht, damit die vier Knöpfe
+   vollständig danebenpassen und keiner abgeschnitten wird. Steht zuunterst,
+   weil sonst die 600-px-Regel weiter unten gewinnen würde. */
+@media (max-width:360px){h1{font-size:1rem}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1 title="Stand 23.09.2026">Fehlersuche<span class="h1lg"> im Stromkreis</span></h1>
+    <div class="tabs" id="tabs"></div>
+    <div class="tools">
+      <a class="fsbtn heim" href="index.html" title="Zur Übersicht" aria-label="Zur Übersicht"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.65 12 2.45l9 7.2"/><path d="M5.6 8.45v10h12.8v-10"/><path d="M9.9 18.45v-5.2h4.2v5.2"/></svg><span>Übersicht</span></a>
+      <button class="fsbtn" id="fsBtn" hidden aria-label="Vollbild"></button>
+      <button class="fsbtn hilfebtn" id="einstBtn" aria-label="Einstellungen" title="Einstellungen">⚙</button>
+      <button class="fsbtn hilfebtn" id="helpBtn" aria-label="Anleitung" title="Anleitung">?</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="stagewrap"><div id="stage"></div><button class="zoombtn" id="zoomBtn" title="Bild vergrössern">🔍</button></div>
+    <div class="side">
+      <div class="bar" id="bar"></div>
+      <div class="panel" id="panel"></div>
+    </div>
+  </div>
+</div>
+<div id="einst" class="modal" hidden>
+  <div class="mcard">
+    <div class="mhead"><b>⚙ Einstellungen</b><button class="icon" data-einst="zu" aria-label="Schliessen">✕</button></div>
+    <div id="einstText"></div>
+    <div class="row"><button class="btn primary" data-einst="zu">Fertig</button></div>
+  </div>
+</div>
+<div id="hilfe" class="modal" hidden>
+  <div class="mcard">
+    <div class="mhead"><b id="hilfeTitel"></b><button class="icon" data-hilfe="zu" aria-label="Schliessen">✕</button></div>
+    <div id="hilfeText"></div>
+    <div class="row"><button class="btn primary" data-hilfe="zu">Alles klar</button></div>
+  </div>
+</div>
+
+<script>
+// CORE-START
+/* ---------- Schaltungsmodell ----------
+   Bauteile: battery (Pole p/n), lamp (Anschlüsse a/b), switch (a/b)
+   Kabel: verbinden zwei Anschlüsse (oder enden lose: free)
+   Das Modell berechnet mit Knotenanalyse, welche Lämpchen leuchten
+   und ob ein Kurzschluss vorliegt. */
+const V=4.5, R_LAMP=10, R_WIRE=0.001, R_INT=0.05;
+
+function termPos(c,t){
+  if(c.type==='battery') return t==='p'?[c.x-45,c.y-43]:[c.x+45,c.y-43];
+  return t==='a'?[c.x-50,c.y]:[c.x+50,c.y];
+}
+function comp(circ,id){return circ.comps.find(c=>c.id===id);}
+
+function gauss(A,b){
+  const n=b.length; A=A.map(r=>r.slice()); b=b.slice();
+  for(let i=0;i<n;i++){
+    let m=i; for(let k=i+1;k<n;k++) if(Math.abs(A[k][i])>Math.abs(A[m][i])) m=k;
+    [A[i],A[m]]=[A[m],A[i]]; [b[i],b[m]]=[b[m],b[i]];
+    const p=A[i][i]||1e-30;
+    for(let k=i+1;k<n;k++){const f=A[k][i]/p; if(!f) continue; for(let j=i;j<n;j++) A[k][j]-=f*A[i][j]; b[k]-=f*b[i];}
+  }
+  const x=new Array(n).fill(0);
+  for(let i=n-1;i>=0;i--){let s=b[i]; for(let j=i+1;j<n;j++) s-=A[i][j]*x[j]; x[i]=s/(A[i][i]||1e-30);}
+  return x;
+}
+
+function simulate(circ,broken,sw){
+  const bat=circ.comps.find(c=>c.type==='battery');
+  const P=bat.id+'.p', GND=bat.id+'.n';
+  const els=[];
+  circ.wires.forEach(w=>{ if(!broken.has(w.id)) els.push([w.from, w.to||('free:'+w.id), R_WIRE]); });
+  circ.comps.forEach(c=>{
+    if(c.type==='lamp' && !broken.has(c.id)) els.push([c.id+'.a',c.id+'.b',R_LAMP]);
+    if(c.type==='switch' && sw[c.id] && !broken.has(c.id)) els.push([c.id+'.a',c.id+'.b',R_WIRE]);
+  });
+  const keys=new Set([P]);
+  els.forEach(e=>{keys.add(e[0]);keys.add(e[1]);});
+  circ.comps.forEach(c=>{ if(c.type!=='battery'){keys.add(c.id+'.a');keys.add(c.id+'.b');} });
+  keys.delete(GND);
+  const list=[...keys], map={}; list.forEach((k,i)=>map[k]=i);
+  const n=list.length, G=list.map(()=>new Array(n).fill(0)), I=new Array(n).fill(0);
+  const add=(a,b,g)=>{const i=map[a],j=map[b];
+    if(i!==undefined) G[i][i]+=g; if(j!==undefined) G[j][j]+=g;
+    if(i!==undefined&&j!==undefined){G[i][j]-=g;G[j][i]-=g;}};
+  els.forEach(([a,b,R])=>add(a,b,1/R));
+  add(P,GND,1/R_INT); I[map[P]]+=V/R_INT;
+  for(let i=0;i<n;i++) G[i][i]+=1e-9;
+  const v=gauss(G,I), volt=k=>k===GND?0:v[map[k]];
+  const lamps={};
+  circ.comps.filter(c=>c.type==='lamp').forEach(c=>{
+    lamps[c.id]=!broken.has(c.id) && Math.abs(volt(c.id+'.a')-volt(c.id+'.b'))>0.3*V;
+  });
+  return {lamps, short: volt(P)<0.5*V};
+}
+
+function swCombos(circ){
+  const ids=circ.comps.filter(c=>c.type==='switch').map(c=>c.id), out=[];
+  for(let m=0;m<(1<<ids.length);m++){const s={}; ids.forEach((id,i)=>s[id]=!!(m&(1<<i))); out.push(s);}
+  return out;
+}
+function signature(circ,broken){
+  return JSON.stringify(swCombos(circ).map(sw=>simulate(circ,broken,sw)));
+}
+function candidates(t){
+  const circ=t.circuit, target=signature(circ,new Set([t.hidden])), out=new Set();
+  const ids=[...circ.wires.map(w=>w.id), ...circ.comps.filter(c=>c.type==='lamp').map(c=>c.id)];
+  ids.forEach(id=>{ if(signature(circ,new Set([id]))===target) out.add(id); });
+  return out;
+}
+function applyFix(circ,fix){
+  if(!fix) return circ;
+  const wires=[];
+  circ.wires.forEach(w=>{
+    if(!(w.id in fix)) wires.push(w);
+    else if(fix[w.id]!==null) wires.push(Object.assign({},w,fix[w.id]));
+  });
+  return {comps:circ.comps, wires};
+}
+
+/* ---------- Aufgaben ---------- */
+const BAT={id:'B',type:'battery',x:400,y:415,name:'die Batterie'};
+const lamp=(id,x,y,name,label)=>({id,type:'lamp',x,y,name:name||('Lämpchen '+id),label:label===undefined?id:label});
+const swc=(id,x,y)=>({id,type:'switch',x,y,closed:true,name:'der Schalter'});
+const W=(id,from,to,via,color,name,extra)=>Object.assign({id,from,to,via,color,name},extra||{});
+
+const S1L=lamp('L1',400,130,'das Lämpchen','');
+const s1w1=W('w1','B.p','L1.a',[[220,372],[220,130]],'red','das rote Kabel');
+const s1w2=W('w2','L1.b','B.n',[[580,130],[580,372]],'black','das schwarze Kabel');
+
+const TASKS=[
+ { stufe:1,
+   circuit:{comps:[BAT,S1L],wires:[s1w1,W('w2','L1.b',null,[[580,130],[580,372]],'black','das schwarze Kabel',{free:[492,372]})]},
+   fault:'w2', fix:{w2:{to:'B.n',free:null}},
+   hint:'Folge jedem Kabel bis zu seinem Ende. Ist jedes Ende fest angeschlossen?',
+   mc:{q:'Wie nennt man diesen Fehler?',opts:['Unterbrechung','Kurzschluss','Die Batterie ist leer'],c:0,
+       expl:'Der Stromkreis ist nicht geschlossen. Der Strom kann nicht zurück zum Minuspol fliessen.'}},
+ { stufe:1,
+   circuit:{comps:[BAT,S1L],wires:[s1w1,s1w2,W('w3','B.p','B.n',[[355,318],[445,318]],'yellow','das gelbe Kabel')]},
+   fault:'w3', fix:{w3:null},
+   hint:'Die Batterie wird heiss. Gibt es einen Weg von + nach −, der nicht durchs Lämpchen führt?',
+   mc:{q:'Wie nennt man diesen Fehler?',opts:['Unterbrechung','Kurzschluss','Das Lämpchen ist kaputt'],c:1,
+       expl:'Das gelbe Kabel verbindet + und − direkt. Der Strom nimmt diesen Weg statt durchs Lämpchen. Die Batterie wird heiss – das ist gefährlich!'}},
+ { stufe:1,
+   circuit:{comps:[BAT,S1L],wires:[s1w1,W('w2','L1.b','B.p',[[580,130],[580,300],[355,300]],'black','das schwarze Kabel')]},
+   fault:'w2', fix:{w2:{to:'B.n',via:[[580,130],[580,372]]}},
+   hint:'Schau genau hin: Wohin führen die beiden Kabel an der Batterie?',
+   mc:{q:'Warum leuchtet das Lämpchen nicht?',opts:['Beide Kabel führen zum Pluspol – es gibt keinen Weg zum Minuspol','Es gibt einen Kurzschluss','Das schwarze Kabel ist zu lang'],c:0,
+       expl:'Ein Stromkreis braucht einen geschlossenen Weg: vom Pluspol durchs Lämpchen zum Minuspol.'}},
+ { stufe:1,
+   circuit:{comps:[BAT,S1L],wires:[s1w1,W('w2','B.n','L1.a',[[580,372],[580,40],[350,40]],'black','das schwarze Kabel')]},
+   fault:'w2', fix:{w2:{to:'L1.b',via:[[580,372],[580,130]]}},
+   hint:'Schau dir die beiden Anschlüsse des Lämpchens an.',
+   mc:{q:'Was passiert hier?',opts:['Unterbrechung','Kurzschluss','Das Lämpchen leuchtet schwächer'],c:1,
+       expl:'Beide Kabel treffen sich am selben Anschluss. Der Strom fliesst direkt von + nach −, am Lämpchen vorbei. Das ist ein Kurzschluss.'}},
+
+ { stufe:2,
+   circuit:{comps:[BAT,lamp('L1',270,130),lamp('L2',530,130)],wires:[
+     W('w1','B.p','L1.a',[[140,372],[140,130]],'red','das rote Kabel'),
+     W('w2','L1.b','L2.a',[],'blue','das blaue Kabel'),
+     W('w3','L2.b','B.n',[[660,130],[660,372]],'black','das schwarze Kabel'),
+     W('w4','L2.a','L2.b',[[480,205],[580,205]],'yellow','das gelbe Kabel')]},
+   fault:'w4', fix:{w4:null},
+   hint:'Gibt es für den Strom einen Weg an L2 vorbei?',
+   mc:{q:'Warum leuchtet L2 nicht?',opts:['Das gelbe Kabel überbrückt L2 – der Strom fliesst an L2 vorbei','Der Strom wird in L1 verbraucht','L2 ist kaputt'],c:0,
+       expl:'Durch das gelbe Kabel kommt der Strom viel leichter durch als durch L2. Darum wird L2 umgangen. Der Strom wird übrigens nirgends «verbraucht».'}},
+ { stufe:2,
+   circuit:{comps:[BAT,swc('S',220,372),lamp('L1',400,110),lamp('L2',400,240)],wires:[
+     W('w1','B.p','S.b',[],'red','das Kabel Batterie → Schalter'),
+     W('w2','S.a','L1.a',[[110,372],[110,110]],'red','das Kabel Schalter → L1'),
+     W('w3','L1.a','L2.a',[],'red','das linke Kabel zwischen L1 und L2'),
+     W('w4','L2.b',null,[],'black','das rechte Kabel an L2',{free:[450,172]}),
+     W('w5','L1.b','B.n',[[690,110],[690,372]],'black','das Kabel L1 → Batterie')]},
+   fault:'w4', fix:{w4:{to:'L1.b',free:null}},
+   hint:'Folge dem Weg durch L2. Ist er geschlossen?',
+   mc:{q:'Warum leuchtet L1 trotzdem?',opts:['L1 hat einen eigenen geschlossenen Weg zur Batterie','L1 bekommt den Strom über L2','L1 braucht keinen geschlossenen Stromkreis'],c:0,
+       expl:'Bei einer Parallelschaltung hat jedes Lämpchen seinen eigenen Weg. Ist ein Zweig unterbrochen, leuchtet der andere weiter.'}},
+
+ { stufe:3,
+   circuit:{comps:[BAT,swc('S',220,372),lamp('L1',400,110),lamp('L2',400,240)],wires:[
+     W('w1','B.p','S.b',[],'red','das Kabel Batterie → Schalter'),
+     W('w2','S.a','L1.a',[[110,372],[110,110]],'red','das Kabel Schalter → L1'),
+     W('w3','L1.a','L2.a',[],'red','das linke Kabel zwischen L1 und L2'),
+     W('w4','L2.b','L1.b',[],'black','das rechte Kabel zwischen L1 und L2'),
+     W('w5','L1.b','B.n',[[690,110],[690,372]],'black','das Kabel L1 → Batterie')]},
+   hidden:'w4',
+   reveal:'Kabelbruch im rechten Kabel zwischen L1 und L2. Von aussen sieht man nichts – innen ist der Draht gebrochen.',
+   lesson:'Weil L1 leuchtet, müssen alle Kabel auf dem Weg von L1 in Ordnung sein. Der Fehler kann nur im Zweig von L2 liegen.'},
+ { stufe:3,
+   circuit:{comps:[BAT,swc('S',220,372),lamp('L1',270,130),lamp('L2',530,130)],wires:[
+     W('w1','B.p','S.b',[],'red','das Kabel Batterie → Schalter'),
+     W('w2','S.a','L1.a',[[110,372],[110,130]],'red','das Kabel Schalter → L1'),
+     W('w3','L1.b','L2.a',[],'blue','das Kabel L1 → L2'),
+     W('w4','L2.b','B.n',[[660,130],[660,372]],'black','das Kabel L2 → Batterie')]},
+   hidden:'L2',
+   reveal:'Der Glühfaden von L2 ist durchgebrannt.',
+   lesson:'In einer Serienschaltung kann der Fehler überall sein: Eine einzige Unterbrechung genügt, und nichts leuchtet mehr. Hinschauen reicht hier nicht – man muss prüfen. Genau darum geht es in Stufe 4.'}
+];
+// CORE-END
+
+// HOUSE-CORE-START
+/* ---------- Haushalt: Pfadmodell ----------
+   Jedes Teil hat ein "Elternteil" Richtung Sicherung.
+   Ein Gerät funktioniert, wenn kein Teil auf seinem Weg kaputt ist.
+   Jede Beobachtung beantwortet: Liegt der Fehler in der Menge T? */
+const HE={
+ sich:{name:'die Sicherung',label:'Sicherung',parent:null,what:'Die Sicherung hat ausgelöst.',
+   fix:'Sicherung wieder einschalten (Hebel nach oben). Löst sie immer wieder aus, ist ein Gerät defekt – dann eine Fachperson holen.'},
+ lsch:{name:'der Lichtschalter',label:'Lichtschalter',parent:'sich',
+   fix:'⚠️ Einen Lichtschalter darfst du nicht selbst auswechseln. Das macht eine Elektrikerin oder ein Elektriker.'},
+ dlamp:{name:'die Glühbirne der Deckenlampe',label:'Deckenlampe',parent:'lsch',
+   fix:'Neue Glühbirne einschrauben – vorher den Lichtschalter ausschalten und die Birne abkühlen lassen.'},
+ dose:{name:'die Wandsteckdose',label:'Wandsteckdose',parent:'sich',
+   fix:'⚠️ Die Wandsteckdose darfst du auf keinen Fall selbst öffnen – Lebensgefahr! Das repariert eine Elektrikerin oder ein Elektriker.'},
+ stecker:{name:'der Stecker der Steckerleiste',label:'Stecker',parent:'dose',what:'Der Stecker der Steckerleiste war nicht richtig eingesteckt.',
+   fix:'Stecker ganz in die Wandsteckdose stecken. Fertig!'},
+ leiste:{name:'die Steckerleiste',label:'Steckerleiste',parent:'stecker',
+   fix:'Die Steckerleiste ist innen defekt. Eine neue verwenden – die alte nicht aufschrauben!'},
+ bild:{name:'der Bildschirm',label:'Bildschirm',parent:'leiste'},
+ tlamp:{name:'die Glühbirne der Schreibtischlampe',label:'Schreibtischlampe',parent:'leiste',
+   fix:'Neue Glühbirne in die Schreibtischlampe – vorher den Stecker ziehen!'},
+ lader:{name:'das Ladegerät',label:'Ladegerät',parent:'leiste',
+   fix:'Das Ladegerät ist defekt. Ein neues verwenden – das alte nicht aufschrauben!'},
+ kabel:{name:'das Ladekabel',label:'Ladekabel',parent:'lader',
+   fix:'Das Ladekabel hat einen Kabelbruch. Ein neues Kabel verwenden.'},
+ handy:{name:'die Ladebuchse des Handys',label:'Handy',parent:'kabel',
+   fix:'Die Ladebuchse des Handys ist verschmutzt oder defekt. Das Handy zur Reparatur bringen.'}
+};
+function hpath(id){const p=[]; while(id){p.push(id); id=HE[id].parent;} return p;}
+const minus=(a,x)=>a.filter(y=>y!==x);
+const T_S={id:'s',icon:'👀',label:'Sicherungskasten öffnen und nachschauen',T:['sich'],yes:'Die Sicherung ist eingeschaltet.',no:'Die Sicherung ist ausgelöst – der Hebel ist unten!'};
+const T_ST={id:'st',icon:'👀',label:'Stecker der Steckerleiste kontrollieren',T:['stecker'],yes:'Der Stecker steckt fest in der Wandsteckdose.',no:'Der Stecker ist halb aus der Wandsteckdose gerutscht!'};
+const T_OL={id:'ol',icon:'🔌',label:'Ein anderes Ladegerät ausprobieren',T:minus(hpath('handy'),'lader'),swap:'lader',yes:'Mit dem anderen Ladegerät lädt das Handy.',no:'Auch mit dem anderen Ladegerät lädt das Handy nicht.'};
+const T_OK={id:'ok',icon:'🔌',label:'Ein anderes Ladekabel ausprobieren',T:minus(hpath('handy'),'kabel'),swap:'kabel',yes:'Mit dem anderen Ladekabel lädt das Handy.',no:'Auch mit dem anderen Ladekabel lädt das Handy nicht.'};
+const LEVELS={
+ 4:{faults:['sich','dose','stecker','leiste','lader','kabel','handy'],
+    tests:[T_S,T_ST,
+     {id:'pl',icon:'💡',label:'Prüflampe in die Steckerleiste stecken',T:hpath('leiste'),yes:'Die Prüflampe leuchtet.',no:'Die Prüflampe bleibt dunkel.'},
+     {id:'pw',icon:'💡',label:'Prüflampe direkt in die Wandsteckdose stecken',T:hpath('dose'),yes:'Die Prüflampe leuchtet.',no:'Die Prüflampe bleibt dunkel.'},
+     T_OL,T_OK,
+     {id:'oh',icon:'📱',label:'Ein anderes Handy anschliessen',T:minus(hpath('handy'),'handy'),swap:'handy',yes:'Das andere Handy lädt.',no:'Das andere Handy lädt auch nicht.'}]},
+ 5:{faults:['sich','dose','stecker','leiste','tlamp','lader','kabel','handy','lsch','dlamp'],
+    tests:[
+     {id:'dl',icon:'💡',label:'Deckenlicht einschalten',T:hpath('dlamp'),light:true,yes:'Die Deckenlampe leuchtet.',no:'Die Deckenlampe bleibt dunkel.'},
+     T_S,T_ST,
+     {id:'tw',icon:'🔄',label:'Schreibtischlampe direkt in die Wandsteckdose stecken',T:[...hpath('dose'),'tlamp'],turnOn:'tlamp',yes:'Die Schreibtischlampe leuchtet.',no:'Die Schreibtischlampe bleibt dunkel.'},
+     {id:'lw',icon:'🔄',label:'Ladegerät direkt in die Wandsteckdose stecken',T:[...hpath('dose'),'lader','kabel','handy'],yes:'Direkt an der Wandsteckdose lädt das Handy.',no:'Auch direkt an der Wandsteckdose lädt das Handy nicht.'},
+     T_OL,T_OK,
+     {id:'nt',icon:'🔄',label:'Neue Glühbirne in die Schreibtischlampe',T:minus(hpath('tlamp'),'tlamp'),swap:'tlamp',turnOn:'tlamp',yes:'Mit der neuen Birne leuchtet die Schreibtischlampe!',no:'Auch mit der neuen Birne bleibt die Schreibtischlampe dunkel.'},
+     {id:'nd',icon:'🔄',label:'Neue Glühbirne in die Deckenlampe und Licht einschalten',T:minus(hpath('dlamp'),'dlamp'),swap:'dlamp',light:true,yes:'Mit der neuen Birne leuchtet die Deckenlampe!',no:'Auch mit der neuen Birne bleibt die Deckenlampe dunkel.'}]}
+};
+const GROUP_A=['sich','dose','stecker','leiste'];
+function complaintOf(h){
+  if(h.lv===4) return 'Das Handy lädt nicht!';
+  if(h.ceiling) return 'Das Deckenlicht geht nicht an!';
+  const bad=h.free.filter(o=>o.bad&&o.dev);
+  if(bad.length>1) return 'Am Pult funktioniert plötzlich nichts mehr!';
+  if(bad.length===1) return {bild:'Der Bildschirm bleibt schwarz!',tlamp:'Die Schreibtischlampe bleibt dunkel!',handy:'Das Handy lädt nicht!'}[bad[0].dev];
+  return 'Irgendetwas stimmt hier nicht!';
+}
+const DEVTXT=[['bild','🖥️','Der Bildschirm','läuft','bleibt schwarz'],
+              ['tlamp','💡','Die Schreibtischlampe','leuchtet','bleibt dunkel'],
+              ['handy','📱','Das Handy','lädt','lädt nicht']];
+function freeObs(h){
+  const bad=T=>T.includes(h.fault), o=[];
+  if(h.lv===4){
+    o.push({icon:'📱',text:'Das Handy lädt nicht.',T:hpath('handy'),bad:true,dev:'handy'});
+    if(h.plugged){ const T=hpath('leiste'), b=bad(T);
+      o.push({icon:'💡',text:b?'Die Prüflampe steckt in der Steckerleiste und bleibt dunkel.':'Die Prüflampe steckt in der Steckerleiste und leuchtet.',T,bad:b}); }
+    return o;
+  }
+  if(h.lightStart){ const T=hpath('dlamp'), b=T.includes(h.fault);
+    o.push({icon:'💡',text:b?'Das Deckenlicht ist eingeschaltet – aber die Lampe bleibt dunkel.':'Das Deckenlicht brennt.',T,bad:b,dev:b?'dlamp':null}); }
+  DEVTXT.forEach(([id,ic,subj,good,bd])=>{
+    if(h.off.includes(id)){ o.push({icon:ic,text:`${subj} ist gar nicht eingeschaltet – das sagt dir nichts.`,T:[],bad:false,info:true}); return; }
+    const T=hpath(id), b=bad(T);
+    o.push({icon:ic,text:`${subj} ${b?bd:good}.`,T,bad:b,dev:id});
+  });
+  return o;
+}
+function testObs(h,t){ const bad=t.T.includes(h.fault); return {icon:t.icon,label:t.label,text:bad?t.no:t.yes,T:t.T,bad}; }
+function allObs(h){ return [...h.free, ...h.done.map(id=>testObs(h,LEVELS[h.lv].tests.find(t=>t.id===id)))]; }
+function hCands(h){ const obs=allObs(h).filter(o=>!o.info); return LEVELS[h.lv].faults.filter(f=>obs.every(o=>o.T.includes(f)===o.bad)); }
+function availTests(h){ return LEVELS[h.lv].tests.filter(t=>!h.done.includes(t.id)&&!(t.id==='dl'&&h.lightStart)); }
+function proSteps(cands,tests){
+  const memo={};
+  const rec=cs=>{ if(cs.length<=1) return 0; const k=cs.join(','); if(k in memo) return memo[k];
+    let best=Infinity;
+    for(const t of tests){ const a=cs.filter(f=>t.T.includes(f)), b=cs.filter(f=>!t.T.includes(f));
+      if(a.length&&b.length) best=Math.min(best,1+Math.max(rec(a),rec(b))); }
+    return memo[k]=best; };
+  return rec(cands);
+}
+function newCase(lv,prev){
+  const F=LEVELS[lv].faults; let f;
+  do{ f=F[Math.floor(Math.random()*F.length)]; }while(prev&&f===prev.fault);
+  const h={lv,fault:f,ceiling:lv===5&&(f==='lsch'||f==='dlamp'),done:[],swapped:[],sel:null,phase:'search',
+           msg:'',msgType:'',help:false,wrong:0,gaveup:false,caseNo:prev?prev.caseNo+1:1,solved:prev?prev.solved:0,lucky:false,off:[]};
+  h.plugged=lv===4&&Math.random()<0.5;
+  if(lv===5) ['bild','tlamp'].forEach(d=>{ if(d!==f&&Math.random()<0.35) h.off.push(d); });
+  h.lightOn=h.ceiling||(lv===5&&Math.random()<0.45); h.lightStart=h.lightOn; h.free=freeObs(h);
+  h.pro=proSteps(hCands(h),availTests(h));
+  return h;
+}
+// HOUSE-CORE-END
+
+const STUFEN=[[1,'Fehler sehen'],[2,'Vorhersagen'],[3,'Eingrenzen'],[4,'Prüfen'],[5,'Ausschliessen'],[6,'Überlastung']];
+
+/* ---------- Zustand ---------- */
+function initState(t){
+  const sw={}; t.circuit.comps.filter(c=>c.type==='switch').forEach(c=>sw[c.id]=c.closed!==false);
+  return {phase:t.stufe===2?'predict':(t.stufe===3?'mark':'find'), sw, marks:new Set(), pred:new Set(),
+          halo:{}, wrong:0, msg:'', mc:null, fixed:false, done:false, flash:null, predRes:null, check:null};
+}
+let cur=0; const S=TASKS.map(initState);
+
+const nameOf=(t,id)=>{const w=t.circuit.wires.find(w=>w.id===id); return w?w.name:comp(t.circuit,id).name;};
+const typeOf=(t,id)=>{const c=comp(t.circuit,id); return c?c.type:'wire';};
+const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+const dispCirc=(t,st)=>st.fixed?applyFix(t.circuit,t.fix):t.circuit;
+const brokenOf=(t,st)=>(t.hidden&&!st.fixed)?new Set([t.hidden]):new Set();
+
+/* ---------- Bildausschnitt an die Fenstergrösse anpassen ----------
+   Der Inhalt bleibt, wo er ist; je nach Seitenverhältnis kommt oben Decke,
+   unten Boden oder seitlich Wand dazu. So bleiben keine leeren Ränder. */
+let VB={x:0,y:0,w:800,h:480};
+function fitVB(cx,cy,cw,ch,topShare,maxExtra){
+  const el=document.getElementById('stage'), r=el?el.getBoundingClientRect():null;
+  let ar=(r&&r.width>4&&r.height>4)?r.width/r.height:cw/ch;
+  ar=Math.max(0.55,Math.min(4.5,ar));
+  let x=cx,y=cy,w=cw,h=ch;
+  if(ar>cw/ch){ w=ch*ar; x=cx-(w-cw)/2; }
+  else { h=Math.min(cw/ar, ch+(maxExtra===undefined?1e6:maxExtra)); y=cy-(h-ch)*(topShare===undefined?0.45:topShare); }
+  const r1=n=>Math.round(n*10)/10;
+  const px=(r&&r.width>4)?r.width/w:1;       // Bildschirmpunkte je Zeichen-Einheit
+  VB={x:r1(x),y:r1(y),w:r1(w),h:r1(h),px,r:r1(Math.max(8,16/px))};
+  return VB;
+}
+const vbAttr=v=>`${v.x} ${v.y} ${v.w} ${v.h}`;
+
+/* ---------- Zeichnen ---------- */
+const COL={red:'#d8322b',black:'#2a2d31',blue:'#2563c9',yellow:'#e9c11b'};
+const HC={ok:['#1a9e55',''],bad:['#d93636',''],mark:['#f08c00','10 8'],miss:['#f08c00','3 8'],pred:['#f5b800','10 8']};
+const DEFS=`<defs>
+<radialGradient id="glow"><stop offset="0" stop-color="#fff6b0" stop-opacity=".95"/><stop offset=".45" stop-color="#ffd84a" stop-opacity=".5"/><stop offset="1" stop-color="#ffd84a" stop-opacity="0"/></radialGradient>
+<pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><rect width="20" height="20" fill="#f6f2e9"/><circle cx="10" cy="10" r="1.3" fill="#ddd5c3"/></pattern>
+<linearGradient id="bat" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a6886"/><stop offset="1" stop-color="#2c3e50"/></linearGradient>
+<linearGradient id="bathot" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e0533f"/><stop offset="1" stop-color="#9e2a1c"/></linearGradient>
+<linearGradient id="cone" x1="0" y1="84" x2="0" y2="285" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#ffdf85" stop-opacity=".62"/><stop offset=".55" stop-color="#ffe9a8" stop-opacity=".22"/><stop offset="1" stop-color="#ffe9a8" stop-opacity="0"/></linearGradient>
+<linearGradient id="cone2" x1="148" y1="231" x2="182" y2="302" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#ffdf85" stop-opacity=".62"/><stop offset=".55" stop-color="#ffe9a8" stop-opacity=".22"/><stop offset="1" stop-color="#ffe9a8" stop-opacity="0"/></linearGradient>
+</defs>`;
+
+function wirePts(circ,w){
+  const pos=k=>{const [id,tn]=k.split('.'); return termPos(comp(circ,id),tn);};
+  return [pos(w.from), ...(w.via||[]), w.to?pos(w.to):w.free];
+}
+function rpath(pts,r=18){
+  let d=`M${pts[0][0]},${pts[0][1]}`;
+  for(let i=1;i<pts.length-1;i++){
+    const [x0,y0]=pts[i-1],[x1,y1]=pts[i],[x2,y2]=pts[i+1];
+    const d1=Math.hypot(x1-x0,y1-y0), d2=Math.hypot(x2-x1,y2-y1);
+    if(!d1||!d2){d+=` L${x1},${y1}`;continue;}
+    const rr=Math.min(r,d1/2,d2/2);
+    d+=` L${x1+(x0-x1)/d1*rr},${y1+(y0-y1)/d1*rr} Q${x1},${y1} ${x1+(x2-x1)/d2*rr},${y1+(y2-y1)/d2*rr}`;
+  }
+  const l=pts[pts.length-1]; return d+` L${l[0]},${l[1]}`;
+}
+function midPt(pts){
+  let L=0; const seg=[];
+  for(let i=1;i<pts.length;i++){const l=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]); seg.push(l); L+=l;}
+  let h=L/2;
+  for(let i=0;i<seg.length;i++){ if(h<=seg[i]){const f=h/seg[i]; return [pts[i][0]+(pts[i+1][0]-pts[i][0])*f, pts[i][1]+(pts[i+1][1]-pts[i][1])*f];} h-=seg[i]; }
+  return pts[0];
+}
+function wireSVG(circ,w){
+  const pts=wirePts(circ,w), d=rpath(pts);
+  let s=`<path d="${d}" fill="none" stroke="rgba(0,0,0,.35)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="${d}" fill="none" stroke="${COL[w.color]}" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="${d}" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>`;
+  if(!w.to){
+    const a=pts[pts.length-2], b=pts[pts.length-1], l=Math.hypot(b[0]-a[0],b[1]-a[1])||1;
+    const ex=b[0]+(b[0]-a[0])/l*11, ey=b[1]+(b[1]-a[1])/l*11;
+    s+=`<line x1="${b[0]}" y1="${b[1]}" x2="${ex}" y2="${ey}" stroke="#c87533" stroke-width="3.5" stroke-linecap="round"/>`;
+  }
+  return s;
+}
+function batSVG(c,hot){
+  const {x,y}=c;
+  let s=`<rect x="${x-52}" y="${y-45}" width="14" height="12" rx="2" fill="#b89436"/><rect x="${x+38}" y="${y-45}" width="14" height="12" rx="2" fill="#b89436"/>
+  <rect x="${x-75}" y="${y-35}" width="150" height="70" rx="9" fill="url(#${hot?'bathot':'bat'})"/>
+  <text x="${x}" y="${y+14}" text-anchor="middle" font-size="19" font-weight="700" fill="#fff">4,5 V</text>
+  <text x="${x-45}" y="${y-10}" text-anchor="middle" font-size="22" font-weight="800" fill="#ff9a8f">+</text>
+  <text x="${x+45}" y="${y-10}" text-anchor="middle" font-size="22" font-weight="800" fill="#d5dde3">−</text>`;
+  if(hot) s+=`<text x="${x-98}" y="${y+14}" font-size="26" text-anchor="middle">🔥</text><text x="${x+98}" y="${y+14}" font-size="26" text-anchor="middle">🔥</text>`;
+  return s;
+}
+function lampSVG(c,on,showGlow,brokenShow){
+  const {x,y}=c, by=y-42, lit=on&&showGlow;
+  let s='';
+  if(lit) s+=`<circle cx="${x}" cy="${by}" r="54" fill="url(#glow)"/>`;
+  s+=`<rect x="${x-10}" y="${y-26}" width="20" height="14" rx="3" fill="#8a8f96"/>`;
+  s+=`<circle cx="${x}" cy="${by}" r="22" fill="${lit?'#ffe066':'#e8eef2'}" stroke="${lit?'#d9a400':'#98a4ad'}" stroke-width="2"/>`;
+  if(!showGlow) s+=`<text x="${x}" y="${by+7}" text-anchor="middle" font-size="20" font-weight="700" fill="#7a8791">?</text>`;
+  else if(brokenShow) s+=`<path d="M${x-9},${by+14} L${x-6},${by} l3,-5 l2,3 M${x+2},${by-4} l1,-3 l3,5 L${x+9},${by+14}" fill="none" stroke="#6b7780" stroke-width="1.8" stroke-linecap="round"/>`;
+  else s+=`<path d="M${x-9},${by+14} L${x-6},${by} l3,-5 l3,5 l3,-5 l3,5 L${x+9},${by+14}" fill="none" stroke="${lit?'#b35c00':'#6b7780'}" stroke-width="1.8" stroke-linejoin="round"/>`;
+  s+=`<rect x="${x-40}" y="${y-15}" width="80" height="30" rx="7" fill="#4a5058"/>`;
+  if(c.label) s+=`<text x="${x}" y="${y+37}" text-anchor="middle" font-size="16" font-weight="700" fill="#44505a">${c.label}</text>`;
+  return s;
+}
+function swSVG(c,closed){
+  const {x,y}=c, ex=closed?x+26:x+13, ey=closed?y:y-40;
+  return `<line x1="${x-50}" y1="${y}" x2="${x-26}" y2="${y}" stroke="#aeb4ba" stroke-width="4"/><line x1="${x+26}" y1="${y}" x2="${x+50}" y2="${y}" stroke="#aeb4ba" stroke-width="4"/>
+  <rect x="${x-46}" y="${y-15}" width="92" height="30" rx="6" fill="#8a6a4a" stroke="#654b32" stroke-width="2"/>
+  <rect x="${x-33}" y="${y-10}" width="13" height="20" rx="3" fill="#c3cad0" stroke="#87909a" stroke-width="1.5"/>
+  <rect x="${x+20}" y="${y-10}" width="13" height="20" rx="3" fill="#c3cad0" stroke="#87909a" stroke-width="1.5"/>
+  <line x1="${x-26}" y1="${y}" x2="${ex}" y2="${ey}" stroke="#5c6570" stroke-width="9" stroke-linecap="round"/>
+  <line x1="${x-26}" y1="${y}" x2="${ex}" y2="${ey}" stroke="#e6ebef" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="${x-26}" cy="${y}" r="5" fill="#6b7480"/>
+  <text x="${x}" y="${y+38}" text-anchor="middle" font-size="15" font-weight="700" fill="#44505a">Schalter ${closed?'geschlossen':'offen'}</text>`;
+}
+function haloKey(t,st,id){
+  if(st.flash===id) return 'bad';
+  if(st.halo[id]) return st.halo[id];
+  if(t.stufe===3&&st.phase==='mark'&&st.marks.has(id)) return 'mark';
+  if(t.stufe===2&&st.phase==='predict'&&st.pred.has(id)) return 'pred';
+  return null;
+}
+function haloAttrs(k){const [c,da]=HC[k]; return [c, (da?`stroke-dasharray="${da}"`:'')+(k==='bad'?' class="blink"':'')];}
+function xMark(x,y){return `<circle cx="${x}" cy="${y}" r="13" fill="#fff" stroke="#d93636" stroke-width="3"/><path d="M${x-5},${y-5} L${x+5},${y+5} M${x+5},${y-5} L${x-5},${y+5}" stroke="#d93636" stroke-width="3" stroke-linecap="round"/>`;}
+
+/* Der Ausschnitt richtet sich nach dem, was in dieser Aufgabe gezeichnet ist:
+   So wird der Stromkreis so gross wie möglich, das Papier füllt den Rest. */
+function circBox(circ){
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  const put=(x,y)=>{x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x);y1=Math.max(y1,y);};
+  circ.comps.forEach(c=>{
+    if(c.type==='battery'){ put(c.x-84,c.y-54); put(c.x+84,c.y+44); }
+    else if(c.type==='lamp'){ put(c.x-48,c.y-74); put(c.x+48,c.y+44); }
+    else { put(c.x-54,c.y-52); put(c.x+54,c.y+44); } });
+  circ.wires.forEach(w=>wirePts(circ,w).forEach(pt=>put(pt[0],pt[1])));
+  const m=30; return {x:x0-m,y:y0-m,w:(x1-x0)+2*m,h:(y1-y0)+2*m};
+}
+function renderSVG(){
+  const t=TASKS[cur], st=S[cur], circ=dispCirc(t,st), sim=simulate(circ,brokenOf(t,st),st.sw);
+  const glow=!(t.stufe===2&&st.phase==='predict');
+  const cb=circBox(circ), V=fitVB(cb.x,cb.y,cb.w,cb.h,0.5);
+  let s=`<svg viewBox="${vbAttr(V)}" xmlns="http://www.w3.org/2000/svg">${DEFS}<rect x="${V.x+3}" y="${V.y+3}" width="${V.w-6}" height="${V.h-6}" rx="${V.r}" fill="url(#dots)" stroke="#e2dccd" stroke-width="2"/>`;
+  circ.wires.forEach(w=>{const k=haloKey(t,st,w.id); if(k){const [c,a]=haloAttrs(k); s+=`<path d="${rpath(wirePts(circ,w))}" fill="none" stroke="${c}" stroke-width="22" stroke-linecap="round" stroke-linejoin="round" opacity=".5" ${a}/>`;}});
+  circ.comps.forEach(c=>{const k=haloKey(t,st,c.id); if(!k) return; const [col,a]=haloAttrs(k);
+    s+= c.type==='battery'
+      ? `<rect x="${c.x-84}" y="${c.y-54}" width="168" height="98" rx="16" fill="${col}" fill-opacity=".14" stroke="${col}" stroke-width="3.5" ${a}/>`
+      : `<rect x="${c.x-48}" y="${c.y-72}" width="96" height="98" rx="16" fill="${col}" fill-opacity=".14" stroke="${col}" stroke-width="3.5" ${a}/>`;});
+  circ.wires.forEach(w=>s+=wireSVG(circ,w));
+  const revealed=t.hidden&&st.phase==='revealed';
+  circ.comps.forEach(c=>{
+    if(c.type==='battery') s+=batSVG(c,sim.short);
+    else if(c.type==='lamp') s+=lampSVG(c,sim.lamps[c.id],glow,revealed&&t.hidden===c.id);
+    else s+=swSVG(c,st.sw[c.id]);
+  });
+  circ.comps.forEach(c=>(c.type==='battery'?['p','n']:['a','b']).forEach(tn=>{const [x,y]=termPos(c,tn);
+    s+=`<circle cx="${x}" cy="${y}" r="7" fill="#d9b44a" stroke="#8a6d1f" stroke-width="2"/><circle cx="${x}" cy="${y}" r="2" fill="#6b5418"/>`;}));
+  if(revealed){const w=circ.wires.find(w=>w.id===t.hidden);
+    if(w){const [x,y]=midPt(wirePts(circ,w)); s+=xMark(x,y);} else {const c=comp(circ,t.hidden); s+=xMark(c.x+32,c.y-64);}}
+  if(t.stufe===2&&st.predRes) for(const id in st.predRes){const c=comp(circ,id);
+    s+=`<text x="${c.x+22}" y="${c.y+38}" font-size="19" font-weight="800" fill="${st.predRes[id]?'#1a9e55':'#d93636'}">${st.predRes[id]?'✓':'✗'}</text>`;}
+  // Klickflächen
+  circ.comps.filter(c=>c.type==='battery').forEach(c=>s+=`<rect data-el="${c.id}" x="${c.x-80}" y="${c.y-30}" width="160" height="70" fill="#000" fill-opacity="0"/>`);
+  circ.wires.forEach(w=>s+=`<path data-el="${w.id}" d="${rpath(wirePts(circ,w))}" fill="none" stroke="#000" stroke-opacity="0" stroke-width="38" stroke-linecap="round" style="pointer-events:stroke"/>`);
+  circ.comps.filter(c=>c.type==='lamp').forEach(c=>s+=`<rect data-el="${c.id}" x="${c.x-45}" y="${c.y-70}" width="90" height="88" fill="#000" fill-opacity="0"/>`);
+  circ.comps.filter(c=>c.type==='switch').forEach(c=>s+=`<rect data-sw="${c.id}" x="${c.x-50}" y="${c.y-50}" width="100" height="76" fill="#000" fill-opacity="0"/>`);
+  return s+'</svg>';
+}
+
+/* ---------- Texte / Panel ---------- */
+function whyNot(t,e){
+  const circ=t.circuit, hasSw=circ.comps.some(c=>c.type==='switch');
+  for(const sw of swCombos(circ)){
+    const a=simulate(circ,new Set([t.hidden]),sw), h=simulate(circ,new Set([e]),sw);
+    for(const L in a.lamps) if(a.lamps[L]!==h.lamps[L]){
+      const swT=hasSw?(Object.values(sw)[0]?' bei geschlossenem Schalter':' bei offenem Schalter'):'';
+      return `<b>${cap(nameOf(t,e))}</b>: Wäre es kaputt, würde ${L}${swT} ${h.lamps[L]?'leuchten':'nicht leuchten'}. ${L} ${a.lamps[L]?'leuchtet aber':'leuchtet aber nicht'}.`;
+    }
+  }
+  return cap(nameOf(t,e));
+}
+function nextBtn(t){
+  const n=cur+1<TASKS.length?cur+1:null;
+  if(n===null) return '<div class="row"><button class="btn primary" data-stufe="4">Weiter zu Stufe 4 →</button></div>';
+  const lbl=TASKS[n].stufe!==t.stufe?`Weiter zu Stufe ${TASKS[n].stufe} →`:'Nächste Aufgabe →';
+  return `<div class="row"><button class="btn primary" data-act="next">${lbl}</button></div>`;
+}
+/* Gleiche Bauform wie in den anderen zwei Werkzeugen: Was allgemein gilt und
+   hängenbleiben soll, steht im Kasten – nicht in der Rückmeldezeile, die nur
+   sagt, ob diese eine Antwort stimmte. */
+const merke=t=>`<div class="merke">📌 <b>Merke:</b> ${t}</div>`;
+function repairedMsg(st){
+  const open=Object.values(st.sw).some(v=>!v);
+  return `<p class="msg ok">🔧 Repariert!${open?' Schliesse den Schalter und schau, was passiert.':''}</p>`;
+}
+function renderPanel(){
+  const t=TASKS[cur], st=S[cur]; let h='';
+  if(t.stufe<3){
+    if(st.phase==='predict'){
+      h+=`<p class="lead">Schau dir den Stromkreis genau an: <b>Welche Lämpchen leuchten?</b> Tippe sie an. Wenn keines leuchtet, tippe keines an.</p>`;
+      if(st.msg) h+=`<p class="msg info">${st.msg}</p>`;
+      return h+`<div class="row"><button class="btn primary" data-act="predict">Prüfen</button></div>`;
+    }
+    if(st.predRes){const all=Object.values(st.predRes).every(v=>v);
+      h+=`<p class="msg ${all?'ok':'bad'}">${all?'Deine Vorhersage stimmt!':'Deine Vorhersage stimmt nicht ganz – schau, welche Lämpchen wirklich leuchten.'}</p>`;}
+    if(st.phase==='find'){
+      h+=`<p class="lead">${t.stufe===1?'Das Lämpchen sollte leuchten – tut es aber nicht.':'Eigentlich sollten alle Lämpchen leuchten.'} <b>Tippe auf die Stelle mit dem Fehler.</b></p>`;
+      if(st.msg) h+=`<p class="msg bad">${st.msg}</p>`;
+      if(st.wrong>=2) h+=`<p class="hint">💡 Tipp: ${t.hint}</p>`;
+      return h;
+    }
+    h+=`<p class="msg ok">✅ Gefunden: ${nameOf(t,t.fault)}.</p><p class="lead"><b>${t.mc.q}</b></p><div class="mc">`;
+    t.mc.opts.forEach((o,i)=>{let cl='opt'; if(st.mc!==null){if(i===t.mc.c) cl+=' right'; else if(i===st.mc) cl+=' wrongsel';}
+      h+=`<button class="${cl}" data-act="mc" data-i="${i}" ${st.mc!==null?'disabled':''}>${o}</button>`;});
+    h+='</div>';
+    if(st.mc!==null){
+      const richtig=st.mc===t.mc.c;
+      // Bei richtiger Antwort ist die Erklärung ein Merksatz, bei falscher eine Korrektur.
+      h+= richtig ? `<p class="msg ok">Richtig!</p>`+merke(t.mc.expl)
+                  : `<p class="msg bad">Nicht ganz. ${t.mc.expl}</p>`;
+      h+= st.phase==='done' ? repairedMsg(st)+nextBtn(t) : `<div class="row"><button class="btn primary" data-act="repair">🔧 Reparieren</button></div>`;
+    }
+    return h;
+  }
+  // Stufe 3
+  if(st.phase==='mark'){
+    h+=`<p class="lead">Alle Kabel sehen richtig aus – aber irgendwo ist etwas im Innern kaputt. Probiere den Schalter aus. <b>Markiere dann alle Stellen, an denen der Fehler sein könnte.</b></p>`;
+    if(st.msg) h+=`<p class="msg info">${st.msg}</p>`;
+    return h+`<div class="row"><button class="btn primary" data-act="check" ${st.marks.size?'':'disabled'}>Prüfen (${st.marks.size} markiert)</button></div>`;
+  }
+  const cands=st.check, ok=[...st.marks].filter(x=>cands.has(x)), bad=[...st.marks].filter(x=>!cands.has(x)), miss=[...cands].filter(x=>!st.marks.has(x));
+  const perfect=!bad.length&&!miss.length;
+  if(st.phase==='checked'){
+    h+= perfect?`<p class="msg ok">🎯 Perfekt eingegrenzt!</p>`:`<p class="msg bad">Noch nicht ganz.</p>`;
+    if(ok.length) h+=`<p class="lead">✓ Passt: ${ok.map(x=>nameOf(t,x)).join(', ')}</p>`;
+    if(bad.length) h+=`<ul class="res">${bad.map(x=>`<li>${whyNot(t,x)}</li>`).join('')}</ul>`;
+    if(miss.length) h+=`<p class="lead">○ Übersehen: ${miss.map(x=>nameOf(t,x)).join(', ')} – auch dann würde alles genau so aussehen.</p>`;
+    if(perfect) h+=merke(t.lesson);
+    return h+`<div class="row">${perfect?'':'<button class="btn" data-act="retry">Nochmals versuchen</button>'}<button class="btn primary" data-act="reveal">Auflösen</button></div>`;
+  }
+  h+=`<p class="msg info">🔍 ${t.reveal}</p>`;
+  if(!perfect) h+=merke(t.lesson);
+  return h+(st.phase==='done'?repairedMsg(st)+nextBtn(t):`<div class="row"><button class="btn primary" data-act="repair">🔧 Reparieren</button></div>`);
+}
+
+/* ---------- Haushalt: Zeichnen ---------- */
+let mode='circ'; const HS={4:null,5:null};
+/* Klickflächen bewusst grösser als die Zeichnung: auf dem Tablet zählt der Finger, nicht der Pixel */
+const HHIT={
+ sich:[[664,168,112,158]],
+ lsch:[[482,138,146,66]],
+ dlamp:[[392,8,168,96]],
+ dose:[[562,340,76,76],[628,362,120,36]],
+ stecker:[[576,352,48,48],[570,434,80,36]],
+ bild:[[160,162,158,144]],
+ tlamp:[[40,164,108,140]],
+ handy:[[318,204,58,100]],
+ leiste:[[396,398,182,38],[392,434,102,36]],
+ lader:[[480,362,66,68],[470,358,82,34]]
+};
+const HB={sich:[768,182],lsch:[622,150],dlamp:[462,54],dose:[630,352],stecker:[564,374],leiste:[404,410],lader:[532,396],kabel:[396,352],handy:[374,244],tlamp:[60,232]};
+const KABEL_D='M348,296 C348,303 360,303 372,303 L384,303 C398,303 404,318 412,338 C424,370 462,395 500,395';
+const RED='#d8322b', CORD='#3b4046';
+function hlbl(x,y,txt,anchor,floor){
+  return `<text x="${x}" y="${y}" text-anchor="${anchor||'middle'}" font-size="13.5" font-weight="700" fill="${floor?'#5e4c30':'#46525c'}" stroke="${floor?'#dcc7a4':'#f3efe6'}" stroke-width="4" paint-order="stroke" stroke-linejoin="round">${txt}</text>`;
+}
+function badge(x,y,kind){
+  if(kind==='ok') return `<circle cx="${x}" cy="${y}" r="11" fill="#1a9e55" stroke="#fff" stroke-width="2"/><path d="M${x-5},${y} l3.5,4 l6.5,-8" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>`;
+  return `<circle cx="${x}" cy="${y}" r="12" fill="#d93636" stroke="#fff" stroke-width="2"/><path d="M${x-5},${y-5} L${x+5},${y+5} M${x+5},${y-5} L${x-5},${y+5}" stroke="#fff" stroke-width="2.8" stroke-linecap="round"/>`;
+}
+function houseSVG(h){
+  const lv=h.lv, fault=h.phase==='repaired'?null:h.fault;
+  const works=d=>!hpath(d).some(x=>x===fault&&!h.swapped.includes(x))&&!h.off.includes(d);
+  const boxOpen=h.done.includes('s')||h.phase!=='search';
+  const tripped=boxOpen&&fault==='sich';
+  const loose=fault==='stecker'&&(h.done.includes('st')||h.phase==='solved');
+  const vis=id=>lv===5||!['lsch','dlamp','bild'].includes(id);
+  const V=fitVB(0,0,800,480,0.45,240), CY=18;
+  let s=`<svg viewBox="${vbAttr(V)}" xmlns="http://www.w3.org/2000/svg">${DEFS}<defs><clipPath id="rnd"><rect x="${V.x}" y="${V.y}" width="${V.w}" height="${V.h}" rx="${V.r}"/></clipPath>
+<clipPath id="unten"><rect x="${V.x}" y="86" width="${V.w}" height="${V.y+V.h-86}"/></clipPath></defs><g clip-path="url(#rnd)">
+  <rect x="${V.x}" y="${V.y}" width="${V.w}" height="${430-V.y}" fill="#f3efe6"/>
+  <rect x="${V.x}" y="430" width="${V.w}" height="${V.y+V.h-430}" fill="#dcc7a4"/>
+  <line x1="${V.x}" y1="431" x2="${V.x+V.w}" y2="431" stroke="#c3ab83" stroke-width="3"/>`;
+  s+=`<rect x="${V.x}" y="${V.y}" width="${V.w}" height="${Math.max(0,4-V.y)}" fill="#eae5da"/>
+    <line x1="${V.x}" y1="4" x2="${V.x+V.w}" y2="4" stroke="#ddd6c8" stroke-width="2"/>`;
+  // Leitungen in der Wand
+  s+=`<path d="M720,${CY} L720,178" stroke="${RED}" stroke-width="5" fill="none"/>
+      <text x="710" y="${CY+22}" text-anchor="end" font-size="12" fill="#8a7f70">vom Netz ↓</text>
+      <path d="M674,235 L600,235 M600,235 L600,350" stroke="${RED}" stroke-width="5" fill="none"/>`;
+  if(lv===5) s+=`<path d="M600,235 L600,198 M600,146 L600,${CY+12} Q600,${CY} 588,${CY} L442,${CY} Q430,${CY} 430,${CY+12} L430,52" stroke="${RED}" stroke-width="5" fill="none" stroke-linecap="round"/><circle cx="600" cy="235" r="6" fill="${RED}"/>`;
+  // Sicherungskasten
+  s+=`<rect x="674" y="178" width="92" height="114" rx="6" fill="#d4d9dd" stroke="#9aa3ab" stroke-width="2"/>`;
+  if(boxOpen){
+    s+=`<rect x="682" y="186" width="76" height="98" rx="4" fill="#f7f7f5"/><rect x="766" y="186" width="9" height="98" rx="2" fill="#e6e9ec" stroke="#b4bbc1"/>
+        <rect x="704" y="198" width="32" height="74" rx="3" fill="#fff" stroke="#9aa3ab" stroke-width="1.5"/>
+        <rect x="713" y="${tripped?238:204}" width="14" height="24" rx="3" fill="${tripped?'#d93636':'#1a9e55'}"/>
+        <text x="720" y="${tripped?228:283}" text-anchor="middle" font-size="10.5" font-weight="700" fill="#5b6770">13 A</text>`;
+  } else {
+    s+=`<rect x="682" y="186" width="76" height="98" rx="4" fill="#e6e9ec" stroke="#b4bbc1" stroke-width="1.5"/><rect x="746" y="226" width="5" height="20" rx="2" fill="#8d969e"/>`;
+  }
+  s+=hlbl(720,312,'Sicherung');
+  // Lichtschalter + Deckenlampe
+  if(lv===5){
+    const lit=h.lightOn&&works('dlamp');
+    s+=`<rect x="582" y="146" width="36" height="52" rx="5" fill="#fbfbfa" stroke="#aeb5bb" stroke-width="2"/>
+        <rect x="591" y="156" width="18" height="32" rx="3" fill="#e8eaec" stroke="#b0b6bb"/>
+        <rect x="593" y="${h.lightOn?158:172}" width="14" height="14" rx="2" fill="#8f99a3"/>`;
+    s+=hlbl(576,168,'Lichtschalter','end')+hlbl(576,186,h.lightOn?'an':'aus','end');
+    s+=`<circle cx="430" cy="88" r="10" fill="${lit?'#ffe066':'#eef1f3'}" stroke="${lit?'#d9a400':'#a9b3bb'}" stroke-width="1.5"/>
+        <path d="M404,84 L418,52 L442,52 L456,84 Z" fill="#8fa3b5"/>`;
+    if(lit) s+=`<g clip-path="url(#unten)"><path d="M405,86 L455,86 L545,285 L315,285 Z" fill="url(#cone)"/>
+      <circle cx="430" cy="90" r="42" fill="url(#glow)"/></g>`;
+    s+=hlbl(466,76,'Deckenlampe','start');
+  }
+  // Wandsteckdose
+  s+=`<rect x="572" y="350" width="56" height="56" rx="8" fill="#fbfbfa" stroke="#aeb5bb" stroke-width="2"/>
+      <circle cx="600" cy="378" r="20" fill="#eef0f1" stroke="#c5cbd0" stroke-width="1.5"/>
+      <circle cx="592" cy="374" r="3.2" fill="#3f474e"/><circle cx="608" cy="374" r="3.2" fill="#3f474e"/><circle cx="600" cy="386" r="3.2" fill="#3f474e"/>`;
+  s+=hlbl(636,386,'Wandsteckdose','start');
+  // Kabel hinter dem Pult
+  if(lv===5) s+=`<path d="M264,296 C268,370 404,390 428,404" stroke="${CORD}" stroke-width="3.5" fill="none"/>`;
+  if(lv===5||h.plugged) s+=`<path d="M80,298 C92,378 432,390 468,404" stroke="${CORD}" stroke-width="3.5" fill="none"/>`;
+  // Pult
+  s+=`<rect x="30" y="300" width="360" height="12" rx="2" fill="#b9a07c"/><rect x="48" y="312" width="12" height="118" fill="#a88f6b"/><rect x="358" y="312" width="12" height="118" fill="#a88f6b"/>`;
+  // Steckerleiste
+  s+=`<rect x="402" y="406" width="172" height="26" rx="7" fill="#f4f6f8" stroke="#95a0a9" stroke-width="2"/>
+      <rect x="402" y="424" width="172" height="8" rx="4" fill="#dfe4e8"/>
+      ${[428,468,508].map(x=>`<rect x="${x-11}" y="409" width="22" height="19" rx="7" fill="#c9d0d6" stroke="#8d969e" stroke-width="1.3"/>
+         <rect x="${x-8}" y="411" width="16" height="15" rx="6" fill="#dee3e7"/>
+         <circle cx="${x-4.5}" cy="416" r="2.1" fill="#3f474e"/><circle cx="${x+4.5}" cy="416" r="2.1" fill="#3f474e"/>
+         <circle cx="${x}" cy="423" r="2.1" fill="#3f474e"/>`).join('')}
+      <rect x="544" y="410" width="18" height="17" rx="3" fill="#d93636"/><rect x="547" y="413" width="12" height="5" rx="2" fill="#ef7c72"/>`;
+  // Stecker stecken sichtbar in der Leiste
+  const stecker=x=>`<rect x="${x-12}" y="404" width="24" height="23" rx="5" fill="${CORD}"/>
+    <rect x="${x-8}" y="408" width="16" height="4" rx="2" fill="#5d666e"/>`;
+  if(lv===5) s+=stecker(428);
+  if(lv===5||h.plugged) s+=stecker(468);
+  s+=hlbl(443,458,'Steckerleiste','middle',true);
+  // Stecker in der Wandsteckdose
+  if(loose){
+    s+=`<path d="M592,410 C596,428 588,421 570,421" stroke="${CORD}" stroke-width="4" fill="none"/>
+        <g transform="rotate(-24 596 400)"><rect x="582" y="384" width="24" height="26" rx="5" fill="${CORD}"/></g>`;
+  } else {
+    s+=`<path d="M600,392 C600,428 590,421 570,421" stroke="${CORD}" stroke-width="4" fill="none"/>
+        <rect x="588" y="366" width="24" height="26" rx="5" fill="${CORD}"/>`;
+  }
+  s+=hlbl(610,458,'Stecker','middle',true);
+  // Ladegerät
+  s+=`<rect x="492" y="384" width="32" height="42" rx="7" fill="#ffffff" stroke="#5d666e" stroke-width="2"/>
+      <rect x="496" y="412" width="24" height="11" rx="4" fill="#e3e8ec"/>`;
+  s+=hlbl(511,371,'Ladegerät');
+  // Bildschirm
+  if(lv===5){
+    const on=works('bild');
+    s+=`<rect x="170" y="188" width="140" height="88" rx="6" fill="#2b2f35"/>
+        <rect x="177" y="195" width="126" height="74" rx="2" fill="${on?'#5b9bd5':'#15181b'}"/>
+        ${on?'<rect x="187" y="205" width="60" height="8" rx="2" fill="#dbe9f6"/><rect x="187" y="220" width="96" height="6" rx="2" fill="#a9c9e8"/><rect x="187" y="232" width="80" height="6" rx="2" fill="#a9c9e8"/><rect x="187" y="244" width="88" height="6" rx="2" fill="#a9c9e8"/>':''}
+        <rect x="234" y="276" width="12" height="17" fill="#555b62"/><rect x="212" y="292" width="56" height="8" rx="3" fill="#444a51"/>`;
+    const boff=h.off.includes('bild');
+    s+=hlbl(240,boff?162:180,'Bildschirm')+(boff?hlbl(240,180,'(ausgeschaltet)'):'');
+  }
+  // Schreibtischlampe / Prüflampe
+  { const lit=(lv===5||h.plugged)&&works('tlamp');
+    s+=`<ellipse cx="80" cy="296" rx="24" ry="6" fill="${CORD}"/>
+        <path d="M80,293 L92,234 L130,214" stroke="${CORD}" stroke-width="5" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
+        <circle cx="92" cy="234" r="4" fill="#5c636b"/>
+        <circle cx="148" cy="230" r="8" fill="${lit?'#ffe066':'#eef1f3'}" stroke="${lit?'#d9a400':'#a9b3bb'}" stroke-width="1.5"/>
+        <path d="M118,206 L148,196 L164,224 L132,238 Z" fill="#2f7f8a"/>`;
+    const toff=lv===5&&h.off.includes('tlamp');
+    if(lit) s+=`<path d="M132,238 L164,224 L244,300 L118,300 Z" fill="url(#cone2)"/>
+      <circle cx="152" cy="236" r="26" fill="url(#glow)"/>`;
+    s+=hlbl(100,toff?166:184,lv===4?'Prüflampe':'Schreibtischlampe');
+    if(toff) s+=hlbl(100,184,'(ausgeschaltet)');
+  }
+  // Handy
+  { const ch=works('handy');
+    s+=`<rect x="334" y="236" width="28" height="60" rx="5" fill="#22262b"/>
+        <rect x="337" y="241" width="22" height="50" rx="2" fill="#101214"/>
+        <rect x="342" y="255" width="12" height="24" rx="2" fill="none" stroke="${ch?'#35c46a':'#e0443a'}" stroke-width="1.6"/>
+        <rect x="345" y="252" width="6" height="3" rx="1" fill="${ch?'#35c46a':'#e0443a'}"/>
+        ${ch?'<rect x="344" y="257" width="8" height="20" rx="1" fill="#35c46a"/><path d="M349,259 l-3,8 h3 l-1,7 l4,-9 h-3 l1,-6 z" fill="#fff"/>':'<rect x="344" y="274" width="8" height="3" rx="1" fill="#e0443a"/>'}`;
+    s+=hlbl(348,228,'Handy');
+  }
+  // Ladekabel (vor dem Pult)
+  s+=`<path d="${KABEL_D}" stroke="#eceff1" stroke-width="5.5" fill="none" stroke-linecap="round"/><path d="${KABEL_D}" stroke="#9aa3ab" stroke-width="1.2" fill="none" stroke-dasharray="0" opacity=".6"/>
+  <rect x="486" y="390" width="16" height="12" rx="3" fill="#cfd6dc" stroke="#78828a" stroke-width="1.4"/>`;
+  s+=hlbl(424,344,'Ladekabel','start');
+  // Markierungen
+  const cands=h.phase==='search'?hCands(h):null;
+  const showOk=h.phase==='search'&&(lv===4||h.help);
+  if(h.sel==='kabel'&&h.phase==='search') s+=`<path d="${KABEL_D}" stroke="#f08c00" stroke-width="18" fill="none" opacity=".35" stroke-linecap="round"/>`;
+  Object.keys(HHIT).filter(vis).forEach(id=>{
+    const [x,y,w,hh]=HHIT[id][0];
+    if(id===h.sel&&h.phase==='search') s+=`<rect x="${x-2}" y="${y-2}" width="${w+4}" height="${hh+4}" rx="10" fill="#f08c00" fill-opacity=".1" stroke="#f08c00" stroke-width="3" stroke-dasharray="9 6"/>`;
+  });
+  Object.keys(HB).filter(vis).forEach(id=>{
+    const [bx,by]=HB[id];
+    if(showOk&&LEVELS[lv].faults.includes(id)&&!cands.includes(id)) s+=badge(bx,by,'ok');
+    if(h.phase==='solved'&&id===h.fault) s+=badge(bx,by,'bad');
+  });
+  // Klickflächen
+  const order=['sich','lsch','dlamp','dose','stecker','bild','tlamp','handy','leiste','kabel','lader'].filter(vis);
+  order.forEach(id=>{
+    if(id==='kabel'){ s+=`<path data-h="kabel" d="${KABEL_D}" fill="none" stroke="#000" stroke-opacity="0" stroke-width="38" style="pointer-events:stroke"/><rect data-h="kabel" x="414" y="324" width="84" height="34" fill="#000" fill-opacity="0"/>`; return; }
+    HHIT[id].forEach(([x,y,w,hh])=>s+=`<rect data-h="${id}" x="${x}" y="${y}" width="${w}" height="${hh}" fill="#000" fill-opacity="0"/>`);
+  });
+return s+`</g><rect x="${V.x+1}" y="${V.y+1}" width="${V.w-2}" height="${V.h-2}" rx="${V.r}" fill="none" stroke="#ddd7ca" stroke-width="2"/></svg>`;
+}
+
+/* ---------- Haushalt: Panel ---------- */
+function houseWhyNot(h,id){
+  const o=allObs(h).filter(o=>!o.info).find(o=>o.T.includes(id)!==o.bad);
+  if(!o) return '';
+  return o.bad ? `«${o.text}» – damit hat ${HE[id].name} nichts zu tun. Der Fehler muss woanders liegen.`
+               : `«${o.text}» – dafür muss ${HE[id].name} in Ordnung sein.`;
+}
+function housePanel(h){
+  const L=LEVELS[h.lv]; let p='';
+  p+=`<p class="complaint">📢 ${complaintOf(h)}</p>`;
+  if(h.phase==='search'){
+    p+= h.lv===4
+      ? `<p class="lead">Genau <b>ein</b> Teil ist kaputt. Du siehst den Raum von Weitem – kleine Einzelheiten musst du aus der Nähe prüfen. Wähle Prüfschritte, bis du sicher bist, und tippe dann im Bild auf das kaputte Teil. <span style="color:#1a9e55;font-weight:600">✓ = sicher in Ordnung</span></p>`
+      : `<p class="lead">Genau <b>ein</b> Teil ist kaputt. Schau zuerst genau hin, was noch funktioniert – das verrät schon viel. Kleine Einzelheiten siehst du von hier aus nicht, die musst du aus der Nähe prüfen. Tippe im Bild auf das kaputte Teil, sobald du sicher bist.</p>`;
+  }
+  const obs=allObs(h);
+  p+=`<div class="proto"><div class="sub" style="margin-top:0">📋 Beobachtungen</div><ul>`+
+     obs.map(o=>`<li>${o.icon} ${o.label?o.label+': ':''}<span class="res ${o.info?'neutral':o.bad?'badr':'good'}">${o.text}</span></li>`).join('')+`</ul></div>`;
+  if(h.phase==='search'){
+    if(h.msg) p+=`<p class="msg ${h.msgType}">${h.msg}</p>`;
+    if(h.sel){
+      p+=`<div class="row"><button class="btn primary" data-act="hanswer">🔎 ${HE[h.sel].label}: Hier ist der Fehler!</button><button class="btn" data-act="hunsel">Abbrechen</button></div>`;
+    }
+    const av=availTests(h);
+    if(av.length){
+      p+=`<div class="sub">Prüfschritte (${h.done.length} gemacht)</div><div class="tgrid">`+
+         av.map(t=>`<button class="tbtn" data-act="htest" data-t="${t.id}">${t.icon} ${t.label}</button>`).join('')+`</div>`;
+    }
+    const extra=[];
+    if(h.lv===5) extra.push(`<button class="btn" data-act="hhelp">${h.help?'🙈 Hilfe ausblenden':'💡 Hilfe: Was ist sicher in Ordnung?'}</button>`);
+    if(h.wrong>=2) extra.push(`<button class="btn" data-act="hgiveup">🔍 Zeig mir die Lösung</button>`);
+    if(extra.length) p+=`<div class="row">${extra.join('')}</div>`;
+    return p;
+  }
+  const n=h.done.length;
+  p+= h.gaveup
+    ? `<p class="msg info">🔍 Die Lösung: ${HE[h.fault].what||cap(HE[h.fault].name)+' ist kaputt.'}</p>`
+    : `<p class="msg ok">✅ Richtig: ${HE[h.fault].what||cap(HE[h.fault].name)+' ist kaputt.'}</p>`;
+  if(h.gaveup) p+=`<p class="lead">Schau dir an, welche Beobachtungen dazu passen. Beim nächsten Fall hilft dir das weiter.</p>`;
+  else if(h.lucky) p+=`<p class="msg bad">Aber Achtung: Nach deinen Beobachtungen ${h.lucky.startsWith('noch')?'kamen '+h.lucky:'kam auch '+h.lucky} in Frage. Da hattest du Glück!</p>`;
+  else if(!h.gaveup) p+=`<p class="msg ok">🎯 Und du konntest es sicher wissen – sauber eingegrenzt!</p>`;
+  p+= h.pro===0
+    ? `<p class="lead">Hier hättest du es sogar <b>ohne Prüfschritt</b> herausfinden können – nur durch genaues Hinschauen. Du hast ${n} gebraucht.</p>`
+    : `<p class="lead">Du hast <b>${n}</b> Prüfschritt${n===1?'':'e'} gebraucht. Mit einer guten Strategie genügen höchstens <b>${h.pro}</b>.</p>`;
+  if(h.phase==='solved') return p+`<div class="row"><button class="btn primary" data-act="hrepair">🔧 Reparieren</button></div>`;
+  return p+`<p class="msg info">🔧 ${HE[h.fault].fix}</p><div class="row"><button class="btn primary" data-act="hnew">Neuer Fall →</button></div>`;
+}
+function houseClick(id){
+  const h=HS[mode]; if(h.phase!=='search') return;
+  if(id==='bild'){ h.msg='Der Bildschirm ist in Ordnung – er zeigt dir aber, ob bei der Steckerleiste Strom ankommt.'; h.msgType='info'; h.sel=null; return; }
+  if(id==='tlamp'&&h.lv===4){ h.msg='Die Prüflampe funktioniert sicher – sie ist dein Werkzeug.'; h.msgType='info'; h.sel=null; return; }
+  h.sel=h.sel===id?null:id; h.msg='';
+}
+function houseAct(act,b){
+  const h=HS[mode];
+  switch(act){
+    case 'htest': { const t=LEVELS[h.lv].tests.find(t=>t.id===b.dataset.t);
+      h.done.push(t.id); if(t.swap) h.swapped.push(t.swap); if(t.light) h.lightOn=true;
+      if(t.turnOn) h.off=h.off.filter(x=>x!==t.turnOn); h.msg=''; break; }
+    case 'hunsel': h.sel=null; h.msg=''; break;
+    case 'hhelp': h.help=!h.help; break;
+    case 'hanswer': {
+      const c=hCands(h), id=h.sel;
+      if(id===h.fault){
+        const others=c.filter(x=>x!==id);
+        h.lucky=!others.length?false:others.length>2?`noch ${others.length} andere Teile`:others.map(x=>HE[x].name).join(' oder ');
+        h.phase='solved'; h.solved++; h.sel=null; h.msg='';
+      } else if(!c.includes(id)){
+        h.wrong++; h.msg='Das kann nicht sein: '+houseWhyNot(h,id); h.msgType='bad';
+      } else {
+        h.wrong++;
+        h.msg=`${cap(HE[id].name)} hätte es sein können – ist es aber nicht. Mit deinen Beobachtungen konntest du das noch nicht wissen. Mach einen weiteren Prüfschritt!`; h.msgType='bad';
+      }
+      break; }
+    case 'hgiveup': h.phase='solved'; h.gaveup=true; h.lucky=false; h.sel=null; h.msg=''; break;
+    case 'hrepair': h.phase='repaired'; break;
+    case 'hnew': HS[mode]=newCase(mode,h); break;
+  }
+}
+function startHouse(lv){ mode=lv; if(lv===6){ if(!K) K=newKitchen('erk',null); return; } if(!HS[lv]) HS[lv]=newCase(lv,null); }
+
+/* ---------- Stufe 6: Küche – Leistung, Stromstärke, Überlastung ---------- */
+const U_NETZ=230, I_OPTS=[10,13,16], I_DEF=13;
+const KD={
+ kuehl:{name:'Kühlschrank',art:'Der',w:150,always:true},
+ lampe:{name:'Deckenlampe',art:'Die',w:10},
+ wasser:{name:'Wasserkocher',art:'Der',w:2000},
+ kaffee:{name:'Kaffeemaschine',art:'Die',w:1450},
+ toast:{name:'Toaster',art:'Der',w:900},
+ mikro:{name:'Mikrowelle',art:'Die',w:1200}
+};
+const KIDS=Object.keys(KD), KURZ=['toast','wasser','kaffee','mikro'];
+const amp=w=>w/U_NETZ, fmt=(n,d)=>n.toFixed(d).replace('.',',');
+let K=null;
+function kWatt(k){ return KIDS.filter(id=>k.on[id]).reduce((s,id)=>s+KD[id].w,0); }
+function kIds(k){ return KIDS.filter(id=>k.on[id]); }
+function kRatio(k){ return amp(kWatt(k))/k.imax; }
+function kTrip(k,kind){ k.fuse=false; k.heat=0; k.trip={kind,watt:kWatt(k),ids:kIds(k)}; }
+function kEval(k){   // nur der Kurzschluss löst sofort aus
+  if(!k.fuse) return;
+  if(k.fault&&k.fault.type==='kurz'&&k.on[k.fault.dev]) kTrip(k,'kurz');
+}
+/* Überlast wirkt träge: der Bimetallstreifen muss zuerst warm werden. */
+function kTick(dt){
+  if(!K) return false;
+  if(!K.fuse){ if(K.heat>0){ K.heat=0; return true; } return false; }
+  const r=kRatio(K);
+  if(r>1.002){ const tt=r>=1.45?1.6:5.5; K.heat=Math.min(1,K.heat+dt/tt);
+    if(K.heat>=1){ kTrip(K,'last'); K.msg=''; } return true; }
+  if(K.heat>0){ K.heat=Math.max(0,K.heat-dt/5); return true; }
+  return false;
+}
+function newKitchen(tab,prev){
+  const k={tab:tab||'erk',on:{},fuse:true,trip:null,fault:null,phase:'search',pick:null,msg:'',heat:0,wrong:0,gaveup:false,why:null,
+           imax:prev?prev.imax:I_DEF,typ:prev?prev.typ:'ls',spare:prev?prev.spare:3,
+           geloest:prev?prev.geloest||0:0,fuehrung:prev?prev.fuehrung!==false:true,resets:0,modus:null,
+           erk:1,erkFertig:prev?!!prev.erkFertig:false,
+           caseNo:prev&&prev.tab==='fall'?prev.caseNo+1:1};
+  KIDS.forEach(id=>k.on[id]=!!KD[id].always); k.on.lampe=true;
+  if(k.tab==='fall'){
+    if(Math.random()<0.5){
+      let d; do{ d=KURZ[Math.floor(Math.random()*KURZ.length)]; }while(prev&&prev.fault&&prev.fault.dev===d);
+      k.fault={type:'kurz',dev:d}; k.on[d]=true;
+      KURZ.filter(x=>x!==d).forEach(x=>{ if(Math.random()<0.3&&KD[x].w+kWatt(k)<k.imax*U_NETZ) k.on[x]=true; });
+    } else {
+      k.fault={type:'last'};
+      const combos=[];
+      for(let m=1;m<(1<<KURZ.length);m++){
+        const set=KURZ.filter((_,i)=>m&(1<<i));
+        const w=160+set.reduce((s,id)=>s+KD[id].w,0);
+        if(set.length>1&&amp(w)>k.imax*1.25) combos.push(set);
+      }
+      const pick=combos[Math.floor(Math.random()*combos.length)]||['wasser','kaffee','toast'];
+      pick.forEach(d=>k.on[d]=true);
+      kTrip(k,'last');
+    }
+    kEval(k);
+  }
+  return k;
+}
+/* Zeichnen */
+const KPOS={wasser:190,kaffee:312,toast:434,mikro:556};
+function wattTag(cx,y,id,on){
+  const d=KD[id], A=amp(d.w), txt=`${d.w} W | ${fmt(A,A<1?2:1)} A`, w=txt.length*7+16;
+  return `<rect x="${cx-w/2}" y="${y}" width="${w}" height="22" rx="11" fill="${on?'#1a9e55':'#ffffff'}" stroke="${on?'#127a41':'#c3ccd3'}" stroke-width="1.5"/>
+  <text x="${cx}" y="${y+15.5}" text-anchor="middle" font-size="12.5" font-weight="700" fill="${on?'#fff':'#54606a'}">${txt}</text>`;
+}
+function kitchenSVG(k){
+  const pw=k.fuse, on=id=>k.on[id]&&pw;
+  const V=fitVB(0,0,800,480,0.45,240), CY=18;
+  let s=`<svg viewBox="${vbAttr(V)}" xmlns="http://www.w3.org/2000/svg">${DEFS}<defs><clipPath id="rnd"><rect x="${V.x}" y="${V.y}" width="${V.w}" height="${V.h}" rx="${V.r}"/></clipPath>
+<clipPath id="unten"><rect x="${V.x}" y="86" width="${V.w}" height="${V.y+V.h-86}"/></clipPath></defs><g clip-path="url(#rnd)">
+  <rect x="${V.x}" y="${V.y}" width="${V.w}" height="${430-V.y}" fill="#f3efe6"/>
+  <rect x="${V.x}" y="430" width="${V.w}" height="${V.y+V.h-430}" fill="#dcc7a4"/>
+  <line x1="${V.x}" y1="431" x2="${V.x+V.w}" y2="431" stroke="#c3ab83" stroke-width="3"/>
+  <rect x="${V.x}" y="${V.y}" width="${V.w}" height="${Math.max(0,4-V.y)}" fill="#eae5da"/>
+  <line x1="${V.x}" y1="4" x2="${V.x+V.w}" y2="4" stroke="#ddd6c8" stroke-width="2"/>`;
+  s+=`<path d="M714,140 L714,${CY+12} Q714,${CY} 702,${CY} L412,${CY} Q400,${CY} 400,${CY+12} L400,52" stroke="${RED}" stroke-width="5" fill="none"/>`;
+  // Deckenlampe
+  s+=`<circle cx="400" cy="90" r="10" fill="${on('lampe')?'#ffe066':'#eef1f3'}" stroke="${on('lampe')?'#d9a400':'#a9b3bb'}" stroke-width="1.5"/>
+      <path d="M374,86 L388,52 L412,52 L426,86 Z" fill="#8fa3b5"/>`;
+  if(on('lampe')) s+=`<g clip-path="url(#unten)"><path d="M375,88 L425,88 L515,285 L285,285 Z" fill="url(#cone)"/>
+      <circle cx="400" cy="92" r="42" fill="url(#glow)"/></g>`;
+  s+=hlbl(400,122,'Deckenlampe')+wattTag(400,130,'lampe',k.on.lampe);
+  // Sicherungskasten
+  s+=`<rect x="658" y="140" width="112" height="132" rx="6" fill="#d4d9dd" stroke="#9aa3ab" stroke-width="2"/>
+      <rect x="666" y="148" width="96" height="116" rx="4" fill="#f7f7f5"/>`;
+  if(k.typ==='ls'){
+    s+=`<rect x="698" y="162" width="32" height="82" rx="3" fill="#fff" stroke="#9aa3ab" stroke-width="1.5"/>
+        <rect x="707" y="${pw?170:208}" width="14" height="28" rx="3" fill="${pw?'#1a9e55':'#d93636'}"/>
+        <text x="714" y="${pw?258:196}" text-anchor="middle" font-size="11" font-weight="700" fill="#5b6770">${k.imax} A</text>`;
+  } else {
+    s+=`<circle cx="714" cy="192" r="27" fill="#e9e4da" stroke="#b9b0a2" stroke-width="2"/>
+        <circle cx="714" cy="192" r="19" fill="#d9d2c6" stroke="#b9b0a2" stroke-width="1.5"/>
+        <circle cx="714" cy="192" r="9" fill="${pw?'#fdf6e6':'#3a3f45'}" stroke="#a79e90" stroke-width="1.5"/>
+        ${pw?`<circle cx="714" cy="192" r="4.5" fill="#d93636"/>`
+            :`<path d="M709,188 l10,8 M719,188 l-10,8" stroke="#8a8377" stroke-width="1.6"/>`}
+        <text x="714" y="232" text-anchor="middle" font-size="11" font-weight="700" fill="#5b6770">${k.imax} A</text>
+        <text x="714" y="242" text-anchor="middle" font-size="9.5" fill="#8a7f70">Ersatz</text>
+        ${[0,1,2].map(i=>`<circle cx="${698+i*16}" cy="254" r="6.5" fill="${i<k.spare?'#e9e4da':'none'}" stroke="#b9b0a2" stroke-width="1.5"/>`).join('')}`;
+  }
+  // Leitung vom Sicherungskasten zu drei Doppelsteckdosen: alle Geräte an derselben Sicherung
+  s+=`<path d="M658,205 L141,205" stroke="${RED}" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <path d="M141,205 L141,246 M247,205 L247,246 M373,205 L373,246" stroke="${RED}" stroke-width="5" fill="none"/>
+      <circle cx="141" cy="205" r="5" fill="${RED}"/><circle cx="247" cy="205" r="5" fill="${RED}"/><circle cx="373" cy="205" r="5" fill="${RED}"/>`;
+  [141,247,373].forEach(x=>s+=`<rect x="${x-20}" y="${244}" width="40" height="30" rx="7" fill="#fbfbfa" stroke="#aeb5bb" stroke-width="1.6"/>
+      <circle cx="${x-10}" cy="259" r="7.5" fill="#eef0f1" stroke="#c5cbd0" stroke-width="1.2"/>
+      <circle cx="${x+10}" cy="259" r="7.5" fill="#eef0f1" stroke="#c5cbd0" stroke-width="1.2"/>
+      <circle cx="${x-13}" cy="256" r="1.7" fill="#3f474e"/><circle cx="${x-7}" cy="256" r="1.7" fill="#3f474e"/><circle cx="${x-10}" cy="263" r="1.7" fill="#3f474e"/>
+      <circle cx="${x+7}" cy="256" r="1.7" fill="#3f474e"/><circle cx="${x+13}" cy="256" r="1.7" fill="#3f474e"/><circle cx="${x+10}" cy="263" r="1.7" fill="#3f474e"/>`);
+  // Gerätekabel: Stecker in der Dose, Kabel hängt leicht durch
+  const kabel=(px,d)=>`<path d="${d}" stroke="${CORD}" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+    <path d="${d}" stroke="#727a82" stroke-width="1" fill="none" stroke-linecap="round" opacity=".65"/>
+    <rect x="${px-8}" y="250" width="16" height="18" rx="4" fill="${CORD}"/>
+    <rect x="${px-5}" y="253" width="10" height="4" rx="2" fill="#5d666e"/>`;
+  s+=kabel(131,'M131,266 C130,285 126,296 116,297');            // Kühlschrank
+  s+=kabel(151,'M151,266 C151,288 157,295 167,295');            // Wasserkocher
+  s+=kabel(257,'M257,266 C257,288 266,295 280,295');            // Kaffeemaschine
+  s+=kabel(383,'M383,266 C383,288 392,295 402,295');            // Toaster
+  s+=kabel(363,'M363,266 C358,292 430,302 498,294');            // Mikrowelle
+  s+=`<text x="702" y="292" text-anchor="middle" font-size="12" font-weight="700" fill="#46525c" stroke="#f3efe6" stroke-width="4" paint-order="stroke" stroke-linejoin="round">${k.typ==='ls'?'Leitungsschutzschalter':'Schmelzsicherung'}</text>`+
+     `<text x="702" y="311" text-anchor="middle" font-size="12.5" font-weight="700" fill="#5b6770">${k.imax} A</text>
+      <text x="702" y="329" text-anchor="middle" font-size="11.5" fill="#8a7f70">versorgt die ganze Küche</text>`;
+  if(!pw) s+=`<rect x="${V.x+16}" y="${CY+14}" width="250" height="40" rx="10" fill="#fdecec" stroke="#d93636" stroke-width="2"/>
+    <text x="${V.x+32}" y="${CY+40}" font-size="17" font-weight="700" fill="#9b1c1c">⚡ Sicherung ausgelöst</text>`;
+  // Küchenzeile
+  s+=`<rect x="130" y="314" width="490" height="116" fill="#c9a97f"/>
+      <line x1="375" y1="314" x2="375" y2="430" stroke="#b2915f" stroke-width="3"/>
+      <rect x="126" y="298" width="498" height="16" rx="3" fill="#e8e2d6" stroke="#cfc7b7" stroke-width="1.5"/>`;
+  // Kühlschrank
+  s+=`<rect x="20" y="150" width="96" height="280" rx="7" fill="#e3e7ea" stroke="#b9c0c6" stroke-width="2"/>
+      <line x1="20" y1="248" x2="116" y2="248" stroke="#b9c0c6" stroke-width="2"/>
+      <rect x="100" y="196" width="6" height="40" rx="3" fill="#aab2ba"/><rect x="100" y="262" width="6" height="40" rx="3" fill="#aab2ba"/>
+      <circle cx="34" cy="166" r="4" fill="${on('kuehl')?'#35c46a':'#c3ccd3'}"/>`;
+  s+=hlbl(68,120,'Kühlschrank')+wattTag(68,128,'kuehl',k.on.kuehl);
+  // Wasserkocher
+  { const c=KPOS.wasser, o=on('wasser');
+    if(o) s+=`<path d="M${c-6},228 C${c-10},216 ${c},212 ${c-4},200 M${c+6},230 C${c+2},220 ${c+12},216 ${c+8},204" stroke="#b9c6cf" stroke-width="3.5" fill="none" stroke-linecap="round" opacity=".85"/>`;
+    s+=`<path d="M${c-23},298 L${c-17},242 L${c+17},242 L${c+23},298 Z" fill="#cfd6db" stroke="#9aa3ab" stroke-width="2"/>
+        <rect x="${c-19}" y="233" width="38" height="10" rx="4" fill="#aeb6bc"/>
+        <path d="M${c+17},252 L${c+30},240 L${c+32},246 L${c+21},258 Z" fill="#cfd6db" stroke="#9aa3ab" stroke-width="1.5"/>
+        <path d="M${c-18},251 C${c-41},256 ${c-41},285 ${c-22},289" stroke="#8d969e" stroke-width="5" fill="none" stroke-linecap="round"/>
+        <rect x="${c-18}" y="270" width="36" height="20" rx="3" fill="${o?'#6fb7e8':'#e3e9ed'}" opacity=".7"/>
+        <circle cx="${c}" cy="294" r="3.5" fill="${o?'#2f8fd6':'#c3ccd3'}"/>`;
+    s+=hlbl(c,332,'Wasserkocher','middle',true)+wattTag(c,340,'wasser',k.on.wasser); }
+  // Kaffeemaschine
+  { const c=KPOS.kaffee, o=on('kaffee');
+    s+=`<rect x="${c-32}" y="225" width="64" height="73" rx="4" fill="#3f464d"/>
+        <rect x="${c-34}" y="218" width="68" height="9" rx="4" fill="#555c63"/>
+        <rect x="${c-8}" y="256" width="16" height="9" rx="2" fill="#6b7278"/>
+        <circle cx="${c-22}" cy="236" r="4" fill="${o?'#e0443a':'#7c848b'}"/>
+        ${o?`<line x1="${c}" y1="266" x2="${c}" y2="282" stroke="#6b4a2a" stroke-width="3"/>`:''}
+        <path d="M${c-9},282 h18 v8 a5,5 0 0 1 -5,5 h-8 a5,5 0 0 1 -5,-5 z" fill="${o?'#6b4a2a':'#ffffff'}" stroke="#c9ced3" stroke-width="1.5"/>`;
+    s+=hlbl(c,332,'Kaffeemaschine','middle',true)+wattTag(c,340,'kaffee',k.on.kaffee); }
+  // Toaster
+  { const c=KPOS.toast, o=on('toast');
+    s+=`<rect x="${c-32}" y="252" width="64" height="46" rx="9" fill="#cfd6db" stroke="#9aa3ab" stroke-width="2"/>
+        <rect x="${c-22}" y="249" width="18" height="6" rx="3" fill="${o?'#ff7a2f':'#2b2f35'}"/>
+        <rect x="${c+4}" y="249" width="18" height="6" rx="3" fill="${o?'#ff7a2f':'#2b2f35'}"/>
+        <rect x="${c+24}" y="${o?258:250}" width="7" height="18" rx="3" fill="#8d969e"/>
+        ${o?`<rect x="${c-26}" y="262" width="52" height="26" rx="4" fill="#ff7a2f" opacity=".22"/>`:''}`;
+    s+=hlbl(c,332,'Toaster','middle',true)+wattTag(c,340,'toast',k.on.toast); }
+  // Mikrowelle
+  { const c=KPOS.mikro, o=on('mikro');
+    s+=`<rect x="${c-58}" y="230" width="116" height="68" rx="6" fill="#4a5058"/>
+        <rect x="${c-50}" y="240" width="70" height="48" rx="3" fill="${o?'#ffe9a8':'#22262b'}" stroke="#6b7278" stroke-width="1.5"/>
+        <ellipse cx="${c-15}" cy="280" rx="22" ry="5" fill="${o?'#d9b45f':'#31363c'}"/>
+        <rect x="${c+26}" y="240" width="26" height="48" rx="3" fill="#2b2f35"/>
+        <circle cx="${c+39}" cy="250" r="3.5" fill="${o?'#35c46a':'#6b7278'}"/>`;
+    s+=hlbl(c,332,'Mikrowelle','middle',true)+wattTag(c,340,'mikro',k.on.mikro); }
+  // Klickflächen
+  s+=`<rect data-k="fuse" x="654" y="136" width="120" height="140" fill="#000" fill-opacity="0"/>`;
+  s+=`<rect data-k="kuehl" x="18" y="130" width="100" height="300" fill="#000" fill-opacity="0"/>`;
+  s+=`<rect data-k="lampe" x="340" y="44" width="120" height="110" fill="#000" fill-opacity="0"/>`;
+  Object.keys(KPOS).forEach(id=>{ const c=KPOS[id];
+    s+=`<rect data-k="${id}" x="${c-60}" y="215" width="120" height="85" fill="#000" fill-opacity="0"/>
+        <rect data-k="${id}" x="${c-60}" y="320" width="120" height="44" fill="#000" fill-opacity="0"/>`; });
+return s+`</g><rect x="${V.x+1}" y="${V.y+1}" width="${V.w-2}" height="${V.h-2}" rx="${V.r}" fill="none" stroke="#ddd7ca" stroke-width="2"/></svg>`;
+}
+/* Panel */
+function kMeter(k){
+  const short=!k.fuse&&k.trip&&k.trip.kind==='kurz';
+  const w=k.fuse?kWatt(k):(k.trip?k.trip.watt:0), a=amp(w);
+  const max=k.imax/0.8;                       // Grenze liegt bei 80 % der Skala
+  const pct=short?100:Math.min(100,a/max*100), over=a>k.imax;
+  const col=short?'#d93636':over?(k.fuse?'#f08c00':'#d93636'):'#1a9e55';
+  const aus=!k.fuse&&k.trip;
+  const v = aus ? `Gemessen: ${short?`weit mehr als ${k.imax} A`:`${fmt(a,1)} A`}`
+                : `${fmt(a,1)} A von ${k.imax} A (${w} W)`;
+  // Bei jedem Auslösen den erwarteten Wert danebenstellen – der Vergleich ist die eigentliche Denkarbeit
+  const erwartet=aus?`<div class="dlist" style="margin-top:2px">Nach den Geräten <b>erwartet</b>: ${fmt(amp(k.trip.watt),1)} A</div>`:'';
+  return `<div class="meter">
+    <div class="mscale"><span class="mtick">${k.imax} A erlaubt</span></div>
+    <div class="mbar"><div class="mzone"></div>
+    <div class="mfill" style="width:${pct}%;background:${col}"></div><div class="mlimit"></div>
+    ${short?'<div class="mover">▸▸▸</div>':''}</div>
+    <div class="mval" style="color:${col}">${v}</div>${erwartet}
+    ${k.fuse&&k.heat>0?`<div class="heat"><div class="hfill" style="width:${Math.round(k.heat*100)}%"></div></div>
+      <div class="mval" style="color:#b35c00;font-size:.98rem">🔥 Die Sicherung wird warm – gleich löst sie aus!</div>`:''}
+    ${!k.fuse?`<div class="dlist">Gemessen im Moment des Auslösens. Jetzt fliesst nichts mehr.</div>`:''}</div>`;
+}
+function kList(k){
+  const ids=(!k.fuse&&k.trip?k.trip.ids:KIDS.filter(id=>k.on[id]));
+  if(!ids.length) return '';
+  const rows=ids.map(id=>`${KD[id].name}: ${KD[id].w} W ÷ ${U_NETZ} V = ${fmt(amp(KD[id].w),amp(KD[id].w)<1?2:1)} A`).join('<br>');
+  const w=ids.reduce((s,id)=>s+KD[id].w,0);
+  return `<div class="dlist"><b>So viel brauchen die eingeschalteten Geräte:</b><br>${rows}<br><span class="sum">Zusammen: ${w} W ÷ ${U_NETZ} V = ${fmt(amp(w),1)} A</span></div>`;
+}
+const gefuehrt=k=>k.tab==='fall'&&k.fuehrung&&k.geloest<2;
+function kResetRow(k){
+  if(k.fuse) return '';
+  return k.typ==='ls'
+    ? `<div class="row"><button class="btn primary" data-act="kreset">🔌 Sicherung wieder einschalten</button></div>`
+    : (k.spare>0
+       ? `<div class="row"><button class="btn primary" data-act="kreset">🔧 Schmelzsicherung ersetzen (noch ${k.spare})</button></div>`
+       : `<p class="msg bad">Keine Ersatzsicherung mehr da!</p><div class="row"><button class="btn" data-act="kbuy">🛒 Neue holen</button></div>`);
+}
+/* Geführter Modus: immer nur ein Schritt, und nur das, was dieser Schritt braucht. */
+function fuehrung(k){
+  const schritt = k.modus==='kurz' ? 2 : 1;
+  const titel = schritt===1
+    ? 'Vergleiche die beiden Zahlen: <b>gemessen</b> und <b>erwartet</b>.'
+    : 'Finde das Gerät: <b>alle ausschalten</b>, <b>Sicherung ein</b>, dann <b>eines nach dem anderen</b> probieren.';
+  let p=`<div class="weg"><div class="wegtitel">Schritt ${schritt} von 3</div><div class="wegtext">${titel}</div></div>`;
+  p+=kMeter(k);
+  p+=`<details class="rechnung"><summary>Rechnung anzeigen</summary>${kList(k)}</details>`;
+  if(k.msg) p+=`<p class="msg bad">${k.msg}</p>`;
+  if(schritt===1){
+    p+=`<div class="mc">
+      <button class="opt" data-act="kans" data-v="last">Zu viele Geräte gleichzeitig – Überlastung</button>
+      <button class="opt" data-act="kans" data-v="kurz">Ein Gerät hat einen Kurzschluss</button>
+      <button class="opt" data-act="kans" data-v="sich">Die Sicherung ist zu schwach – eine stärkere einsetzen</button></div>`;
+  } else {
+    const row=[];
+    if(KURZ.some(id=>k.on[id])) row.push(`<button class="btn" data-act="kalloff">⏻ Alle Geräte ausschalten</button>`);
+    if(row.length) p+=`<div class="row">${row.join('')}</div>`;
+    p+=kResetRow(k);
+    p+=`<div class="sub">Gefunden? Dann tippe das Gerät an:</div><div class="tgrid">`+
+       KURZ.map(id=>`<button class="tbtn" data-act="kdev" data-v="${id}">${KD[id].name}</button>`).join('')+`</div>`;
+    p+=`<div class="row"><button class="btn" data-act="kzurueck">↩ Keines löst allein aus? Zurück zur Ursache</button></div>`;
+  }
+  if(k.wrong>=2) p+=`<div class="row"><button class="btn" data-act="kgiveup">🔍 Zeig mir die Lösung</button></div>`;
+  return p;
+}
+function kitchenPanel(k){ return kitchenPanelInner(k); }
+/* Inhalt des Einstellungsfensters – erreichbar über ⚙ in der Kopfzeile, wie in
+   den anderen zwei Werkzeugen. Vorher lag es als Klappe zuunterst im Panel von
+   Stufe 6: Dort fand es niemand, und von den Stufen 1 bis 5 aus gab es gar keinen
+   Weg dorthin. Was die Stufe nicht kennt, steht auch nicht darin. */
+function einstInhalt(){
+  const n=curStufe(), k=K;
+  let p='';
+  if(n===6){
+    p+=`<div class="sub">Für Schülerinnen und Schüler</div>
+    <div class="row"><button class="btn ${k.fuehrung?'primary':''}" data-act="kfuehr">${k.fuehrung?'Anleitung ist an':'Anleitung ist aus'}</button></div>
+    <div class="dlist">Die Schritt-für-Schritt-Anleitung erscheint in der Fehlersuche bei den ersten zwei Fällen. Einschalten startet sie von vorne.</div>
+    <div class="sub">Für die Lehrperson · Bauart</div><div class="row">
+    <button class="btn ${k.typ==='ls'?'primary':''}" data-act="ktyp" data-v="ls">Leitungsschutzschalter</button>
+    <button class="btn ${k.typ==='schmelz'?'primary':''}" data-act="ktyp" data-v="schmelz">Schmelzsicherung</button></div>
+    <div class="dlist">Beide unterbrechen den Stromkreis bei zu viel Strom. Den Leitungsschutzschalter schaltest du einfach wieder ein, die durchgebrannte Schmelzsicherung musst du ersetzen.</div>
+    <div class="sub">Für die Lehrperson · Stärke der Sicherung</div><div class="row">`+
+    I_OPTS.map(v=>`<button class="btn ${k.imax===v?'primary':''}" data-act="kfuse" data-v="${v}">${v} A</button>`).join('')+
+    `</div><div class="dlist">In der Schweiz sind Steckdosen-Stromkreise meist mit 10 A oder 13 A abgesichert. 16 A gibt es für einzelne grosse Geräte wie den Backofen, die einen eigenen Stromkreis haben.</div>
+    <div class="dlist">Eine stärkere Sicherung setzt immer eine <b>dickere Leitung</b> voraus: Sie lässt mehr Strom durch, und diesen Strom muss der Draht in der Wand aushalten, ohne heiss zu werden. Die Sicherung richtet sich also nach der Leitung, nicht nach dem Bedarf. Darum darf man sie nie einfach durch eine stärkere ersetzen – das macht eine Fachperson, und dann wird auch die Leitung ersetzt.</div>`;
+  }
+  p+=`<div class="sub">Von vorne beginnen</div><div class="row">`;
+  if(n===6) p+=`<button class="btn" data-act="ktab" data-v="${k.tab}">↺ ${k.tab==='fall'?'Neuer Fall':'Neu starten'}</button>`;
+  else if(n>=4) p+=`<button class="btn" data-act="hnew">↺ Neuer Fall</button>`;
+  else p+=`<button class="btn" data-act="reset">↺ Diese Aufgabe neu starten</button>`;
+  p+=`</div><div class="dlist">${
+    n===6 ? (k.tab==='fall'
+      ? 'Würfelt einen neuen Fall aus. Die schon gelösten Fälle bleiben gezählt.'
+      : 'Schaltet alle Geräte aus und setzt die Sicherung zurück.')
+    : n>=4 ? 'Würfelt einen neuen Fall aus. Die schon gelösten Fälle bleiben gezählt.'
+    : 'Setzt nur die offene Aufgabe zurück: Vorhersage, Markierungen und die Reparatur. Die anderen Aufgaben bleiben, wie sie sind.'}</div>`;
+  return p;
+}
+function kitchenPanelInner(k){
+  let p=`<div class="subtabs"><button class="tab ${k.tab==='erk'?'on':''}" data-act="ktab" data-v="erk">🔍 Erkunden</button>
+         <button class="tab ${k.tab==='fall'?'on':''}" data-act="ktab" data-v="fall">🕵️ Fehlersuche</button></div>`;
+  if(k.tab==='fall'&&k.fault){
+    p+=`<p class="complaint">📢 ${k.fault.type==='kurz'
+      ? 'Seit gestern fliegt die Sicherung immer wieder raus – dabei läuft doch fast nichts!'
+      : 'Schon wieder: Ich schalte ein paar Geräte ein und plötzlich ist der Strom weg!'}</p>`;
+  }
+  const erkGefuehrt = k.tab==='erk'&&k.fuehrung&&!k.erkFertig;
+  if(erkGefuehrt){
+    p+=`<div class="weg"><div class="wegtitel">Erkunden · Schritt ${Math.min(k.erk,3)} von 3</div><div class="wegtext">${ERKWEG(k)}</div></div>`;
+  } else if(k.tab==='erk'&&k.erk===4){
+    p+=`<p class="msg ok">${ERKWEG({...k,erk:4})}</p>`;
+  }
+  if(k.phase==='search'&&!erkGefuehrt) p+= k.tab==='erk'
+    ? `<p class="lead">Tippe die Geräte an, um sie ein- und auszuschalten, und beobachte, wie viel Strom zusammen fliesst.</p>
+       <p class="lead">Die Sicherung erlaubt höchstens <b>${k.imax} A</b>. Mehr darf nicht fliessen, sonst wird die Leitung in der Wand zu heiss – dann könnte es brennen. ${k.imax} A · ${U_NETZ} V = <b>${k.imax*U_NETZ} W</b> dürfen also zusammen laufen.</p>
+       <p class="lead">🎯 <b>Probiere aus:</b> Wie viele Geräte bringst du gleichzeitig zum Laufen? Und welche zwei genügen schon, damit die Sicherung auslöst?</p>`
+    : (gefuehrt(k) ? '' :
+       `<p class="lead">Schalte immer nur <b>ein</b> Gerät ein und die anderen aus. Schau dann genau hin: Wie viel Strom <b>sollte</b> es brauchen – und wie viel fliesst <b>wirklich</b>?</p>
+        <p class="lead">Ist es <b>Überlastung</b> oder hat ein Gerät einen <b>Kurzschluss</b>?</p>`)
+  if(gefuehrt(k)&&k.phase==='search') return p+fuehrung(k);
+  p+= gefuehrt(k)
+    ? kMeter(k)+`<details class="rechnung"><summary>Rechnung anzeigen</summary>${kList(k)}</details>`
+    : kMeter(k)+kList(k);
+  if(k.tab==='fall'&&k.phase==='search'&&k.fuehrung&&k.geloest===2)
+    p+=`<p class="msg info">Ab jetzt ohne Anleitung – du kennst den Weg. Unter ⚙ Einstellungen kannst du sie wieder einschalten.</p>`;
+  if(k.msg) p+=`<p class="msg bad">${k.msg}</p>`;
+  if(k.phase==='search'&&KURZ.some(id=>k.on[id]))
+    p+=`<div class="row"><button class="btn" data-act="kalloff">⏻ Alle Geräte ausschalten</button></div>`;
+  if(!k.fuse) p+= k.typ==='ls'
+    ? `<div class="row"><button class="btn primary" data-act="kreset">🔌 Leitungsschutzschalter wieder einschalten</button></div>`
+    : (k.spare>0
+       ? `<p class="lead">Die Schmelzsicherung ist durchgebrannt. Einschalten geht nicht – sie muss ersetzt werden.</p>
+          <div class="row"><button class="btn primary" data-act="kreset">🔧 Schmelzsicherung ersetzen (noch ${k.spare})</button></div>`
+       : `<p class="msg bad">Keine Ersatzsicherung mehr da! Ohne neue bleibt die Küche dunkel.</p>
+          <div class="row"><button class="btn" data-act="kbuy">🛒 Neue Ersatzsicherungen holen</button></div>`);
+  if(k.tab!=='fall') return p;
+  if(k.phase==='search'){
+    // Der Denkfehler «stärkere Sicherung» steht nur in den geführten Fällen zur Wahl
+    p+=`<div class="sub">Was ist die Ursache?</div><div class="mc">
+      <button class="opt" data-act="kans" data-v="last">Zu viele Geräte gleichzeitig – Überlastung</button>
+      <button class="opt" data-act="kans" data-v="kurz">Ein Gerät hat einen Kurzschluss</button></div>`;
+    if(k.pick==='kurz') p+=`<div class="sub">Welches Gerät?</div><div class="tgrid">`+
+      KURZ.map(id=>`<button class="tbtn" data-act="kdev" data-v="${id}">${KD[id].name}</button>`).join('')+`</div>`;
+    if(k.wrong>=2) p+=`<div class="row"><button class="btn" data-act="kgiveup">🔍 Zeig mir die Lösung</button></div>`;
+    return p;
+  }
+  // gelöst
+  const kurz=k.fault.type==='kurz', d=kurz?KD[k.fault.dev]:null;
+  p+= kurz
+    ? `<p class="msg ${k.gaveup?'info':'ok'}">${k.gaveup?'🔍 Die Lösung: ':'✅ Richtig: '}${d.art} ${d.name} hat einen Kurzschluss.</p>`
+    : `<p class="msg ${k.gaveup?'info':'ok'}">${k.gaveup?'🔍 Die Lösung: Überlastung':'✅ Richtig: Überlastung'}. Kein Gerät ist kaputt – es waren zu viele gleichzeitig.</p>`;
+  const WARUM = kurz
+    ? [['Das Gerät bräuchte laut Angabe weniger Strom, als die Sicherung erlaubt – trotzdem löst sie sofort aus.',true],
+       ['Die Geräte brauchen zusammen mehr, als die Sicherung erlaubt.',false],
+       ['Die Sicherung ist zu schwach eingestellt.',false]]
+    : [['Die eingeschalteten Geräte brauchen zusammen mehr, als die Sicherung erlaubt.',true],
+       ['Ein einzelnes Gerät zieht viel mehr Strom, als es sollte.',false],
+       ['Die Leitung in der Wand ist zu dünn.',false]];
+  if(k.why===null){
+    if(k.fuehrung&&k.geloest<=2) p+=`<div class="weg"><div class="wegtitel">Schritt 3 von 3</div><div class="wegtext">Begründe deine Antwort.</div></div>`;
+    p+=`<div class="sub">Und woran merkst du das?</div><div class="mc">`+
+       WARUM.map((o,i)=>`<button class="opt" data-act="kwhy" data-v="${i}">${o[0]}</button>`).join('')+`</div>`;
+    return p;
+  }
+  p+=`<div class="mc">`+WARUM.map((o,i)=>{ let cl='opt';
+      if(o[1]) cl+=' right'; else if(i===k.why) cl+=' wrongsel';
+      return `<button class="${cl}" disabled>${o[0]}</button>`; }).join('')+`</div>`;
+  p+=`<p class="msg ${WARUM[k.why][1]?'ok':'bad'}">${WARUM[k.why][1]?'Genau.':'Nicht ganz.'}</p>`;
+  if(kurz){
+    p+=`<p class="lead">${d.art} ${d.name} braucht eigentlich nur ${d.w} W, also ${fmt(amp(d.w),1)} A. Trotzdem löst die Sicherung sofort aus. Im Gerät hat der Strom einen Weg fast ohne Widerstand gefunden – wie beim gelben Kabel in Stufe 1. Dann fliesst ein sehr grosser Strom, und die Sicherung schaltet ab, bevor die Leitung heiss wird.</p>
+        <p class="msg info">🔧 ${d.art} ${d.name} nicht mehr einschalten und reparieren lassen oder ersetzen.</p>`;
+  } else {
+    const ids=k.trip?k.trip.ids:[], w=ids.reduce((s,id)=>s+KD[id].w,0);
+    p+=`<p class="lead">${fmt(amp(w),1)} A statt der erlaubten ${k.imax} A. Die Sicherung schützt die Leitung in der Wand: Bei zu viel Strom würde sie heiss werden und könnte einen Brand auslösen.</p>
+        <p class="msg info">🔧 Nicht alles gleichzeitig: zuerst Wasser kochen, dann toasten. Oder ein Gerät an einen anderen Stromkreis hängen.</p>`;
+  }
+  return p+`<div class="row"><button class="btn primary" data-act="knew">Neuer Fall →</button></div>`;
+}
+/* Der Erkunden-Teil führt beim ersten Mal durch drei Schritte. */
+const ERKWEG=k=>[
+ 'Der <b>Kühlschrank</b> läuft immer. Seine <b>Leistung</b> ist 150 W. Bei 230 V fliessen dadurch 0,65 A. Tippe jetzt den <b>Wasserkocher</b> an.',
+ 'Der Wasserkocher hat <b>2000 W</b> – viel mehr. Schau in der Anzeige, wie die <b>Stromstärke</b> gestiegen ist. Tippe jetzt die <b>Kaffeemaschine</b> an.',
+ `Die Ströme <b>zählen zusammen</b>. Schalte weiter Geräte ein, bis die Sicherung auslöst – sie erlaubt höchstens ${k.imax} A.`,
+ 'Zusammen brauchten die Geräte mehr Strom, als die Sicherung erlaubt. <b>Je mehr Watt ein Gerät hat, desto mehr Ampere fliessen</b> – und die Ampere aller Geräte zählen zusammen. Jetzt kannst du frei ausprobieren.'][Math.min(k.erk,4)-1];
+function kErkTick(k){
+  if(k.tab!=='erk'||!k.fuehrung) return;
+  if(k.erkFertig){ if(k.erk===4) k.erk=5; return; }
+  let n=1;
+  if(k.on.wasser) n=2;
+  if(k.on.wasser&&k.on.kaffee) n=3;
+  if(!k.fuse) n=4;
+  k.erk=Math.max(k.erk,n);
+  if(k.erk===4) k.erkFertig=true;
+}
+function kitchenClick(id){
+  if(gefuehrt(K)&&K.phase==='search'&&K.modus!=='kurz'){
+    K.msg='Im ersten Schritt musst du nichts umschalten – vergleiche nur die beiden Zahlen in der Anzeige.'; return; }
+  if(id==='fuse'){ if(!K.fuse&&(K.typ==='ls'||K.spare>0)) kitchenAct('kreset',null); return; }
+  if(K.phase!=='search') return;
+  if(KD[id].always){ K.msg='Der Kühlschrank läuft immer – den schaltet man nicht aus.'; return; }
+  K.on[id]=!K.on[id]; K.msg=''; kEval(K); kErkTick(K);
+}
+function kitchenAct(act,b){
+  switch(act){
+    case 'ktab': K=newKitchen(b.dataset.v,K); break;
+    case 'kfuse': { K.imax=+b.dataset.v; K.heat=0; K.msg=''; break; }
+    case 'ktyp': { K.typ=b.dataset.v; K.msg=''; break; }
+    case 'kbuy': { K.spare=3; K.msg=''; break; }
+    case 'kalloff': { KURZ.forEach(id=>K.on[id]=false); K.heat=0; K.msg=''; break; }
+    case 'kreset': { if(K.typ==='schmelz'){ if(!K.spare) break; K.spare--; }
+      K.resets++; K.fuse=true; K.trip=null; K.heat=0; K.msg=''; kEval(K);
+      if(!K.fuse) K.msg=K.typ==='ls'?'Sie fliegt sofort wieder raus! Schalte zuerst etwas aus.'
+                                     :'Die neue Sicherung ist sofort wieder durchgebrannt! Schalte zuerst etwas aus.';
+      else if(kRatio(K)>1) K.msg='Achtung: Es sind immer noch zu viele Geräte eingeschaltet.'; break; }
+    case 'kans': { const v=b.dataset.v;
+      if(v==='sich'){ K.wrong++; K.msg='Nein. Die Sicherung ist nicht der Fehler, sondern der Schutz. Eine stärkere einzusetzen wäre gefährlich: Dann fliesst mehr Strom, als die Leitung in der Wand aushält.'; K.pick=null; }
+      else if(v==='kurz'){ K.pick='kurz'; K.modus='kurz'; K.msg=''; }
+      else { if(K.fault.type==='last'){ K.phase='done'; K.geloest++; } else { K.wrong++; K.msg='Nicht ganz. Schau nochmals: Reicht die Summe der eingeschalteten Geräte überhaupt für eine Überlastung?'; } K.pick=null; }
+      break; }
+    case 'kdev': { const d=b.dataset.v;
+      if(K.fault.type==='kurz'&&K.fault.dev===d){ K.phase='done'; K.geloest++; }
+      else if(K.fault.type==='kurz'){ K.wrong++; K.msg=`Nein, ${KD[d].name} ist es nicht. Schalte die Geräte einzeln ein – bei welchem löst die Sicherung sofort aus?`; }
+      else { K.wrong++; K.msg='Kein Gerät hat einen Kurzschluss. Zähle zusammen, wie viel Strom die eingeschalteten Geräte zusammen brauchen.'; }
+      K.pick=null; break; }
+    case 'kwhy': K.why=+b.dataset.v; break;
+    case 'kfuehr': K.fuehrung=!K.fuehrung; break;
+    case 'kzurueck': K.modus=null; K.pick=null; K.msg=''; break;
+    case 'kgiveup': K.phase='done'; K.gaveup=true; K.pick=null; K.msg=''; break;
+    case 'knew': K=newKitchen('fall',K); break;
+    case 'erkweiter': K.erkFertig=true; K.erk=4; break;
+  }
+}
+
+function curStufe(){ return mode==='circ'?TASKS[cur].stufe:mode; }
+function renderTabs(){
+  document.getElementById('tabs').innerHTML=STUFEN.map(([n,l])=>
+    `<button class="tab ${curStufe()===n?'on':''}" data-stufe="${n}">${n} · ${l}</button>`).join('');
+  const on=document.querySelector('.tabs .tab.on');
+  if(on&&on.parentElement.scrollWidth>on.parentElement.clientWidth) on.scrollIntoView({block:'nearest',inline:'center'});
+}
+function renderBar(){
+  if(mode===6){ document.getElementById('bar').innerHTML=`<span class="t">Stufe 6 · Küche${K.tab==='fall'?' · Fall '+K.caseNo:''}</span>
+     <span class="dots"><button class="icon" data-act="ktab" data-v="${K.tab}" title="${K.tab==='fall'?'Neuer Fall':'Neu starten'}">↺ ${K.tab==='fall'?'Neuer Fall':'Neu starten'}</button></span>`; return; }
+  if(mode!=='circ'){ const h=HS[mode];
+    document.getElementById('bar').innerHTML=`<span class="t">Stufe ${mode} · Fall ${h.caseNo}${h.solved?` · ${h.solved} gelöst`:''}</span>
+     <span class="dots"><button class="icon" data-act="hnew" title="Neuer Fall">↺ Neuer Fall</button></span>`;
+    return; }
+  const t=TASKS[cur], idx=TASKS.map((x,i)=>i).filter(i=>TASKS[i].stufe===t.stufe);
+  document.getElementById('bar').innerHTML=`<span class="t">Stufe ${t.stufe} · Aufgabe ${idx.indexOf(cur)+1}/${idx.length}</span>
+   <span class="dots">${idx.map((i,k)=>`<button class="dot ${i===cur?'on':''} ${S[i].done?'done':''}" data-go="${i}">${k+1}</button>`).join('')}
+   <button class="icon" data-act="reset" title="Aufgabe neu starten">↺</button></span>`;
+}
+/* ===== Direktlinks: …#4-pruefen öffnet gleich die vierte Stufe =====
+   replaceState statt location.hash, sonst sammelt der Zurück-Knopf jeden
+   Stufenwechsel als eigenen Schritt. */
+const KUERZEL={1:'fehler-sehen',2:'vorhersagen',3:'eingrenzen',4:'pruefen',5:'ausschliessen',6:'ueberlastung'};
+let hashStumm=false;
+function adresse(){
+  if(hashStumm) return;
+  const n=curStufe(), k=KUERZEL[n];
+  if(!k) return;
+  const h='#'+n+'-'+k;
+  // In einer Vorschau (eingebettete Seite) darf die Adresse nicht geändert
+  // werden – das Werkzeug soll deswegen nicht stehen bleiben.
+  if(location.hash!==h){ try{ history.replaceState(null,'',h); }catch(e){} }
+}
+function ausAdresse(){
+  const m=/^#?(\d)/.exec(location.hash||'');
+  if(!m) return false;
+  const n=Number(m[1]);
+  if(!KUERZEL[n]) return false;
+  hashStumm=true;
+  if(n>=4) startHouse(n); else { mode='circ'; cur=TASKS.findIndex(x=>x.stufe===n); }
+  hashStumm=false;
+  return true;
+}
+addEventListener('hashchange',()=>{ if(ausAdresse()) render(); });
+
+function render(){ adresse(); renderTabs(); renderBar();
+  if(!document.getElementById('einst').hidden)
+    document.getElementById('einstText').innerHTML=einstInhalt();
+  if(mode===6){
+    document.getElementById('stage').innerHTML=kitchenSVG(K);
+    document.getElementById('panel').innerHTML=kitchenPanel(K);
+    return; }
+  if(mode!=='circ'){
+    document.getElementById('stage').innerHTML=houseSVG(HS[mode]);
+    document.getElementById('panel').innerHTML=housePanel(HS[mode]);
+    return; }
+  document.getElementById('stage').innerHTML=renderSVG();
+  document.getElementById('panel').innerHTML=renderPanel(); }
+
+/* ---------- Interaktion ---------- */
+function flash(id){ S[cur].flash=id; const c=cur; setTimeout(()=>{ if(S[c].flash===id){S[c].flash=null; if(c===cur) render();} },750); }
+function toggle(set,id){ set.has(id)?set.delete(id):set.add(id); }
+
+document.getElementById('stage').addEventListener('click',e=>{
+  if(mode===6){ const el=e.target.closest('[data-k]'); if(el){ kitchenClick(el.dataset.k); render(); } return; }
+  if(mode!=='circ'){ const el=e.target.closest('[data-h]'); if(el){ houseClick(el.dataset.h); render(); } return; }
+  const t=TASKS[cur], st=S[cur];
+  const swEl=e.target.closest('[data-sw]');
+  if(swEl){
+    if(t.stufe===2&&st.phase==='predict'){ st.msg='Den Schalter kannst du nach dem Prüfen umlegen.'; render(); return; }
+    st.sw[swEl.dataset.sw]=!st.sw[swEl.dataset.sw]; render(); return;
+  }
+  const el=e.target.closest('[data-el]'); if(!el) return;
+  const id=el.dataset.el, type=typeOf(t,id);
+  if(t.stufe<3){
+    if(st.phase==='predict'){
+      if(type==='lamp'){ toggle(st.pred,id); st.msg=''; }
+      else st.msg='Tippe die Lämpchen an – hier geht es nur darum, welche leuchten.';
+      render(); return; }
+    if(st.phase!=='find') return;
+    if(id===t.fault){ st.phase='question'; st.halo={[id]:'ok'}; st.msg=''; }
+    else { st.wrong++; st.msg=`${cap(nameOf(t,id))} ist in Ordnung.`; flash(id); }
+    render(); return;
+  }
+  if(st.phase!=='mark') return;
+  if(type==='battery'){ st.msg='Die Batterie ist neu und in Ordnung.'; flash(id); render(); return; }
+  toggle(st.marks,id); st.msg=''; render();
+});
+
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act],[data-stufe],[data-go]'); if(!b||b.closest('#stage')) return;
+  if(b.dataset.stufe){ const n=+b.dataset.stufe;
+    if(n>=4) startHouse(n); else { mode='circ'; cur=TASKS.findIndex(x=>x.stufe===n); }
+    render(); hilfeBeimErstenMal(); return; }
+  if(mode===6){ if(b.dataset.act){ kitchenAct(b.dataset.act,b); render(); } return; }
+  if(mode!=='circ'){ if(b.dataset.act){ houseAct(b.dataset.act,b); render(); } return; }
+  const t=TASKS[cur], st=S[cur];
+  if(b.dataset.go){ cur=+b.dataset.go; return render(); }
+  switch(b.dataset.act){
+    case 'reset': S[cur]=initState(t); break;
+    case 'predict': {
+      const sim=simulate(t.circuit,brokenOf(t,st),st.sw); st.predRes={};
+      for(const L in sim.lamps) st.predRes[L]=(st.pred.has(L)===sim.lamps[L]);
+      st.phase='find'; st.msg=''; break; }
+    case 'mc': st.mc=+b.dataset.i; break;
+    case 'repair': st.fixed=true; st.halo={}; st.phase='done'; st.done=true; break;
+    case 'check': {
+      st.check=candidates(t); st.halo={};
+      st.marks.forEach(x=>st.halo[x]=st.check.has(x)?'ok':'bad');
+      st.check.forEach(x=>{ if(!st.marks.has(x)) st.halo[x]='miss'; });
+      st.phase='checked'; break; }
+    case 'retry': st.phase='mark'; st.halo={}; break;
+    case 'reveal': st.phase='revealed'; st.halo={}; break;
+    case 'next': cur++; break;
+  }
+  render();
+});
+
+setInterval(()=>{ if(mode===6&&kTick(0.2)){ kErkTick(K); render(); } },200);
+
+/* Vollbild: auf dem Tablet fällt die Adressleiste weg, im Unterricht lenkt weniger ab */
+const ICON_FS_ON  = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>';
+const ICON_FS_OFF = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>';
+const fsEl=()=>document.fullscreenElement||document.webkitFullscreenElement;
+const standalone=navigator.standalone===true||matchMedia('(display-mode: standalone)').matches;
+/* Nicht am Gerät festmachen, sondern nachfragen, ob der Browser es kann.
+   Auf dem iPhone sagt Safari nein, auf dem iPad je nach Version ja.
+   Als Web-App vom Home-Bildschirm ist ohnehin schon alles Vollbild. */
+const fsMoeglich=!!(document.fullscreenEnabled||document.webkitFullscreenEnabled);
+const fsCan=!standalone&&fsMoeglich&&!!(document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen);
+const fsBtn=document.getElementById('fsBtn');
+function fsLabel(){
+  const on=!!fsEl();
+  document.documentElement.classList.toggle('fsmode',on);
+  fsBtn.innerHTML=(on?ICON_FS_OFF:ICON_FS_ON)+`<span>${on?'Vollbild beenden':'Vollbild'}</span>`;
+  fsBtn.setAttribute('aria-label',on?'Vollbild beenden':'Vollbild');
+  fsBtn.title=on?'Vollbild beenden':'Vollbild';
+  render();
+}
+if(fsCan){
+  fsBtn.hidden=false; fsLabel();
+  fsBtn.onclick=()=>{ const d=document, el=d.documentElement;
+    if(fsEl()) (d.exitFullscreen||d.webkitExitFullscreen).call(d);
+    else (el.requestFullscreen||el.webkitRequestFullscreen).call(el); };
+  document.addEventListener('fullscreenchange',fsLabel);
+  document.addEventListener('webkitfullscreenchange',fsLabel);
+}
+
+/* ---------- Kurzanleitung pro Stufe ---------- */
+const HELP={
+ 1:['Fehler sehen','<p>Der Strom braucht einen <b>geschlossenen Weg</b>: vom Pluspol der Batterie durch das Lämpchen zurück zum Minuspol.</p><p>Hier stimmt jedes Mal etwas nicht. <b>Tippe im Bild auf die Stelle mit dem Fehler.</b> Danach kommt eine Frage dazu, und zum Schluss reparierst du.</p>'],
+ 2:['Vorhersagen','<p>Neu: Du sagst <b>zuerst voraus</b>, welche Lämpchen leuchten. Tippe sie an und drücke auf «Prüfen». Solange zeigen die Lämpchen ein Fragezeichen.</p><p>Danach suchst du den Fehler wie in Stufe 1.</p>'],
+ 3:['Eingrenzen','<p>Neu: Der Fehler ist <b>unsichtbar</b>. Von aussen sehen alle Kabel gut aus.</p><p>Probiere den Schalter aus und <b>markiere alle Stellen</b>, an denen der Fehler sein könnte. Das Programm sagt dir dann, welche wirklich dazu passen.</p>'],
+ 4:['Prüfen','<p>Ein Zimmer statt eines Stromkreises. Genau <b>ein Teil</b> ist kaputt, und man sieht ihm nichts an.</p>'+
+   '<p>Wähle <b>Prüfschritte</b>: nachschauen, die Prüflampe einstecken, ein Teil austauschen. Jedes Ergebnis steht im Protokoll. Teile mit grünem Häkchen sind sicher in Ordnung.</p>'+
+   '<p>Die <b>Prüflampe</b> ist eine Lampe, von der du sicher weisst, dass sie funktioniert. Wo sie leuchtet, kommt Strom an – wo sie dunkel bleibt, fehlt er. Darum ist sie dein Werkzeug.</p>'+
+   '<p>Wenn du sicher bist: im Bild auf das kaputte Teil tippen.</p>'],
+ 5:['Ausschliessen','<p>Wie Stufe 4, aber mit mehr Geräten – und <b>ohne Häkchen</b>.</p><p>Hier zählt, was noch <b>funktioniert</b>: Läuft der Bildschirm, ist der Weg bis zur Steckerleiste in Ordnung. Achtung: Ein Gerät, das gar nicht eingeschaltet ist, sagt dir nichts.</p>'],
+ 6:['Überlastung','<p><b>Eine Küche, eine Sicherung.</b> Alle Geräte hängen an derselben Leitung.</p>'+
+   '<p>Jedes Gerät zeigt zwei Zahlen: die <b>Leistung</b> in Watt (W) und die <b>Stromstärke</b> in Ampere (A), die dabei fliesst. Aus der Leistung und der Spannung (230 Volt) rechnest du die Stromstärke aus:</p>'+
+   '<p style="text-align:center"><b>Stromstärke = Leistung ÷ Spannung</b><br><span style="color:#5A6672">I = P ÷ U</span></p>'+
+   '<p><b>Je mehr Watt ein Gerät hat, desto mehr Strom braucht es.</b> Alle eingeschalteten Geräte zusammen dürfen nicht mehr Strom ziehen, als die Sicherung erlaubt – sonst wird die Leitung in der Wand heiss.</p>'+
+   '<p>Zwei Ursachen sehen im ersten Moment gleich aus: Bei <b>Überlastung</b> wird die Sicherung zuerst warm und löst dann aus. Ein <b>Kurzschluss</b> löst sofort aus, obwohl das Gerät wenig Strom bräuchte.</p>'+
+   '<p><b>So gehst du bei der Fehlersuche vor:</b></p><ol style="margin:6px 0;padding-left:20px;line-height:1.5">'+
+   '<li>Gemessenen und erwarteten Strom vergleichen.</li>'+
+   '<li>Gleich → Überlastung. Gemessen viel grösser → Kurzschluss.</li>'+
+   '<li>Beim Kurzschluss alles ausschalten und die Geräte einzeln ausprobieren.</li>'+
+   '<li>Antworten und begründen.</li></ol>']
+};
+const hilfeMem=new Set();   // falls der Browser localStorage sperrt (z. B. bei lokalen Dateien)
+const hilfeGesehen=n=>{ if(hilfeMem.has(n)) return true;
+  try{ return localStorage.getItem('stromkreis-hilfe-'+n)==='1'; }catch(e){ return false; } };
+const hilfeMerken=n=>{ hilfeMem.add(n);
+  try{ localStorage.setItem('stromkreis-hilfe-'+n,'1'); }catch(e){} };
+function zeigeHilfe(n){
+  const [t,txt]=HELP[n]||HELP[1];
+  document.getElementById('hilfeTitel').textContent=`Stufe ${n} · ${t}`;
+  document.getElementById('hilfeText').innerHTML=txt;
+  document.getElementById('hilfe').hidden=false; hilfeMerken(n);
+}
+document.getElementById('helpBtn').onclick=()=>zeigeHilfe(curStufe());
+document.getElementById('hilfe').addEventListener('click',e=>{
+  if(e.target.id==='hilfe'||e.target.closest('[data-hilfe="zu"]')) document.getElementById('hilfe').hidden=true; });
+/* Einstellungen. Die Knöpfe darin tragen dieselben data-act wie im Panel, also
+   erledigt sie der allgemeine Klick-Empfänger weiter unten. «Von vorne beginnen»
+   schliesst das Fenster, damit man gleich sieht, was passiert ist. */
+function einstOeffnen(auf){
+  const m=document.getElementById('einst');
+  if(auf) document.getElementById('einstText').innerHTML=einstInhalt();
+  m.hidden=!auf;
+}
+document.getElementById('einstBtn').onclick=()=>einstOeffnen(true);
+document.getElementById('einst').addEventListener('click',e=>{
+  if(e.target.id==='einst'||e.target.closest('[data-einst="zu"]')){ einstOeffnen(false); return; }
+  const b=e.target.closest('[data-act]');
+  if(b&&['reset','hnew','ktab'].includes(b.dataset.act)) setTimeout(()=>einstOeffnen(false),0);
+});
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Escape') return;
+  if(!document.getElementById('einst').hidden){ e.preventDefault(); einstOeffnen(false); return; }
+  if(!document.getElementById('hilfe').hidden){ e.preventDefault(); document.getElementById('hilfe').hidden=true; }
+});
+function hilfeBeimErstenMal(){ const n=curStufe(); if(!hilfeGesehen(n)) zeigeHilfe(n); }
+
+/* Lupe für kleine Bildschirme */
+const zoomBtn=document.getElementById('zoomBtn');
+zoomBtn.onclick=()=>{ const st=document.getElementById('stage');
+  const an=st.classList.toggle('zoom'); zoomBtn.textContent=an?'🔎':'🔍';
+  zoomBtn.title=an?'Bild verkleinern':'Bild vergrössern';
+  if(an) requestAnimationFrame(()=>{ st.scrollLeft=(st.scrollWidth-st.clientWidth)/2;
+    st.scrollTop=(st.scrollHeight-st.clientHeight)*0.62; });
+  else render(); };
+
+/* Fenstergrösse ändert den Bildausschnitt */
+let fitT=null;
+const refit=()=>{ clearTimeout(fitT); fitT=setTimeout(render,80); };
+addEventListener('resize',refit);
+addEventListener('orientationchange',refit);
+
+ausAdresse();
+render();
+requestAnimationFrame(render);   // zweiter Durchgang, sobald das Layout steht
+hilfeBeimErstenMal();
+</script>
+
+</body>
+</html>

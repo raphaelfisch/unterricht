@@ -1,0 +1,1258 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Multimeter">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Multimeter</title>
+<style>
+:root{
+  /* Dieselben Werte wie in «Grössen», «Blackbox», «Fehlersuche» und
+     «Knoten und Maschen» – die fünf Werkzeuge stehen oft nebeneinander. */
+  --bg:#E6ECF1;--paper:#F8FAFB;--ink:#1D2935;--muted:#5A6672;--line:#C6D0D9;
+  --acc:#2E6DB4;--acc-soft:#EEF4FD;
+  --ok:#23794A;--ok-soft:#E6F6EC;--bad:#B8322A;--bad-soft:#FDECEC;--warn:#B7791F;--warn-soft:#FBF1DE;
+  --btn:#FFFFFF;
+  --h:60px;--rand:16px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;overflow:hidden;
+  -webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+button{font-family:inherit;color:inherit}
+
+/* Kopfzeile – gleiche Form wie in den anderen vier Werkzeugen:
+   Titel links, Stufen in der Mitte, rechts Übersicht · Vollbild · ⚙ · ?
+   Sie bleibt IMMER einzeilig, weil main seine Höhe aus --h rechnet. Auf
+   schmalen Geräten weichen darum die Wörter, nicht die Zeile. */
+/* Breite wie in den anderen vier begrenzt und zentriert – auf einem sehr
+   breiten Bildschirm liefe die Zeile sonst auseinander. */
+header.top{height:var(--h);display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:14px;
+  padding:0;background:transparent;
+  width:min(1700px, calc(100% - 2*var(--rand)));margin-inline:auto}
+.hl{display:flex;align-items:center;gap:10px;min-width:0}
+.hl h1{margin:0;font-size:1.5rem;font-weight:700;letter-spacing:-.01em;color:var(--ink);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hr{display:flex;align-items:center;justify-content:flex-end;gap:12px}
+.hbtn{display:inline-flex;align-items:center;justify-content:center;gap:7px;font:inherit;font-size:.92rem;
+  height:36px;flex:none;border:1px solid var(--line);background:var(--btn);color:var(--muted);
+  padding:0 14px;border-radius:999px;cursor:pointer;text-decoration:none}
+.hbtn:hover{border-color:var(--acc);color:var(--acc)}
+.hbtn svg{width:18px;height:18px;display:block}
+.hbtn.rund{width:36px;padding:0;border-radius:999px;font-weight:700}
+.hbtn:active{transform:scale(.96)}
+/* Die fünf Stufen: gleich breit, eigener Rand, aktive Stufe dunkel */
+.stages{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;
+  border:1px solid var(--line);border-radius:14px;padding:3px;background:var(--paper)}
+.stg{border:0;background:transparent;color:var(--ink);height:38px;padding:0 8px;font-size:.9rem;
+  display:flex;align-items:center;justify-content:center;gap:5px;border-radius:11px;
+  cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stg .n{font-weight:700}
+.stg .n::after{content:' ·'}
+.stg:hover:not(:disabled):not(.on){background:#EEF2F7}
+.stg.on,.stg.on:hover{background:var(--ink);color:var(--paper)}
+.stg:disabled{opacity:.45;cursor:default}
+/* Reicht der Platz nicht, weichen zuerst die Wörter der nicht gewählten Stufen,
+   danach die Wörter auf den runden Knöpfen – die Zeile bleibt eine Zeile. */
+@media (max-width:1180px){.stg:not(.on) .t{display:none}.stg .n::after{content:''}
+  .stg.on .n::after{content:' ·'}}
+@media (max-width:900px){.hbtn .wort{display:none}.hbtn{width:36px;padding:0}}
+@media (max-width:620px){.hl h1{font-size:1.15rem}}
+@media (max-width:430px){.hr{gap:8px}header.top{padding:0 10px;gap:8px}}
+@media (max-width:360px){.hl h1{font-size:1rem}}
+
+/* Hauptbereich */
+/* main IST die Karte – eine weisse Fläche mit Rand und runden Ecken, darin
+   links das Gerät und rechts der Text. Genau wie in den anderen vier Werkzeugen.
+   Der untere Aussenabstand muss von der Höhe abgezogen werden, sonst wächst die
+   Seite darüber hinaus und es entsteht eine Bildlaufleiste. */
+main{height:calc(100% - var(--h) - var(--rand));margin:0 auto var(--rand);
+  width:min(1700px, calc(100% - 2*var(--rand)));
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,430px);gap:14px;
+  background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+@media (max-aspect-ratio:1/1) and (min-width:641px){main{grid-template-columns:minmax(0,1fr) 340px}}
+@media (max-aspect-ratio:1/1){body.wide main{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) minmax(0,47%)}}
+@media (max-aspect-ratio:1/1) and (max-height:1000px){
+  body.wide .panel{padding:2px 6px 2px 2px;gap:8px}body.wide .body{gap:8px}
+  body.wide .task{font-size:18px}body.wide .seg button{padding:6px}
+  body.wide .mc .btn{min-height:36px;padding:6px 12px;font-size:14px}body.wide .mc{gap:4px}
+  body.wide .steps{font-size:14px}body.wide .steps li{margin-bottom:2px}
+  body.wide .diag div{padding:5px 9px;font-size:14px}
+  body.wide .merk{font-size:13px;padding:5px 9px}body.wide .sub{font-size:13px}
+  body.wide .btn{min-height:38px}
+}
+@media (max-width:640px){
+  :root{--rand:10px}
+  main{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) minmax(0,50%);padding:8px;gap:8px}
+}
+#devWrap{min-height:0;min-width:0;display:flex;align-items:center;justify-content:center}
+#dev{width:100%;height:100%;touch-action:none;user-select:none;-webkit-user-select:none}
+#dev text{pointer-events:none}
+#dev .hit{fill:transparent;cursor:pointer}
+#dev.inert .hit{cursor:default}
+#knob{transition:transform .25s ease;transform-box:view-box;transform-origin:210px 505px}
+#knob.drag{transition:none}
+.mk ring{}
+.mk .r{fill:rgba(47,110,158,.18);stroke:#7FB6E0;stroke-width:2.5;stroke-dasharray:5 4}
+.mk.done .r{fill:rgba(46,133,64,.18);stroke:#5FC27A;stroke-dasharray:none}
+.mk.bad .r{fill:rgba(192,57,43,.35);stroke:#FF8A7A;stroke-dasharray:none}
+.mk.blink .r{animation:blink .4s ease-in-out 4 alternate}
+@keyframes blink{from{stroke:#FFD54A;fill:rgba(255,213,74,.15)}to{stroke:#FFD54A;fill:rgba(255,213,74,.55);stroke-width:4}}
+.pulse{animation:pulse .9s ease-out forwards}
+@keyframes pulse{from{opacity:1}to{opacity:0}}
+
+/* Panel */
+.panel{scrollbar-gutter:stable;background:transparent;border-radius:0;padding:2px 6px 2px 2px;
+  display:flex;flex-direction:column;gap:12px;min-height:0;overflow:auto;box-shadow:none}
+.seg{display:flex;background:var(--bg);border-radius:10px;padding:3px;flex:none}
+.seg button{flex:1;border:0;background:transparent;padding:9px;border-radius:8px;font-size:14px;font-weight:600;color:var(--muted);cursor:pointer}
+.seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.body{display:flex;flex-direction:column;gap:12px;flex:0 0 auto}
+.task{font-size:21px;font-weight:650;line-height:1.3}
+.sub{color:var(--muted);font-size:14px;line-height:1.35}
+.info h2{margin:0 0 4px;font-size:22px}
+.info p{margin:0;font-size:16px;line-height:1.4}
+.info .nn{color:var(--muted);font-size:14px;margin-top:6px}
+.fb{border-radius:12px;padding:11px 14px;font-size:16px;line-height:1.38;display:none;border-left:5px solid}
+.fb.show{display:block}
+.fb.ok{background:var(--ok-soft);border-color:var(--ok)}
+.fb.bad{background:var(--bad-soft);border-color:var(--bad)}
+.fb.warn{background:var(--warn-soft);border-color:var(--warn)}
+.fb.info{background:var(--acc-soft);border-color:var(--acc)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{min-height:44px;padding:0 18px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:15px;font-weight:600;cursor:pointer}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+.btn.sel{background:var(--acc-soft);border-color:var(--acc)}
+.btn:disabled{opacity:.45;cursor:default}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:6px 10px;border-radius:9px;background:#fff;border:1px solid var(--line);font-size:14px;font-weight:600;line-height:1.2;
+  cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.chip small{display:block;font-weight:500;color:var(--muted);font-size:12px}
+.chip.sel{outline:3px solid var(--acc);outline-offset:1px}
+.chip.ghost{position:fixed;z-index:60;pointer-events:none;transform:translate(-50%,-120%);box-shadow:0 6px 18px rgba(0,0,0,.25);cursor:grabbing}
+.chip.lift{opacity:.35}
+.dots{display:flex;gap:5px;flex-wrap:wrap}
+.dot{width:14px;height:14px;border-radius:50%;background:#D5DEE5}
+.dot.ok{background:var(--ok)}.dot.warn{background:#E0A43A}.dot.cur{box-shadow:0 0 0 2px var(--acc)}
+.inp{display:flex;flex-direction:column;gap:10px}
+#num{height:52px;width:100%;font-size:24px;font-weight:650;border-radius:10px;border:2px solid var(--line);padding:0 12px;font-family:inherit;color:var(--ink);background:#fff}
+#num:focus{outline:none;border-color:var(--acc)}
+.units{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.units .btn{padding:0;font-size:17px}
+.mc{display:flex;flex-direction:column;gap:6px}
+.mc .btn{text-align:left;font-weight:500;padding:10px 14px}
+.mc .btn.okb{background:var(--ok-soft);border-color:var(--ok)}
+.mc .btn.okb:disabled{opacity:1}
+.mc .btn.badb{background:var(--bad-soft);border-color:var(--bad)}
+.box{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;line-height:1.45}
+/* Merksatz in der Sandfarbe der ganzen Familie – in «Grössen», «Blackbox»,
+   «Fehlersuche» und «Knoten und Maschen» sieht er genau so aus. */
+.merk{margin-top:auto;background:#f6f2e9;border:0;border-left:4px solid #d9bd6a;border-radius:0 10px 10px 0;
+  padding:8px 12px;font-size:15px;line-height:1.45;color:#4a4232;flex:none}
+.merk>b:first-child{color:#4a4232;margin-right:4px}
+.merk>b:first-child::before{content:'📌 '}
+.diag{display:flex;flex-direction:column;gap:6px}
+.diag div{border-radius:10px;padding:8px 11px;font-size:15px;line-height:1.35;border-left:4px solid}
+.diag .ok{background:var(--ok-soft);border-color:var(--ok)}.diag .bad{background:var(--bad-soft);border-color:var(--bad)}
+.diag .warn{background:var(--warn-soft);border-color:var(--warn)}.diag .info{background:#fff;border-color:var(--line)}
+.steps{margin:0;padding-left:22px;font-size:16px;line-height:1.4}
+.steps li{margin-bottom:6px;color:#A9B5BF}.steps li.on{color:var(--ink)}
+.vs{border-collapse:collapse;width:100%;margin-top:6px}.vs td{padding:5px 6px;border-top:1px solid var(--line);vertical-align:middle;font-size:14px;line-height:1.3}
+.vs td.z{font-size:24px;font-weight:800;color:var(--acc);width:34px;text-align:center}
+.lbl{display:inline-block;background:#3A3B3E;color:#fff;font-weight:700;border-radius:5px;padding:0 6px;font-size:.9em;line-height:1.4;white-space:nowrap;vertical-align:baseline}
+.qbtns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.qbtns .btn{padding:0 6px}
+
+/* Overlays */
+.ov{position:fixed;inset:0;background:rgba(29,41,53,.45);display:none;align-items:center;justify-content:center;z-index:80;padding:16px}
+.ov.show{display:flex}
+.card{background:var(--paper);border-radius:16px;padding:20px 22px;max-width:520px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 10px 40px rgba(0,0,0,.25)}
+.card h2{margin:0 0 10px;font-size:20px}
+.card p,.card li{font-size:15px;line-height:1.45}
+.card ul{padding-left:20px;margin:6px 0}
+.card .row{justify-content:flex-end;margin-top:14px}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="hl">
+    <h1 title="Stand 06.10.2026">Multimeter</h1>
+  </div>
+  <nav class="stages" id="stages"></nav>
+  <div class="hr">
+    <a class="hbtn" href="index.html" title="Zur Übersicht" aria-label="Zur Übersicht"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.65 12 2.45l9 7.2"/><path d="M5.6 8.45v10h12.8v-10"/><path d="M9.9 18.45v-5.2h4.2v5.2"/></svg><span class="wort">Übersicht</span></a>
+    <button class="hbtn" id="bFull" title="Vollbild" aria-label="Vollbild"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span class="wort">Vollbild</span></button>
+    <button class="hbtn rund" id="bSet" title="Einstellungen" aria-label="Einstellungen">⚙</button>
+    <button class="hbtn rund" id="bHelp" title="Anleitung" aria-label="Anleitung">?</button>
+  </div>
+</header>
+
+<main>
+  <section id="devWrap"><svg id="dev" viewBox="0 0 420 800" preserveAspectRatio="xMidYMid meet" aria-label="Multimeter"></svg></section>
+  <aside class="panel" id="panel"></aside>
+</main>
+
+<div class="ov" id="ovHelp"><div class="card"><h2 id="helpT"></h2><div id="helpB"></div><div class="row"><button class="btn pri" data-close>OK</button></div></div></div>
+<div class="ov" id="ovSet"><div class="card"><h2>Einstellungen</h2>
+  <p class="sub">Für die Lehrperson.</p>
+  <div class="row" style="justify-content:flex-start">
+    <button class="btn" id="bSolve">Lösung der aktuellen Aufgabe zeigen</button>
+    <button class="btn" id="bShuffle">Aufgaben neu mischen</button>
+  </div>
+  <div class="row"><button class="btn pri" data-close>Schliessen</button></div>
+</div></div>
+
+<script>
+'use strict';
+/* ================= Grundlagen ================= */
+const NS='http://www.w3.org/2000/svg';
+const $=s=>document.querySelector(s);
+function el(tag,a,p){const e=document.createElementNS(NS,tag);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e}
+function tx(x,y,s,a,p){const t=el('text',Object.assign({x,y,'text-anchor':'middle'},a),p);t.textContent=s;return t}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+const svg=$('#dev');
+function svgPt(e){const p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(svg.getScreenCTM().inverse())}
+const komma=s=>s.replace('.',',').replace('-','−');
+
+/* ================= Geometrie ================= */
+const C={x:210,y:505},RK=92,RD=106,RL=134;
+const POS=[
+  {id:'off',a:0},{id:'ohm',a:28},{id:'dio',a:52},{id:'cap',a:76},{id:'hfe',a:100},{id:'hz',a:124},
+  {id:'vac',a:-28},{id:'vdc',a:-52},{id:'ua',a:-76},{id:'ma',a:-100},{id:'a',a:-124}];
+const POSID=POS.map(p=>p.id);
+const posA=id=>POS.find(p=>p.id===id).a;
+function polar(a,r){const t=a*Math.PI/180;return{x:C.x+r*Math.sin(t),y:C.y-r*Math.cos(t)}}
+const SOCK={a10:{x:80,y:690},ua:{x:165,y:718},com:{x:255,y:718},v:{x:340,y:690}};
+const PARK={red:{x:150,y:842},black:{x:270,y:842}};
+const TP={lcd:{x:210,y:146},range:{x:93,y:279},hold:{x:93,y:325},light:{x:171,y:325}};
+POS.forEach(p=>TP[p.id]=polar(p.a,RL));
+for(const k in SOCK)TP['s_'+k]=SOCK[k];
+const REDFOR={vdc:'v',vac:'v',ohm:'v',ua:'ua',ma:'ua',a:'a10'};
+const CT={bp:{x:510,y:272},bm:{x:510,y:438},l1:{x:655,y:190},l2:{x:745,y:190},b1:{x:752,y:530},b2:{x:648,y:530}};
+const NODE={bp:0,l1:0,l2:1,b1:1,b2:2,bm:2};
+const PPARK={red:{x:610,y:640},black:{x:790,y:640}};
+const RI=0.5,RS={v:10e6,ua:1,a10:0.02,com:0};
+for(const k in CT)TP['c_'+k]=CT[k];
+
+/* ================= Texte ================= */
+const NOTNT='Das brauchst du in NaTech nicht.';
+const INFO={
+  lcd:{n:'LCD-Display',t:'Hier liest du den Messwert ab – immer Zahl und Einheit.'},
+  range:{n:'Messbereich ändern',k:'RANGE',t:'Normalerweise wählt das Multimeter den Messbereich selbst (AUTO). Mit RANGE stellst du ihn von Hand ein.'},
+  light:{n:'Licht',k:'LIGHT',t:'Schaltet die Beleuchtung der Anzeige ein und aus.'},
+  hold:{n:'Messwert halten',k:'HOLD',t:'Hält den Messwert auf der Anzeige fest (H). So kannst du ihn in Ruhe aufschreiben. Nochmals drücken löst ihn wieder.'},
+  vac:{n:'Spannung U in V – Wechselspannung',c:'Spannung <i>U</i> in V',cs:'Wechselspannung',t:'Misst Wechselspannung, z. B. am Ausgang ~ des Netzgeräts. Auf der Anzeige steht AC.'},
+  vdc:{n:'Spannung U in V – Gleichspannung',c:'Spannung <i>U</i> in V',cs:'Gleichspannung',t:'Misst Gleichspannung, z. B. von einer Batterie. Auf der Anzeige steht DC.'},
+  ua:{n:'Stromstärke I in µA',c:'Stromstärke <i>I</i> in µA',cs:'Gleich-/Wechselstrom',t:'Misst sehr kleine Stromstärken, bis 4000 µA. µA heisst Mikroampere (µ, sprich «mü»): 1 000 000 µA = 1 A. Das rote Kabel gehört in die Buchse <span class="lbl">µA mA</span>.'},
+  ma:{n:'Stromstärke I in mA',c:'Stromstärke <i>I</i> in mA',cs:'Gleich-/Wechselstrom',t:'Misst kleine Stromstärken, bis 400 mA. mA heisst Milliampere: 1000 mA = 1 A. Das rote Kabel gehört in die Buchse <span class="lbl">µA mA</span>.'},
+  a:{n:'Stromstärke I in A',c:'Stromstärke <i>I</i> in A',cs:'Gleich-/Wechselstrom',t:'Misst grosse Stromstärken, bis 10 A. Das rote Kabel gehört in die Buchse <span class="lbl">10A</span>.'},
+  off:{n:'Ausschalter',k:'OFF',t:'Schaltet das Multimeter aus. Nach dem Messen immer auf OFF drehen – sonst ist die Batterie bald leer.'},
+  ohm:{n:'Widerstand',k:'Ω',t:'Misst den Widerstand in Ohm (Ω). Nur messen, wenn keine Batterie angeschlossen ist.'},
+  s_a10:{n:'Eingangsbuchse 10A',t:'Für grosse Stromstärken bis 10 A – hier kommt das rote Kabel hinein. Der Drehschalter steht dann auf A.'},
+  s_ua:{n:'Eingangsbuchse µA/mA',t:'Für kleine Stromstärken – hier kommt das rote Kabel hinein. Der Drehschalter steht dann auf µA oder mA.'},
+  s_com:{n:'Eingangsbuchse COM',t:'COM kommt von «common», gemeinsam. Hier steckt bei jeder Messung das schwarze Kabel.'},
+  s_v:{n:'Eingangsbuchse V',t:'Für Spannung und Widerstand – hier kommt das rote Kabel hinein.'},
+  knob:{n:'Drehschalter',t:'Damit wählst du, was du messen willst. Dreh ihn – oder tippe auf eine Stellung.',x:1},
+  select:{n:'SELECT',t:NOTNT,x:1},rel:{n:'REL',t:NOTNT,x:1},hzb:{n:'Hz/%',t:NOTNT,x:1},
+  dio:{n:'Diodentest / Durchgang',t:NOTNT,x:1},cap:{n:'Kapazität',t:NOTNT,x:1},hfe:{n:'Transistortest (hFE)',t:NOTNT,x:1},hz:{n:'Frequenz (Hz)',t:NOTNT,x:1}
+};
+const REL=['lcd','range','light','hold','vac','vdc','ua','ma','a','off','ohm','s_a10','s_ua','s_com','s_v'];
+const HINT={
+  lcd:'Wo erscheint die Zahl?',
+  range:'«Messbereich» heisst auf Englisch «range».',
+  light:'«Licht» heisst auf Englisch «light».',
+  hold:'«Halten» heisst auf Englisch «hold».',
+  vac:'Spannung erkennst du am V. Wechselspannung hat die Welle ~.',
+  vdc:'Spannung erkennst du am V. Gleichspannung hat die geraden Striche.',
+  ua:'Suche am Drehschalter das µ (mikro).',
+  ma:'Suche am Drehschalter das m (milli).',
+  a:'Suche am Drehschalter das A ohne Vorsatz.',
+  off:'«Aus» heisst auf Englisch «off».',
+  ohm:'Das Zeichen für Widerstand ist Ω (Omega).',
+  s_a10:'Die Beschriftung steht direkt über der Buchse: <span class="lbl">10A</span>',
+  s_ua:'Die Beschriftung steht direkt über der Buchse: <span class="lbl">µA mA</span>',
+  s_com:'Die Beschriftung steht direkt über der Buchse: <span class="lbl">COM</span>',
+  s_v:'Die Beschriftung steht direkt über der Buchse: <span class="lbl">VΩHz</span>'
+};
+
+/* Anzeigen */
+const IDLE={vdc:{d:'0.000',u:'V',i:'DC'},vac:{d:'0.000',u:'V',i:'AC'},ua:{d:'0.0',u:'µA',i:'DC'},ma:{d:'0.00',u:'mA',i:'DC'},
+  a:{d:'0.00',u:'A',i:'DC'},ohm:{d:' OL ',u:'MΩ'},dio:{d:' OL ',u:'V'},cap:{d:'0.000',u:'nF'},hfe:{d:'   0',u:''},hz:{d:'0.000',u:'Hz'}};
+const EX={
+  vdc:[{d:'4.22',u:'V',i:'DC',c:'Zum Beispiel eine Flachbatterie.'},{d:'325.8',u:'mV',i:'DC',c:'Eine kleine Spannung: Das Multimeter wechselt selbst zu mV (Millivolt). 1000 mV = 1 V.'},{d:'12.03',u:'V',i:'DC',c:'Zum Beispiel eine Autobatterie.'}],
+  vac:[{d:'6.21',u:'V',i:'AC',c:'Zum Beispiel der Ausgang ~ des Netzgeräts. AC heisst Wechselspannung.'}],
+  ua:[{d:'62.4',u:'µA',i:'DC',c:'µA heisst Mikroampere. 1 000 000 µA = 1 A.'},{d:'1523',u:'µA',i:'DC',c:'1523 µA sind schon 1,523 mA.'}],
+  ma:[{d:'185.3',u:'mA',i:'DC',c:'mA heisst Milliampere. 1000 mA = 1 A.'},{d:'24.52',u:'mA',i:'DC',c:'Zum Beispiel eine Leuchtdiode.'}],
+  a:[{d:'0.41',u:'A',i:'DC',c:'Ampere ohne Vorsatz. 0,41 A sind 410 mA.'},{d:'2.08',u:'A',i:'DC',c:'Zum Beispiel ein kleiner Motor.'}],
+  ohm:[{d:'330.5',u:'Ω',c:'Widerstand in Ohm (Ω).'},{d:'4.700',u:'kΩ',c:'kΩ heisst Kiloohm. 1 kΩ = 1000 Ω.'},{d:' OL ',u:'MΩ',c:'OL heisst «overload»: zu gross. Das siehst du, wenn die Kabel nichts berühren.'}]
+};
+const UNITS={'mV':['V',1e-3],'V':['V',1],'µA':['A',1e-6],'mA':['A',1e-3],'A':['A',1],'Ω':['Ω',1],'kΩ':['Ω',1e3],'MΩ':['Ω',1e6]};
+const GROESSE={V:'Spannung',A:'Stromstärke','Ω':'Widerstand'};
+
+/* ================= Zustand ================= */
+const S={stage:1,mode:{1:'erk',2:'erk',3:'erk',4:'erk',5:'erk'},dial:'off',plugs:{red:null,black:null},light:false,hold:false,auto:true,
+  lcd:null,selPlug:null,drag:null,disc:new Set(),
+  probes:{red:null,black:null},selProbe:null,bridge:true,circ:{U0:4.5,R:20},sim:null};
+let ANIM=0;
+function later(ms,fn){const t=ANIM;setTimeout(()=>{if(t===ANIM)fn()},ms)}
+let H={};
+
+/* ================= Gerät zeichnen ================= */
+let gLCD,gKnob,gCab,gMk,gHl,gCirc;
+function sym(id,x,y,g){
+  const f='#E8ECEF',a={fill:f,'font-weight':700};
+  const ln=(d,ex)=>el('path',Object.assign({d,stroke:f,'stroke-width':1.8,fill:'none','stroke-linecap':'round'},ex||{}),g);
+  switch(id){
+    case 'off':el('rect',{x:x-19,y:y-11,width:38,height:21,rx:3,fill:'none',stroke:f,'stroke-width':1.5},g);tx(x,y+5,'OFF',Object.assign({'font-size':13},a),g);break;
+    case 'ohm':tx(x,y+7,'Ω',Object.assign({'font-size':21},a),g);break;
+    case 'dio':el('path',{d:`M${x-9} ${y-11}L${x+2} ${y-5}L${x-9} ${y+1}Z`,fill:f},g);ln(`M${x+3} ${y-11}V${y+1}M${x-12} ${y-5}H${x+10}`);
+      tx(x,y+15,'•))',Object.assign({'font-size':10},a),g);break;
+    case 'cap':ln(`M${x-11} ${y}H${x-3}M${x-3} ${y-8}V${y+8}M${x+3} ${y-8}V${y+8}M${x+3} ${y}H${x+11}`,{'stroke-width':2.2});break;
+    case 'hfe':tx(x,y+5,'hFE',Object.assign({'font-size':15},a),g);break;
+    case 'hz':tx(x,y+5,'Hz/%',Object.assign({'font-size':14},a),g);break;
+    case 'vac':tx(x,y+1,'V',Object.assign({'font-size':17},a),g);tx(x,y+15,'~',Object.assign({'font-size':17},a),g);break;
+    case 'vdc':tx(x,y+1,'V',Object.assign({'font-size':17},a),g);ln(`M${x-9} ${y+6}H${x+9}`);ln(`M${x-9} ${y+10}H${x+9}`,{'stroke-dasharray':'3 2.4'});break;
+    default:{const t={ua:'µA',ma:'mA',a:'A'}[id];tx(x,y+1,t,Object.assign({'font-size':15},a),g);tx(x,y+11,'~',Object.assign({'font-size':12},a),g);ln(`M${x-8} ${y+13}H${x+8}`,{'stroke-width':1.4})}
+  }
+}
+function buildDevice(){
+  svg.innerHTML='';
+  const g=el('g',{},svg);
+  el('rect',{x:6,y:8,width:408,height:786,rx:58,fill:'#27463A'},g);
+  el('rect',{x:16,y:18,width:388,height:766,rx:50,fill:'none',stroke:'#335A4A','stroke-width':2},g);
+  el('rect',{x:38,y:46,width:344,height:716,rx:24,fill:'#3A3B3E'},g);
+  // Anzeige
+  el('rect',{x:58,y:62,width:304,height:188,rx:10,fill:'#4B4C50'},g);
+  el('rect',{id:'lcdBg',x:76,y:78,width:268,height:136,rx:5,fill:'#C5CEC1'},g);
+  tx(72,240,'DIGITAL MULTIMETER',{'text-anchor':'start',fill:'#E9EEF2','font-size':13,'font-weight':700,'letter-spacing':.6},g);
+  gLCD=el('g',{id:'lcd'},svg);
+  // Knöpfe
+  const B=[['range','RANGE',64,262,'#727377'],['select','SELECT',142,262,'#727377'],['rel','REL',220,262,'#727377'],['hzb','Hz/%',298,262,'#727377'],
+           ['hold','HOLD',64,308,'#1F7A55'],['light','LIGHT',142,308,'#1F7A55']];
+  const gb=el('g',{},svg);
+  B.forEach(([id,t,x,y,c])=>{
+    el('rect',{x,y,width:58,height:34,rx:7,fill:'#1E1F21'},gb);
+    el('rect',{id:'btn_'+id,x:x+2.5,y:y+2.5,width:53,height:28,rx:5,fill:c},gb);
+    tx(x+29,y+22,t,{fill:'#fff','font-size':12,'font-weight':700},gb);
+  });
+  // Drehschalter-Beschriftung
+  const gd=el('g',{},svg);
+  POS.forEach(p=>{const d=polar(p.a,RD);el('circle',{cx:d.x,cy:d.y,r:3.4,fill:'#E8ECEF'},gd);const l=polar(p.a,RL);sym(p.id,l.x,l.y,gd)});
+  // Knopf
+  el('circle',{cx:C.x,cy:C.y,r:RK+4,fill:'#2A2A2C'},svg);
+  gKnob=el('g',{id:'knob'},svg);
+  el('circle',{cx:C.x,cy:C.y,r:RK,fill:'#333336',stroke:'#1B1B1D','stroke-width':3},gKnob);
+  el('rect',{x:C.x-17,y:C.y-RK+2,width:34,height:2*RK-4,rx:15,fill:'#262628',stroke:'#444448','stroke-width':1.5},gKnob);
+  el('circle',{cx:C.x,cy:C.y-RK+22,r:7,fill:'#F2C230'},gKnob);
+  // Buchsen
+  const gs=el('g',{},svg);
+  for(const k in SOCK){const s=SOCK[k];
+    el('circle',{cx:s.x,cy:s.y,r:25,fill:'#202022',stroke:'#5A5B5F','stroke-width':2},gs);
+    el('circle',{cx:s.x,cy:s.y,r:15,fill:'#121213',stroke:'#3A3A3D','stroke-width':2},gs);
+    el('circle',{cx:s.x,cy:s.y,r:6,fill:'#000'},gs);
+  }
+  const lab={'font-weight':700,fill:'#EDF1F4'};
+  tx(80,650,'10A',Object.assign({'font-size':19},lab),gs);
+  tx(165,662,'hFE',Object.assign({'font-size':12},lab),gs);
+  tx(165,682,'µA mA',Object.assign({'font-size':17},lab),gs);
+  tx(255,682,'COM',Object.assign({'font-size':19},lab),gs);
+  tx(340,650,'VΩHz',Object.assign({'font-size':19},lab),gs);
+  tx(210,622,'⚠ 1000V CAT II  600V CAT III',Object.assign({'font-size':10,opacity:.85},lab),gs);
+  el('path',{d:'M80 718 Q90 752 140 754 L280 754 Q300 754 302 740',fill:'none',stroke:'#C9CED2','stroke-width':1.2,opacity:.7},gs);
+  tx(210,770,'FUSED, 10A MAX',Object.assign({'font-size':10,opacity:.85},lab),gs);
+
+  // Trefferflächen
+  const gh=el('g',{},svg);
+  el('rect',{class:'hit','data-part':'lcd',x:76,y:78,width:268,height:136},gh);
+  B.forEach(([id,,x,y])=>el('rect',{class:'hit','data-part':id,x,y,width:58,height:34},gh));
+  el('circle',{class:'hit','data-part':'knob',cx:C.x,cy:C.y,r:RK},gh);
+  POS.forEach(p=>{const l=polar(p.a,RL);el('circle',{class:'hit','data-part':p.id,cx:l.x,cy:l.y,r:20},gh)});
+  for(const k in SOCK)el('circle',{class:'hit','data-part':'s_'+k,cx:SOCK[k].x,cy:SOCK[k].y,r:27},gh);
+  gCirc=el('g',{},svg);
+  gCab=el('g',{},svg);
+  gMk=el('g',{},svg);
+  gHl=el('g',{style:'pointer-events:none'},svg);
+}
+
+/* ================= Anzeige ================= */
+const DIG={'0':'abcdef','1':'bc','2':'abged','3':'abgcd','4':'fgbc','5':'afgcd','6':'afgedc','7':'abc','8':'abcdefg','9':'abcdfg','-':'g','O':'abcdef','L':'fed',' ':''};
+function segs(w,h,t){const v=h/2-t*1.5;return{a:[t,0,w-2*t,t],b:[w-t,t,t,v],c:[w-t,h/2+t/2,t,v],d:[t,h-t,w-2*t,t],e:[0,h/2+t/2,t,v],f:[0,t,t,v],g:[t,h/2-t/2,w-2*t,t]}}
+function parseDisp(s){let neg=false;if(s[0]==='-'){neg=true;s=s.slice(1)}const c=[];
+  for(const ch of s){if(ch==='.'){if(c.length)c[c.length-1].dp=true}else c.push({ch,dp:false})}
+  while(c.length<4)c.unshift({ch:' ',dp:false});return{neg,cells:c.slice(-4)}}
+function renderLCD(){
+  gLCD.innerHTML='';
+  $('#lcdBg').setAttribute('fill',S.light&&S.dial!=='off'?'#B9E3D6':'#C5CEC1');
+  if(S.dial==='off')return;
+  const L=S.lcd||IDLE[S.dial]||{d:'',u:''};
+  const lit='#1B211E',gh='rgba(27,33,30,.035)';
+  const ind=(x,s)=>tx(x,99,s,{'text-anchor':'start','font-size':12,'font-weight':800,fill:lit},gLCD);
+  if(S.auto&&L.u)ind(88,'AUTO');
+  if(L.i)ind(136,L.i);
+  if(S.hold)ind(166,'H');
+  const p=parseDisp(L.d||'');
+  el('rect',{x:94,y:136,width:22,height:7,rx:2,fill:p.neg?lit:gh},gLCD);
+  const w=36,h=68,t=7,SG=segs(w,h,t);
+  p.cells.forEach((c,i)=>{
+    const x0=126+i*48,y0=106;
+    const g=el('g',{transform:`translate(${x0} ${y0}) skewX(-6)`},gLCD);
+    const on=DIG[c.ch]||'';
+    for(const k in SG){const r=SG[k];el('rect',{x:r[0]+.6,y:r[1]+.6,width:r[2]-1.2,height:r[3]-1.2,rx:2.5,fill:on.includes(k)?lit:gh},g)}
+    el('rect',{x:w+3,y:h-7,width:7,height:7,rx:1.5,fill:c.dp?lit:gh},g);
+  });
+  if(L.u)tx(334,204,L.u,{'text-anchor':'end','font-size':19,'font-weight':800,fill:lit},gLCD);
+}
+
+/* ================= Drehschalter ================= */
+function setDial(id,user){
+  if(S.dial===id&&!user)return;
+  S.dial=id;S.hold=false;
+  gKnob.style.transform=`rotate(${posA(id)}deg)`;
+  if(H.onDial)H.onDial(id,user);
+  if(S.stage>=4){simUpdate();if(H.onChange)H.onChange()}else renderLCD();
+}
+function nearestPos(pt){let a=Math.atan2(pt.x-C.x,C.y-pt.y)*180/Math.PI,best=null,bd=1e9;
+  POS.forEach(p=>{const d=Math.abs(p.a-a);if(d<bd){bd=d;best=p.id}});return best}
+
+/* ================= Kabel ================= */
+function plugPos(c){
+  if(S.drag&&S.drag.plug===c&&S.drag.moved)return S.drag.pt;
+  if(S.plugs[c])return SOCK[S.plugs[c]];
+  return S.stage>=3?PARK[c]:null;
+}
+function probePos(c){
+  if(S.drag&&S.drag.probe===c&&S.drag.moved)return S.drag.tip;
+  return S.probes[c]?CT[S.probes[c]]:PPARK[c];
+}
+const COL={red:'#D7372E',black:'#151515'};
+function drawCables(){
+  gCab.innerHTML='';
+  const wide=S.stage>=4;
+  for(const c of ['black','red']){const p=plugPos(c);if(!p)continue;
+    let d;
+    if(wide){const q=probePos(c),qy=q.y+66,dist=Math.hypot(q.x-p.x,qy-p.y),sg=Math.max(90,Math.min(dist*.55,(880-Math.max(p.y,qy))/.75)),dx=(q.x-p.x)*.3;
+      d=`M${p.x} ${p.y}C${p.x+dx} ${p.y+sg} ${q.x-dx} ${qy+sg} ${q.x} ${qy}`}
+    else d=`M${p.x} ${p.y}C${p.x} ${p.y+70} ${p.x} 820 ${p.x} 920`;
+    el('path',{d,stroke:COL[c],'stroke-width':9,fill:'none','stroke-linecap':'round'},gCab);
+    if(c==='black')el('path',{d,stroke:'#4A4A4A','stroke-width':1.4,fill:'none'},gCab);
+  }
+  for(const c of ['black','red']){const p=plugPos(c);if(!p)continue;
+    const g=el('g',H.plugsOn?{'data-plug':c,style:'cursor:grab'}:{},gCab);
+    if(S.selPlug===c)el('circle',{cx:p.x,cy:p.y,r:25,fill:'none',stroke:'#FFD54A','stroke-width':3.5,'stroke-dasharray':'6 4'},g);
+    el('circle',{cx:p.x,cy:p.y,r:18,fill:COL[c],stroke:c==='red'?'#8E1F19':'#8A8A8A','stroke-width':2.5},g);
+    el('circle',{cx:p.x-5,cy:p.y-5,r:6,fill:'rgba(255,255,255,.22)'},g);
+    if(H.plugsOn)el('circle',{cx:p.x,cy:p.y,r:30,fill:'transparent'},g);
+  }
+  if(!wide)return;
+  for(const c of ['black','red']){const q=probePos(c);
+    const g=el('g',H.probesOn?{'data-probe':c,style:'cursor:grab'}:{},gCab);
+    if(S.selProbe===c)el('rect',{x:q.x-20,y:q.y-8,width:40,height:82,rx:12,fill:'none',stroke:'#FFD54A','stroke-width':3.5,'stroke-dasharray':'6 4'},g);
+    el('path',{d:`M${q.x} ${q.y}L${q.x-3.5} ${q.y+16}H${q.x+3.5}Z`,fill:'#C8CDD2',stroke:'#6B7580','stroke-width':1},g);
+    el('rect',{x:q.x-10,y:q.y+16,width:20,height:6,rx:2,fill:COL[c],stroke:c==='red'?'#8E1F19':'#8A8A8A','stroke-width':1.2},g);
+    el('rect',{x:q.x-7,y:q.y+22,width:14,height:44,rx:6,fill:COL[c],stroke:c==='red'?'#8E1F19':'#8A8A8A','stroke-width':1.5},g);
+    if(H.probesOn)el('rect',{x:q.x-24,y:q.y-8,width:48,height:84,fill:'transparent'},g);
+  }
+}
+function refresh(){drawCables();if(S.stage>=4)simUpdate();if(H.onChange)H.onChange()}
+function placeProbe(c,k){
+  const o=c==='red'?'black':'red';
+  if(k&&S.probes[o]===k)S.probes[o]=null;
+  S.probes[c]=k;S.selProbe=null;refresh();
+}
+function nearestContact(pt,r){let best=null,bd=r*r;for(const k in CT){const d=(CT[k].x-pt.x)**2+(CT[k].y-pt.y)**2;if(d<bd){bd=d;best=k}}return best}
+function plugInto(c,s){
+  const o=c==='red'?'black':'red';
+  if(s&&S.plugs[o]===s)S.plugs[o]=null;
+  S.plugs[c]=s;S.selPlug=null;refresh();if(H.onPlug)H.onPlug();
+}
+function nearestSock(pt,r){let best=null,bd=r*r;for(const k in SOCK){const d=(SOCK[k].x-pt.x)**2+(SOCK[k].y-pt.y)**2;if(d<bd){bd=d;best=k}}return best}
+
+/* ================= Markierungen / Effekte ================= */
+function pulseAt(id,col){const p=TP[id]||{x:C.x,y:C.y};const c=el('circle',{cx:p.x,cy:p.y,r:id==='lcd'?70:(id==='knob'?96:24),fill:'none',stroke:col||'#FFD54A','stroke-width':5,class:'pulse'},gHl);setTimeout(()=>c.remove(),950)}
+function drawMarkers(ids,done){
+  gMk.innerHTML='';hideTip();
+  ids.forEach(id=>{
+    const p=TP[id],g=el('g',{class:'mk'+(done.has(id)?' done':''),'data-part':id,id:'mk_'+id},gMk);
+    const btn=['range','hold','light'].includes(id);
+    const r=id==='lcd'?22:(id.startsWith('s_')?28:(btn?24:19));
+    if(btn)el('rect',{class:'r',x:p.x-33,y:p.y-21,width:66,height:42,rx:9},g);
+    else el('circle',{class:'r',cx:p.x,cy:p.y,r},g);
+    if(done.has(id)){el('circle',{cx:p.x+r*.72,cy:p.y-r*.72,r:9,fill:'#2E8540',stroke:'#fff','stroke-width':1.5},g);
+      tx(p.x+r*.72,p.y-r*.72+4.5,'✓',{fill:'#fff','font-size':12,'font-weight':800},g);
+      g.addEventListener('pointerenter',e=>{if(e.pointerType==='mouse')showTip(id,r)});
+      g.addEventListener('pointerleave',hideTip)}
+  });
+}
+function showTip(id,r){
+  hideTip();const p=TP[id],t=INFO[id].n,w=t.length*7.6+20;
+  let x=Math.max(6,Math.min(414-w,p.x-w/2)),y=p.y-r-38;if(y<4)y=p.y+r+8;
+  const g=el('g',{id:'tip','pointer-events':'none'},gHl);
+  el('rect',{x,y,width:w,height:28,rx:7,fill:'#1D2935',opacity:.92},g);
+  tx(x+w/2,y+19,t,{fill:'#fff','font-size':14,'font-weight':600},g);
+}
+function hideTip(){const t=document.getElementById('tip');if(t)t.remove()}
+function markClass(id,cls,ms){const m=$('#mk_'+id);if(!m)return;m.classList.add(cls);setTimeout(()=>m.classList.remove(cls),ms)}
+
+/* ================= Zeiger-Steuerung am Gerät ================= */
+svg.addEventListener('pointerdown',e=>{
+  const pr=e.target.closest('[data-probe]');
+  if(pr&&H.probesOn){e.preventDefault();svg.setPointerCapture(e.pointerId);
+    const pt=svgPt(e),c=pr.dataset.probe,tip=probePos(c);
+    S.drag={kind:'probe',probe:c,start:pt,off:{x:pt.x-tip.x,y:pt.y-tip.y},tip:{x:tip.x,y:tip.y},moved:false};return}
+  const pl=e.target.closest('[data-plug]');
+  if(pl&&H.plugsOn){e.preventDefault();svg.setPointerCapture(e.pointerId);
+    S.drag={plug:pl.dataset.plug,start:svgPt(e),pt:svgPt(e),moved:false,kind:'plug'};return}
+  const t=e.target.closest('[data-part]');if(!t)return;
+  const part=t.dataset.part;
+  if(H.dialOn&&(part==='knob'||POSID.includes(part))){
+    if(part==='knob'){svg.setPointerCapture(e.pointerId);S.drag={kind:'knob',start:svgPt(e),moved:false};gKnob.classList.add('drag');return}
+    setDial(part,true);
+  }
+  if(part.startsWith('s_')&&H.plugsOn&&S.selPlug){plugInto(S.selPlug,part.slice(2));return}
+  if(part.startsWith('c_')&&H.probesOn&&S.selProbe){placeProbe(S.selProbe,part.slice(2));return}
+  if(part==='bridge'&&H.bridgeOn){S.bridge=!S.bridge;refresh();return}
+  if(S.stage!==1&&H.dialOn&&['light','hold','range','select','rel','hzb'].includes(part)){pressButton(part);return}
+  if(H.onPart)H.onPart(part,e);
+});
+function pressButton(b){
+  pulseAt(b==='light'||b==='hold'||b==='range'?b:'lcd');
+  S.note=null;
+  if(b==='light')S.light=!S.light;
+  else if(b==='hold'){if(S.dial!=='off')S.hold=!S.hold}
+  else S.note=`${INFO[b].k||INFO[b].n}: brauchst du in NaTech nicht.`+(b==='range'?' Das Multimeter wählt den Messbereich selbst (AUTO).':'');
+  renderLCD();if(H.onChange)H.onChange();
+}
+svg.addEventListener('pointermove',e=>{
+  if(!S.drag)return;const pt=svgPt(e);
+  if(!S.drag.moved&&Math.hypot(pt.x-S.drag.start.x,pt.y-S.drag.start.y)>6)S.drag.moved=true;
+  if(!S.drag.moved)return;
+  if(S.drag.kind==='knob'){const id=nearestPos(pt);if(id!==S.dial)setDial(id,true)}
+  else if(S.drag.kind==='probe'){S.drag.tip={x:pt.x-S.drag.off.x,y:pt.y-S.drag.off.y};drawCables()}
+  else{S.drag.pt=pt;drawCables()}
+});
+function endDrag(e){
+  if(!S.drag)return;const d=S.drag;S.drag=null;
+  if(d.kind==='knob'){gKnob.classList.remove('drag');if(!d.moved&&H.onPart)H.onPart('knob',e);return}
+  if(d.kind==='probe'){
+    if(d.moved)placeProbe(d.probe,nearestContact(d.tip,38));
+    else if(S.selProbe===d.probe){if(S.probes[d.probe])placeProbe(d.probe,null);else{S.selProbe=null;drawCables()}}
+    else{S.selProbe=d.probe;S.selPlug=null;drawCables()}
+    return}
+  if(d.moved){const s=nearestSock(svgPt(e),44);plugInto(d.plug,s)}
+  else{ // Tippen
+    if(S.selPlug===d.plug){if(S.plugs[d.plug])plugInto(d.plug,null);else{S.selPlug=null;drawCables()}}
+    else{S.selPlug=d.plug;drawCables()}
+  }
+}
+svg.addEventListener('pointerup',endDrag);
+svg.addEventListener('pointercancel',()=>{if(S.drag){S.drag=null;gKnob.classList.remove('drag');drawCables()}});
+
+/* ================= Gerät zurücksetzen ================= */
+function resetDevice(){
+  S.plugs={red:null,black:null};S.selPlug=null;S.hold=false;S.auto=true;S.lcd=null;
+  S.dial='off';gKnob.style.transform='rotate(0deg)';
+  S.probes={red:null,black:null};S.selProbe=null;S.bridge=true;S.circ={U0:4.5,R:20};S.sim=null;
+  gMk.innerHTML='';gHl.innerHTML='';drawCables();drawCircuit();
+  if(S.stage>=4)simUpdate();else renderLCD();
+}
+
+/* ================= Panel-Gerüst ================= */
+const P=$('#panel');
+const MERK={
+  1:'Mit dem <b>Drehschalter</b> wählst du, was du misst. In die <b>Buchsen</b> steckst du die Kabel.',
+  2:'Ein Messwert besteht immer aus Zahl <i>und</i> Einheit.',
+  3:'<b>Schwarz immer in</b> <span class="lbl">COM</span><b>.</b> Rot in <span class="lbl">VΩHz</span> bei Spannung und Widerstand. Bei Stromstärke: in <span class="lbl">µA mA</span> für kleine Ströme, in <span class="lbl">10A</span> für grosse.',
+  4:'Spannung: Multimeter <b>parallel</b>. Stromstärke: Stromkreis auftrennen, Multimeter <b>in Serie</b>.',
+  5:'Ein Strommesser hat fast keinen Widerstand. Parallel geschaltet gibt er einen Kurzschluss.'
+};
+function frame(body){
+  const m=S.mode[S.stage];
+  P.innerHTML=`<div class="seg"><button data-m="erk" class="${m==='erk'?'on':''}">Erkunden</button><button data-m="auf" class="${m==='auf'?'on':''}">Aufgaben</button></div>
+  <div class="body">${body}</div><div class="merk"><b>Merke:</b>${MERK[S.stage]}</div>`;
+  P.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{if(S.mode[S.stage]===b.dataset.m)return;S.mode[S.stage]=b.dataset.m;enterStage()});
+}
+function fb(type,html){const f=$('#fb');if(!f)return;f.className='fb show '+type;f.innerHTML=html}
+function fbOff(){const f=$('#fb');if(f)f.className='fb'}
+function dotsHTML(res,cur){return res.map((r,i)=>`<span class="dot ${r||''} ${i===cur?'cur':''}"></span>`).join('')}
+
+/* ================= Stufe 1: Kennenlernen ================= */
+function s1erk(){
+  frame(`<div class="task" id="tk">Tippe auf einen Teil des Multimeters.</div>
+    <div class="info" id="info"><p class="sub">Du kannst auch den Drehschalter drehen und die Knöpfe drücken.</p></div>
+    <div><div class="sub" style="margin-bottom:6px">Erkundet: <b id="cnt">${S.disc.size}</b> von ${REL.length}</div><div class="dots" id="dts"></div></div>`);
+  const upd=()=>{$('#cnt').textContent=S.disc.size;$('#dts').innerHTML=REL.map(r=>`<span class="dot ${S.disc.has(r)?'ok':''}"></span>`).join('')};
+  upd();
+  H={dialOn:true,
+    onDial(){S.lcd=null},
+    onPart(p){
+      const I=INFO[p];if(!I)return;
+      if(p==='light'){S.light=!S.light;renderLCD()}
+      if(p==='hold'&&S.dial!=='off'){S.hold=!S.hold;renderLCD()}
+      if(p==='range'&&S.dial!=='off'){S.auto=!S.auto;renderLCD()}
+      pulseAt(p);
+      if(REL.includes(p))S.disc.add(p);
+      $('#info').innerHTML=`<p>${I.t}</p>${I.k?`<p class="nn">Auf dem Gerät: ${I.k}</p>`:''}`;
+      $('#tk').innerHTML=I.n.replace('U in','<i>U</i> in').replace('I in','<i>I</i> in');
+      upd();
+    }};
+}
+const P1={order:null,done:new Set(),err:{},sel:null,miss:0};
+function s1newRound(){P1.order=shuffle(REL);P1.done=new Set();P1.err={};P1.sel=null;P1.miss=0}
+function s1auf(){
+  if(!P1.order)s1newRound();
+  frame(`<div><div class="task">Ziehe jeden Begriff an die richtige Stelle.</div>
+    <div class="sub">Oder tippe zuerst auf den Begriff, dann auf die Stelle.</div></div>
+    <div class="chips" id="pool"></div><div class="fb" id="fb"></div><div class="row" id="aft"></div>`);
+  H={dialOn:false,onPart(p){
+      if(P1.sel){s1drop(P1.sel,p);return}
+      if(P1.done.has(p)){fb('info',`Das ist: <b>${INFO[p].n.replace('U in','<i>U</i> in').replace('I in','<i>I</i> in')}</b>`)}
+    }};
+  svg.classList.remove('inert');
+  s1render();
+}
+function chipHTML(id){const I=INFO[id];return I.c?`${I.c}<small>${I.cs}</small>`:I.n}
+function s1render(){
+  drawMarkers(REL,P1.done);
+  const pool=$('#pool');pool.innerHTML='';
+  P1.order.filter(id=>!P1.done.has(id)).forEach(id=>{
+    const c=document.createElement('div');c.className='chip'+(P1.sel===id?' sel':'');c.innerHTML=chipHTML(id);c.dataset.id=id;
+    chipDrag(c);pool.appendChild(c);
+  });
+  if(P1.done.size===REL.length){
+    fb('ok',`<b>Alle ${REL.length} Begriffe richtig!</b> ${P1.miss===0?'Ohne einen Fehler. 🎉':`Fehlversuche: ${P1.miss}.`}`);
+    $('#aft').innerHTML=`<button class="btn pri" id="again">Nochmals</button>`;
+    $('#again').onclick=()=>{s1newRound();fbOff();$('#aft').innerHTML='';s1render()};
+  }
+}
+function chipDrag(c){
+  c.addEventListener('pointerdown',e=>{
+    e.preventDefault();c.setPointerCapture(e.pointerId);
+    const st={x:e.clientX,y:e.clientY};let ghost=null;
+    const mv=ev=>{
+      if(!ghost&&Math.hypot(ev.clientX-st.x,ev.clientY-st.y)>6){ghost=c.cloneNode(true);ghost.classList.add('ghost');ghost.classList.remove('sel');document.body.appendChild(ghost);c.classList.add('lift')}
+      if(ghost){ghost.style.left=ev.clientX+'px';ghost.style.top=ev.clientY+'px'}
+    };
+    const up=ev=>{
+      c.removeEventListener('pointermove',mv);c.removeEventListener('pointerup',up);c.removeEventListener('pointercancel',up);
+      if(ghost){ghost.remove();c.classList.remove('lift');
+        // Ziel: Punkt etwas oberhalb des Fingers (wo der Begriff schwebt)
+        const pt=svgPt({clientX:ev.clientX,clientY:ev.clientY-18});
+        let best=null,bd=40*40;
+        REL.forEach(id=>{if(P1.done.has(id))return;const p=TP[id];const d=(p.x-pt.x)**2+(p.y-pt.y)**2;if(d<bd){bd=d;best=id}});
+        if(best)s1drop(c.dataset.id,best);
+      }else{P1.sel=P1.sel===c.dataset.id?null:c.dataset.id;s1render()}
+    };
+    c.addEventListener('pointermove',mv);c.addEventListener('pointerup',up);c.addEventListener('pointercancel',up);
+  });
+}
+function s1drop(chip,target){
+  if(!REL.includes(target)||P1.done.has(target))return;
+  P1.sel=null;
+  const nm=s=>INFO[s].n.replace('U in','<i>U</i> in').replace('I in','<i>I</i> in');
+  if(chip===target){
+    P1.done.add(target);pulseAt(target,'#5FC27A');
+    s1render();
+    if(P1.done.size<REL.length)fb('ok',`Richtig: <b>${nm(target)}</b>`);
+  }else{
+    P1.miss++;P1.err[chip]=(P1.err[chip]||0)+1;
+    s1render();markClass(target,'bad',700);
+    let h=`<b>${nm(chip)}</b> gehört nicht dorthin. ${HINT[chip]}`;
+    if(P1.err[chip]>=2){h+=' Die richtige Stelle blinkt.';setTimeout(()=>markClass(chip,'blink',1700),250)}
+    fb('bad',h);
+  }
+}
+
+/* ================= Stufe 2: Ablesen ================= */
+let exIdx=0;
+function s2erk(){
+  frame(`<div class="task" id="tk">Dreh den Schalter auf eine Stellung.</div>
+    <div class="info" id="info"><p class="sub">Die Anzeige zeigt dann ein Beispiel. Achte auf die Einheit rechts unten.</p></div>
+    <div class="row" id="exr"></div>
+    <div class="box"><b>Vorsätze vor der Einheit</b>
+    <table class="vs"><tr><td class="z">k</td><td><b>kilo</b><br>tausend</td><td>1 kΩ = 1000 Ω</td></tr>
+    <tr><td class="z">m</td><td><b>milli</b><br>ein Tausendstel</td><td>1000 mA = 1 A<br>1000 mV = 1 V</td></tr>
+    <tr><td class="z">µ</td><td><b>mikro</b> («mü»)<br>ein Millionstel</td><td>1 000 000 µA = 1 A</td></tr></table></div>`);
+  const show=()=>{
+    const d=S.dial,ex=EX[d];
+    if(d==='off'){S.lcd=null;S.plugs={red:null,black:null};drawCables();$('#tk').textContent='Ausgeschaltet.';$('#info').innerHTML='<p class="sub">Dreh den Schalter auf eine Stellung.</p>';$('#exr').innerHTML='';return}
+    if(!ex){S.lcd=null;S.plugs={red:null,black:null};drawCables();$('#tk').textContent=INFO[d].n;$('#info').innerHTML=`<p>${NOTNT}</p>`;$('#exr').innerHTML='';return}
+    const e=ex[exIdx%ex.length];S.lcd=e;
+    S.plugs={red:REDFOR[d],black:'com'};drawCables();
+    $('#tk').innerHTML=`${e.d.trim()==='OL'?'OL':komma(e.d)} ${e.u}`;
+    $('#info').innerHTML=`<p>${e.c}</p><p class="nn">${INFO[d].n.replace('U in','<i>U</i> in').replace('I in','<i>I</i> in')}</p>`;
+    $('#exr').innerHTML=ex.length>1?`<button class="btn" id="nx">Anderes Beispiel</button>`:'';
+    if(ex.length>1)$('#nx').onclick=()=>{exIdx++;show();renderLCD()};
+  };
+  H={dialOn:true,onDial(){exIdx=0;show()},onPart(p){if(p==='knob')return}};
+  show();renderLCD();
+}
+const P2POOL=[
+  {pos:'vdc',d:'4.22',u:'V'},{pos:'vdc',d:'1.498',u:'V'},{pos:'vdc',d:'12.03',u:'V'},{pos:'vdc',d:'325.8',u:'mV'},{pos:'vdc',d:'0.08',u:'V'},
+  {pos:'vac',d:'6.21',u:'V'},{pos:'vac',d:'11.87',u:'V'},
+  {pos:'ma',d:'24.52',u:'mA'},{pos:'ma',d:'185.3',u:'mA'},{pos:'ua',d:'62.4',u:'µA'},
+  {pos:'a',d:'0.41',u:'A'},{pos:'a',d:'2.08',u:'A'},
+  {pos:'ohm',d:'330.5',u:'Ω'},{pos:'ohm',d:'4.700',u:'kΩ'}
+];
+const P2NEG=[{pos:'vdc',d:'-2.709',u:'V',neg:1},{pos:'ma',d:'-36.40',u:'mA',neg:1}];
+const P2={list:null,i:0,res:[],tries:0,unit:null,state:'ask'};
+function s2new(){const neg=P2NEG[Math.floor(Math.random()*P2NEG.length)];
+  const l=shuffle(P2POOL).slice(0,9);l.splice(2+Math.floor(Math.random()*6),0,neg);
+  Object.assign(P2,{list:l,i:0,res:Array(l.length).fill(''),tries:0,unit:null,state:'ask'})}
+function s2auf(){
+  if(!P2.list)s2new();
+  H={dialOn:false};svg.classList.add('inert');
+  s2task();
+}
+function s2task(){
+  const T=P2.list[P2.i];
+  if(!T){ // fertig
+    const ok=P2.res.filter(r=>r==='ok').length;
+    frame(`<div class="dots">${dotsHTML(P2.res,-1)}</div><div class="task">Fertig!</div>
+      <div class="fb show ok">${ok} von ${P2.res.length} beim ersten Versuch richtig abgelesen.</div>
+      <div class="row"><button class="btn pri" id="again">Nochmals</button></div>`);
+    $('#again').onclick=()=>{s2new();s2task()};return;
+  }
+  P2.tries=0;P2.unit=null;P2.state='ask';
+  // Gerät einstellen
+  S.dial=T.pos;gKnob.style.transform=`rotate(${posA(T.pos)}deg)`;S.hold=false;S.auto=true;
+  S.lcd={d:T.d,u:T.u,i:T.pos==='vac'?'AC':(T.pos==='ohm'?'':'DC')};
+  const red=REDFOR[T.pos];S.plugs=T.neg?{red:'com',black:red}:{red,black:'com'};
+  drawCables();renderLCD();
+  frame(`<div><div class="sub" style="margin-bottom:6px">Aufgabe ${P2.i+1} von ${P2.list.length}</div><div class="dots">${dotsHTML(P2.res,P2.i)}</div></div>
+    <div class="task">Lies den Messwert ab.</div>
+    <div class="inp"><input id="num" type="text" inputmode="decimal" autocomplete="off" placeholder="Zahl">
+    <div class="units" id="units">${Object.keys(UNITS).map(u=>`<button class="btn" data-u="${u}">${u}</button>`).join('')}</div></div>
+    <div class="row"><button class="btn pri" id="chk">Prüfen</button></div>
+    <div class="fb" id="fb"></div><div id="zus"></div><div class="row" id="aft"></div>`);
+  P.querySelectorAll('#units .btn').forEach(b=>b.onclick=()=>{if(P2.state!=='ask')return;P2.unit=b.dataset.u;P.querySelectorAll('#units .btn').forEach(x=>x.classList.toggle('sel',x===b))});
+  $('#chk').onclick=s2check;
+  $('#num').addEventListener('keydown',e=>{if(e.key==='Enter')s2check()});
+}
+function parseNum(s){
+  s=s.trim().replace(/[−–]/g,'-').replace(/[’' ]/g,'');
+  const m=s.match(/^(-?\d+(?:[.,]\d+)?)(.*)$/);if(!m)return{v:NaN};
+  let rest=m[2].trim().replace(/^u/,'µ').replace(/ohm$/i,'Ω').replace(/^kOhm$/i,'kΩ').replace(/^MOhm$/i,'MΩ');
+  return{v:parseFloat(m[1].replace(',','.')),u:UNITS[rest]?rest:null};
+}
+function s2check(){
+  if(P2.state!=='ask')return;
+  const T=P2.list[P2.i];const r=parseNum($('#num').value);
+  if(r.u&&!P2.unit){P2.unit=r.u;P.querySelectorAll('#units .btn').forEach(x=>x.classList.toggle('sel',x.dataset.u===r.u))}
+  if(isNaN(r.v)){fb('warn','Gib zuerst die Zahl ein, so wie sie auf der Anzeige steht.');return}
+  if(!P2.unit){fb('warn','Wähle noch die Einheit.');return}
+  P2.tries++;
+  const dv=parseFloat(T.d),[eb,ef]=UNITS[T.u],[gb,gf]=UNITS[P2.unit];
+  const eq=(a,b)=>Math.abs(a-b)<=1e-9*Math.max(1,Math.abs(a),Math.abs(b));
+  const G=GROESSE[eb]+(eb==='V'?(T.pos==='vac'?' (Wechselspannung)':' (Gleichspannung)'):'');
+  if(gb===eb&&eq(r.v*gf,dv*ef)){
+    const s=komma(T.d)+' '+T.u;
+    if(P2.unit===T.u)fb('ok',`<b>Richtig: ${s}</b><br>Gemessen wird eine ${G}.`);
+    else fb('ok',`<b>Richtig umgerechnet!</b> Einfacher ist es, so abzulesen, wie es angezeigt wird: ${s}.<br>Gemessen wird eine ${G}.`);
+    P2.res[P2.i]=P2.tries===1?'ok':'warn';
+    s2done();P2.state='done';
+    if(T.neg)s2zusatz();else s2next();
+    return;
+  }
+  let m;
+  if(eq(r.v,-dv))m='Fast! Schau genau auf das Vorzeichen links vor der Zahl.';
+  else if(eq(r.v,dv)&&gb===eb)m=`Die Zahl stimmt. Aber schau genau, was rechts unten neben der Zahl steht.`;
+  else if(eq(r.v,dv))m=`Die Zahl stimmt. Aber die Einheit passt nicht zur Messung – schau, wo der Drehschalter steht.`;
+  else m='Die Zahl stimmt noch nicht. Lies alle Ziffern ab – auch den Dezimalpunkt und das Vorzeichen.';
+  if(P2.tries>=3)m+=`<br>Lösung: <b>${komma(T.d)} ${T.u}</b>`;
+  fb('bad',m);
+  if(P2.tries>=3){P2.res[P2.i]='warn';s2done();P2.state='done';if(T.neg)s2zusatz();else s2next()}
+}
+function s2done(){$('#units').style.display='none';$('#chk').parentElement.style.display='none';$('#num').disabled=true}
+function s2zusatz(){
+  const opts=shuffle([['Die Kabel sind vertauscht: Rot steckt in <span class="lbl">COM</span>, Schwarz in der anderen Buchse.',1],['Die Batterie ist fast leer.',0],['Das Multimeter ist kaputt.',0],['Es ist eine Wechselspannung.',0]]);
+  $('#zus').innerHTML=`<div class="task" style="font-size:18px;margin-bottom:8px">Zusatzfrage: Warum ist der Messwert negativ?</div><div class="mc">${opts.map(o=>`<button class="btn" data-c="${o[1]}">${o[0]}</button>`).join('')}</div>`;
+  $('#zus').querySelectorAll('.btn').forEach(b=>b.onclick=()=>{
+    if(b.dataset.c==='1'){b.classList.add('okb');$('#zus').querySelectorAll('.btn').forEach(x=>x.disabled=true);
+      fb('ok','<b>Genau.</b> Sind Rot und Schwarz vertauscht, misst das Multimeter «verkehrt herum» – die Zahl bleibt gleich, aber mit Minus davor.');s2next()}
+    else{b.classList.add('badb');b.disabled=true;pulseAt('s_com','#FFD54A');fb('bad','Nein. Schau, in welchen Buchsen das rote und das schwarze Kabel stecken.')}
+  });
+}
+function s2next(){$('#aft').innerHTML=`<button class="btn pri" id="nx">Weiter</button>`;$('#nx').onclick=()=>{P2.i++;s2task()};$('#nx').focus()}
+
+/* ================= Stufe 3: Einstellen ================= */
+const RANK={ua:0,ma:1,a:2};
+const P3POOL=[
+  {t:'Miss die Spannung einer Flachbatterie (etwa 4,5 V).',q:'U',ac:0,r:['4.52','V'],n:'Eine neue Batterie hat oft etwas mehr Spannung als aufgedruckt. Die Aufschrift ist nur ein ungefährer Wert.'},
+  {t:'Miss die Spannung einer Mignon-Batterie (AA, etwa 1,5 V).',q:'U',ac:0,r:['1.537','V'],n:'Eine neue Batterie hat oft etwas mehr Spannung als aufgedruckt. Die Aufschrift ist nur ein ungefährer Wert.'},
+  {t:'Miss die Spannung einer 9-V-Blockbatterie.',q:'U',ac:0,r:['9.41','V'],n:'Eine neue Batterie hat oft etwas mehr Spannung als aufgedruckt. Die Aufschrift ist nur ein ungefährer Wert.'},
+  {t:'Miss die Spannung am Ausgang ~ des Netzgeräts (etwa 6 V).',q:'U',ac:1,r:['6.21','V'],n:'Auch beim Netzgerät ist die angeschriebene Spannung nur ein ungefährer Wert.'},
+  {t:'Miss die Stromstärke durch ein Glühlämpchen (etwa 200 mA).',q:'I',n:'ma',r:{ma:['198.6','mA'],a:['0.19','A']}},
+  {t:'Miss die Stromstärke durch einen kleinen Motor (etwa 2 A).',q:'I',n:'a',r:{a:['2.08','A']}},
+  {t:'Miss die Stromstärke durch eine Leuchtdiode (etwa 15 mA).',q:'I',n:'ma',r:{ma:['14.82','mA'],a:['0.01','A']}},
+  {t:'Miss die Stromstärke einer kleinen Solarzelle im Schatten (etwa 300 µA).',q:'I',n:'ua',r:{ua:['306.4','µA'],ma:['0.31','mA'],a:['0.00','A']}},
+  {t:'Miss den Widerstand eines Bauteils (etwa 470 Ω).',q:'R',r:['468.9','Ω']}
+];
+const QN={U:'Spannung',I:'Stromstärke',R:'Widerstand'};
+const QOF={vdc:'U',vac:'U',ua:'I',ma:'I',a:'I',ohm:'R'};
+const SNAME={v:'<span class="lbl">VΩHz</span>',ua:'<span class="lbl">µA mA</span>',a10:'<span class="lbl">10A</span>',com:'<span class="lbl">COM</span>'};
+function s3erk(){
+  frame(`<div class="task" id="tk">Was willst du messen?</div>
+    <div class="qbtns"><button class="btn" data-q="U">Spannung</button><button class="btn" data-q="I">Stromstärke</button><button class="btn" data-q="R">Widerstand</button></div>
+    <div id="sub3"></div><div class="info" id="info"><p class="sub">Tippe auf eine Grösse. Das Multimeter zeigt dir, wie man es einstellt.</p></div>`);
+  H={dialOn:false,plugsOn:false};svg.classList.add('inert');
+  const demo=(pos,txt)=>{
+    S.plugs={red:null,black:null};S.lcd=null;drawCables();setDial(pos);
+    later(450,()=>{S.plugs.black='com';drawCables();pulseAt('s_com')});
+    later(950,()=>{S.plugs.red=REDFOR[pos];drawCables();pulseAt('s_'+REDFOR[pos])});
+    $('#info').innerHTML=txt;
+  };
+  const sel=(sel,v)=>P.querySelectorAll(sel).forEach(b=>b.classList.toggle('sel',b.dataset.q===v||b.dataset.r===v));
+  P.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{
+    const q=b.dataset.q;sel('[data-q]',q);$('#sub3').innerHTML='';
+    if(q==='U'){$('#tk').textContent='Spannung';demo('vdc',`<p><b>Schalter auf V mit geraden Strichen</b> (Gleichspannung, z. B. Batterie).<br>Schwarz in <span class="lbl">COM</span>, Rot in <span class="lbl">VΩHz</span>.</p><p class="nn">Für Wechselspannung (Netzgerät-Ausgang ~) den Schalter auf V~.</p>`)}
+    if(q==='R'){$('#tk').textContent='Widerstand';demo('ohm',`<p><b>Schalter auf Ω.</b> Schwarz in <span class="lbl">COM</span>, Rot in <span class="lbl">VΩHz</span>.</p><p class="nn">Widerstand nur messen, wenn keine Batterie angeschlossen ist.</p>`)}
+    if(q==='I'){$('#tk').textContent='Stromstärke';S.plugs={red:null,black:null};drawCables();setDial('off');
+      $('#info').innerHTML=`<p>Bei der Stromstärke musst du zuerst abschätzen, wie gross sie ist. Wähle den Bereich:</p><p class="nn">Weisst du es nicht? Beginne mit A und der Buchse <span class="lbl">10A</span>.</p><div class="box" style="margin-top:8px"><b>mA</b> = Milliampere: 1000 mA = 1 A<br><b>µA</b> = Mikroampere (µ, sprich «mü»): 1 000 000 µA = 1 A</div>`;
+      $('#sub3').innerHTML=`<div class="qbtns"><button class="btn" data-r="ua">bis 4000 µA</button><button class="btn" data-r="ma">bis 400 mA</button><button class="btn" data-r="a">bis 10 A</button></div>`;
+      P.querySelectorAll('[data-r]').forEach(c=>c.onclick=()=>{const r=c.dataset.r;sel('[data-r]',r);
+        demo(r,`<p><b>Schalter auf ${({ua:'µA',ma:'mA',a:'A'})[r]}.</b> Schwarz in <span class="lbl">COM</span>, Rot in ${r==='a'?'<span class="lbl">10A</span>':'<span class="lbl">µA mA</span>'}.</p><p class="nn">${r==='a'?'Die Buchse <span class="lbl">10A</span> verträgt grosse Ströme.':'Die Buchse <span class="lbl">µA mA</span> verträgt höchstens 400 mA. Bei zu viel Strom löst die Sicherung aus.'}</p>`)});
+    }
+  });
+}
+const P3={list:null,i:0,res:[],tries:0,state:'ask'};
+function s3new(){Object.assign(P3,{list:shuffle(P3POOL).slice(0,8),i:0,res:Array(8).fill(''),tries:0,state:'ask'})}
+function s3auf(){if(!P3.list)s3new();s3task()}
+function s3task(){
+  const T=P3.list[P3.i];
+  resetDevice();
+  if(!T){const ok=P3.res.filter(r=>r==='ok').length;
+    H={};svg.classList.add('inert');
+    frame(`<div class="dots">${dotsHTML(P3.res,-1)}</div><div class="task">Fertig!</div>
+      <div class="fb show ok">${ok} von ${P3.res.length} beim ersten Versuch richtig eingestellt.</div>
+      <div class="row"><button class="btn pri" id="again">Nochmals</button></div>`);
+    $('#again').onclick=()=>{s3new();s3task()};return}
+  P3.tries=0;P3.state='ask';
+  H={dialOn:true,plugsOn:true,onDial(){S.lcd=null},onPlug(){}};svg.classList.remove('inert');
+  drawCables();
+  frame(`<div><div class="sub" style="margin-bottom:6px">Aufgabe ${P3.i+1} von ${P3.list.length}</div><div class="dots">${dotsHTML(P3.res,P3.i)}</div></div>
+    <div class="task">${T.t}</div>
+    <div class="sub">Dreh den Schalter und stecke beide Kabel ein: ziehen – oder zuerst den Stecker, dann die Buchse antippen.</div>
+    <div class="row"><button class="btn pri" id="chk">Prüfen</button></div>
+    <div class="fb" id="fb"></div><div class="row" id="aft"></div>`);
+  $('#chk').onclick=s3check;
+}
+function s3verdict(){
+  const T=P3.list[P3.i],d=S.dial,r=S.plugs.red,b=S.plugs.black;
+  if(d==='off')return['bad','Das Multimeter ist noch ausgeschaltet. Dreh den Schalter.'];
+  const q=QOF[d];
+  if(!q)return['bad',`Der Schalter steht auf «${INFO[d].n}». Das misst etwas anderes. Du sollst eine ${QN[T.q]} messen.`];
+  if(q!==T.q)return['bad',`Du sollst eine ${QN[T.q]} messen. Der Schalter steht aber auf ${QN[q]}.`];
+  let warn=null;
+  if(q==='U'){
+    if(T.ac&&d==='vdc')return['bad','Am Ausgang ~ des Netzgeräts kommt Wechselspannung. Wähle V mit der Welle ~.'];
+    if(!T.ac&&d==='vac')return['bad','Eine Batterie liefert Gleichspannung. Wähle V mit den geraden Strichen.'];
+  }
+  if(q==='I'){
+    const n=RANK[T.n],c=RANK[d];
+    if(c<n)return['bad',`Dieser Bereich ist zu klein für ${T.t.match(/\(etwa ([^)]*)\)/)[1]}. Die Sicherung würde auslösen. Wähle einen grösseren Bereich.`];
+    if(c>n){const rr=T.r[d];
+      warn=rr&&parseFloat(rr[0])===0?`Es funktioniert, aber die Anzeige zeigt nur ${komma(rr[0])} ${rr[1]} – viel zu ungenau. Besser: ${({ua:'µA',ma:'mA'})[T.n]}.`
+                                    :`Es funktioniert, aber genauer misst du mit ${({ua:'µA',ma:'mA'})[T.n]}.`}
+  }
+  if(!r&&!b)return['bad','Stecke noch die beiden Kabel ein.'];
+  if(b!=='com'){if(r==='com')return['bad',b?'Rot und Schwarz sind vertauscht. Das schwarze Kabel gehört immer in <span class="lbl">COM</span>.':'In COM gehört das schwarze Kabel, nicht das rote.'];
+    return['bad','Das schwarze Kabel gehört immer in die Buchse <span class="lbl">COM</span>.']}
+  if(!r)return['bad','Stecke noch das rote Kabel ein.'];
+  const want=REDFOR[d];
+  if(r!==want){
+    let m=`Das rote Kabel steckt in ${SNAME[r]}. Für ${q==='I'?'diesen Strombereich':(q==='U'?'Spannung':'Widerstand')} gehört es in ${SNAME[want]}.`;
+    if(q!=='I'&&(r==='ua'||r==='a10'))m+=' Achtung: Die Strombuchsen haben fast keinen Widerstand – so gäbe es einen Kurzschluss!';
+    return['bad',m];
+  }
+  return warn?['warn',warn]:['ok','Richtig eingestellt!'];
+}
+function s3check(){
+  if(P3.state!=='ask')return;
+  const T=P3.list[P3.i];P3.tries++;
+  const [k,m]=s3verdict();
+  if(k==='bad'){fb('bad',m);return}
+  const rr=Array.isArray(T.r)?T.r:T.r[S.dial];
+  S.lcd={d:rr[0],u:rr[1],i:S.dial==='vac'?'AC':(S.dial==='ohm'?'':'DC')};renderLCD();
+  fb(k,`<b>${m}</b><br>Anzeige: ${komma(rr[0])} ${rr[1]}${T.n?`<br><span class="sub">${T.n}</span>`:''}`);
+  P3.res[P3.i]=(P3.tries===1&&k==='ok')?'ok':'warn';
+  P3.state='done';$('#chk').disabled=true;H.dialOn=false;H.plugsOn=false;S.selPlug=null;drawCables();svg.classList.add('inert');
+  $('#aft').innerHTML=`<button class="btn pri" id="nx">Weiter</button>`;$('#nx').onclick=()=>{P3.i++;s3task()};
+}
+
+/* ================= Stromkreis: Modell ================= */
+function solveC(mg,ma,mb,src,inj){
+  const G=[[0,0,0],[0,0,0],[0,0,0]],I=[0,0,0];
+  const add=(a,b,g)=>{if(a===b)return;G[a][a]+=g;G[b][b]+=g;G[a][b]-=g;G[b][a]-=g};
+  add(0,2,1/RI);if(src){I[0]+=S.circ.U0/RI;I[2]-=S.circ.U0/RI}
+  add(0,1,1/S.circ.R);if(S.bridge)add(1,2,1000);
+  if(mg>0&&ma!=null&&mb!=null)add(ma,mb,mg);
+  if(inj){I[inj[0]]+=1;I[inj[1]]-=1}
+  for(let i=0;i<3;i++)G[i][i]+=1e-9;
+  const a=G[0][0],b=G[0][1],c=G[1][0],d=G[1][1],det=a*d-b*c;
+  return[(I[0]*d-b*I[1])/det,(a*I[1]-c*I[0])/det,0];
+}
+function fx(x,n){const s=x.toFixed(n);return /^-0\.?0*$/.test(s)?s.slice(1):s}
+function fmtV(v){const a=Math.abs(v);
+  if(a<0.0005)return{d:'0.000',u:'V'};
+  if(a<0.4)return{d:fx(v*1000,1),u:'mV'};
+  return{d:a<4?fx(v,3):a<40?fx(v,2):a<400?fx(v,1):fx(v,0),u:'V'}}
+function fmtI(I,r){
+  if(r==='ua'){const x=I*1e6,a=Math.abs(x);if(a>=4000)return{d:' OL ',u:'µA'};return{d:a<400?fx(x,1):fx(x,0),u:'µA'}}
+  if(r==='ma'){const x=I*1e3,a=Math.abs(x);if(a>=400)return{d:' OL ',u:'mA'};return{d:a<40?fx(x,2):fx(x,1),u:'mA'}}
+  const a=Math.abs(I);if(a>=10)return{d:' OL ',u:'A'};return{d:fx(I,2),u:'A'}}
+function fmtR(R){if(R>40e6)return{d:' OL ',u:'MΩ'};if(R<400)return{d:fx(R,1),u:'Ω'};if(R<4e5)return{d:fx(R/1000,R<4000?3:R<4e4?2:1),u:'kΩ'};return{d:fx(R/1e6,3),u:'MΩ'}}
+function simUpdate(){
+  const r=S.plugs.red,b=S.plugs.black,pr=S.probes.red,pb=S.probes.black;
+  const conn=!!(r&&b&&pr&&pb);
+  const nr=conn?NODE[pr]:null,nb=conn?NODE[pb]:null;
+  let Rm=conn?RS[r]+RS[b]:Infinity,fuse=false;
+  const on=conn&&nr!==nb;
+  let V=solveC(on?1/Rm:0,nr,nb,true);
+  let Im=on?(V[nr]-V[nb])/Rm:0;
+  if(on&&(r==='ua'||b==='ua')&&Math.abs(Im)>0.4){fuse=true;V=solveC(0,nr,nb,true);Im=0}
+  const Vm=conn?V[nr]-V[nb]:0;
+  const Inom=S.circ.U0/(S.circ.R+RI),Pn=Inom*Inom*S.circ.R;
+  const Ib=(S.circ.U0-(V[0]-V[2]))/RI;
+  S.sim={V,Im,Vm,fuse,lamp:(V[0]-V[1])**2/S.circ.R/Pn,Ib,conn,nr,nb};
+  if(!(S.hold&&S.lcd))S.lcd=meterDisplay();
+  renderLCD();drawCircuit();
+}
+function meterDisplay(){
+  const d=S.dial,s=S.sim,r=S.plugs.red,b=S.plugs.black;
+  if(d==='off')return null;
+  const dir=k=>s.conn&&r===k&&b==='com'?1:(s.conn&&b===k&&r==='com'?-1:0);
+  if(d==='vdc')return Object.assign(fmtV(dir('v')*s.Vm),{i:'DC'});
+  if(d==='vac')return{d:'0.000',u:'V',i:'AC'};
+  if(d==='ua'||d==='ma')return Object.assign(fmtI(dir('ua')*s.Im,d),{i:'DC'});
+  if(d==='a')return Object.assign(fmtI(dir('a10')*s.Im,'a'),{i:'DC'});
+  if(d==='ohm'){
+    if(!dir('v')||s.nr===s.nb)return dir('v')&&s.nr===s.nb?{d:'0.0',u:'Ω'}:{d:' OL ',u:'MΩ'};
+    if(Math.abs(s.Vm)>0.05)return{d:' OL ',u:'MΩ'};
+    const Vt=solveC(0,null,null,false,[s.nr,s.nb]);return fmtR(Vt[s.nr]-Vt[s.nb]);
+  }
+  return IDLE[d];
+}
+const reading=()=>S.lcd&&S.lcd.d.trim()!=='OL'?parseFloat(S.lcd.d):NaN;
+const sameSet=(a,b,x,y)=>(a===x&&b===y)||(a===y&&b===x);
+
+/* ================= Stromkreis: Zeichnung ================= */
+function drawCircuit(){
+  gCirc.innerHTML='';
+  if(S.stage<4)return;
+  const g=gCirc,W='#46525E',sim=S.sim||{lamp:0,Ib:0};
+  const wire=d=>el('path',{d,stroke:W,'stroke-width':5,fill:'none','stroke-linecap':'round','stroke-linejoin':'round'},g);
+  el('rect',{x:452,y:76,width:460,height:516,rx:18,fill:'#F8FAFB',stroke:'#C9D4DD','stroke-width':1.5},g);
+  wire('M510 272V190H655');wire('M745 190H880V530H752');wire('M648 530H510V438');
+  // Lämpchen
+  const lb=Math.max(0,Math.min(1.2,sim.lamp)),lit=lb>0.03;
+  if(lit){el('circle',{cx:700,cy:138,r:44+26*lb,fill:'#FFD54A',opacity:(.15+.35*Math.min(1,lb)).toFixed(2)},g)}
+  el('circle',{cx:700,cy:138,r:30,fill:lit?`rgba(255,226,110,${(.4+.55*Math.min(1,lb)).toFixed(2)})`:'rgba(225,233,240,.9)',stroke:'#8A97A3','stroke-width':2},g);
+  el('path',{d:'M690 168L692 142Q700 128 708 142L710 168',stroke:lit?'#E07B00':'#6B7580','stroke-width':2.2,fill:'none'},g);
+  el('rect',{x:662,y:177,width:76,height:26,rx:5,fill:'#7D8A96'},g);
+  el('rect',{x:684,y:164,width:32,height:14,rx:3,fill:'#9AA6B1'},g);
+  // Batterie
+  const hot=sim.Ib>2;
+  el('rect',{x:494,y:268,width:32,height:12,rx:3,fill:'#B9C3CC'},g);
+  el('rect',{x:494,y:430,width:32,height:12,rx:3,fill:'#B9C3CC'},g);
+  el('rect',{x:476,y:280,width:68,height:150,rx:8,fill:hot?'#E8826F':'#2F6E9E',stroke:hot?'#C0392B':'#234F72','stroke-width':hot?4:2},g);
+  tx(510,306,'+',{fill:'#fff','font-size':24,'font-weight':800},g);
+  tx(510,420,'−',{fill:'#fff','font-size':24,'font-weight':800},g);
+  tx(510,388,komma(String(S.circ.U0))+' V',{fill:'#fff','font-size':16,'font-weight':700},g);
+  if(hot)tx(578,360,'heiss!',{'text-anchor':'start',fill:'#C0392B','font-size':16,'font-weight':800},g);
+  // Verbindungskabel
+  const arc='M648 530C660 494 740 494 752 530';
+  if(S.bridge){el('path',{d:arc,stroke:'#3D6A8A','stroke-width':7,fill:'none','stroke-linecap':'round'},g);
+    el('rect',{x:641,y:510,width:14,height:16,rx:3,fill:'#2B4C63',transform:'rotate(-35 648 518)'},g);
+    el('rect',{x:745,y:510,width:14,height:16,rx:3,fill:'#2B4C63',transform:'rotate(35 752 518)'},g);}
+  else el('path',{d:arc,stroke:'#AFBCC7','stroke-width':3,fill:'none','stroke-dasharray':'5 5'},g);
+  tx(700,478,S.bridge?'Verbindungskabel':'Lücke',{fill:S.bridge?'#5B6B7A':'#B7791F','font-size':14,'font-weight':700},g);
+  if(sim.fuse)tx(695,440,'⚠ Sicherung im Multimeter ausgelöst',{fill:'#C0392B','font-size':14,'font-weight':700},g);
+  // Anschlüsse
+  for(const k in CT)el('circle',{cx:CT[k].x,cy:CT[k].y,r:7.5,fill:'#D4A72C',stroke:'#7A5A10','stroke-width':2},g);
+  if(H.bridgeOn)el('rect',{class:'hit','data-part':'bridge',x:668,y:462,width:64,height:62},g);
+  for(const k in CT)el('circle',{class:'hit','data-part':'c_'+k,cx:CT[k].x,cy:CT[k].y,r:24},g);
+}
+function applyCfg(c){
+  if(c.dial){S.dial=c.dial;gKnob.style.transform=`rotate(${posA(c.dial)}deg)`}
+  if('red'in c)S.plugs.red=c.red;if('black'in c)S.plugs.black=c.black;
+  if('pr'in c)S.probes.red=c.pr;if('pb'in c)S.probes.black=c.pb;
+  if('br'in c)S.bridge=c.br;
+  S.selPlug=null;S.selProbe=null;refresh();
+}
+
+/* ================= Stufe 4: Messen ================= */
+function s4erk(){
+  frame(`<div class="task" id="tk">Wie misst man im Stromkreis?</div>
+    <div class="qbtns" style="grid-template-columns:1fr 1fr"><button class="btn" data-q="U">Spannung messen</button><button class="btn" data-q="I">Stromstärke messen</button></div>
+    <div class="info" id="info"><p class="sub">Tippe auf eine Messung. Das Multimeter zeigt dir Schritt für Schritt, wie es geht.</p></div>`);
+  H={};svg.classList.add('inert');
+  const STEPS={
+    U:[['Schalter auf <b>V</b> mit den geraden Strichen (Gleichspannung).',()=>setDial('vdc')],
+       ['Schwarz in <span class="lbl">COM</span>, Rot in <span class="lbl">VΩHz</span>.',()=>applyCfg({black:'com',red:'v'})],
+       ['Messspitzen an die <b>beiden Anschlüsse</b> des Lämpchens: Rot auf der Seite des Plus-Pols.',()=>applyCfg({pr:'l1',pb:'l2'})],
+       [()=>`Das Multimeter ist <b>parallel</b> zum Lämpchen geschaltet. Das Lämpchen leuchtet weiter. Anzeige: <b>${komma(S.lcd.d)} ${S.lcd.u}</b><br><span class="sub">Nicht genau 4,5 V: Sobald Strom fliesst, liefert eine Batterie etwas weniger Spannung als aufgedruckt.</span>`,null]],
+    I:[['Schalter auf <b>mA</b>.',()=>setDial('ma')],
+       ['Schwarz in <span class="lbl">COM</span>, Rot in <span class="lbl">µA mA</span>.',()=>applyCfg({black:'com',red:'ua'})],
+       ['<b>Stromkreis öffnen:</b> das Verbindungskabel ausstecken. Das Lämpchen geht aus.',()=>applyCfg({br:false})],
+       ['Messspitzen an die <b>beiden Enden der Lücke</b>. Jetzt fliesst der Strom durch das Multimeter – das Lämpchen leuchtet wieder.',()=>applyCfg({pr:'b1',pb:'b2'})],
+       [()=>`Das Multimeter ist <b>in Serie</b> geschaltet. Anzeige: <b>${komma(S.lcd.d)} ${S.lcd.u}</b>`,null]]
+  };
+  P.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{
+    ANIM++;const q=b.dataset.q,st=STEPS[q];
+    P.querySelectorAll('[data-q]').forEach(x=>x.classList.toggle('sel',x===b));
+    resetDevice();
+    $('#tk').textContent=q==='U'?'Spannung messen':'Stromstärke messen';
+    const show=n=>{
+      $('#info').innerHTML=`<ol class="steps">${st.map((s,i)=>`<li class="${i<=n?'on':''}">${i<=n&&typeof s[0]==='function'?s[0]():(typeof s[0]==='function'?'…':s[0])}</li>`).join('')}</ol>`
+        +(n<st.length-1?`<div class="row" style="margin-top:8px"><button class="btn pri" id="stp">${n<0?'Los':'Nächster Schritt'}</button></div>`:'');
+      const b=$('#stp');if(b)b.onclick=()=>{const k=n+1;if(st[k][1])st[k][1]();show(k)};
+    };
+    if(st[0][1])st[0][1]();show(0);
+  });
+}
+const P4TASKS=[
+  {t:'Miss die Spannung der Batterie.',q:'U',el:'batt',U0:4.5,R:20},
+  {t:'Miss die Spannung am Lämpchen.',q:'U',el:'lamp',U0:4.5,R:20},
+  {t:'Miss die Stromstärke im Stromkreis.',q:'I',U0:4.5,R:20},
+  {t:'Ein anderes Lämpchen ist eingesetzt. Miss die Stromstärke.',q:'I',U0:4.5,R:60},
+  {t:'Jetzt mit einer 9-V-Batterie: Miss die Spannung am Lämpchen.',q:'U',el:'lamp',U0:9,R:45},
+  {t:'Miss auch hier die Stromstärke im Stromkreis.',q:'I',U0:9,R:45}];
+const P4={i:0,res:[],tries:0,state:'ask'};
+function s4new(){Object.assign(P4,{i:0,res:Array(P4TASKS.length).fill(''),tries:0,state:'ask'})}
+function s4auf(){s4task()}
+function s4task(){
+  const T=P4TASKS[P4.i];
+  if(!T){const ok=P4.res.filter(r=>r==='ok').length;H={};svg.classList.add('inert');drawCables();drawCircuit();
+    frame(`<div class="dots">${dotsHTML(P4.res,-1)}</div><div class="task">Fertig!</div>
+      <div class="fb show ok">${ok} von ${P4.res.length} beim ersten Versuch richtig gemessen.</div>
+      <div class="row"><button class="btn pri" id="again">Nochmals</button></div>`);
+    $('#again').onclick=()=>{s4new();resetDevice();s4task()};return}
+  S.circ={U0:T.U0,R:T.R};S.bridge=true;P4.tries=0;P4.state='ask';
+  H={dialOn:true,plugsOn:true,probesOn:true,bridgeOn:true};svg.classList.remove('inert');
+  frame(`<div><div class="sub" style="margin-bottom:6px">Aufgabe ${P4.i+1} von ${P4TASKS.length}</div><div class="dots">${dotsHTML(P4.res,P4.i)}</div></div>
+    <div class="task">${T.t}</div>
+    <div class="sub" id="hint4">Schalter, Kabel, Messspitzen – und wenn nötig das Verbindungskabel antippen. Dann «Prüfen».</div>
+    <div class="row"><button class="btn pri" id="chk">Prüfen</button></div>
+    <div class="fb" id="fb"></div><div class="row" id="aft"></div>`);
+  $('#chk').onclick=s4check;
+  refresh();
+}
+function s4verdict(){
+  const T=P4TASKS[P4.i],d=S.dial,r=S.plugs.red,b=S.plugs.black,s=S.sim;
+  if(d==='off')return['bad','Das Multimeter ist noch ausgeschaltet. Dreh den Schalter.'];
+  if(S.hold)return['bad','HOLD ist noch an – die Anzeige ist festgehalten. Drücke HOLD nochmals.'];
+  const q=QOF[d];
+  if(!q)return['bad',`Der Schalter steht auf «${INFO[d].n}». Du sollst eine ${QN[T.q]} messen.`];
+  if(q!==T.q)return['bad',`Du sollst eine ${QN[T.q]} messen. Der Schalter steht aber auf ${QN[q]}.`];
+  if(d==='vac')return['bad','Eine Batterie liefert Gleichspannung. Wähle V mit den geraden Strichen.'];
+  if(!r&&!b)return['bad','Stecke noch die beiden Kabel ins Multimeter.'];
+  if(b!=='com'){if(r==='com')return['bad',b?'Rot und Schwarz sind vertauscht. Das schwarze Kabel gehört immer in <span class="lbl">COM</span>.':'In COM gehört das schwarze Kabel, nicht das rote.'];
+    return['bad','Das schwarze Kabel gehört immer in die Buchse <span class="lbl">COM</span>.']}
+  if(!r)return['bad','Stecke noch das rote Kabel ein.'];
+  if(r!==REDFOR[d]){let m=`Das rote Kabel steckt in ${SNAME[r]}. Für ${q==='I'?'diesen Strombereich':'Spannung'} gehört es in ${SNAME[REDFOR[d]]}.`;
+    if(s.fuse)m+=' Die Sicherung hat ausgelöst!';return['bad',m]}
+  if(!S.probes.red||!S.probes.black)return['bad','Halte beide Messspitzen an den Stromkreis.'];
+  if(s.nr===s.nb)return['bad','Beide Messspitzen berühren denselben Draht. Dazwischen gibt es keine Spannung und keinen Strom zu messen.'];
+  const v=reading();
+  if(T.q==='U'){
+    const want=T.el==='batt'?[0,2]:[0,1];
+    if(!sameSet(s.nr,s.nb,want[0],want[1]))return['bad',`Die Messspitzen müssen an die beiden Anschlüsse ${T.el==='batt'?'der Batterie':'des Lämpchens'}.`];
+    if(T.el==='lamp'&&!S.bridge)return['bad','Der Stromkreis ist offen, das Lämpchen ist dunkel. Stecke das Verbindungskabel wieder ein.'];
+    if(v<0)return['bad','Die Anzeige ist negativ: Die Messspitzen sind vertauscht. Rot gehört auf die Seite des Plus-Pols.'];
+    return['ok',`Richtig gemessen: ${komma(S.lcd.d)} ${S.lcd.u}`,`Das Multimeter ist parallel geschaltet.<br><span class="sub">Warum nicht genau ${komma(String(S.circ.U0))} V? Sobald Strom fliesst, liefert eine Batterie etwas weniger Spannung als aufgedruckt.</span>`];
+  }
+  if(S.bridge)return['bad',sameSet(s.nr,s.nb,1,2)?'Der Stromkreis ist noch geschlossen: Der Strom fliesst durch das Verbindungskabel statt durch das Multimeter. Öffne den Stromkreis.'
+                                               :'Das Multimeter ist parallel geschaltet – das gibt einen Kurzschluss! Für die Stromstärke: Stromkreis öffnen und die Messspitzen an die beiden Enden der Lücke.'];
+  if(!sameSet(s.nr,s.nb,1,2))return['bad','Das Multimeter ist parallel geschaltet – das gibt einen Kurzschluss! Die Messspitzen gehören an die beiden Enden der Lücke.'];
+  if(d==='ua')return['bad','Die Anzeige zeigt OL: Der Bereich µA ist zu klein. Wähle mA.'];
+  if(v<0)return['bad','Die Anzeige ist negativ: Die Messspitzen sind vertauscht. Rot gehört auf die Seite, von der der Strom kommt (Plus-Pol über das Lämpchen).'];
+  if(d==='a')return['warn',`Gemessen: ${komma(S.lcd.d)} ${S.lcd.u}. Es funktioniert, aber mit mA misst du genauer.`,'Das Multimeter ist in Serie geschaltet.'];
+  return['ok',`Richtig gemessen: ${komma(S.lcd.d)} ${S.lcd.u}`,'Das Multimeter ist in Serie geschaltet.'];
+}
+function s4check(){
+  if(P4.state!=='ask')return;P4.tries++;
+  const [k,m,x]=s4verdict();
+  if(k==='bad'){fb('bad',m);return}
+  fb(k,`<b>${m}</b>${x?'<br>'+x:''}`);
+  P4.res[P4.i]=(P4.tries===1&&k==='ok')?'ok':'warn';P4.state='done';
+  $('#chk').parentElement.style.display='none';$('#hint4').style.display='none';H={};S.selPlug=null;S.selProbe=null;svg.classList.add('inert');drawCables();drawCircuit();
+  $('#aft').innerHTML=`<button class="btn pri" id="nx">Weiter</button>`;$('#nx').onclick=()=>{P4.i++;s4task()};
+}
+
+/* ================= Stufe 5: Fehler finden ================= */
+function diagnose(){
+  const s=S.sim,r=S.plugs.red,b=S.plugs.black,d=S.dial,out=[];
+  if(S.note){out.push(['info',S.note]);S.note=null}
+  if(S.hold)out.push(['warn','<b>HOLD</b> ist an: Die Anzeige bleibt stehen, auch wenn sich etwas ändert. Nochmals HOLD drücken löst sie.']);
+  out.push(['info',`Das Lämpchen ${s.lamp>0.6?'leuchtet':s.lamp>0.03?'leuchtet schwach':'ist dunkel'}.`]);
+  if(s.Ib>2)out.push(['bad','<b>Kurzschluss!</b> Sehr viel Strom fliesst durch die Batterie – sie wird heiss.']);
+  if(s.fuse)out.push(['bad','<b>Sicherung ausgelöst:</b> Durch die Buchse <span class="lbl">µA mA</span> floss zu viel Strom.']);
+  const series=s.conn&&!S.bridge&&sameSet(s.nr,s.nb,1,2);
+  if(!S.bridge&&!series)out.push(['info','Der Stromkreis ist offen.']);
+  if(d==='off'){out.push(['info','Das Multimeter ist ausgeschaltet.']);return out}
+  if(!r||!b){out.push(['info','Stecke beide Kabel ins Multimeter.']);return out}
+  if(!s.conn){out.push(['info','Halte beide Messspitzen an den Stromkreis.']);return out}
+  const lowR=RS[r]+RS[b]<100;
+  if(s.nr===s.nb)out.push(['warn','Beide Messspitzen berühren denselben Draht – dazwischen gibt es nichts zu messen.']);
+  else if(lowR){
+    if(series)out.push(['ok','Das Multimeter ist <b>in Serie</b>: Der ganze Strom fliesst hindurch. So misst man die Stromstärke.']);
+    else if(S.bridge&&sameSet(s.nr,s.nb,1,2))out.push(['warn','Das Multimeter ist parallel zum Verbindungskabel: Der Strom fliesst fast ganz durch das Kabel.']);
+    else out.push(['bad','Das Multimeter ist über eine Strombuchse <b>parallel</b> geschaltet. Es hat fast keinen Widerstand – das gibt einen Kurzschluss.']);
+  }else{
+    if(series)out.push(['warn','Das Multimeter ist über die Buchse <span class="lbl">VΩHz</span> <b>in Serie</b>. Es lässt fast keinen Strom durch – das Lämpchen bleibt dunkel.']);
+    else out.push(['ok','Das Multimeter ist <b>parallel</b> geschaltet. So misst man die Spannung.']);
+  }
+  const q=QOF[d],cur=r==='com'?b:r;
+  if((q==='U'||q==='R')&&lowR)out.push(['warn',`Der Schalter steht auf ${QN[q]}, aber ein Kabel steckt in einer Strombuchse. Die Anzeige bleibt bei 0.`]);
+  if(q==='I'&&!lowR)out.push(['warn','Der Schalter steht auf Stromstärke, aber das Kabel steckt in <span class="lbl">VΩHz</span>. Die Anzeige bleibt bei 0.']);
+  else if(q==='I'&&REDFOR[d]!==cur)out.push(['warn','Schalter und Strombuchse passen nicht zusammen.']);
+  if(d==='vac')out.push(['warn','Der Schalter steht auf Wechselspannung (V~). Eine Batterie liefert Gleichspannung.']);
+  if(!q)out.push(['info','Diese Schalterstellung brauchst du in NaTech nicht.']);
+  if(S.lcd&&S.lcd.d.trim()==='OL'&&q==='I')out.push(['warn','OL: Der Messwert ist zu gross für diesen Bereich.']);
+  if(r==='com')out.push(['warn','Rot steckt in <span class="lbl">COM</span>: Die Kabel sind am Multimeter vertauscht.']);
+  else if(S.lcd&&S.lcd.d.trim().startsWith('-'))out.push(['info','Minuszeichen: Die Messspitzen sind vertauscht. Rot gehört auf die Seite des Plus-Pols.']);
+  return out;
+}
+function s5erk(){
+  frame(`<div><div class="task">Probier aus – mach auch absichtlich Fehler!</div>
+    <div class="sub">Das Multimeter verhält sich wie ein echtes. Hier steht, was gerade passiert:</div></div>
+    <div class="diag" id="diag"></div>
+    <div class="row"><button class="btn" id="rst">Neu beginnen</button></div>`);
+  const start=()=>{resetDevice();applyCfg({dial:'vdc',red:'v',black:'com',pr:'l1',pb:'l2',br:true})};
+  H={dialOn:true,plugsOn:true,probesOn:true,bridgeOn:true,
+     onChange(){const dg=$('#diag');if(dg&&S.sim)dg.innerHTML=diagnose().map(([k,t])=>`<div class="${k}">${t}</div>`).join('')}};
+  $('#rst').onclick=start;
+  start();
+}
+const P5POOL=[
+  {s:'Mia will die Stromstärke messen. Das Lämpchen bleibt dunkel.',c:{dial:'vdc',red:'v',black:'com',pr:'b1',pb:'b2',br:false},
+   a:'Der Schalter steht auf Spannung und das rote Kabel steckt in <span class="lbl">VΩHz</span>. So lässt das Multimeter fast keinen Strom durch.',
+   w:['Die Batterie ist leer.','Das Lämpchen ist kaputt.','Die Messspitzen sind vertauscht.'],
+   e:'Für die Stromstärke: Schalter auf mA und das rote Kabel in die Buchse <span class="lbl">µA mA</span>.',fix:{dial:'ma',red:'ua'}},
+  {s:'Jan will die Stromstärke messen. Das Lämpchen ist dunkel, die Anzeige zeigt über 8 A.',c:{dial:'a',red:'a10',black:'com',pr:'l1',pb:'l2',br:true},
+   a:'Das Multimeter ist parallel zum Lämpchen geschaltet. Das gibt einen Kurzschluss.',
+   w:['Der Bereich A ist zu klein.','Das schwarze Kabel steckt in der falschen Buchse.','Die Batterie ist zu stark.'],
+   e:'Für die Stromstärke muss das Multimeter in Serie sein: Stromkreis öffnen, Messspitzen an die beiden Enden der Lücke.',fix:{br:false,pr:'b1',pb:'b2'}},
+  {s:'Lea will die Spannung der Batterie messen. Die Anzeige zeigt 0.00 mA.',c:{dial:'ma',red:'ua',black:'com',pr:'bp',pb:'bm',br:true},
+   a:'Schalter und rotes Kabel sind auf Stromstärke eingestellt. Parallel zur Batterie gibt das einen Kurzschluss – die Sicherung hat ausgelöst.',
+   w:['Die Messspitzen berühren denselben Draht.','Die Batterie ist leer.','Der Stromkreis ist offen.'],
+   e:'Für die Spannung: Schalter auf V und das rote Kabel in die Buchse <span class="lbl">VΩHz</span>.',fix:{dial:'vdc',red:'v'}},
+  {s:'Tim misst die Spannung der Batterie. Die Anzeige zeigt 0.000, obwohl die Batterie voll ist.',c:{dial:'vac',red:'v',black:'com',pr:'bp',pb:'bm',br:true},
+   a:'Der Schalter steht auf Wechselspannung (V~). Eine Batterie liefert aber Gleichspannung.',
+   w:['Das rote Kabel steckt in der falschen Buchse.','Die Messspitzen sind vertauscht.','Das Multimeter ist in Serie geschaltet.'],
+   e:'Schalter auf V mit den geraden Strichen (Gleichspannung).',fix:{dial:'vdc'}},
+  {s:'Nora will die Spannung am Lämpchen messen. Die Anzeige zeigt 0.000 V.',c:{dial:'vdc',red:'v',black:'com',pr:'l2',pb:'b1',br:true},
+   a:'Beide Messspitzen berühren denselben Draht. Dazwischen gibt es keine Spannung.',
+   w:['Der Schalter steht auf dem falschen Bereich.','Das Lämpchen ist kaputt.','Der Stromkreis muss geöffnet werden.'],
+   e:'Die Messspitzen gehören an die beiden Anschlüsse des Lämpchens.',fix:{pr:'l1',pb:'l2'}},
+  {s:'Sara misst die Spannung am Lämpchen. Die Anzeige zeigt einen negativen Wert.',c:{dial:'vdc',red:'v',black:'com',pr:'l2',pb:'l1',br:true},
+   a:'Die Messspitzen sind vertauscht: Rot muss auf der Seite des Plus-Pols sein.',
+   w:['Das Lämpchen ist falsch herum eingeschraubt.','Die Batterie ist fast leer.','Es ist eine Wechselspannung.'],
+   e:'Die Zahl stimmt trotzdem – nur das Vorzeichen ist falsch.',fix:{pr:'l1',pb:'l2'}},
+  {s:'Leon will die Stromstärke messen. Das Lämpchen leuchtet, die Anzeige zeigt OL.',c:{dial:'ua',red:'ua',black:'com',pr:'b1',pb:'b2',br:false},
+   a:'Der Bereich µA ist zu klein. Er reicht nur bis 4000 µA, also 4 mA.',
+   w:['Das Multimeter ist parallel geschaltet.','Das rote Kabel steckt in der falschen Buchse.','Der Stromkreis muss wieder geschlossen werden.'],
+   e:'Wähle den Bereich mA. OL heisst «overload»: zu gross für diesen Bereich.',fix:{dial:'ma'}},
+  {s:'Elif will die Stromstärke messen. Das Lämpchen leuchtet, aber die Anzeige zeigt fast 0.',c:{dial:'ma',red:'ua',black:'com',pr:'b1',pb:'b2',br:true},
+   a:'Der Stromkreis ist noch geschlossen. Der Strom fliesst durch das Verbindungskabel statt durch das Multimeter.',
+   w:['Der Bereich mA ist zu klein.','Die Messspitzen sind vertauscht.','Die Batterie ist leer.'],
+   e:'Zuerst den Stromkreis öffnen – dann muss der ganze Strom durch das Multimeter.',fix:{br:false}},
+  {s:'Ben will die Spannung der Batterie messen. Die Anzeige zeigt 0.000 V.',c:{dial:'vdc',red:'ua',black:'com',pr:'bp',pb:'bm',br:true},
+   a:'Das rote Kabel steckt in der Buchse <span class="lbl">µA mA</span> statt in <span class="lbl">VΩHz</span>. Die Sicherung hat ausgelöst.',
+   w:['Der Schalter steht auf dem falschen Bereich.','Die Messspitzen berühren denselben Draht.','Der Stromkreis ist offen.'],
+   e:'Für die Spannung gehört das rote Kabel in die Buchse <span class="lbl">VΩHz</span>.',fix:{red:'v'}}
+];
+const P5={list:null,i:0,res:[],tries:0};
+function s5auf(){if(!P5.list)Object.assign(P5,{list:shuffle(P5POOL),i:0,res:Array(P5POOL.length).fill('')});s5task()}
+function s5task(){
+  const T=P5.list[P5.i];
+  resetDevice();H={};svg.classList.add('inert');
+  if(!T){const ok=P5.res.filter(r=>r==='ok').length;
+    frame(`<div class="dots">${dotsHTML(P5.res,-1)}</div><div class="task">Fertig!</div>
+      <div class="fb show ok">${ok} von ${P5.res.length} Fehlern beim ersten Versuch gefunden.</div>
+      <div class="row"><button class="btn pri" id="again">Nochmals</button></div>`);
+    $('#again').onclick=()=>{P5.list=null;s5auf()};return}
+  P5.tries=0;
+  applyCfg(T.c);
+  const opts=shuffle([[T.a,1]].concat(T.w.map(w=>[w,0])));
+  frame(`<div><div class="sub" style="margin-bottom:6px">Aufgabe ${P5.i+1} von ${P5.list.length}</div><div class="dots">${dotsHTML(P5.res,P5.i)}</div></div>
+    <div class="task">${T.s} <span style="color:var(--acc)">Was ist falsch?</span></div>
+    <div class="mc" id="mc">${opts.map(o=>`<button class="btn" data-c="${o[1]}">${o[0]}</button>`).join('')}</div>
+    <div class="fb" id="fb"></div><div class="row" id="aft"></div>`);
+  P.querySelectorAll('#mc .btn').forEach(b=>b.onclick=()=>{
+    P5.tries++;
+    if(b.dataset.c==='1'){
+      b.classList.add('okb');P.querySelectorAll('#mc .btn').forEach(x=>{x.disabled=true;if(x!==b)x.style.display='none'});
+      P5.res[P5.i]=P5.tries===1?'ok':'warn';
+      fb('ok',`<b>Richtig.</b> ${T.e}`);
+      $('#aft').innerHTML=`<button class="btn" id="fix">So wäre es richtig</button><button class="btn pri" id="nx">Weiter</button>`;
+      $('#fix').onclick=()=>{applyCfg(T.fix);$('#fix').disabled=true;fb('ok',`<b>So ist es richtig.</b> Anzeige: ${komma(S.lcd.d)} ${S.lcd.u}`)};
+      $('#nx').onclick=()=>{P5.i++;s5task()};
+    }else{b.classList.add('badb');b.disabled=true;fb('bad','Nein. Schau genau: Schalter, Buchsen, Messspitzen und Verbindungskabel.')}
+  });
+}
+
+/* ================= Stufen-Navigation ================= */
+const STAGES=[{n:1,k:'kennenlernen',t:'Kennenlernen'},{n:2,k:'ablesen',t:'Ablesen'},{n:3,k:'einstellen',t:'Einstellen'},
+  {n:4,k:'messen',t:'Messen'},{n:5,k:'fehler',t:'Fehler finden'}];
+function buildTabs(){
+  $('#stages').innerHTML=STAGES.map(s=>`<button class="stg" data-n="${s.n}" ${s.off?'disabled title="folgt"':''}><span class="n">${s.n}</span><span class="t">${s.t}</span></button>`).join('');
+  $('#stages').querySelectorAll('.stg').forEach(b=>b.onclick=()=>setStage(+b.dataset.n));
+}
+function setStage(n){
+  S.stage=n;
+  $('#stages').querySelectorAll('.stg').forEach(b=>b.classList.toggle('on',+b.dataset.n===n));
+  const st=STAGES[n-1];try{history.replaceState(null,'','#'+n+'-'+st.k)}catch(e){}
+  enterStage();
+}
+function enterStage(){
+  document.body.classList.toggle('wide',S.stage>=4);
+  svg.setAttribute('viewBox',S.stage>=4?'0 0 920 890':(S.stage===3?'0 0 420 890':'0 0 420 800'));
+  ANIM++;H={};svg.classList.remove('inert');
+  const m=S.mode[S.stage];
+  if(m==='auf')({1:()=>P1.order=null,2:()=>P2.list=null,3:()=>P3.list=null,4:()=>s4new(),5:()=>P5.list=null})[S.stage]();
+  resetDevice();
+  ({1:{erk:s1erk,auf:s1auf},2:{erk:s2erk,auf:s2auf},3:{erk:s3erk,auf:s3auf},4:{erk:s4erk,auf:s4auf},5:{erk:s5erk,auf:s5auf}})[S.stage][m]();
+}
+function stageFromHash(){
+  const h=decodeURIComponent(location.hash.slice(1)).toLowerCase();if(!h)return 1;
+  const n=parseInt(h,10);if(n>=1&&n<=5)return n;
+  const s=STAGES.find(s=>!s.off&&h.includes(s.k));return s?s.n:1;
+}
+
+/* ================= Hilfe / Einstellungen / Vollbild ================= */
+const HELP={
+  1:['Stufe 1 · Kennenlernen','<ul><li><b>Erkunden:</b> Tippe auf die Teile des Multimeters und lies, wozu sie dienen. Den Drehschalter kannst du drehen, die Knöpfe drücken.</li><li><b>Aufgaben:</b> Ziehe die Begriffe an die richtige Stelle – oder tippe zuerst auf den Begriff, dann auf die Stelle.</li></ul>'],
+  2:['Stufe 2 · Ablesen','<ul><li><b>Erkunden:</b> Dreh den Schalter und schau, welche Einheit auf der Anzeige erscheint.</li><li><b>Aufgaben:</b> Lies den Messwert ab: Zahl eintippen, Einheit wählen, «Prüfen».</li></ul>'],
+  3:['Stufe 3 · Einstellen','<ul><li><b>Erkunden:</b> Wähle, was du messen willst. Das Multimeter zeigt, wie man es einstellt.</li><li><b>Aufgaben:</b> Stelle das Multimeter selbst ein: Drehschalter und beide Kabel. Kabel ziehen – oder Stecker antippen, dann Buchse antippen. Stecker zweimal antippen zieht ihn heraus.</li></ul>'],
+  4:['Stufe 4 · Messen','<ul><li><b>Erkunden:</b> Tippe auf «Spannung messen» oder «Stromstärke messen». Das Multimeter zeigt Schritt für Schritt, wie es geht.</li><li><b>Aufgaben:</b> Stelle das Multimeter ein, stecke die Kabel ein und halte die Messspitzen an den Stromkreis (ziehen – oder Messspitze antippen, dann Anschluss antippen). Das Verbindungskabel steckst du durch Antippen aus oder wieder ein. Dann «Prüfen».</li></ul>'],
+  5:['Stufe 5 · Fehler finden','<ul><li><b>Erkunden:</b> Alles ist frei – mach auch absichtlich Fehler. Rechts steht, was gerade passiert.</li><li><b>Aufgaben:</b> Ein Messaufbau ist falsch. Finde heraus, was falsch ist.</li></ul>']
+};
+function openOv(id){$(id).classList.add('show')}
+document.querySelectorAll('.ov').forEach(o=>{o.addEventListener('click',e=>{if(e.target===o||e.target.hasAttribute('data-close'))o.classList.remove('show')})});
+$('#bHelp').onclick=()=>{const h=HELP[S.stage];$('#helpT').textContent=h[0];$('#helpB').innerHTML=h[1];openOv('#ovHelp')};
+$('#bSet').onclick=()=>openOv('#ovSet');
+$('#bFull').onclick=()=>{const d=document;if(d.fullscreenElement||d.webkitFullscreenElement){(d.exitFullscreen||d.webkitExitFullscreen).call(d)}else{const e=d.documentElement;(e.requestFullscreen||e.webkitRequestFullscreen).call(e)}};
+$('#bShuffle').onclick=()=>{P1.order=null;P2.list=null;P3.list=null;P5.list=null;$('#ovSet').classList.remove('show');enterStage()};
+$('#bSolve').onclick=()=>{
+  $('#ovSet').classList.remove('show');
+  const m=S.mode[S.stage];
+  if(S.stage===1){if(m!=='auf'){S.mode[1]='auf';enterStage()}REL.forEach(id=>P1.done.add(id));P1.sel=null;s1render();return}
+  if(S.stage===2&&m==='auf'&&P2.list[P2.i]){const T=P2.list[P2.i];$('#num').value=komma(T.d).replace('−','-');P2.unit=T.u;P.querySelectorAll('#units .btn').forEach(x=>x.classList.toggle('sel',x.dataset.u===T.u));return}
+  if(S.stage===3&&m==='auf'&&P3.list[P3.i]&&P3.state==='ask'){const T=P3.list[P3.i];
+    const pos=T.q==='U'?(T.ac?'vac':'vdc'):(T.q==='R'?'ohm':T.n);setDial(pos);S.plugs={red:REDFOR[pos],black:'com'};drawCables();return}
+  if(S.stage===4&&m==='auf'&&P4TASKS[P4.i]&&P4.state==='ask'){const T=P4TASKS[P4.i];
+    if(T.q==='U')applyCfg({dial:'vdc',red:'v',black:'com',pr:T.el==='batt'?'bp':'l1',pb:T.el==='batt'?'bm':'l2',br:true});
+    else applyCfg({dial:'ma',red:'ua',black:'com',pr:'b1',pb:'b2',br:false});return}
+  if(S.stage===5&&m==='auf'&&P5.list&&P5.list[P5.i]){const b=P.querySelector('#mc .btn[data-c="1"]');if(b&&!b.disabled)b.click()}
+};
+
+/* ================= Start ================= */
+buildDevice();buildTabs();setStage(stageFromHash());
+window.addEventListener('hashchange',()=>{const n=stageFromHash();if(n!==S.stage)setStage(n)});
+</script>
+</body>
+</html>
