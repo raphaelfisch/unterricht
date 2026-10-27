@@ -82,11 +82,13 @@ h1{font-size:1.5rem;margin:0;font-weight:700;letter-spacing:-.01em;white-space:n
 .mhead b{font-size:1.05rem}
 .mcard p{margin:7px 0;line-height:1.5}
 .fsmode .wrap{max-width:none}
-@media (max-width:1560px){
-  .top{grid-template-columns:1fr auto}
+/* Die Reiterzeile liegt IMMER auf einer eigenen Zeile – so sieht der
+   Kopf in allen Werkzeugen gleich aus, unabhängig von der Zahl der
+   Stufen und der Bildschirmbreite. */
+.top{grid-template-columns:1fr auto}
   .top .tools{grid-column:2}
   .top .tabs{grid-column:1 / -1;grid-row:2;justify-self:stretch;width:100%}
-}
+
 @media (max-width:960px){
   .top .tabs{grid-template-columns:repeat(3,minmax(0,1fr))}
   .top .tabs .tab{padding:0 4px}
