@@ -19,6 +19,7 @@ body{margin:0;font-family:system-ui, -apple-system, "Segoe UI", Roboto, Arial, s
 .wrap{max-width:1700px;margin:0 auto;padding:14px 16px 24px}
 h1{font-size:1.5rem;margin:0;font-weight:700;letter-spacing:-.01em}
 .dach{color:var(--muted);margin:4px 0 0;max-width:62ch}
+.dach.breit{max-width:none}
 
 /* Mindestbreite so gewählt, dass die vier Werkzeuge auf einem 1024er-Bildschirm
    nebeneinander Platz haben – sonst liegt die halbe Übersicht unter dem Rand. */
@@ -46,7 +47,8 @@ h1{font-size:1.5rem;margin:0;font-weight:700;letter-spacing:-.01em}
 /* Zweiter Block: nicht zum Üben, sondern zum Vorzeigen an der Wand.
    Eine Karte allein soll nicht über die ganze Breite laufen. */
 .rubrik{margin:26px 0 0;font-size:1.05rem;font-weight:700;letter-spacing:-.01em}
-.zeile{display:flex;align-items:stretch;gap:0;margin-top:12px;max-width:640px;
+.zeilen{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;margin-top:12px;align-items:stretch}
+.zeile{display:flex;align-items:stretch;gap:0;
   background:var(--paper);border:1px solid var(--line);border-radius:18px;overflow:hidden;
   text-decoration:none;color:inherit;transition:border-color .15s, box-shadow .15s}
 .zeile:hover,.zeile:focus-visible{border-color:var(--accent);box-shadow:0 4px 16px rgba(46,109,180,.18);outline:none}
@@ -262,7 +264,9 @@ h1{font-size:1.5rem;margin:0;font-weight:700;letter-spacing:-.01em}
   </div>
 
   <h2 class="rubrik">Für die Lehrperson</h2>
-  <p class="dach">Nichts zum Üben: das eine läuft am Beamer, das andere öffnet sich nur mit einem Code.</p>
+  <p class="dach breit">Nichts zum Üben: das eine läuft am Beamer, das andere öffnet sich nur mit einem Code.</p>
+
+  <div class="zeilen">
 
     <!-- ---------- Tafelbild Stromkreis ---------- -->
     <a class="zeile" href="tafelbild-stromkreis.html">
@@ -314,6 +318,8 @@ h1{font-size:1.5rem;margin:0;font-weight:700;letter-spacing:-.01em}
         <p class="umfang">12 Fragen &middot; öffnet sich nur mit Code</p>
       </div>
     </a>
+
+  </div>
 
   <p class="fuss">
     Die Reihenfolge ist ein Vorschlag: «Grössen» liefert die Begriffe, «U, I, R» ordnet sie und verknüpft sie zum Ohmschen Gesetz.
