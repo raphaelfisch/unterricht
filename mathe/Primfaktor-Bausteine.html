@@ -90,12 +90,13 @@ button.lego:disabled{opacity:.45;cursor:default;transform:none}
   .big{font-size:48px}
   .task .lbl{font-size:15px}
   .regal{padding:8px 6px 6px}
-  .fig{flex:none;min-height:0;height:clamp(150px,calc(100vh - 500px),340px);height:clamp(150px,calc(100dvh - 500px),340px)}
-  .msg{min-height:24px}
-  .nota{min-height:0}.nota dd{font-size:18px}
+  .fig{flex:none;min-height:0;height:clamp(120px,calc(100vh - 556px),340px);height:clamp(120px,calc(100dvh - 556px),340px)}
+  .app.m-rechnen .fig{height:clamp(120px,calc(100vh - 596px),300px);height:clamp(120px,calc(100dvh - 596px),300px)}
+  .msg{min-height:94px;display:flex;align-items:center;justify-content:center;line-height:1.3}
+  .nota{min-height:0;padding:8px 14px;gap:0 14px}.nota dd{font-size:17px;line-height:1.4}.nota dt{line-height:1.4}
   .nota[hidden],#next[hidden]{display:none!important}
   .nextrow:has(#next[hidden]){display:none}
-  .msg:empty{min-height:0}
+  .app.solved .msg{display:none}
   #scorebox{font-size:14px;padding:6px 10px}
   .sel{padding-left:10px;padding-right:28px;background-position:right 9px center}
   .app.solved #buildUI,.app.solved #answerForm{display:none!important}
@@ -246,11 +247,11 @@ function legoSVG(p){
     '<text x="42" y="21" text-anchor="middle" dominant-baseline="middle" font-weight="800" font-size="22" fill="'+t+'">'+p+'</text></svg>';
 }
 function drawCols(){
-  var add=st.mode!=="rechnen",showVal=st.mode==="rechnen"&&(st.solved||st.wrong>=2),c=cur(),dis=locked()?" disabled":"";
+  var add=st.mode!=="rechnen",showVal=st.mode==="rechnen",fillVal=st.solved||st.wrong>=2,c=cur(),dis=locked()?" disabled":"";
   $("cols").innerHTML=PRIMES.map(function(p){
     var v=c[p]?(c[p]>1?p+"<sup>"+c[p]+"</sup> = "+Math.pow(p,c[p]):""+p):"";
     return '<div class="col">'+(add?'<button class="lego" data-p="'+p+'" aria-label="Stein '+p+' dazu"'+dis+'>'+legoSVG(p)+'</button>':'<span class="lego">'+legoSVG(p)+'</span>')+
-      (showVal?'<span class="val">'+v+'</span>':'')+'</div>';
+      (showVal?'<span class="val">'+(fillVal?v:'')+'</span>':'')+'</div>';
   }).join("");
 }
 /* ---------- Anzeige ---------- */
@@ -258,7 +259,7 @@ function locked(){return st.solved&&st.mode!=="werkstatt"}
 function setMsg(t,cls){var m=$("msg");m.textContent=t;m.className="msg "+(cls||"")}
 function showNota(c){var n=$("nota");n.hidden=false;
   n.innerHTML="<dt>Zahl</dt><dd>"+value(c)+"</dd><dt>Produkt</dt><dd>"+productStr(c)+"</dd><dt>Potenzen</dt><dd>"+powerHTML(c)+"</dd>"}
-function updateScore(){$("pts").textContent=st.score+" Punkte";$("streak").textContent="Serie "+st.streak}
+function updateScore(){$("pts").textContent=st.score+(st.score===1?" Punkt":" Punkte");$("streak").textContent="Serie "+st.streak}
 
 function render(){
   var m=st.mode,c=cur();
@@ -276,7 +277,7 @@ function render(){
     $("foot").textContent=total(c)===1?"Nur ein Stein: Das ist eine Primzahl.":"Setze beliebige Steine und beobachte die Schreibweisen.";
     if(total(c))showNota(c);else $("nota").hidden=true;
   }
-  $("app").classList.toggle("solved",locked());
+  $("app").classList.toggle("solved",locked());$("app").classList.toggle("m-rechnen",m==="rechnen");
   ["undo","hintBtn","check"].forEach(function(id){$(id).disabled=locked()});
   drawCols();drawRegal();
 }
