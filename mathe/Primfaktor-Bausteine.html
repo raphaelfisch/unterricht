@@ -78,7 +78,47 @@ button.lego:disabled{opacity:.45;cursor:default;transform:none}
 @media (min-width:900px) and (orientation:landscape){
   main{grid-template-columns:minmax(300px,0.8fr) minmax(0,1.4fr)}
 }
-@media(max-width:600px){.app{padding:12px;border-radius:16px}h1{font-size:22px}.nota dd{font-size:18px}}
+@media(max-width:600px){
+  .app{margin:8px auto;width:calc(100% - 16px);padding:10px 10px 12px;gap:10px;border-radius:16px;min-height:calc(100vh - 16px);min-height:calc(100dvh - 16px)}
+  header{gap:8px}
+  h1{order:1;flex:1;font-size:21px}#reset{order:2}#fs{order:3}#modes{order:4;flex:1 0 100%;display:flex}#level{order:5;flex:1}#scorebox{order:6}
+  header .spacer{display:none}#modes .tab{flex:1;padding:8px 2px;font-size:14px}
+  .sel{min-height:44px;font-size:15px}
+  main{display:flex;flex-direction:column;gap:10px}
+  .panel{display:contents}
+  .task{order:1}.regal{order:2}#buildUI,#answerForm{order:3}.msg{order:4}.nota{order:5}.nextrow{order:6}
+  .big{font-size:48px}
+  .task .lbl{font-size:15px}
+  .regal{padding:8px 6px 6px}
+  .fig{flex:none;min-height:0;height:clamp(150px,calc(100vh - 500px),340px);height:clamp(150px,calc(100dvh - 500px),340px)}
+  .msg{min-height:24px}
+  .nota{min-height:0}.nota dd{font-size:18px}
+  .nota[hidden],#next[hidden]{display:none!important}
+  .nextrow:has(#next[hidden]){display:none}
+  .msg:empty{min-height:0}
+  #scorebox{font-size:14px;padding:6px 10px}
+  .sel{padding-left:10px;padding-right:28px;background-position:right 9px center}
+  .app.solved #buildUI,.app.solved #answerForm{display:none!important}
+  .foot{font-size:12px;line-height:1.35}
+}
+@media (max-height:500px) and (orientation:landscape){
+  .app{margin:6px auto;width:calc(100% - 12px);padding:8px 12px;gap:8px;min-height:calc(100vh - 12px);min-height:calc(100dvh - 12px)}
+  h1{display:none}
+  header{gap:6px}
+  #modes .tab{padding:6px 10px;font-size:14px;min-height:40px}
+  .sel{min-height:44px;font-size:14px;padding:6px 28px 6px 10px;background-position:right 9px center}
+  #scorebox{font-size:14px;padding:5px 10px}
+  header .btn.icon{min-height:44px}
+  main{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:12px}
+  .big{font-size:44px}
+  .panel{gap:8px}
+  .msg{min-height:24px}
+  .nota{min-height:0;padding:6px 12px}.nota dd{font-size:17px}
+  .nota[hidden]{display:none!important}
+  .app.solved #buildUI,.app.solved #answerForm{display:none!important}
+  .fig{min-height:170px}
+  .foot{display:none}
+}
 </style>
 </head>
 <body>
@@ -149,16 +189,19 @@ function total(c){return PRIMES.reduce(function(s,p){return s+c[p]},0)}
 function productStr(c){var a=[];PRIMES.forEach(function(p){for(var i=0;i<c[p];i++)a.push(p)});return a.length?a.join(" · "):"–"}
 function powerHTML(c){var a=PRIMES.filter(function(p){return c[p]}).map(function(p){return c[p]>1?p+"<sup>"+c[p]+"</sup>":""+p});return a.length?a.join(" · "):"–"}
 
-function newNumber(){
-  var L=LEVELS[st.level];
-  for(var i=0;i<500;i++){
-    var n=L.lo+Math.floor(Math.random()*(L.hi-L.lo+1)),f=factor(n);
-    if(f[f.length-1]>L.max)continue;
-    if(f.length===1&&Math.random()>.08)continue;
-    if(n===st.target)continue;
-    return n;
+/* Zahlen wie aus einem gemischten Kartenstapel ziehen: jede Zahl der Stufe kommt einmal dran,
+   erst dann wird neu gemischt. So gibt es keine Wiederholungen, bis alle Zahlen dran waren. */
+var decks={};
+function pool(L){var a=[];for(var n=L.lo;n<=L.hi;n++){var f=factor(n);if(f[f.length-1]<=L.max&&f.length>1)a.push(n)}return a}
+function newNumber(mode){
+  var key=st.level+mode,d=decks[key],last=decks[key+"_last"];
+  if(!d||!d.length){
+    d=pool(LEVELS[st.level]);
+    for(var i=d.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=d[i];d[i]=d[j];d[j]=t}
+    if(d.length>1&&d[d.length-1]===last){var t2=d[0];d[0]=d[d.length-1];d[d.length-1]=t2}
+    decks[key]=d;
   }
-  return 12;
+  return decks[key+"_last"]=d.pop();
 }
 function cur(){return st.mode==="werkstatt"?st.shop:st.mode==="rechnen"?st.m2:st.build}
 function hist(){return st.mode==="werkstatt"?st.shist:st.hist}
@@ -233,6 +276,7 @@ function render(){
     $("foot").textContent=total(c)===1?"Nur ein Stein: Das ist eine Primzahl.":"Setze beliebige Steine und beobachte die Schreibweisen.";
     if(total(c))showNota(c);else $("nota").hidden=true;
   }
+  $("app").classList.toggle("solved",locked());
   ["undo","hintBtn","check"].forEach(function(id){$(id).disabled=locked()});
   drawCols();drawRegal();
 }
@@ -281,11 +325,13 @@ function win(c,text){
   setMsg(text,"ok");showNota(c);$("next").hidden=false;render();
   if(st.mode==="rechnen")$("task").querySelector(".big").textContent=value(c);
   $("next").focus({preventScroll:true});
+  if(window.innerWidth<=600)$("next").scrollIntoView({block:"nearest",behavior:"smooth"});
 }
 function fail(){st.streak=0;st.hadFail=true;updateScore()}
 function nextRound(){
   st.solved=false;st.wrong=0;st.hadFail=false;$("next").hidden=true;$("nota").hidden=true;setMsg("");
-  st.target=newNumber();st.build=empty();st.hist=[];st.m2=toCounts(factor(newNumber()));
+  st.build=empty();st.hist=[];
+  if(st.mode==='zerlegen')st.target=newNumber('z');else if(st.mode==='rechnen')st.m2=toCounts(factor(newNumber('r')));
   $("answer").value="";render();
 }
 function setMode(m){
@@ -337,6 +383,7 @@ window.addEventListener("resize",applyZoom);
 if(window.visualViewport)window.visualViewport.addEventListener("resize",applyZoom);
 var lastSize="";var figObs=new ResizeObserver(function(en){var r=en[0].contentRect,k=Math.round(r.width)+"x"+Math.round(r.height);if(k!==lastSize){lastSize=k;drawRegal()}});
 figObs.observe($("fig"));
+if(!(document.fullscreenEnabled||document.webkitFullscreenEnabled))$("fs").hidden=true;
 applyZoom();nextRound();
 }
 </script>
