@@ -45,18 +45,21 @@ h1{font-size:23px;line-height:1.1;margin:0 4px 0 0;font-weight:700}
 .spacer{margin-left:auto}
 :focus-visible{outline:3px solid var(--focus);outline-offset:2px}
 main{flex:1;display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
-.panel{display:flex;flex-direction:column;gap:12px;justify-content:center}
+.panel{display:flex;flex-direction:column;gap:12px;justify-content:center;justify-content:safe center}
 .panel>.nextrow{margin-top:10px}
 .task{text-align:center}
 .lbl{color:var(--soft)}
+.big.long{font-size:clamp(34px,5vw,52px)}.big.huge{font-size:clamp(18px,2.4vw,26px);line-height:1.25;overflow-wrap:anywhere}
 .big{display:block;font-size:clamp(52px,9vw,84px);font-weight:700;line-height:1.05}
 .actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
 .msg{text-align:center;min-height:50px;font-weight:600}
 .msg.ok{color:var(--ok)}.msg.bad{color:var(--bad)}.msg.hint{color:var(--soft);font-weight:500}
-.nota{min-height:112px;align-content:center;align-items:baseline;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px;margin:0 auto;width:min(100%,380px);background:var(--bg);border-radius:14px;padding:10px 16px}
+.nota{min-height:112px;align-content:start;align-items:baseline;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px;margin:0 auto;width:min(100%,380px);background:var(--bg);border-radius:14px;padding:10px 16px}
 .nota dt{color:var(--soft)}.nota dd{margin:0;font-weight:700;font-size:21px;line-height:1.5;overflow-wrap:anywhere}
 .nota dt{line-height:1.5}
 .nota sup{font-size:.62em;line-height:0}
+.nota dd.sm{font-size:15px;line-height:1.45;font-weight:600}
+.nota{max-height:46vh;max-height:46dvh;overflow-y:auto}
 .answer{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center}
 .answer input{width:150px;min-height:52px;border-radius:12px;border:2px solid var(--line);background:var(--bg);padding:6px 12px;font-size:26px;text-align:center;font-weight:700}
 .regal{display:flex;flex-direction:column;background:var(--bg);border-radius:16px;padding:10px 10px 8px}
@@ -80,6 +83,10 @@ button.lego:disabled{opacity:.45;cursor:default;transform:none}
 #next[hidden]{display:inline-block!important;visibility:hidden}
 @media (min-width:900px) and (orientation:landscape){
   main{grid-template-columns:minmax(300px,0.8fr) minmax(0,1.4fr)}
+  .app{height:calc((100vh - 28px) / var(--z));height:calc((100dvh - 28px) / var(--z))}
+  main{min-height:0;grid-template-rows:minmax(0,1fr)}
+  .panel{min-height:0;overflow-y:auto;scrollbar-width:thin}
+  .regal{min-height:0}.fig{min-height:0}
 }
 @media(max-width:600px){
   .app{margin:8px auto;width:calc(100% - 16px);padding:10px 10px 12px;gap:10px;border-radius:16px;min-height:calc(100vh - 16px);min-height:calc(100dvh - 16px)}
@@ -189,6 +196,12 @@ function empty(){var o={};PRIMES.forEach(function(p){o[p]=0});return o}
 function factor(n){var f=[];for(var p=2;p*p<=n;p++)while(n%p===0){f.push(p);n/=p}if(n>1)f.push(n);return f}
 function toCounts(f){var o=empty();f.forEach(function(p){o[p]++});return o}
 function value(c){var v=1;PRIMES.forEach(function(p){v*=Math.pow(p,c[p])});return v}
+/* exakter Wert als Text, auch für sehr grosse Zahlen (BigInt), mit Schweizer Tausendertrennung ab 5 Stellen */
+function bigValue(c){var s;
+  if(typeof BigInt==="function"){var v=BigInt(1);PRIMES.forEach(function(p){for(var i=0;i<c[p];i++)v*=BigInt(p)});s=v.toString()}
+  else s=String(value(c));
+  return s.length>4?s.replace(/\B(?=(\d{3})+(?!\d))/g,"\u2019"):s}
+function bigClass(s){return s.length>14?" huge":s.length>8?" long":""}
 function total(c){return PRIMES.reduce(function(s,p){return s+c[p]},0)}
 function productStr(c){var a=[];PRIMES.forEach(function(p){for(var i=0;i<c[p];i++)a.push(p)});return a.length?a.join(" · "):"–"}
 function powerHTML(c){var a=PRIMES.filter(function(p){return c[p]}).map(function(p){return c[p]>1?p+"<sup>"+c[p]+"</sup>":""+p});return a.length?a.join(" · "):"–"}
@@ -261,7 +274,9 @@ function drawCols(){
 function locked(){return st.solved&&st.mode!=="werkstatt"}
 function setMsg(t,cls){var m=$("msg");m.textContent=t;m.className="msg "+(cls||"")}
 function showNota(c){var n=$("nota");n.hidden=false;
-  n.innerHTML="<dt>Zahl</dt><dd>"+value(c)+"</dd><dt>Produkt</dt><dd>"+productStr(c)+"</dd><dt>Potenzen</dt><dd>"+powerHTML(c)+"</dd>"}
+  var z=bigValue(c),pr=productStr(c),sm=(z.length>16||pr.length>48)?' class="sm"':"";
+  n.innerHTML="<dt>Zahl</dt><dd"+sm+">"+z.replace(/\u2019/g,"\u2019<wbr>")+"</dd><dt>Produkt</dt><dd"+sm+">"+pr.replace(/ · /g,"\u00a0· ")+"</dd><dt>Potenzen</dt><dd>"+powerHTML(c)+"</dd>"}
+function hideNota(){var n=$("nota");n.hidden=true;n.innerHTML=""}
 function updateScore(){$("pts").textContent=st.score+(st.score===1?" Punkt":" Punkte");$("streak").textContent="Serie "+st.streak}
 
 function render(){
@@ -276,9 +291,9 @@ function render(){
     $("task").innerHTML='<span class="lbl">Welche Zahl zeigen die Säulen?</span><span class="big">?</span>';
     $("foot").textContent="Jeder Stein ist ein Primfaktor. Multipliziere alle Steine miteinander.";
   }else{
-    $("task").innerHTML='<span class="lbl">Baue frei – diese Zahl entsteht</span><span class="big">'+(total(c)?value(c):"–")+'</span>';
+    var bv=total(c)?bigValue(c):"–";$("task").innerHTML='<span class="lbl">Baue frei – diese Zahl entsteht</span><span class="big'+bigClass(bv)+'">'+bv+'</span>';
     $("foot").textContent=total(c)===1?"Nur ein Stein: Das ist eine Primzahl.":"Setze beliebige Steine und beobachte die Schreibweisen.";
-    if(total(c))showNota(c);else $("nota").hidden=true;
+    if(total(c))showNota(c);else hideNota();
   }
   $("app").classList.toggle("solved",locked());$("app").classList.toggle("m-rechnen",m==="rechnen");
   ["undo","hintBtn","check"].forEach(function(id){$(id).disabled=locked()});
@@ -288,8 +303,8 @@ function render(){
 /* ---------- Aktionen ---------- */
 function addStone(p){
   if(locked()||st.mode==="rechnen")return;
-  var c=cur();if(value(c)*p>1e6||c[p]>=12)return;
-  c[p]++;hist().push(p);lastAdd=p;setMsg("");if(st.mode!=="werkstatt")$("nota").hidden=true;render();
+  var c=cur();if(c[p]>=12){setMsg("Diese Säule ist voll – mehr als 12 Steine passen nicht hinein.","hint");return}
+  c[p]++;hist().push(p);lastAdd=p;setMsg("");if(st.mode!=="werkstatt")hideNota();render();
 }
 function removeStone(p){
   if(locked()||st.mode==="rechnen")return;
@@ -333,7 +348,7 @@ function win(c,text){
 }
 function fail(){st.streak=0;st.hadFail=true;updateScore()}
 function nextRound(){
-  st.solved=false;st.wrong=0;st.hadFail=false;$("next").hidden=true;$("nota").hidden=true;setMsg("");
+  st.solved=false;st.wrong=0;st.hadFail=false;$("next").hidden=true;hideNota();setMsg("");
   st.build=empty();st.hist=[];
   if(st.mode==='zerlegen')st.target=newNumber('z');else if(st.mode==='rechnen')st.m2=toCounts(factor(newNumber('r')));
   $("answer").value="";render();
