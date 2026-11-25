@@ -46,7 +46,7 @@ h1{font-size:23px;line-height:1.1;margin:0 4px 0 0;font-weight:700}
 :focus-visible{outline:3px solid var(--focus);outline-offset:2px}
 main{flex:1;display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
 /* Spielfläche auf 960 px begrenzen, damit die Wege kurz bleiben */
-main,.foot{width:100%;max-width:960px;margin-left:auto;margin-right:auto}
+main,.foot,header{width:100%;max-width:960px;margin-left:auto;margin-right:auto}
 .panel{display:flex;flex-direction:column;gap:12px;justify-content:center;justify-content:safe center}
 .panel>.nextrow{margin-top:10px}
 .task{text-align:center}
@@ -84,7 +84,7 @@ button.lego:disabled{opacity:.45;cursor:default;transform:none}
 .nota[hidden]{display:grid!important;visibility:hidden}
 #next[hidden]{display:inline-block!important;visibility:hidden}
 /* mittlere Breiten: Titel weglassen, damit Modi, Stufe, Punkte und Knöpfe in eine Zeile passen */
-@media (min-width:601px) and (max-width:1149px){
+@media (min-width:601px){
   h1{display:none}
   header{gap:8px}
   #modes .tab{padding:8px 12px}
