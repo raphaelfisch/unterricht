@@ -315,7 +315,7 @@ function render(){
     $("task").innerHTML='<span class="lbl">Welche Zahl zeigen die Säulen?</span><span class="big">'+(st.solved?value(st.m2)+eqHTML(st.m2):'?')+'</span>';
     $("foot").textContent="Jeder Stein ist ein Primfaktor. Multipliziere alle Steine miteinander.";
   }else{
-    var bv=total(c)?bigValue(c):"–";$("task").innerHTML='<span class="lbl">Deine Zahl</span><span class="big'+bigClass(bv)+'">'+bv+(total(c)?eqHTML(c):'')+'</span>';
+    var bv=total(c)?bigValue(c):"–";$("task").innerHTML='<span class="lbl">Deine Zahl</span><span class="big'+bigClass(bv)+'">'+(total(c)>1?'<span class="eqn">'+powerHTML(c)+' = </span>':'')+bv+'</span>';
     $("foot").textContent=total(c)===1?"Nur ein Stein: Das ist eine Primzahl.":"Setze beliebige Steine und beobachte die Schreibweisen.";
     hideNota();
   }
@@ -376,8 +376,12 @@ function nextRound(){
   if(st.mode==='zerlegen')st.target=newNumber('z');else if(st.mode==='rechnen')st.m2=toCounts(factor(newNumber('r')));
   $("answer").value="";render();
 }
+/* Direktlinks: …#zahl-zu-saeulen, …#saeulen-zu-zahl, …#werkstatt (bleibt auch bei F5) */
+var HASH={zerlegen:"zahl-zu-saeulen",rechnen:"saeulen-zu-zahl",werkstatt:"werkstatt"};
+function modeFromHash(){var k=(location.hash||"").replace("#","");for(var m in HASH)if(HASH[m]===k)return m;return "zerlegen"}
 function setMode(m){
-  st.mode=m;document.querySelectorAll("#modes .tab").forEach(function(t){t.setAttribute("aria-selected",t.dataset.mode===m)});
+  st.mode=m;
+  if(location.hash!=="#"+HASH[m]){try{history.replaceState(null,"","#"+HASH[m])}catch(e){location.hash=HASH[m]}}document.querySelectorAll("#modes .tab").forEach(function(t){t.setAttribute("aria-selected",t.dataset.mode===m)});
   if(m==="werkstatt"){st.solved=false;$("next").hidden=true;setMsg("");render()}else nextRound();
 }
 
@@ -426,7 +430,8 @@ if(window.visualViewport)window.visualViewport.addEventListener("resize",applyZo
 var lastSize="";var figObs=new ResizeObserver(function(en){var r=en[0].contentRect,k=Math.round(r.width)+"x"+Math.round(r.height);if(k!==lastSize){lastSize=k;drawRegal()}});
 figObs.observe($("fig"));
 if(!(document.fullscreenEnabled||document.webkitFullscreenEnabled))$("fs").hidden=true;
-applyZoom();nextRound();
+window.addEventListener("hashchange",function(){var m=modeFromHash();if(m!==st.mode)setMode(m)});
+applyZoom();setMode(modeFromHash());
 }
 </script>
 </body>
