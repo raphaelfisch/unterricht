@@ -13,31 +13,21 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     background: #f5f5f0;
     color: #2c2c2a;
-    padding: 20px;
     min-height: 100vh;
   }
+  /* Kopfzeile wie im Distanzen-Tool: durchgehende Leiste, Titel links, Knöpfe rechts */
   header {
-    max-width: 1400px;
-    margin: 0 auto 12px;
-    padding: 8px 16px;
-    background: white;
-    border-radius: 12px;
-    border: 1px solid #d3d1c7;
-  }
-  h1 { font-size: 18px; font-weight: 500; }
-
-  .toolbar {
-    max-width: 1400px;
-    margin: 0 auto 20px;
     display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    padding: 12px 16px;
-    background: white;
-    border-radius: 12px;
-    border: 1px solid #d3d1c7;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    padding: 8px 12px;
+    background: white;
+    border-bottom: 1px solid #d3d1c7;
+    margin-bottom: 20px;
   }
+  h1 { font-size: 18px; font-weight: 600; margin-right: auto; }
+  .toolbar { display: contents; }
   .toolbar-group {
     display: flex;
     align-items: center;
@@ -47,29 +37,27 @@
   .toolbar label { font-size: 14px; color: #444441; }
   button {
     font-family: inherit;
-    font-size: 14px;
-    padding: 10px 14px;
+    font-size: 15px;
+    padding: 8px 14px;
     min-height: 40px;
     border: 1px solid #b4b2a9;
     border-radius: 8px;
     background: white;
+    color: #2c2c2a;
     cursor: pointer;
     transition: all 0.15s;
     touch-action: manipulation;
   }
   button:hover { background: #f1efe8; border-color: #888780; }
   button.primary {
-    background: #534ab7;
+    background: #2c2c2a;
     color: white;
-    border-color: #3c3489;
+    border-color: #2c2c2a;
   }
-  button.primary:hover { background: #3c3489; }
-  button.success {
-    background: #1d9e75;
-    color: white;
-    border-color: #0f6e56;
-  }
-  button.success:hover { background: #0f6e56; }
+  button.primary:hover { background: #444441; }
+  /* Export-Knöpfe neutral wie im Distanzen-Tool */
+  button.success { background: white; color: #2c2c2a; border-color: #b4b2a9; }
+  button.success:hover { background: #f1efe8; border-color: #888780; }
   button.active {
     background: #534ab7;
     color: white;
@@ -77,8 +65,9 @@
   }
 
   .container {
-    max-width: 1400px;
+    max-width: 1440px;
     margin: 0 auto;
+    padding: 0 20px 20px;
     display: flex;
     flex-direction: column;
     gap: 20px;
@@ -104,7 +93,7 @@
   }
   .panel h2 {
     font-size: 16px;
-    font-weight: 500;
+    font-weight: 600;
     margin-bottom: 8px;
     color: #2c2c2a;
   }
@@ -128,6 +117,7 @@
     background: transparent;
     border: 1px solid #d3d1c7;
   }
+  .panel-header-controls .ic { width: 14px; height: 14px; }
   .panel-header-controls button:hover {
     background: #f1efe8;
     color: #2c2c2a;
@@ -153,6 +143,7 @@
 
   /* 3D view */
   #threed-container {
+    position: relative;
     width: 100%;
     height: 400px;
     background: #fafaf5;
@@ -252,18 +243,19 @@
   .dialog-overlay.visible { display: flex; }
   .dialog {
     background: white;
-    border-radius: 12px;
-    padding: 24px;
+    border-radius: 14px;
+    padding: 18px 20px;
     max-width: 540px;
     width: 100%;
     max-height: 90vh;
     overflow-y: auto;
   }
   .dialog h2 {
-    font-size: 20px;
-    font-weight: 500;
-    margin-bottom: 16px;
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 12px;
   }
+  .dialog input[type=checkbox], .dialog input[type=radio] { accent-color: #2c2c2a; }
   .dialog-section {
     margin-bottom: 20px;
     padding-bottom: 16px;
@@ -332,6 +324,45 @@
   }
   .dropdown-menu button:hover { background: #f1efe8; }
 
+  .code-now { font-size: 15px; margin-bottom: 8px; }
+  .code-now b { font-family: monospace; font-size: 18px; letter-spacing: 1px; }
+  .code-row { display: flex; gap: 8px; }
+  .code-row input {
+    flex: 1; min-width: 0; font-family: monospace; font-size: 16px;
+    padding: 8px 10px; border: 1px solid #b4b2a9; border-radius: 8px;
+  }
+  .lt { display: inline; }
+  .dropdown-menu { left: auto; right: 0; min-width: 230px; }
+  @media (max-width: 600px) {
+    header { gap: 4px; }
+    h1 { display: none; }
+    .lt { display: none; }
+    header .hb { width: 36px; padding: 0; }
+    #btn-random { padding: 8px 10px; }
+  }
+  @media (max-width: 380px) {
+    header .hb { width: 33px; }
+  }
+
+
+  /* Eigene Symbole (SVG) statt Emojis */
+  .ic { width: 18px; height: 18px; flex: none; display: block; }
+  button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+  .dropdown-menu button { justify-content: flex-start; }
+  /* Hinweis-Meldung */
+  #notice {
+    position: fixed; left: 50%; bottom: 20px;
+    transform: translateX(-50%);
+    max-width: min(560px, 92vw);
+    background: #2c2c2a; color: white;
+    padding: 12px 18px; border-radius: 10px;
+    font-size: 15px; line-height: 1.4;
+    z-index: 2000;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    display: none;
+  }
+  #notice.visible { display: block; }
+
   /* ================ BEAMER-MODUS ================ */
   #beamer-overlay {
     display: none;
@@ -367,12 +398,10 @@
     min-height: 44px;
     min-width: 44px;
   }
-  #beamer-exit {
-    background: #d9534f;
-    color: white;
-    border-color: #b94942;
-  }
-  #beamer-exit:hover { background: #b94942; }
+  /* Vollbild-Knöpfe wie in der Kopfzeile (gleiche Reihenfolge, kein Rot) */
+  .beamer-toolbar-controls button { font-size: 15px !important; padding: 8px 14px !important; min-height: 40px !important; }
+  .beamer-title { font-size: 18px !important; font-weight: 600 !important; }
+  .beamer-toolbar { padding: 8px 12px !important; }
 
   .beamer-stage {
     flex: 1;
@@ -453,7 +482,7 @@
     padding: 0;
     min-height: 0;
   }
-  .beamer-dot.active { background: #534ab7; }
+  .beamer-dot.active { background: #2c2c2a; }
 
   /* Beamer-Seitenansichten — entweder alle horizontal oder alle vertikal */
   .beamer-sideviews {
@@ -504,15 +533,9 @@
 
   /* Mobile-Optimierungen */
   @media (max-width: 700px) {
-    body { padding: 10px; }
-    header { padding: 6px 12px; margin-bottom: 8px; }
+    header { padding: 6px 8px; margin-bottom: 10px; gap: 6px; }
     h1 { font-size: 16px; }
-
-    .toolbar {
-      padding: 10px 12px;
-      gap: 8px;
-      margin-bottom: 12px;
-    }
+    .container { padding: 0 10px 10px; }
     .toolbar-group { gap: 6px; }
     button {
       font-size: 13px;
@@ -537,54 +560,77 @@
   }
 
   @media (max-width: 420px) {
-    body { padding: 8px; }
-    .toolbar { padding: 8px; gap: 6px; }
+    .container { padding: 0 8px 8px; }
     button { font-size: 12px; padding: 9px 10px; }
     #bauplan-canvas, #threed-container, #dots-canvas, #grid-canvas { height: 280px; }
     .panel { padding: 12px; }
   }
+
+  /* Kopfzeile passt sich an: Stufe 1 nur Symbole, Stufe 2 ohne Titel, Stufe 3 schmaler */
+  header.fit1 .lt { display: none !important; }
+  header.fit1 .hb, header.fit1 button.icon { width: 40px; padding: 0; }
+  header.fit2 h1 { display: none; }
+  header.fit3 { gap: 3px !important; padding-left: 4px; padding-right: 4px; }
+  header.fit3 .hb, header.fit3 button.icon { width: 31px !important; }
+  header.fit3 button.primary { padding: 6px 7px !important; font-size: 13px !important; }
+
+  @media (max-width: 600px) { .beamer-toolbar-controls .lt { display: none; } .beamer-toolbar-controls button { padding: 0 !important; width: 40px; } }
+  /* alle Box-Kopfzeilen gleich hoch, damit die Boxen gleich gross bleiben */
+  .panel > h2, .panel-header { height: 24px; margin-bottom: 8px; display: flex; align-items: center; }
+  .panel-header h2 { margin: 0; }
+  .panel-header-controls button { height: 24px; padding: 0 7px; }
+
+  /* Box-Kopfzeilen wie im Distanzen-Tool: 32 px, Symbole rechts, gleiche Knöpfe */
+  .panel > h2, .panel-header { height: 32px; }
+  .panel-header-controls { gap: 6px; }
+  .panel-header-controls button {
+    width: 32px; height: 32px; min-height: 32px; padding: 0;
+    color: #2c2c2a; background: white; border: 1px solid #b4b2a9; border-radius: 8px;
+  }
+  .panel-header-controls button:hover { background: #f1efe8; border-color: #888780; }
+  .panel-header-controls .ic { width: 18px; height: 18px; }
+
+  /* 3D-Fläche mit runden Ecken wie die anderen Boxen (Canvas wird zugeschnitten) */
+  #threed-container { overflow: hidden; }
+  #threed-container canvas { border-radius: 8px; }
 </style>
 </head>
 <body>
 
 <header>
   <h1>Würfelkörper</h1>
-</header>
-
 <div class="toolbar">
   <div class="toolbar-group">
-    <button id="btn-random" class="primary">🎲 Zufälliger Würfelkörper</button>
-    <button id="btn-clear">Leeren</button>
-  </div>
-  <div class="toolbar-group">
-    <input type="text" id="plan-code-input" maxlength="9" pattern="[0-3]{9}" placeholder="313011022"
-      style="font-family: monospace; padding: 10px 12px; min-height: 40px; box-sizing: border-box; border: 1px solid #b4b2a9; border-radius: 8px; width: 14ch; font-size: 14px; text-align: center;">
-    <button id="btn-load-code">Code laden</button>
-  </div>
-  <div class="toolbar-group">
-    <button id="btn-export-pdf" class="success">📄 Aufgabe als PDF</button>
+    <button id="btn-random" class="primary" title="Neuer Körper"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5l8.5 4.75v9.5L12 21.5l-8.5-4.75v-9.5z"/><path d="M3.5 7.25L12 12l8.5-4.75M12 12v9.5"/></svg>Neuer Körper</button>
+    <button id="btn-clear" class="hb" title="Leeren"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg><span class="lt">Leeren</span></button>
+    <button id="btn-distanzen" class="hb" title="Diesen Körper im Distanzen-Tool öffnen"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/></svg><span class="lt">Distanzen</span></button>
+    <button id="btn-code" class="hb" title="Code eingeben oder teilen"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM21 14v.01M14 21h.01M17 21h4v-4"/></svg><span class="lt">Code</span></button>
     <div class="dropdown">
-      <button id="btn-export-menu" class="success">📥 PNG-Export ▾</button>
+      <button id="btn-export-menu" class="hb" title="Export"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 17v3h16v-3"/></svg><span class="lt">Export ▾</span></button>
       <div class="dropdown-menu" id="export-menu">
-        <button data-export="bauplan">🗺️ Bauplan</button>
-        <button data-export="photo">📷 3D-Foto</button>
-        <button data-export="dots">⋮⋮ Punktraster-Skizze</button>
-        <button data-export="grid">▦ Häuschen-Skizze</button>
-        <button data-export="sideviews">⊞ Seitenansichten</button>
+        <button data-export="pdf">Arbeitsblatt (PDF) …</button>
+        <button data-export="bauplan">Bauplan (PNG)</button>
+        <button data-export="photo">3D-Foto (PNG)</button>
+        <button data-export="dots">Punktraster-Skizze (PNG)</button>
+        <button data-export="grid">Häuschen-Skizze (PNG)</button>
+        <button data-export="sideviews">Seitenansichten (PNG)</button>
       </div>
     </div>
-    <button id="btn-beamer">🖥️ Vollbild</button>
+    <button id="btn-beamer" class="hb" title="Vollbild"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg><span class="lt">Vollbild</span></button>
   </div>
 </div>
+</header>
+
+<div id="notice" role="status"></div>
 
 <!-- Beamer-Modus Overlay -->
 <div id="beamer-overlay">
   <div class="beamer-toolbar">
     <div class="beamer-title" id="beamer-title">3D-Ansicht</div>
     <div class="beamer-toolbar-controls">
-      <button id="beamer-random" title="Zufälliger Würfelkörper">🎲</button>
-      <button id="beamer-clear" title="Leeren">🗑️</button>
-      <button id="beamer-exit" title="Vollbild-Modus verlassen">✕</button>
+      <button id="beamer-random" class="primary" title="Neuer Körper"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5l8.5 4.75v9.5L12 21.5l-8.5-4.75v-9.5z"/><path d="M3.5 7.25L12 12l8.5-4.75M12 12v9.5"/></svg><span class="lt">Neuer Körper</span></button>
+      <button id="beamer-clear" title="Leeren"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg><span class="lt">Leeren</span></button>
+      <button id="beamer-exit" title="Vollbild beenden"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M15 20v-5h5M9 20v-5H4"/></svg><span class="lt">Vollbild beenden</span></button>
     </div>
   </div>
   <div class="beamer-stage" id="beamer-stage">
@@ -599,17 +645,16 @@
     <div class="panel">
       <div class="panel-header">
         <h2>3D-Ansicht</h2>
-        <div class="panel-header-controls">
-          <button id="btn-rotate-left" title="45° links drehen">↺</button>
-          <button id="btn-rotate-right" title="45° rechts drehen">↻</button>
-          <button id="btn-reset-view" title="Ansicht zurücksetzen">⟲</button>
-        </div>
+        <div class="panel-header-controls"><button class="view-reset" title="Ansicht zurücksetzen"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 9.5V20h14V9.5"/></svg></button></div>
       </div>
       <div id="threed-host"><div id="threed-container"></div></div>
     </div>
 
     <div class="panel">
-      <h2>Bauplan</h2>
+      <div class="panel-header">
+        <h2>Bauplan</h2>
+        <div class="panel-header-controls"><button class="view-reset" title="Ansicht zurücksetzen"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 9.5V20h14V9.5"/></svg></button></div>
+      </div>
       <div id="bauplan-host"><canvas id="bauplan-canvas" width="600" height="400"></canvas></div>
     </div>
   </div>
@@ -646,6 +691,25 @@
   </div>
 </div>
 
+<!-- Code-Dialog -->
+<div id="code-dialog" class="dialog-overlay">
+  <div class="dialog">
+    <h2>Code</h2>
+    <div class="code-now">Code dieses Körpers: <b id="code-now"></b></div>
+    <div class="code-row">
+      <input type="text" id="plan-code-input" inputmode="numeric" maxlength="16" placeholder="Code eingeben (9 Ziffern)" autocomplete="off">
+      <button id="btn-load-code" class="primary">Laden</button>
+    </div>
+    <h3 style="margin:18px 0 8px;font-size:16px">Teilen</h3>
+    <div id="code-qr" style="display:flex;justify-content:center;margin-bottom:10px"></div>
+    <input id="code-link" readonly style="width:100%;font-family:monospace;font-size:13px;padding:8px;border:1px solid #b4b2a9;border-radius:8px">
+    <div class="dialog-buttons">
+      <button id="code-copy">Link kopieren</button>
+      <button id="code-close" class="primary">Schliessen</button>
+    </div>
+  </div>
+</div>
+
 <!-- PDF-Export-Dialog -->
 <div id="pdf-dialog" class="dialog-overlay">
   <div class="dialog">
@@ -671,7 +735,7 @@
 
     <div class="dialog-buttons">
       <button id="btn-pdf-cancel">Abbrechen</button>
-      <button id="btn-pdf-generate" class="success">PDF erstellen</button>
+      <button id="btn-pdf-generate" class="primary">PDF erstellen</button>
     </div>
   </div>
 </div>
@@ -724,9 +788,45 @@ function getCurrentPlanURL() {
   return base + '#p=' + encodePlanToHash(plan);
 }
 
+// Meldung oben einblenden
+let noticeTimer = null;
+function showNotice(msg) {
+  const el = document.getElementById('notice');
+  el.textContent = msg;
+  el.classList.add('visible');
+  clearTimeout(noticeTimer);
+  noticeTimer = setTimeout(() => el.classList.remove('visible'), 6000);
+}
+const TOO_BIG_MSG = 'Dieser Körper stammt aus dem 4×4×4-Distanzen-Tool und ist zu gross für das Würfelkörper-Tool (höchstens 3 × 3 × 3 Würfel).';
+
+// 16-stelliger Code aus dem Distanzen-Tool (4×4, Höhen 0–4):
+// passt der Körper in 3×3×3, wird er verschoben übernommen, sonst null
+function planFrom4x4Code(code) {
+  if (!/^[0-4]{16}$/.test(code)) return null;
+  let r0 = 4, r1 = -1, c0 = 4, c1 = -1, maxH = 0;
+  for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
+    const h = parseInt(code[r * 4 + c], 10);
+    if (!h) continue;
+    r0 = Math.min(r0, r); r1 = Math.max(r1, r); c0 = Math.min(c0, c); c1 = Math.max(c1, c);
+    maxH = Math.max(maxH, h);
+  }
+  if (r1 < 0 || r1 - r0 > 2 || c1 - c0 > 2 || maxH > 3) return null;
+  r0 = Math.min(r0, 1); c0 = Math.min(c0, 1);
+  const p = Array.from({length: SIZE}, () => Array(SIZE).fill(0));
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) p[r][c] = parseInt(code[(r0 + r) * 4 + (c0 + c)], 10);
+  return p;
+}
+
 // Beim App-Start: Hash auslesen und plan setzen
 function loadPlanFromURL() {
   const hash = window.location.hash;
+  const big = hash.match(/[#&]p=([0-4]{16})(?![0-9])/);
+  if (big) {
+    const p = planFrom4x4Code(big[1]);
+    if (p) { plan = p; return true; }
+    setTimeout(() => showNotice(TOO_BIG_MSG), 300);
+    return false;
+  }
   const match = hash.match(/[#&]p=([0-3]{9})/);
   if (match) {
     const p = decodePlanFromHash(match[1]);
@@ -1515,10 +1615,27 @@ function initOrientationCube() {
 // ====================================================================
 // ZUFALLSGENERATOR
 // ====================================================================
+// Alle Türme hängen über Seitenflächen zusammen (gleiche Regel wie im Distanzen-Tool)
+function isConnected(p) {
+  const cells = [];
+  for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) if (p[r][c] > 0) cells.push([r, c]);
+  if (!cells.length) return false;
+  const seen = new Set([cells[0].join()]);
+  const stack = [cells[0]];
+  while (stack.length) {
+    const [r, c] = stack.pop();
+    for (const [dr, dc] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nr = r + dr, nc = c + dc, k = nr + ',' + nc;
+      if (nr >= 0 && nr < SIZE && nc >= 0 && nc < SIZE && p[nr][nc] > 0 && !seen.has(k)) { seen.add(k); stack.push([nr, nc]); }
+    }
+  }
+  return seen.size === cells.length;
+}
+
 function generateRandom() {
   const s = { minCubes: 8, maxCubes: 15, maxStack: 3, fillProb: 0.75 };
   let attempts = 0;
-  while (attempts < 100) {
+  while (attempts < 500) {
     const newPlan = Array.from({length: SIZE}, () => Array(SIZE).fill(0));
     let total = 0;
     for (let r = 0; r < SIZE; r++) {
@@ -1530,7 +1647,7 @@ function generateRandom() {
         }
       }
     }
-    if (total >= s.minCubes && total <= s.maxCubes) {
+    if (total >= s.minCubes && total <= s.maxCubes && isConnected(newPlan)) {
       plan = newPlan;
       updateAll();
       return;
@@ -1545,8 +1662,24 @@ function generateRandom() {
 
 // PDF-Dialog Logik
 const pdfDialog = document.getElementById('pdf-dialog');
-document.getElementById('btn-export-pdf').addEventListener('click', () => {
-  pdfDialog.classList.add('visible');
+// Code-Dialog
+const codeDialog = document.getElementById('code-dialog');
+document.getElementById('btn-code').addEventListener('click', () => {
+  document.getElementById('code-now').textContent = encodePlanToHash(plan);
+  const url = getCurrentPlanURL();
+  document.getElementById('code-link').value = url;
+  const qr = makeQRDataURL(url);
+  document.getElementById('code-qr').innerHTML = qr ? '<img src="' + qr + '" style="width:200px;height:200px;image-rendering:pixelated">' : '';
+  planCodeInput.value = '';
+  codeDialog.classList.add('visible');
+});
+document.getElementById('code-close').addEventListener('click', () => codeDialog.classList.remove('visible'));
+codeDialog.addEventListener('click', (e) => { if (e.target === codeDialog) codeDialog.classList.remove('visible'); });
+document.getElementById('code-copy').addEventListener('click', () => {
+  const inp = document.getElementById('code-link');
+  inp.select();
+  if (navigator.clipboard) navigator.clipboard.writeText(inp.value).catch(() => document.execCommand('copy'));
+  else document.execCommand('copy');
 });
 document.getElementById('btn-pdf-cancel').addEventListener('click', () => {
   pdfDialog.classList.remove('visible');
@@ -2253,6 +2386,13 @@ function isoProject(r, c, h, ox, oy, size) {
 // EVENTS
 // ====================================================================
 document.getElementById('btn-random').addEventListener('click', generateRandom);
+document.getElementById('btn-distanzen').addEventListener('click', () => {
+  const file = 'wuerfelkoerper-distanz.html';
+  const base = /^https?:/.test(location.protocol)
+    ? location.href.split('#')[0].replace(/[^\/]*$/, file)
+    : 'https://raphaelfisch.github.io/unterricht/mathe/' + file;
+  window.open(base + '#p=' + encodePlanToHash(plan), '_blank');
+});
 document.getElementById('btn-clear').addEventListener('click', () => {
   plan = Array.from({length: SIZE}, () => Array(SIZE).fill(0));
   updateAll();
@@ -2261,12 +2401,28 @@ document.getElementById('btn-clear').addEventListener('click', () => {
 const planCodeInput = document.getElementById('plan-code-input');
 function loadPlanFromCode() {
   const code = planCodeInput.value.trim();
+  if (code.length === 16) {
+    const p = planFrom4x4Code(code);
+    if (p) {
+      plan = p;
+      updateAll();
+      planCodeInput.style.borderColor = '#b4b2a9';
+      document.getElementById('code-dialog').classList.remove('visible');
+    } else {
+      showNotice(/^[0-4]{16}$/.test(code) ? TOO_BIG_MSG : 'Ungültiger Code.');
+      planCodeInput.style.borderColor = '#d9534f';
+      setTimeout(() => { planCodeInput.style.borderColor = '#b4b2a9'; }, 1500);
+    }
+    return;
+  }
   const decoded = decodePlanFromHash(code);
   if (decoded) {
     plan = decoded;
     updateAll();
     planCodeInput.style.borderColor = '#b4b2a9';
+    document.getElementById('code-dialog').classList.remove('visible');
   } else {
+    showNotice('Ungültiger Code: 9 Ziffern von 0 bis 3.');
     // Ungültiger Code — kurz rot blinken
     planCodeInput.style.borderColor = '#d9534f';
     setTimeout(() => { planCodeInput.style.borderColor = '#b4b2a9'; }, 1500);
@@ -2276,23 +2432,50 @@ document.getElementById('btn-load-code').addEventListener('click', loadPlanFromC
 planCodeInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') loadPlanFromCode();
 });
-document.getElementById('btn-reset-view').addEventListener('click', () => {
-  rotationH = Math.PI / 4;
-  cameraAngleV = Math.PI / 5;
-  viewSize = 3.5;
-  updateCameraPosition();
-  drawBauplan();
-});
-document.getElementById('btn-rotate-left').addEventListener('click', () => {
-  rotationH += Math.PI / 4;
-  updateCameraPosition();
-  drawBauplan();
-});
-document.getElementById('btn-rotate-right').addEventListener('click', () => {
-  rotationH -= Math.PI / 4;
-  updateCameraPosition();
-  drawBauplan();
-});
+// Ansicht zurücksetzen: Orientierungswürfel (V/R/O) antippen – fährt sichtbar zurück
+let resetAnim = null;
+function animateResetView() {
+  const from = { h: rotationH, v: cameraAngleV, s: viewSize };
+  // auf kürzestem Weg zurück auf 45°
+  let dh = (Math.PI / 4 - from.h) % (2 * Math.PI);
+  if (dh > Math.PI) dh -= 2 * Math.PI; else if (dh < -Math.PI) dh += 2 * Math.PI;
+  const to = { h: from.h + dh, v: Math.PI / 5, s: 3.5 };
+  const t0 = performance.now();
+  cancelAnimationFrame(resetAnim);
+  (function step(now) {
+    const t = Math.min(1, (now - t0) / 600);
+    const e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    rotationH = from.h + (to.h - from.h) * e;
+    cameraAngleV = from.v + (to.v - from.v) * e;
+    viewSize = from.s + (to.s - from.s) * e;
+    updateCameraPosition();
+    drawBauplan();
+    if (t < 1) resetAnim = requestAnimationFrame(step);
+  })(t0);
+}
+// Liegt der Punkt (CSS-Pixel im 3D-Canvas) auf dem Orientierungswürfel oben rechts?
+function onOrientationCube(x, y) {
+  const W = renderer.domElement.clientWidth;
+  return x >= W - 70 - 6 && x <= W - 6 && y >= 6 && y <= 6 + 70;
+}
+function setupCubeReset() {
+  const dom = renderer.domElement;
+  let downX = 0, downY = 0;
+  dom.addEventListener('pointerdown', (e) => { downX = e.clientX; downY = e.clientY; });
+  dom.addEventListener('click', (e) => {
+    if (Math.hypot(e.clientX - downX, e.clientY - downY) > 5) return;
+    const r = dom.getBoundingClientRect();
+    if (onOrientationCube(e.clientX - r.left, e.clientY - r.top)) animateResetView();
+  });
+  dom.addEventListener('mousemove', (e) => {
+    if (e.buttons) return;
+    const r = dom.getBoundingClientRect();
+    const on = onOrientationCube(e.clientX - r.left, e.clientY - r.top);
+    dom.style.cursor = on ? 'pointer' : '';
+    dom.title = on ? 'Ansicht zurücksetzen' : '';
+  });
+  document.querySelectorAll('.view-reset').forEach(b => b.addEventListener('click', animateResetView));
+}
 // Dropdown-Menü
 const exportDropdown = document.getElementById('btn-export-menu').parentElement;
 document.getElementById('btn-export-menu').addEventListener('click', (e) => {
@@ -2305,7 +2488,8 @@ document.addEventListener('click', () => {
 document.getElementById('export-menu').addEventListener('click', (e) => {
   if (e.target.tagName === 'BUTTON') {
     const type = e.target.dataset.export;
-    if (type === 'bauplan') exportBauplanPNG();
+    if (type === 'pdf') pdfDialog.classList.add('visible');
+    else if (type === 'bauplan') exportBauplanPNG();
     else if (type === 'photo') exportPhoto();
     else if (type === 'dots') exportDotsPNG();
     else if (type === 'grid') exportGridPNG();
@@ -2846,6 +3030,7 @@ function updateAll() {
 }
 
 init3D();
+setupCubeReset();
 if (!loadPlanFromURL()) {
   plan = [
     [3, 1, 3],
@@ -2854,6 +3039,29 @@ if (!loadPlanFromURL()) {
   ];
 }
 updateAll();
+
+// Kopfzeile auf einer Zeile halten: schrittweise kompakter machen, bis alles passt
+function fitHeader() {
+  const h = document.querySelector('header');
+  if (!h) return;
+  h.classList.remove('fit1', 'fit2', 'fit3');
+  const wraps = () => {
+    const items = Array.from(h.querySelectorAll('h1, header > button, header > .dropdown > button, .toolbar button, .toolbar .dropdown > button'))
+      .filter(e => e.offsetParent !== null && !e.closest('.dropdown-menu'));
+    if (h.scrollWidth > h.clientWidth + 1) return true;
+    const cs = items.map(e => { const r = e.getBoundingClientRect(); return r.top + r.height / 2; });
+    return Math.max.apply(null, cs) - Math.min.apply(null, cs) > 12;
+  };
+  for (const c of ['fit1', 'fit2', 'fit3']) {
+    if (!wraps()) return;
+    h.classList.add(c);
+  }
+}
+window.addEventListener('resize', fitHeader);
+if (typeof ResizeObserver !== 'undefined') { let fhFrame = 0; new ResizeObserver(() => { cancelAnimationFrame(fhFrame); fhFrame = requestAnimationFrame(fitHeader); }).observe(document.documentElement); }
+window.addEventListener('orientationchange', () => setTimeout(fitHeader, 200));
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitHeader);
+setTimeout(fitHeader, 0);
 </script>
 
 </body>
