@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Drahtgitterwürfel</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #f5f5f0; color: #2c2c2a; font-size: 16px;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  button {
+    font-family: inherit; font-size: 15px; padding: 8px 14px; min-height: 40px;
+    border: 1px solid #b4b2a9; border-radius: 8px; background: white; color: #2c2c2a;
+    cursor: pointer; touch-action: manipulation; transition: background 0.15s, border-color 0.15s;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  button:hover { background: #f1efe8; border-color: #888780; }
+  button.primary { background: #2c2c2a; color: white; border-color: #2c2c2a; }
+  button.primary:hover { background: #444441; }
+  button.on { background: #fde68a; border-color: #b45309; }
+  button.icon { width: 40px; padding: 0; font-size: 18px; }
+  button:disabled { opacity: 0.4; cursor: default; }
+  .ic { width: 18px; height: 18px; flex: none; display: block; }
+
+  /* ---------- Kopfzeile ---------- */
+  header {
+    display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+    background: white; border-bottom: 1px solid #d3d1c7; flex-wrap: wrap;
+  }
+  header h1 { font-size: 18px; font-weight: 600; margin-right: auto; }
+
+  /* ---------- Hauptbereich ---------- */
+  main { flex: 1; display: flex; min-height: 0; width: 100%; max-width: 1440px; margin: 0 auto; }
+  #viewer {
+    position: relative; flex: 1; min-width: 0;
+    display: flex; flex-direction: column; gap: 8px;
+    margin: 20px 0 20px 20px; padding: 20px;
+    background: white; border: 1px solid #d3d1c7; border-radius: 12px;
+  }
+  .viewbar { flex: none; display: flex; align-items: center; height: 32px; gap: 6px; }
+  .box-title { font-size: 16px; font-weight: 600; margin: 0 auto 0 0; white-space: nowrap; }
+  .viewctl { display: flex; gap: 6px; }
+  .viewbar button { width: 32px; height: 32px; min-height: 32px; padding: 0; background: rgba(255,255,255,0.92); }
+  .viewbar #btn-show { width: auto; padding: 0 10px; font-size: 14px; }
+  #stage {
+    position: relative; flex: 1; min-height: 0;
+    background: #fafaf5; border: 1px solid #d3d1c7; border-radius: 8px; overflow: hidden;
+  }
+  #cv { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: grab; display: block; }
+  #cv:active { cursor: grabbing; }
+
+  #toast {
+    position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); max-width: 90%;
+    background: #2c2c2a; color: white; padding: 10px 16px; border-radius: 10px; font-size: 16px;
+    opacity: 0; transition: opacity 0.25s; pointer-events: none; text-align: center;
+  }
+  #toast.show { opacity: 0.95; }
+
+  /* ---------- Seitenleiste ---------- */
+  #panel {
+    --px: 20px; --pb: 20px;
+    width: 400px; flex-shrink: 0; overflow-y: auto;
+    padding: 20px var(--px) var(--pb);
+    background: #f5f5f0; display: flex; flex-direction: column; gap: 10px;
+  }
+  #panel-content { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+  .card { background: white; border: 1px solid #d3d1c7; border-radius: 12px; padding: 12px 14px; }
+  .card .h {
+    font-weight: 600; font-size: 16px; margin-bottom: 8px;
+    display: flex; align-items: center; gap: 8px; justify-content: space-between;
+  }
+  .card p { font-size: 15px; line-height: 1.4; color: #444441; margin-bottom: 8px; }
+  .card p:last-child { margin-bottom: 0; }
+  .card p.tip { font-size: 13px; color: #888780; }
+
+  .stufe-toggle { display: flex; background: #e8e6dd; border-radius: 12px; padding: 4px; gap: 4px; }
+  .stufe-toggle button {
+    flex: 1; border: none; background: transparent; font-size: 16px; font-weight: 600;
+    color: #5f5e5a; min-height: 44px; border-radius: 9px;
+  }
+  .stufe-toggle button:hover { background: rgba(255,255,255,0.5); }
+  .stufe-toggle button.on { background: white; color: #2c2c2a; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+
+  .swatches { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+  .sw {
+    width: 38px; height: 38px; min-height: 38px; padding: 0; border-radius: 50%;
+    border: 3px solid white; box-shadow: 0 0 0 1px #b4b2a9;
+  }
+  .sw:hover { border-color: white; filter: brightness(1.08); }
+  .sw.on { box-shadow: 0 0 0 3px #2c2c2a; }
+
+  .list { display: flex; flex-direction: column; gap: 2px; }
+  .item {
+    display: flex; align-items: center; gap: 10px; padding: 4px 4px 4px 6px;
+    border-radius: 8px; min-height: 42px;
+  }
+  .item:hover, .item.hl { background: #f1efe8; }
+  .item .dot { width: 14px; height: 14px; border-radius: 50%; flex: none; }
+  .item .dot.poly { border-radius: 3px; opacity: 0.75; }
+  .item .nm { flex: 1; font-size: 16px; }
+  .item .nm small { color: #888780; font-size: 13px; margin-left: 4px; }
+  .item .len { font-size: 17px; white-space: nowrap; }
+  .item button { width: 34px; min-height: 34px; height: 34px; padding: 0; border-color: transparent; background: transparent; color: #888780; }
+  .item button:hover { border-color: #b4b2a9; background: white; color: #b91c1c; }
+  .tot { display: grid; grid-template-columns: 1fr auto; gap: 10px 12px; align-items: center; font-size: 17px; }
+  .tot .tl { color: #444441; font-size: 16px; }
+  .tot .tl small { display: block; font-size: 12px; color: #888780; }
+  .tot .tv { text-align: right; font-weight: 600; }
+  .item .len { text-align: right; }
+  .empty { font-size: 15px; color: #888780; padding: 4px 0; }
+
+  .inline-sel {
+    font-family: inherit; font-size: 15px; color: #2c2c2a; padding: 2px 6px; margin-left: 2px;
+    border: 1px solid #b4b2a9; border-radius: 6px; background: white;
+  }
+  .sub { font-size: 15px; color: #5f5e5a; margin-top: 8px; }
+
+  /* Wurzelzeichen mit Wurzelstrich */
+  .rad { display: inline-flex; align-items: baseline; vertical-align: baseline; line-height: 1.15; }
+  .rad::before {
+    content: ''; align-self: stretch; flex: none; width: 0.62em; margin-right: -1px; background: currentColor;
+    -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 40' preserveAspectRatio='none'><path d='M0.8 24 L3.6 21.5 L7 38.5 L11.6 1.2' fill='none' stroke='black' stroke-width='1.6' stroke-linejoin='round' stroke-linecap='round' vector-effect='non-scaling-stroke'/></svg>") no-repeat 0 0 / 100% 100%;
+    mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 40' preserveAspectRatio='none'><path d='M0.8 24 L3.6 21.5 L7 38.5 L11.6 1.2' fill='none' stroke='black' stroke-width='1.6' stroke-linejoin='round' stroke-linecap='round' vector-effect='non-scaling-stroke'/></svg>") no-repeat 0 0 / 100% 100%;
+  }
+  .rad > .rb { border-top: 0.09em solid currentColor; padding: 0.08em 0.1em 0 0.12em; display: inline-block; }
+
+  .draftline { font-size: 15px; margin-top: 8px; color: #444441; }
+  .row-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+
+  .sticky-bottom {
+    position: sticky; bottom: calc(-1 * var(--pb));
+    margin: auto calc(-1 * var(--px)) calc(-1 * var(--pb));
+    padding: 10px var(--px) var(--pb);
+    background: linear-gradient(rgba(245,245,240,0), #f5f5f0 30%);
+    display: flex; gap: 8px;
+  }
+  .sticky-bottom button { flex: 1; font-size: 16px; min-height: 48px; }
+
+  /* ---------- Dropdowns ---------- */
+  .dropdown { position: relative; }
+  .dropdown-menu {
+    display: none; position: absolute; top: 100%; right: 0; margin-top: 4px;
+    background: white; border: 1px solid #b4b2a9; border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12); z-index: 60; min-width: 240px; padding: 4px;
+  }
+  .dropdown.open .dropdown-menu { display: block; }
+  .dropdown-menu button {
+    display: flex; width: 100%; justify-content: flex-start; text-align: left; background: transparent;
+    border: none; padding: 8px 12px; border-radius: 6px; min-height: 0;
+  }
+  .dropdown-menu button:hover { background: #f1efe8; }
+  .show-menu { min-width: 250px; }
+  .viewbar .show-menu button { width: 100%; height: auto; font-size: 15px; min-height: 42px; padding: 8px 12px; gap: 10px; line-height: 1.2; }
+  .show-menu .hk { width: 18px; height: 18px; border: 1.5px solid #b4b2a9; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+  .show-menu .hk .ic { width: 14px; height: 14px; visibility: hidden; }
+  .viewbar .show-menu button.on { background: #fef3c7; }
+  .show-menu button.on .hk { background: #2c2c2a; border-color: #2c2c2a; color: white; }
+  .show-menu button.on .hk .ic { visibility: visible; }
+
+  /* ---------- Dialog ---------- */
+  .dialog-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.35); display: none; align-items: center; justify-content: center; z-index: 50; }
+  .dialog-bg.visible { display: flex; }
+  .dialog { background: white; border-radius: 14px; padding: 18px 20px; width: min(440px, 92vw); max-height: 90vh; overflow-y: auto; }
+  .dialog h2 { font-size: 18px; margin-bottom: 12px; }
+  .dialog .end { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+  #share-link { width: 100%; font-family: monospace; font-size: 13px; padding: 8px; border: 1px solid #b4b2a9; border-radius: 8px; margin-bottom: 10px; }
+  #qr { display: flex; justify-content: center; margin: 6px 0 12px; }
+  #qr img { width: 220px; height: 220px; image-rendering: pixelated; }
+
+  /* ---------- Responsiv ---------- */
+  @media (orientation: portrait) {
+    main { flex-direction: column; }
+    #viewer { flex: none; height: 55vh; height: 55dvh; margin: 20px 20px 0; }
+    #panel { width: auto; flex: 1; }
+  }
+  @media (orientation: landscape) and (max-width: 1100px) and (min-height: 501px) { #panel { width: 360px; } }
+  @media (max-width: 700px) {
+    #panel { --px: 10px; --pb: 10px; padding-top: 10px; }
+    #viewer { margin: 10px 10px 0; padding: 14px; }
+    .box-title { font-size: 15px; }
+    .card { padding: 10px 12px; }
+  }
+  @media (max-width: 420px) {
+    #panel { --px: 8px; --pb: 8px; }
+    #viewer { margin: 10px 8px 0; padding: 12px; }
+  }
+  @media (orientation: landscape) and (max-height: 500px) {
+    header { padding: 4px 8px; }
+    header button { min-height: 36px; }
+    #panel { width: 320px; --px: 10px; --pb: 10px; padding-top: 10px; gap: 8px; }
+    #viewer { margin: 10px 0 10px 10px; padding: 10px; }
+    .card { padding: 8px 10px; }
+    .stufe-toggle button { font-size: 14px; min-height: 38px; }
+  }
+  @media (max-width: 600px) {
+    header h1 { display: none; }
+    header .lt { display: none; }
+    header button.hb { width: 36px; padding: 0; }
+    header .spacer { margin-right: auto; }
+  }
+  header.fit1 .lt { display: none !important; }
+  header.fit1 .hb { width: 40px; padding: 0; }
+  header.fit2 h1 { display: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Würfelkörper</h1>
+  <span class="spacer"></span>
+  <button id="btn-clear" class="hb" title="Alles löschen"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg><span class="lt">Leeren</span></button>
+  <button id="btn-share" class="hb" title="Zeichnung teilen"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM21 14v.01M14 21h.01M17 21h4v-4"/></svg><span class="lt">Teilen</span></button>
+  <div class="dropdown" id="export-dd">
+    <button id="btn-export" class="hb" title="Export"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 17v3h16v-3"/></svg><span class="lt">Export ▾</span></button>
+    <div class="dropdown-menu">
+      <button data-export="png">Bild der Ansicht (PNG, weisser Hintergrund)</button>
+      <button data-export="png-t">Bild der Ansicht (PNG, transparent)</button>
+    </div>
+  </div>
+  <button id="btn-full" class="hb" title="Vollbild"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg><span class="lt">Vollbild</span></button>
+</header>
+
+<main>
+  <div id="viewer">
+    <div class="viewbar">
+      <h2 class="box-title">Drahtgitterwürfel</h2>
+      <div class="viewctl">
+        <button id="v-undo" title="Schritt zurück"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+        <button id="v-clear" title="Alles löschen"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>
+        <button id="v-reset" title="Ansicht zurücksetzen"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 9.5V20h14V9.5"/></svg></button>
+      </div>
+      <div class="dropdown" id="show-dd"></div>
+    </div>
+    <div id="stage">
+      <canvas id="cv"></canvas>
+      <div id="toast"></div>
+    </div>
+  </div>
+  <div id="panel">
+    <div id="panel-content"></div>
+  </div>
+</main>
+
+<div class="dialog-bg" id="dlg-share">
+  <div class="dialog">
+    <h2>Zeichnung teilen</h2>
+    <p style="font-size:14px;color:#5f5e5a;margin-bottom:10px">Der Link enthält alle Strecken und Flächen. Wer ihn öffnet, sieht dieselbe Zeichnung und kann weiterzeichnen.</p>
+    <div id="qr"></div>
+    <input id="share-link" readonly>
+    <div class="end">
+      <button id="share-copy">Link kopieren</button>
+      <button class="primary" id="share-close">Schliessen</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<script>
+'use strict';
+
+// ====================================================================
+// KONSTANTEN
+// ====================================================================
+// 27 Gitterpunkte: Koordinaten -1, 0, 1 in x (rechts), y (oben), z (vorne).
+// Index = i + 3·j + 9·k mit i, j, k = 0..2.
+const PTS = [];
+for (let k = 0; k < 3; k++) for (let j = 0; j < 3; j++) for (let i = 0; i < 3; i++) PTS.push([i - 1, j - 1, k - 1]);
+const CORNERS = PTS.map(function (p, i) { return i; }).filter(function (i) { return PTS[i].every(function (v) { return v !== 0; }); });
+const EDGES = [];
+CORNERS.forEach(function (a) { CORNERS.forEach(function (b) {
+  if (a < b && diffCount(PTS[a], PTS[b]) === 1) EDGES.push([a, b]);
+}); });
+const COLORS = ['#dc2626', '#2563eb', '#16a34a', '#ea580c', '#2c2c2a'];
+const COLOR_NAMES = ['Rot', 'Blau', 'Grün', 'Orange', 'Schwarz'];
+const CHARS = '0123456789abcdefghijklmnopq';
+const START_THETA = Math.PI / 5, START_PHI = Math.PI / 7;
+const PHI_MAX = 1.5675, PHI_MIN = -1.5675;
+const BASE_URL = 'https://raphaelfisch.github.io/unterricht/mathe/drahtgitterwuerfel.html';
+const EPS = 1e-6;
+
+// ====================================================================
+// ZUSTAND
+// ====================================================================
+const state = {
+  items: [],          // {t:'s'|'f', c:Farbindex, p:[Punktindizes]}
+  tool: 's',          // 's' = Strecke, 'f' = Fläche
+  color: 0,
+  sel: null,          // erster Punkt einer Strecke
+  draft: [],          // Ecken der Fläche in Arbeit
+  hover: null,
+  hl: null,           // in der Liste hervorgehobenes Element
+  dashed: true,
+  showPts: true,
+  lengths: false,
+  a: 2,               // Kantenlänge des Würfels in cm
+  mode: 'wurzel',     // Längen als 'wurzel' oder 'dezimal'
+  menuOpen: false
+};
+const view = { theta: START_THETA, phi: START_PHI, zoom: 1 };
+let history = [];
+let tween = null;
+let wheelTimer = null;
+
+// ====================================================================
+// HILFSFUNKTIONEN
+// ====================================================================
+function diffCount(p, q) { let n = 0; for (let k = 0; k < 3; k++) if (p[k] !== q[k]) n++; return n; }
+function dot(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
+function sub(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
+function cross(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
+function lerp(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]; }
+function norm(a) { const l = Math.hypot(a[0], a[1], a[2]); return l < 1e-12 ? null : [a[0] / l, a[1] / l, a[2] / l]; }
+function fmt(x) { return (Math.round(x * 100) / 100).toFixed(2).replace('.', ','); }
+function samePair(a, b) { return (a[0] === b[0] && a[1] === b[1]) || (a[0] === b[1] && a[1] === b[0]); }
+
+function pushHistory() {
+  history.push(JSON.stringify(state.items));
+  if (history.length > 200) history.shift();
+}
+
+// ====================================================================
+// KAMERA (Parallelprojektion)
+// ====================================================================
+let B = null;
+function basis() {
+  const ct = Math.cos(view.theta), st = Math.sin(view.theta), cp = Math.cos(view.phi), sp = Math.sin(view.phi);
+  B = {
+    d: [cp * st, sp, cp * ct],        // zur Kamera hin
+    r: [ct, 0, -st],                  // nach rechts
+    u: [-sp * st, cp, -sp * ct]       // nach oben
+  };
+}
+let SCR = { cx: 0, cy: 0, s: 1 };
+function proj(p) { return { x: SCR.cx + SCR.s * dot(p, B.r), y: SCR.cy - SCR.s * dot(p, B.u), z: dot(p, B.d) }; }
+
+// ====================================================================
+// SICHTBARKEIT
+// ====================================================================
+// Eine Würfelfläche ist «vorne», wenn ihre Normale zur Kamera zeigt.
+function frontFace(a, s) { return s * B.d[a] > -1e-6; }
+function onSurface(X) { for (let a = 0; a < 3; a++) if (Math.abs(Math.abs(X[a]) - 1) < EPS) return true; return false; }
+function onFront(X) {
+  for (let a = 0; a < 3; a++) for (const s of [-1, 1]) if (Math.abs(X[a] - s) < EPS && frontFace(a, s)) return true;
+  return false;
+}
+// Gefüllte Flächen verdecken, was hinter ihnen liegt
+let POLYS = [];
+function prepPolys() {
+  POLYS = [];
+  state.items.forEach(function (it) {
+    if (it.t !== 'f') return;
+    const P = it.p.map(function (i) { return PTS[i]; });
+    const n = norm(newell(P));
+    if (!n) return;
+    let drop = 0;
+    if (Math.abs(n[1]) > Math.abs(n[drop])) drop = 1;
+    if (Math.abs(n[2]) > Math.abs(n[drop])) drop = 2;
+    const ax = [0, 1, 2].filter(function (k) { return k !== drop; });
+    POLYS.push({ P: P, n: n, ax: ax, Q: P.map(function (p) { return [p[ax[0]], p[ax[1]]]; }) });
+  });
+}
+function insideStrict(poly, Y) {
+  const x = Y[poly.ax[0]], y = Y[poly.ax[1]], Q = poly.Q, m = Q.length;
+  let inside = false;
+  for (let i = 0, j = m - 1; i < m; j = i++) {
+    const a = Q[j], b = Q[i];
+    // Abstand zum Rand: auf dem Rand verdeckt nichts
+    const ex = b[0] - a[0], ey = b[1] - a[1], L2 = ex * ex + ey * ey;
+    let t = L2 ? ((x - a[0]) * ex + (y - a[1]) * ey) / L2 : 0;
+    t = Math.max(0, Math.min(1, t));
+    if (Math.hypot(a[0] + t * ex - x, a[1] + t * ey - y) < 1e-5) return false;
+    if ((a[1] > y) !== (b[1] > y) && x < a[0] + (y - a[1]) * ex / (b[1] - a[1])) inside = !inside;
+  }
+  return inside;
+}
+function occluded(X) {
+  for (const poly of POLYS) {
+    const den = dot(poly.n, B.d);
+    if (Math.abs(den) < 1e-6) continue;
+    const t = dot(poly.n, sub(poly.P[0], X)) / den;
+    if (t <= 1e-4) continue;
+    const Y = [X[0] + t * B.d[0], X[1] + t * B.d[1], X[2] + t * B.d[2]];
+    if (insideStrict(poly, Y)) return true;
+  }
+  return false;
+}
+function lineHidden(X) { return state.dashed && ((onSurface(X) && !onFront(X)) || occluded(X)); }
+function pointHidden(X) { return state.dashed && (!onFront(X) || occluded(X)); }
+
+// Strecke in sichtbare und verdeckte Abschnitte zerlegen
+function runs(A, Bp) {
+  const N = 48, out = [];
+  let cur = null;
+  for (let i = 0; i < N; i++) {
+    const h = lineHidden(lerp(A, Bp, (i + 0.5) / N));
+    if (!cur || cur.h !== h) { cur = { h: h, t0: i / N, t1: (i + 1) / N }; out.push(cur); }
+    else cur.t1 = (i + 1) / N;
+  }
+  return out;
+}
+
+function newell(P) {
+  const n = [0, 0, 0], m = P.length;
+  for (let i = 0; i < m; i++) {
+    const a = P[i], b = P[(i + 1) % m];
+    n[0] += (a[1] - b[1]) * (a[2] + b[2]);
+    n[1] += (a[2] - b[2]) * (a[0] + b[0]);
+    n[2] += (a[0] - b[0]) * (a[1] + b[1]);
+  }
+  return n;
+}
+
+// ====================================================================
+// ZEICHNEN
+// ====================================================================
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+let dirty = true;
+let CW = 1, CH = 1;
+
+function resize() {
+  const dpr = window.devicePixelRatio || 1;
+  CW = cv.clientWidth || 1; CH = cv.clientHeight || 1;
+  cv.width = Math.round(CW * dpr); cv.height = Math.round(CH * dpr);
+  dirty = true;
+}
+
+function pointRadius() { return Math.max(7, Math.min(12, SCR.s * 0.05)); }
+
+function render(g, W, H, opt) {
+  opt = opt || {};
+  basis();
+  SCR = { cx: W / 2, cy: H / 2, s: Math.min(W, H) / (2 * 1.9) * view.zoom };
+  prepPolys();
+  const lw = Math.max(1.6, Math.min(2.6, SCR.s * 0.011));
+  const segW = lw * 1.7;
+  const r = pointRadius();
+
+  if (!opt.transparent) { g.fillStyle = opt.export ? '#ffffff' : '#fafaf5'; g.fillRect(0, 0, W, H); }
+  g.lineCap = 'round'; g.lineJoin = 'round';
+
+  // 1) Flächen (hinten zuerst)
+  const fills = [];
+  state.items.forEach(function (it, idx) {
+    if (it.t !== 'f') return;
+    const pr = it.p.map(function (i) { return proj(PTS[i]); });
+    const z = pr.reduce(function (s, q) { return s + q.z; }, 0) / pr.length;
+    fills.push({ it: it, idx: idx, pr: pr, z: z });
+  });
+  fills.sort(function (a, b) { return a.z - b.z; });
+  fills.forEach(function (f) {
+    g.beginPath();
+    f.pr.forEach(function (q, i) { if (i) g.lineTo(q.x, q.y); else g.moveTo(q.x, q.y); });
+    g.closePath();
+    g.globalAlpha = (state.hl === f.idx && !opt.export) ? 0.42 : 0.26;
+    g.fillStyle = COLORS[f.it.c];
+    g.fill();
+    g.globalAlpha = 1;
+  });
+
+  // 2) Linien sammeln
+  const lines = []; // {A, B, color, width, h, kind}
+  function addLine(A, Bp, color, width, kind) {
+    runs(A, Bp).forEach(function (rn) { lines.push({ A: lerp(A, Bp, rn.t0), B: lerp(A, Bp, rn.t1), color: color, width: width, h: rn.h, kind: kind }); });
+  }
+  EDGES.forEach(function (e) { addLine(PTS[e[0]], PTS[e[1]], '#2c2c2a', lw, 'cube'); });
+  const drawnEdges = {};
+  state.items.forEach(function (it, idx) {
+    const w = (state.hl === idx && !opt.export) ? segW * 1.6 : segW;
+    if (it.t === 's') { addLine(PTS[it.p[0]], PTS[it.p[1]], COLORS[it.c], w, 'seg'); return; }
+    for (let i = 0; i < it.p.length; i++) {
+      const a = it.p[i], b = it.p[(i + 1) % it.p.length];
+      const key = Math.min(a, b) + '-' + Math.max(a, b) + '-' + it.c;
+      if (drawnEdges[key] && state.hl !== idx) continue;
+      drawnEdges[key] = true;
+      addLine(PTS[a], PTS[b], COLORS[it.c], w, 'seg');
+    }
+  });
+
+  function strokeLine(l) {
+    const a = proj(l.A), b = proj(l.B);
+    g.strokeStyle = l.color;
+    g.lineWidth = l.h ? Math.max(1.4, l.width * 0.75) : l.width;
+    if (l.h) g.setLineDash(l.kind === 'cube' ? [0.1, lw * 2.6] : [segW * 2.6, segW * 2]);
+    else g.setLineDash([]);
+    g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke();
+  }
+  lines.filter(function (l) { return l.h; }).forEach(strokeLine);
+  g.setLineDash([]);
+  lines.filter(function (l) { return !l.h; }).forEach(strokeLine);
+  g.setLineDash([]);
+
+  // 3) Entwurf der Fläche bzw. gewählter Punkt
+  if (!opt.export && state.draft.length) {
+    g.strokeStyle = COLORS[state.color]; g.lineWidth = segW;
+    g.setLineDash([segW * 1.5, segW * 1.5]);
+    g.beginPath();
+    state.draft.forEach(function (i, n) { const q = proj(PTS[i]); if (n) g.lineTo(q.x, q.y); else g.moveTo(q.x, q.y); });
+    if (state.hover != null && state.draft.indexOf(state.hover) < 0) { const q = proj(PTS[state.hover]); g.lineTo(q.x, q.y); }
+    g.stroke(); g.setLineDash([]);
+  }
+  if (!opt.export && state.sel != null && state.hover != null && state.hover !== state.sel) {
+    const a = proj(PTS[state.sel]), b = proj(PTS[state.hover]);
+    g.strokeStyle = COLORS[state.color]; g.lineWidth = segW; g.globalAlpha = 0.5;
+    g.setLineDash([segW * 1.5, segW * 1.5]);
+    g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke();
+    g.setLineDash([]); g.globalAlpha = 1;
+  }
+
+  // 4) Punkte
+  drawPoints(g, opt, r);
+
+  // 5) Längen an den Strecken
+  if (!opt.export) labelBoxes = [];
+  if (state.lengths) {
+    state.items.forEach(function (it, idx) { if (it.t === 's') drawLengthLabel(g, it, idx, !opt.export); });
+  }
+}
+let labelBoxes = [];   // {idx, x0, y0, x1, y1} der Längenbeschriftungen (zum Verschieben)
+
+function lengthParts(it) {
+  const p = PTS[it.p[0]], q = PTS[it.p[1]];
+  const n = (p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2 + (p[2] - q[2]) ** 2;   // in halben Kanten
+  const h = state.a / 2, L2 = n * h * h, L = Math.sqrt(L2);
+  return { L2: L2, L: L, isInt: Math.abs(L - Math.round(L)) < 1e-9 };
+}
+
+// Text der Länge je nach Modus: Wurzel (exakt) oder Dezimalzahl (2 Stellen)
+function lengthLabelParts(lp) {
+  if (lp.isInt) return [{ t: Math.round(lp.L) + ' cm' }];
+  if (state.mode === 'dezimal') return [{ t: '≈ ' + fmt(lp.L) + ' cm' }];
+  return [{ rad: String(lp.L2) }, { t: ' cm' }];
+}
+
+// Beschriftung neben der Streckenmitte, seitlich versetzt, mit weissem Rand
+function drawLengthLabel(g, it, idx, record) {
+  const a = proj(PTS[it.p[0]]), b = proj(PTS[it.p[1]]);
+  const lp = lengthParts(it);
+  const fs = Math.max(17, Math.min(22, SCR.s * 0.1));
+  g.font = '600 ' + fs + 'px -apple-system, "Segoe UI", sans-serif';
+  g.textBaseline = 'alphabetic'; g.textAlign = 'left';
+  const parts = lengthLabelParts(lp);
+  // Masse des Wurzelzeichens
+  const rw = fs * 0.62, gap = fs * 0.12;
+  const ws = parts.map(function (p) {
+    return p.rad != null ? rw + gap + g.measureText(p.rad).width + fs * 0.08 : g.measureText(p.t).width;
+  });
+  const W = ws.reduce(function (s, w) { return s + w; }, 0);
+  // Mitte und Versatz senkrecht zur Strecke (auf dem Bildschirm)
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const len = Math.hypot(dx, dy) || 1;
+  let nx = -dy / len, ny = dx / len;
+  if (ny > 0) { nx = -nx; ny = -ny; }           // eher nach oben ausweichen
+  const off = fs * 1.0 + Math.abs(nx) * W / 2;
+  const lo = it.lo || [0, 0];
+  const mx = (a.x + b.x) / 2 + nx * off + lo[0], my = (a.y + b.y) / 2 + ny * off + lo[1];
+  const base = my + fs * 0.36;                   // Grundlinie, Text vertikal um my zentriert
+  const top = base - fs * 0.92, bot = base + fs * 0.12;
+  const col = COLORS[it.c];
+  if (record) labelBoxes.push({ idx: idx, x0: mx - W / 2 - 6, x1: mx + W / 2 + 6, y0: top - 6, y1: bot + 6 });
+  g.lineJoin = 'round'; g.lineCap = 'round';
+  [true, false].forEach(function (halo) {
+    let x = mx - W / 2;
+    parts.forEach(function (p, i) {
+      if (p.rad != null) {
+        // Wurzelzeichen: kleiner Haken, Abstrich, langer Aufstrich, Wurzelstrich über dem Radikanden
+        const X = function (u) { return x + u / 12 * rw; }, Y = function (v) { return top + v / 40 * (bot - top); };
+        g.beginPath();
+        g.moveTo(X(0.6), Y(25)); g.lineTo(X(3.2), Y(22)); g.lineTo(X(6.6), Y(39)); g.lineTo(X(11.4), Y(1));
+        g.lineTo(x + ws[i], Y(1));
+        g.lineWidth = halo ? fs * 0.09 + 4 : Math.max(1.6, fs * 0.085);
+        g.strokeStyle = halo ? 'white' : col; g.stroke();
+        const tx = x + rw + gap;
+        if (halo) { g.lineWidth = 5; g.strokeStyle = 'white'; g.strokeText(p.rad, tx, base); }
+        else { g.fillStyle = col; g.fillText(p.rad, tx, base); }
+      } else {
+        if (halo) { g.lineWidth = 5; g.strokeStyle = 'white'; g.strokeText(p.t, x, base); }
+        else { g.fillStyle = col; g.fillText(p.t, x, base); }
+      }
+      x += ws[i];
+    });
+  });
+}
+
+function drawPoints(g, opt, r) {
+  const marked = {};
+  if (!opt.export) {
+    if (state.sel != null) marked[state.sel] = true;
+    state.draft.forEach(function (i) { marked[i] = true; });
+  }
+  if (state.showPts || !opt.export) {
+    const order = PTS.map(function (p, i) { return { i: i, q: proj(p) }; }).sort(function (a, b) { return a.q.z - b.q.z; });
+    order.forEach(function (o) {
+      const isMarked = marked[o.i];
+      if (!state.showPts && !isMarked && o.i !== state.hover) return;
+      const hid = pointHidden(PTS[o.i]);
+      g.beginPath(); g.arc(o.q.x, o.q.y, r, 0, Math.PI * 2);
+      if (isMarked) {
+        g.fillStyle = COLORS[state.color]; g.fill();
+        g.lineWidth = 2; g.strokeStyle = '#2c2c2a'; g.setLineDash([]); g.stroke();
+      } else if (hid) {
+        g.lineWidth = 1.8; g.strokeStyle = '#2c2c2a'; g.setLineDash([0.1, 3.2]); g.stroke(); g.setLineDash([]);
+      } else {
+        g.fillStyle = 'white'; g.fill();
+        g.lineWidth = 1.8; g.strokeStyle = '#2c2c2a'; g.stroke();
+      }
+      if (!opt.export && o.i === state.hover) {
+        g.beginPath(); g.arc(o.q.x, o.q.y, r + 5, 0, Math.PI * 2);
+        g.lineWidth = 3; g.strokeStyle = COLORS[state.color]; g.globalAlpha = 0.55; g.stroke(); g.globalAlpha = 1;
+      }
+    });
+  }
+}
+
+// Orientierungswürfel oben rechts (V = vorne, R = rechts, O = oben)
+function cubeSize() { return Math.min(CW, CH) < 500 ? 52 : 70; }
+function onOrientationCube(x, y) { const s = cubeSize(), m = 8; return x >= CW - s - m && x <= CW - m && y >= m && y <= m + s; }
+function drawOrientation(g) {
+  const size = cubeSize(), m = 8;
+  const cx = CW - m - size / 2, cy = m + size / 2, h = size / 2 / 1.8;
+  function pr(v) { return { x: cx + h * dot(v, B.r), y: cy - h * dot(v, B.u) }; }
+  function pv(v) { return { x: h * dot(v, B.r), y: -h * dot(v, B.u) }; }
+  const faces = [
+    { a: 0, s: 1, col: '#c69968', L: 'R', e1: [0, 0, -1], e2: [0, -1, 0] },
+    { a: 0, s: -1, col: '#c69968' },
+    { a: 1, s: 1, col: '#deb27c', L: 'O', e1: [1, 0, 0], e2: [0, 0, 1] },
+    { a: 1, s: -1, col: '#a67e4f' },
+    { a: 2, s: 1, col: '#c69968', L: 'V', e1: [1, 0, 0], e2: [0, -1, 0] },
+    { a: 2, s: -1, col: '#a67e4f' }
+  ];
+  faces.forEach(function (f) {
+    if (f.s * B.d[f.a] <= 1e-6) return;
+    const o = [0, 1, 2].filter(function (k) { return k !== f.a; });
+    const cs = [[1, 1], [1, -1], [-1, -1], [-1, 1]].map(function (c) {
+      const v = [0, 0, 0]; v[f.a] = f.s; v[o[0]] = c[0]; v[o[1]] = c[1]; return pr(v);
+    });
+    g.beginPath(); cs.forEach(function (q, i) { if (i) g.lineTo(q.x, q.y); else g.moveTo(q.x, q.y); }); g.closePath();
+    g.fillStyle = f.col; g.fill();
+    g.strokeStyle = '#6b4f2a'; g.lineWidth = 1.5; g.stroke();
+    if (f.L) {
+      const c = [0, 0, 0]; c[f.a] = f.s;
+      const cc = pr(c), e1 = pv(f.e1), e2 = pv(f.e2);
+      g.save();
+      g.translate(cc.x, cc.y);
+      g.transform(e1.x / 64, e1.y / 64, e2.x / 64, e2.y / 64, 0, 0);
+      g.fillStyle = '#3a2a14'; g.font = 'bold 70px sans-serif';
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(f.L, 0, 6);
+      g.restore();
+    }
+  });
+}
+
+function stepTween(now) {
+  if (!tween) return;
+  const t = Math.min(1, (now - tween.t0) / tween.dur);
+  const e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+  let dT = tween.to.theta - tween.from.theta;
+  dT = ((dT + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
+  view.theta = tween.from.theta + dT * e;
+  view.phi = tween.from.phi + (tween.to.phi - tween.from.phi) * e;
+  view.zoom = tween.from.zoom + (tween.to.zoom - tween.from.zoom) * e;
+  dirty = true;
+  if (t >= 1) { tween = null; writeHash(); }
+}
+function loop(now) {
+  stepTween(now);
+  if (dirty) {
+    const dpr = window.devicePixelRatio || 1;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    render(ctx, CW, CH);
+    drawOrientation(ctx);
+    dirty = false;
+  }
+  requestAnimationFrame(loop);
+}
+function resetView() {
+  tween = { t0: performance.now(), dur: 600, from: { theta: view.theta, phi: view.phi, zoom: view.zoom }, to: { theta: START_THETA, phi: START_PHI, zoom: 1 } };
+}
+
+// ====================================================================
+// ZEICHNEN MIT DER MAUS / DEM FINGER
+// ====================================================================
+function nearestPoint(x, y) {
+  basis();
+  const r = pointRadius(), R = Math.max(24, r * 2.3);
+  let best = null, bestD = Infinity, bestZ = -Infinity;
+  PTS.forEach(function (p, i) {
+    const q = proj(p);
+    const d = Math.hypot(q.x - x, q.y - y);
+    if (d > R) return;
+    if (d < bestD - 5 || (Math.abs(d - bestD) <= 5 && q.z > bestZ)) { best = i; bestD = d; bestZ = q.z; }
+  });
+  return best;
+}
+
+function tapPoint(i) {
+  if (state.tool === 's') {
+    if (state.sel == null) { state.sel = i; }
+    else if (state.sel === i) { state.sel = null; }
+    else { toggleSegment(state.sel, i); state.sel = null; }
+  } else {
+    const d = state.draft;
+    const pos = d.indexOf(i);
+    if (pos < 0) {
+      d.push(i);
+      if (d.length >= 3 && !planarOK(d)) { d.pop(); toast('Dieser Punkt liegt nicht in derselben Ebene wie die anderen.'); }
+    } else if (pos === 0 && d.length >= 3) {
+      closePolygon();
+    } else if (pos === d.length - 1) {
+      d.pop();
+    } else {
+      toast(d.length >= 3 ? 'Zum Schliessen auf den ersten Punkt tippen.' : 'Diesen Punkt hast du schon gewählt.');
+    }
+  }
+  update();
+}
+
+function toggleSegment(a, b) {
+  pushHistory();
+  const k = state.items.findIndex(function (it) { return it.t === 's' && samePair(it.p, [a, b]); });
+  if (k >= 0) { state.items.splice(k, 1); toast('Strecke entfernt.'); }
+  else state.items.push({ t: 's', c: state.color, p: [a, b] });
+}
+
+function planarOK(idx) {
+  const P = idx.map(function (i) { return PTS[i]; });
+  let n = null;
+  for (let i = 1; i < P.length && !n; i++) for (let j = i + 1; j < P.length && !n; j++) n = norm(cross(sub(P[i], P[0]), sub(P[j], P[0])));
+  if (!n) return true; // bisher alle auf einer Geraden
+  return P.every(function (p) { return Math.abs(dot(sub(p, P[0]), n)) < 1e-9; });
+}
+
+function closePolygon() {
+  const d = state.draft.slice();
+  const n = norm(newell(d.map(function (i) { return PTS[i]; })));
+  if (!n) { toast('Die Punkte liegen auf einer Geraden – das gibt keine Fläche.'); return; }
+  pushHistory();
+  state.items.push({ t: 'f', c: state.color, p: d });
+  state.draft = [];
+  toast('Fläche mit ' + d.length + ' Ecken gezeichnet.');
+}
+
+function undo() {
+  if (state.draft.length) { state.draft.pop(); update(); return; }
+  if (state.sel != null) { state.sel = null; update(); return; }
+  if (!history.length) return;
+  state.items = JSON.parse(history.pop());
+  update();
+}
+
+function labelAt(x, y) {
+  for (let i = labelBoxes.length - 1; i >= 0; i--) {
+    const b = labelBoxes[i];
+    if (x >= b.x0 && x <= b.x1 && y >= b.y0 && y <= b.y1) return b.idx;
+  }
+  return null;
+}
+
+function setupPointer() {
+  const pointers = {};
+  let moved = false, startX = 0, startY = 0, lastX = 0, lastY = 0, pinch = 0;
+  let drag = null;   // verschobene Längenbeschriftung
+  cv.addEventListener('pointerdown', function (e) {
+    cv.setPointerCapture(e.pointerId);
+    pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
+    const ids = Object.keys(pointers);
+    if (ids.length === 1) {
+      moved = false; startX = lastX = e.clientX; startY = lastY = e.clientY;
+      const rc = cv.getBoundingClientRect();
+      const lb = labelAt(e.clientX - rc.left, e.clientY - rc.top);
+      drag = lb == null ? null : { idx: lb, lo: (state.items[lb].lo || [0, 0]).slice() };
+    } else drag = null;
+    if (ids.length === 2) { const a = pointers[ids[0]], b = pointers[ids[1]]; pinch = Math.hypot(a.x - b.x, a.y - b.y); moved = true; }
+  });
+  cv.addEventListener('pointermove', function (e) {
+    const rc = cv.getBoundingClientRect();
+    if (!pointers[e.pointerId]) {
+      if (e.pointerType === 'mouse') {
+        const x = e.clientX - rc.left, y = e.clientY - rc.top;
+        const oc = onOrientationCube(x, y);
+        const onLabel = !oc && labelAt(x, y) != null;
+        const h = oc ? null : nearestPoint(x, y);
+        cv.style.cursor = onLabel ? 'move' : oc || h != null ? 'pointer' : '';
+        cv.title = oc ? 'Ansicht zurücksetzen' : '';
+        if (h !== state.hover) { state.hover = h; dirty = true; }
+      }
+      return;
+    }
+    pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
+    const ids = Object.keys(pointers);
+    if (ids.length === 1) {
+      if (!moved && Math.hypot(e.clientX - startX, e.clientY - startY) > 6) {
+        moved = true; tween = null; state.hover = null;
+        if (drag) pushHistory();
+      }
+      if (moved && drag && state.items[drag.idx]) {
+        state.items[drag.idx].lo = [Math.round(drag.lo[0] + e.clientX - startX), Math.round(drag.lo[1] + e.clientY - startY)];
+        dirty = true;
+      } else if (moved) {
+        view.theta -= (e.clientX - lastX) * 0.01;
+        view.phi = Math.max(PHI_MIN, Math.min(PHI_MAX, view.phi + (e.clientY - lastY) * 0.01));
+        dirty = true;
+      }
+      lastX = e.clientX; lastY = e.clientY;
+    } else if (ids.length === 2) {
+      const a = pointers[ids[0]], b = pointers[ids[1]];
+      const d = Math.hypot(a.x - b.x, a.y - b.y);
+      if (pinch > 0) { view.zoom = Math.max(0.5, Math.min(3, view.zoom * d / pinch)); dirty = true; }
+      pinch = d;
+    }
+  });
+  function up(e) {
+    const single = Object.keys(pointers).length === 1;
+    delete pointers[e.pointerId];
+    if (single && !moved && e.type === 'pointerup') {
+      const rc = cv.getBoundingClientRect();
+      const x = e.clientX - rc.left, y = e.clientY - rc.top;
+      if (onOrientationCube(x, y)) { resetView(); }
+      else {
+        const i = nearestPoint(x, y);
+        if (i != null) tapPoint(i);
+        else if (state.sel != null) { state.sel = null; update(); }
+      }
+    }
+    if (drag && moved) update();
+    else if (moved) writeHash();
+    drag = null;
+    if (!Object.keys(pointers).length) pinch = 0;
+  }
+  // Doppelklick auf eine Beschriftung: zurück an den Standardplatz
+  cv.addEventListener('dblclick', function (e) {
+    const rc = cv.getBoundingClientRect();
+    const lb = labelAt(e.clientX - rc.left, e.clientY - rc.top);
+    if (lb != null && state.items[lb].lo) { pushHistory(); delete state.items[lb].lo; update(); }
+  });
+  cv.addEventListener('pointerup', up);
+  cv.addEventListener('pointercancel', up);
+  cv.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse' && state.hover != null) { state.hover = null; dirty = true; } });
+  cv.addEventListener('wheel', function (e) {
+    e.preventDefault();
+    view.zoom = Math.max(0.5, Math.min(3, view.zoom * Math.exp(-e.deltaY * 0.0015)));
+    dirty = true;
+    clearTimeout(wheelTimer); wheelTimer = setTimeout(writeHash, 300);
+  }, { passive: false });
+}
+
+// ====================================================================
+// SEITENLEISTE
+// ====================================================================
+function rad(x) { return '<span class="rad"><span class="rb">' + x + '</span></span>'; }
+function lengthHTML(it) {
+  const p = PTS[it.p[0]], q = PTS[it.p[1]];
+  const n = (p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2 + (p[2] - q[2]) ** 2;   // in halben Kanten
+  const h = state.a / 2;
+  const L2 = n * h * h;
+  const L = Math.sqrt(L2);
+  if (Math.abs(L - Math.round(L)) < 1e-9) return Math.round(L) + ' cm';
+  return state.mode === 'dezimal' ? '≈ ' + fmt(L) + ' cm' : rad(L2) + ' cm';
+}
+const ICON_TRASH = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+const ICON_CHECK = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>';
+
+// ====================================================================
+// SUMMEN: Kantenlänge total, Flächeninhalte, Oberfläche
+// ====================================================================
+// Exakte Werte als Summe von Wurzeltermen: {Radikand r (quadratfrei): Koeffizient}
+function gcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { const t = a % b; a = b; b = t; } return a; }
+function sqfree(n) {
+  let s = 1, r = n;
+  for (let f = 2; f * f <= r; f++) while (r % (f * f) === 0) { r /= f * f; s *= f; }
+  return { s: s, r: r };
+}
+function addTerm(T, coef, n) { const q = sqfree(n); T[q.r] = (T[q.r] || 0) + coef * q.s; }
+function termsValue(T) { return Object.keys(T).reduce(function (v, r) { return v + T[r] * Math.sqrt(+r); }, 0); }
+function coefStr(c) { return String(Math.round(c * 1000) / 1000).replace('.', ','); }
+function termsHTML(T) {
+  const keys = Object.keys(T).map(Number).filter(function (r) { return Math.abs(T[r]) > 1e-12; }).sort(function (a, b) { return a - b; });
+  if (!keys.length) return '0';
+  return keys.map(function (r) {
+    if (r === 1) return coefStr(T[r]);
+    const c = T[r];
+    if (Math.abs(c - 1) < 1e-12) return rad(r);
+    return coefStr(c) + (Math.abs(c - Math.round(c)) > 1e-9 ? '·' : '') + rad(r);
+  }).join(' + ');
+}
+function isWhole(T) { return Object.keys(T).every(function (r) { return +r === 1 || Math.abs(T[r]) < 1e-12; }); }
+// Wert mit Einheit je nach Modus; bei Summen in Wurzelform zusätzlich ≈
+function valueHTML(T, unit, withApprox) {
+  const v = termsValue(T);
+  if (isWhole(T)) return coefStr(v) + ' ' + unit;
+  if (state.mode === 'dezimal') return '≈ ' + fmt(v) + ' ' + unit;
+  return termsHTML(T) + ' ' + unit + (withApprox ? ' ≈ ' + fmt(v) + ' ' + unit : '');
+}
+function idxOf(p) { return (p[0] + 1) + 3 * (p[1] + 1) + 9 * (p[2] + 1); }
+// Strecke in kleinste Stücke zwischen benachbarten Gitterpunkten zerlegen
+function pieces(a, b) {
+  const P = PTS[a], d = sub(PTS[b], P);
+  const g = gcd(gcd(d[0], d[1]), d[2]);
+  const st = d.map(function (v) { return v / g; });
+  const out = [];
+  for (let i = 0; i < g; i++) {
+    const i1 = idxOf([P[0] + st[0] * i, P[1] + st[1] * i, P[2] + st[2] * i]);
+    const i2 = idxOf([P[0] + st[0] * (i + 1), P[1] + st[1] * (i + 1), P[2] + st[2] * (i + 1)]);
+    out.push({ key: Math.min(i1, i2) + '-' + Math.max(i1, i2), n: dot(st, st) });
+  }
+  return out;
+}
+function itemEdges(it) {
+  if (it.t === 's') return [it.p];
+  return it.p.map(function (a, i) { return [a, it.p[(i + 1) % it.p.length]]; });
+}
+function areaTerms(it) {
+  const N = newell(it.p.map(function (i) { return PTS[i]; }));   // ganzzahlig, |N| = 2 · Fläche
+  const h = state.a / 2, T = {};
+  addTerm(T, h * h / 2, dot(N, N));
+  return T;
+}
+function totals() {
+  const h = state.a / 2;
+  const seen = {}, edgeT = {};
+  state.items.forEach(function (it) {
+    itemEdges(it).forEach(function (e) {
+      pieces(e[0], e[1]).forEach(function (pc) {
+        if (seen[pc.key]) return;
+        seen[pc.key] = true;
+        addTerm(edgeT, h, pc.n);
+      });
+    });
+  });
+  // geschlossener Körper: jedes Kantenstück gehört zu genau zwei Flächen
+  const polys = state.items.filter(function (it) { return it.t === 'f'; });
+  const cnt = {};
+  polys.forEach(function (it) { itemEdges(it).forEach(function (e) { pieces(e[0], e[1]).forEach(function (pc) { cnt[pc.key] = (cnt[pc.key] || 0) + 1; }); }); });
+  const closed = polys.length >= 4 && Object.keys(cnt).every(function (k) { return cnt[k] === 2; });
+  const areaT = {};
+  polys.forEach(function (it) { const T = areaTerms(it); Object.keys(T).forEach(function (r) { areaT[r] = (areaT[r] || 0) + T[r]; }); });
+  return { edgeT: edgeT, hasEdges: Object.keys(seen).length > 0, polys: polys.length, closed: closed, areaT: areaT };
+}
+
+function renderPanel() {
+  const el = document.getElementById('panel-content');
+  let h = '';
+  h += '<div class="stufe-toggle">' +
+       '<button data-tool="s" class="' + (state.tool === 's' ? 'on' : '') + '">Strecke</button>' +
+       '<button data-tool="f" class="' + (state.tool === 'f' ? 'on' : '') + '">Fläche</button></div>';
+
+  h += '<div class="card">';
+  if (state.tool === 's') {
+    h += '<p>' + (state.sel == null ? 'Tippe zwei Punkte an, um sie zu verbinden.' : 'Tippe jetzt den zweiten Punkt an.') + '</p>' +
+         '<p class="tip">Nochmals dieselben zwei Punkte antippen entfernt die Strecke.</p>';
+  } else {
+    h += '<p>Tippe die Ecken der Reihe nach an. Zum Schliessen tippst du wieder auf den ersten Punkt.</p>';
+    if (state.draft.length) {
+      h += '<div class="draftline">' + state.draft.length + (state.draft.length === 1 ? ' Ecke' : ' Ecken') + ' gewählt' +
+           (state.draft.length >= 3 ? ' – erster Punkt schliesst die Fläche.' : '') + '</div>';
+      h += '<div class="row-btns">' + (state.draft.length >= 3 ? '<button id="btn-close" class="primary">' + ICON_CHECK + 'Fläche schliessen</button>' : '') +
+           '<button id="btn-cancel">Abbrechen</button></div>';
+    } else {
+      h += '<p class="tip">Alle Ecken müssen in einer Ebene liegen.</p>';
+    }
+  }
+  h += '<div class="swatches">' + COLORS.map(function (c, i) {
+    return '<button class="sw' + (i === state.color ? ' on' : '') + '" data-color="' + i + '" title="' + COLOR_NAMES[i] + '" style="background:' + c + '"></button>';
+  }).join('') + '</div>';
+  h += '</div>';
+
+  // Liste
+  h += '<div class="card"><div class="h"><span>Gezeichnet</span></div>';
+  if (!state.items.length) {
+    h += '<div class="empty">Noch nichts gezeichnet.</div>';
+  } else {
+    let ns = 0, nf = 0;
+    h += '<div class="list">';
+    state.items.forEach(function (it, idx) {
+      const name = it.t === 's' ? 'Strecke ' + (++ns) : 'Fläche ' + (++nf) + '<small>' + it.p.length + ' Ecken</small>';
+      h += '<div class="item' + (state.hl === idx ? ' hl' : '') + '" data-idx="' + idx + '">' +
+           '<span class="dot' + (it.t === 'f' ? ' poly' : '') + '" style="background:' + COLORS[it.c] + '"></span>' +
+           '<span class="nm">' + name + '</span>' +
+           (state.lengths ? '<span class="len">' + (it.t === 's' ? lengthHTML(it) : valueHTML(areaTerms(it), 'cm²', false)) + '</span>' : '') +
+           '<button data-del="' + idx + '" title="Löschen">' + ICON_TRASH + '</button></div>';
+    });
+    h += '</div>';
+  }
+  if (state.lengths) {
+    h += '<div class="sub">Kantenlänge des Würfels: <select id="sel-a" class="inline-sel">' +
+         [2, 4, 6, 8, 10, 12, 14, 16, 18, 20].map(function (v) { return '<option value="' + v + '"' + (v === state.a ? ' selected' : '') + '>' + v + ' cm</option>'; }).join('') +
+         '</select></div>' +
+         '<div class="sub">Längen angeben als <select id="sel-mode" class="inline-sel">' +
+         '<option value="wurzel"' + (state.mode === 'wurzel' ? ' selected' : '') + '>Wurzel</option>' +
+         '<option value="dezimal"' + (state.mode === 'dezimal' ? ' selected' : '') + '>Dezimalzahl</option>' +
+         '</select></div>' +
+         '<p class="tip" style="margin-top:6px">Längen im Würfel lassen sich verschieben. Doppelklick: zurück an den Platz.</p>';
+  }
+  h += '</div>';
+
+  // Gesamt
+  if (state.lengths && state.items.length) {
+    const T = totals();
+    h += '<div class="card"><div class="h"><span>Gesamt</span></div><div class="tot">';
+    h += '<span class="tl">Alle Kanten zusammen</span><span class="tv">' + valueHTML(T.edgeT, 'cm', true) + '</span>';
+    if (T.polys) {
+      if (T.closed) {
+        h += '<span class="tl">Oberfläche<small>Summe aller ' + T.polys + ' Teilflächen</small></span><span class="tv">' + valueHTML(T.areaT, 'cm²', true) + '</span>';
+      } else {
+        h += '<span class="tl">Flächen zusammen<small>noch kein geschlossener Körper</small></span><span class="tv">' + valueHTML(T.areaT, 'cm²', true) + '</span>';
+      }
+    }
+    h += '</div>';
+    if (T.polys && !T.closed) h += '<p class="tip" style="margin-top:8px">Die Oberfläche erscheint, sobald die Flächen den Körper rundum abschliessen.</p>';
+    h += '</div>';
+  }
+
+  h += '<div class="sticky-bottom">' +
+       '<button id="btn-undo"' + (history.length || state.draft.length || state.sel != null ? '' : ' disabled') + '><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>Schritt zurück</button>' +
+       '</div>';
+  el.innerHTML = h;
+}
+
+function renderShowMenu() {
+  const el = document.getElementById('show-dd');
+  function item(key, label) {
+    return '<button data-show="' + key + '" class="' + (state[key] ? 'on' : '') + '"><span class="hk">' + ICON_CHECK + '</span>' + label + '</button>';
+  }
+  el.className = 'dropdown' + (state.menuOpen ? ' open' : '');
+  el.innerHTML = '<button id="btn-show"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Anzeige ▾</button>' +
+    '<div class="dropdown-menu show-menu">' +
+    item('dashed', 'Verdeckte Linien gestrichelt') + item('showPts', 'Punkte zeigen') + item('lengths', 'Längen anzeigen') +
+    '</div>';
+}
+
+function update() {
+  renderPanel();
+  renderShowMenu();
+  writeHash();
+  dirty = true;
+}
+
+const panel = document.getElementById('panel');
+panel.addEventListener('click', function (e) {
+  const b = e.target.closest('button');
+  if (!b) return;
+  if (b.dataset.tool) { state.tool = b.dataset.tool; state.sel = null; state.draft = []; update(); }
+  else if (b.dataset.color != null) { state.color = parseInt(b.dataset.color, 10); update(); }
+  else if (b.dataset.del != null) {
+    pushHistory();
+    state.items.splice(parseInt(b.dataset.del, 10), 1);
+    state.hl = null;
+    update();
+  }
+  else if (b.id === 'btn-close') { closePolygon(); update(); }
+  else if (b.id === 'btn-cancel') { state.draft = []; update(); }
+  else if (b.id === 'btn-undo') { undo(); }
+  else if (b.id === 'btn-clear2') { clearAll(); }
+});
+panel.addEventListener('change', function (e) {
+  if (e.target.id === 'sel-a') { state.a = parseInt(e.target.value, 10); update(); }
+  else if (e.target.id === 'sel-mode') { state.mode = e.target.value; update(); }
+});
+panel.addEventListener('mouseover', function (e) {
+  const row = e.target.closest('.item');
+  const idx = row ? parseInt(row.dataset.idx, 10) : null;
+  if (idx !== state.hl) { state.hl = idx; dirty = true; }
+});
+panel.addEventListener('mouseleave', function () { if (state.hl != null) { state.hl = null; dirty = true; } });
+
+function clearAll() {
+  if (!state.items.length && !state.draft.length) return;
+  pushHistory();
+  state.items = []; state.draft = []; state.sel = null; state.hl = null;
+  update();
+  toast('Alles gelöscht. «Schritt zurück» holt es wieder.');
+}
+
+document.getElementById('show-dd').addEventListener('click', function (e) {
+  const b = e.target.closest('button');
+  if (!b) return;
+  e.stopPropagation();
+  if (b.id === 'btn-show') { state.menuOpen = !state.menuOpen; renderShowMenu(); return; }
+  const k = b.dataset.show;
+  if (k) { state[k] = !state[k]; update(); }
+});
+document.getElementById('v-reset').addEventListener('click', resetView);
+document.getElementById('v-undo').addEventListener('click', undo);
+document.getElementById('v-clear').addEventListener('click', clearAll);
+document.getElementById('btn-clear').addEventListener('click', clearAll);
+
+document.addEventListener('keydown', function (e) {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undo(); }
+  else if (e.key === 'Escape') { state.sel = null; state.draft = []; update(); }
+});
+
+// ====================================================================
+// URL (Teilen)
+// ====================================================================
+function hashString() {
+  const d = state.items.map(function (it) {
+    return it.t + it.c + it.p.map(function (i) { return CHARS[i]; }).join('') + (it.lo ? '_' + it.lo[0] + '_' + it.lo[1] : '');
+  }).join('.');
+  return 'd=' + d + '&a=' + state.a + '&g=' + (state.dashed ? 1 : 0) + '&l=' + (state.lengths ? 1 : 0) + '&m=' + state.mode[0] + '&p=' + (state.showPts ? 1 : 0) +
+    '&v=' + Math.round(view.theta * 100) + '_' + Math.round(view.phi * 100) + '_' + Math.round(view.zoom * 100);
+}
+function writeHash() { try { history_replace('#' + hashString()); } catch (e) { /* lokal egal */ } }
+function history_replace(h) { window.history.replaceState(null, '', h); }
+function readHash() {
+  const o = {};
+  location.hash.replace(/^#/, '').split('&').forEach(function (kv) { const i = kv.indexOf('='); if (i > 0) o[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1)); });
+  if (/^(2|4|6|8|10|12|14|16|18|20)$/.test(o.a || '')) state.a = parseInt(o.a, 10);
+  if (o.g === '0') state.dashed = false;
+  if (o.l === '1') state.lengths = true;
+  if (o.m === 'd') state.mode = 'dezimal';
+  const vm = /^(-?\d+)_(-?\d+)_(\d+)$/.exec(o.v || '');
+  if (vm) {
+    view.theta = +vm[1] / 100;
+    view.phi = Math.max(PHI_MIN, Math.min(PHI_MAX, +vm[2] / 100));
+    view.zoom = Math.max(0.5, Math.min(3, +vm[3] / 100));
+  }
+  if (o.p === '0') state.showPts = false;
+  if (o.d) {
+    o.d.split('.').forEach(function (s) {
+      const m = /^([sf])([0-4])([0-9a-q]+)(?:_(-?\d+)_(-?\d+))?$/.exec(s);
+      if (!m) return;
+      const p = m[3].split('').map(function (ch) { return CHARS.indexOf(ch); });
+      if (m[1] === 's' && p.length === 2 && p[0] !== p[1]) { const it = { t: 's', c: +m[2], p: p }; if (m[4] != null) it.lo = [+m[4], +m[5]]; state.items.push(it); }
+      if (m[1] === 'f' && p.length >= 3 && planarOK(p) && norm(newell(p.map(function (i) { return PTS[i]; })))) state.items.push({ t: 'f', c: +m[2], p: p });
+    });
+  }
+}
+function shareURL() {
+  const base = /^https?:/.test(location.protocol) ? location.href.split('#')[0] : BASE_URL;
+  return base + '#' + hashString();
+}
+const dlgShare = document.getElementById('dlg-share');
+document.getElementById('btn-share').addEventListener('click', function () {
+  const url = shareURL();
+  document.getElementById('share-link').value = url;
+  const qrBox = document.getElementById('qr');
+  qrBox.innerHTML = '';
+  if (typeof qrcode !== 'undefined') {
+    try { const qr = qrcode(0, 'M'); qr.addData(url); qr.make(); qrBox.innerHTML = qr.createImgTag(6, 8); } catch (e) { /* zu lang */ }
+  }
+  dlgShare.classList.add('visible');
+});
+document.getElementById('share-close').addEventListener('click', function () { dlgShare.classList.remove('visible'); });
+dlgShare.addEventListener('click', function (e) { if (e.target === dlgShare) dlgShare.classList.remove('visible'); });
+document.getElementById('share-copy').addEventListener('click', function () {
+  const inp = document.getElementById('share-link');
+  inp.select();
+  if (navigator.clipboard) navigator.clipboard.writeText(inp.value).then(function () { toast('Link kopiert'); }, function () { document.execCommand('copy'); });
+  else document.execCommand('copy');
+});
+
+// ====================================================================
+// EXPORT
+// ====================================================================
+const exportDD = document.getElementById('export-dd');
+document.getElementById('btn-export').addEventListener('click', function (e) { e.stopPropagation(); exportDD.classList.toggle('open'); });
+document.addEventListener('click', function () {
+  exportDD.classList.remove('open');
+  if (state.menuOpen) { state.menuOpen = false; renderShowMenu(); }
+});
+exportDD.querySelector('.dropdown-menu').addEventListener('click', function (e) {
+  const b = e.target.closest('button');
+  if (!b) return;
+  exportPNG(b.dataset.export === 'png-t');
+  exportDD.classList.remove('open');
+});
+function exportPNG(transparent) {
+  const scale = 3;
+  const out = document.createElement('canvas');
+  out.width = Math.round(CW * scale); out.height = Math.round(CH * scale);
+  const g = out.getContext('2d');
+  g.scale(scale, scale);
+  render(g, CW, CH, { export: true, transparent: transparent });
+  dirty = true;
+  const a = document.createElement('a');
+  a.download = 'drahtgitterwuerfel.png';
+  a.href = out.toDataURL('image/png');
+  a.click();
+}
+
+// ====================================================================
+// MELDUNGEN, VOLLBILD, KOPFZEILE
+// ====================================================================
+let toastTimer = null;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function () { t.classList.remove('show'); }, 2800);
+}
+function syncFullBtn() {
+  const on = !!(document.fullscreenElement || document.webkitFullscreenElement);
+  const b = document.getElementById('btn-full');
+  b.innerHTML = on ? '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M15 20v-5h5M9 20v-5H4"/></svg><span class="lt">Vollbild beenden</span>'
+                   : '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg><span class="lt">Vollbild</span>';
+  b.title = on ? 'Vollbild beenden' : 'Vollbild';
+  fitHeader();
+}
+document.addEventListener('fullscreenchange', syncFullBtn);
+document.addEventListener('webkitfullscreenchange', syncFullBtn);
+document.getElementById('btn-full').addEventListener('click', function () {
+  const d = document;
+  if (!d.fullscreenElement && !d.webkitFullscreenElement) {
+    const el = d.documentElement;
+    if (el.requestFullscreen) el.requestFullscreen(); else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+  } else if (d.exitFullscreen) d.exitFullscreen(); else if (d.webkitExitFullscreen) d.webkitExitFullscreen();
+});
+function fitHeader() {
+  const h = document.querySelector('header');
+  h.classList.remove('fit1', 'fit2');
+  const wraps = function () {
+    const items = Array.from(h.querySelectorAll('h1, header > button, header > .dropdown > button')).filter(function (e) { return e.offsetParent !== null; });
+    if (h.scrollWidth > h.clientWidth + 1) return true;
+    const cs = items.map(function (e) { const r = e.getBoundingClientRect(); return r.top + r.height / 2; });
+    return Math.max.apply(null, cs) - Math.min.apply(null, cs) > 12;
+  };
+  for (const c of ['fit1', 'fit2']) { if (!wraps()) return; h.classList.add(c); }
+}
+
+// ====================================================================
+// START
+// ====================================================================
+readHash();
+if (typeof ResizeObserver !== 'undefined') new ResizeObserver(function () { resize(); fitHeader(); }).observe(document.getElementById('stage'));
+window.addEventListener('resize', function () { resize(); fitHeader(); });
+resize();
+setupPointer();
+update();
+setTimeout(fitHeader, 0);
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
