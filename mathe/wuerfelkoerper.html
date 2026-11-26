@@ -3,6 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>html.loading body { opacity: 0; } body { transition: opacity 0.15s; }</style>
+<script>
+  // Seite erst zeigen, wenn alles geladen und angeordnet ist (kein Springen beim Öffnen)
+  document.documentElement.classList.add('loading');
+  (function () {
+    function reveal() { document.documentElement.classList.remove('loading'); }
+    window.addEventListener('load', function () {
+      setTimeout(function () { requestAnimationFrame(function () { requestAnimationFrame(reveal); }); }, 80);
+    });
+    setTimeout(reveal, 4000);   // Sicherheitsnetz, falls etwas nicht lädt
+  })();
+</script>
 <title>Würfelkörper</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -363,174 +375,6 @@
   }
   #notice.visible { display: block; }
 
-  /* ================ BEAMER-MODUS ================ */
-  #beamer-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: #f5f5f0;
-    z-index: 1000;
-    flex-direction: column;
-  }
-  #beamer-overlay.active { display: flex; }
-
-  .beamer-toolbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 20px;
-    background: white;
-    border-bottom: 1px solid #d3d1c7;
-    flex-shrink: 0;
-  }
-  .beamer-title {
-    font-size: 22px;
-    font-weight: 500;
-    color: #2c2c2a;
-  }
-  .beamer-toolbar-controls {
-    display: flex;
-    gap: 8px;
-  }
-  .beamer-toolbar-controls button {
-    font-size: 18px;
-    padding: 8px 14px;
-    min-height: 44px;
-    min-width: 44px;
-  }
-  /* Vollbild-Knöpfe wie in der Kopfzeile (gleiche Reihenfolge, kein Rot) */
-  .beamer-toolbar-controls button { font-size: 15px !important; padding: 8px 14px !important; min-height: 40px !important; }
-  .beamer-title { font-size: 18px !important; font-weight: 600 !important; }
-  .beamer-toolbar { padding: 8px 12px !important; }
-
-  .beamer-stage {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    min-height: 0;
-    position: relative;
-  }
-  .beamer-stage > * {
-    max-width: 100%;
-    max-height: 100%;
-  }
-
-  /* Einheitliche Vollbild-Box, in die jeder Slide-Inhalt zentriert eingepasst wird */
-  .beamer-box {
-    width: 100%;
-    height: 100%;
-    max-width: min(80vh, calc(100vw - 200px));
-    max-height: min(80vh, calc(100vw - 200px));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #fafaf5;
-    border-radius: 12px;
-    border: 1px solid #d3d1c7;
-    overflow: hidden;
-  }
-  .beamer-box > canvas,
-  .beamer-box > #threed-container {
-    width: 100% !important;
-    height: 100% !important;
-    background: transparent !important;
-    border: none !important;
-    border-radius: 0 !important;
-    display: block;
-  }
-
-  .beamer-nav {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 10;
-    width: 60px;
-    height: 80px;
-    font-size: 40px;
-    background: white;
-    border: 1px solid #d3d1c7;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    color: #2c2c2a;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    padding-bottom: 6px; /* optische Korrektur, da ‹/› in der Schriftmitte liegen */
-  }
-  .beamer-nav:hover { background: #f1efe8; }
-  .beamer-nav-left { left: 20px; }
-  .beamer-nav-right { right: 20px; }
-
-  .beamer-pagination {
-    display: flex;
-    justify-content: center;
-    gap: 8px;
-    padding: 16px;
-    flex-shrink: 0;
-  }
-  .beamer-dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: #d3d1c7;
-    border: none;
-    cursor: pointer;
-    padding: 0;
-    min-height: 0;
-  }
-  .beamer-dot.active { background: #2c2c2a; }
-
-  /* Beamer-Seitenansichten — entweder alle horizontal oder alle vertikal */
-  .beamer-sideviews {
-    display: flex;
-    gap: 60px;
-    align-items: center;
-    justify-content: center;
-  }
-  /* Vertikales Layout, wenn horizontal nicht alle 3 Platz hätten */
-  @media (max-width: 900px) {
-    .beamer-sideviews {
-      flex-direction: column;
-      gap: 24px;
-    }
-  }
-  .beamer-sideview-box {
-    text-align: center;
-  }
-  .beamer-sideview-title {
-    font-size: 24px;
-    color: #5f5e5a;
-    margin-bottom: 16px;
-  }
-  .beamer-sideview-grid {
-    display: inline-grid;
-    gap: 4px;
-    padding: 12px;
-    background: #fafaf5;
-    border-radius: 8px;
-    border: 1px solid #d3d1c7;
-  }
-  .beamer-sideview-cell {
-    width: 70px;
-    height: 70px;
-    border-radius: 4px;
-  }
-  .beamer-sideview-cell.filled { background: #534ab7; }
-  .beamer-sideview-cell.empty { background: transparent; border: 1px solid #d3d1c7; }
-  @media (max-width: 900px) {
-    .beamer-sideview-cell { width: 45px; height: 45px; }
-    .beamer-sideviews { gap: 30px; }
-  }
-  @media (max-width: 600px) {
-    .beamer-sideview-cell { width: 30px; height: 30px; }
-    .beamer-sideview-title { font-size: 16px; }
-    .beamer-sideviews { gap: 16px; }
-  }
-
   /* Mobile-Optimierungen */
   @media (max-width: 700px) {
     header { padding: 6px 8px; margin-bottom: 10px; gap: 6px; }
@@ -574,7 +418,6 @@
   header.fit3 .hb, header.fit3 button.icon { width: 31px !important; }
   header.fit3 button.primary { padding: 6px 7px !important; font-size: 13px !important; }
 
-  @media (max-width: 600px) { .beamer-toolbar-controls .lt { display: none; } .beamer-toolbar-controls button { padding: 0 !important; width: 40px; } }
   /* alle Box-Kopfzeilen gleich hoch, damit die Boxen gleich gross bleiben */
   .panel > h2, .panel-header { height: 24px; margin-bottom: 8px; display: flex; align-items: center; }
   .panel-header h2 { margin: 0; }
@@ -639,6 +482,33 @@
   @media (max-width: 340px) { header { padding-left: 4px !important; padding-right: 4px !important; } }
 
   header.fitting, header.fitting * { transition: none !important; }
+
+  /* Kopfzeile ohne Titel (Handy): Knöpfe gleichmässig über die ganze Breite verteilen */
+  header.spread { justify-content: space-between; }
+  header.spread .toolbar, header.spread .toolbar-group { display: contents; }
+  header.spread > *, header.spread .toolbar-group > * { margin-left: 0 !important; margin-right: 0 !important; }
+  header.spread .spacer { display: none; }
+
+  @media (max-width: 700px) {
+    body.vfit { height: 100vh; height: 100dvh; overflow: hidden; }
+    #views > .panel:not(.off) { height: var(--half, 46vh) !important; flex: none !important; min-height: 0; }
+    body.vfit.v1 #views > .panel:not(.off) { height: auto !important; flex: 1 1 0 !important; }
+  }
+  #views .side-host.stack .views-container { grid-template-columns: 1fr; gap: 14px; }
+
+  /* Handy: Knöpfe teilen sich die Breite gleichmässig (Raster: gleich breit, gleicher Abstand) */
+  header.spread { display: grid !important; grid-auto-flow: column; gap: 6px !important; align-items: center; }
+  header.spread button, header.spread .dropdown, header.spread .dropdown > button { width: 100% !important; min-width: 0; margin: 0 !important; }
+  header.spread button.primary { font-size: 14px !important; padding: 0 12px !important; gap: 6px !important; white-space: nowrap; }
+  header.spread button.primary .ic { width: 18px; height: 18px; }
+
+  /* Handy: Abstände zwischen den Boxen = Randabstand (10 bzw. 8 px) */
+  @media (max-width: 700px) { .container { gap: 10px !important; } #views { gap: 10px !important; } }
+  @media (max-width: 420px) { .container { gap: 8px !important; } #views { gap: 8px !important; } }
+
+  /* Vollbild: keine Breitenbegrenzung, Inhalt nutzt die ganze Breite (Beamer) */
+  html.fs main, html.fs .container, html.fs .dviews-wrap { max-width: none !important; }
+  @media (min-width: 701px) { html.fs header { padding-left: 20px !important; padding-right: 20px !important; } }
 </style>
 </head>
 <body>
@@ -649,7 +519,6 @@
   <div class="toolbar-group">
     <button id="btn-random" class="primary" title="Neuer Körper"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5l8.5 4.75v9.5L12 21.5l-8.5-4.75v-9.5z"/><path d="M3.5 7.25L12 12l8.5-4.75M12 12v9.5"/></svg>Neuer Körper</button>
     <button id="btn-clear" class="hb" title="Leeren"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg><span class="lt">Leeren</span></button>
-    <button id="btn-distanzen" class="hb" title="Diesen Körper im Distanzen-Tool öffnen"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/></svg><span class="lt">Distanzen</span></button>
     <button id="btn-code" class="hb" title="Code eingeben oder teilen"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM21 14v.01M14 21h.01M17 21h4v-4"/></svg><span class="lt">Code</span></button>
     <div class="dropdown">
       <button id="btn-export-menu" class="hb" title="Export"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 17v3h16v-3"/></svg><span class="lt">Export ▾</span></button>
@@ -669,22 +538,7 @@
 
 <div id="notice" role="status"></div>
 
-<!-- Beamer-Modus Overlay -->
-<div id="beamer-overlay">
-  <div class="beamer-toolbar">
-    <div class="beamer-title" id="beamer-title">3D-Ansicht</div>
-    <div class="beamer-toolbar-controls">
-      <button id="beamer-random" class="primary" title="Neuer Körper"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5l8.5 4.75v9.5L12 21.5l-8.5-4.75v-9.5z"/><path d="M3.5 7.25L12 12l8.5-4.75M12 12v9.5"/></svg><span class="lt">Neuer Körper</span></button>
-      <button id="beamer-clear" title="Leeren"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg><span class="lt">Leeren</span></button>
-      <button id="beamer-exit" title="Vollbild beenden"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M15 20v-5h5M9 20v-5H4"/></svg><span class="lt">Vollbild beenden</span></button>
-    </div>
-  </div>
-  <div class="beamer-stage" id="beamer-stage">
-    <button class="beamer-nav beamer-nav-left" id="beamer-prev">‹</button>
-    <button class="beamer-nav beamer-nav-right" id="beamer-next">›</button>
-  </div>
-  <div class="beamer-pagination" id="beamer-pagination"></div>
-</div>
+
 
 <div class="container">
   <div class="views-bar">
@@ -1466,6 +1320,8 @@ function renderPdfBoxOnCanvas(canvasId, drawFn) {
   if (!canvas) return;
   const dpr = window.devicePixelRatio || 1;
   const rect = canvas.getBoundingClientRect();
+  // Ausgeblendet oder (beim Start) noch winzig: nichts zeichnen – sonst wird der Punktbereich riesig
+  if (!canvas.offsetParent || rect.width < 40 || rect.height < 40) return;
   canvas.width = rect.width * dpr;
   canvas.height = rect.height * dpr;
   const ctx = canvas.getContext('2d');
@@ -1560,10 +1416,12 @@ function updateCameraPosition() {
 
   // Frustum-Größe nach Zoom (viewSize) updaten
   const aspect = renderer.domElement.clientWidth / renderer.domElement.clientHeight;
-  camera.left = -viewSize * aspect;
-  camera.right = viewSize * aspect;
-  camera.top = viewSize;
-  camera.bottom = -viewSize;
+  // Hochformat: Breite bestimmt die Grösse, damit der Körper nicht seitlich abgeschnitten wird
+  const vs = aspect < 1 ? viewSize / aspect : viewSize;
+  camera.left = -vs * aspect;
+  camera.right = vs * aspect;
+  camera.top = vs;
+  camera.bottom = -vs;
   camera.updateProjectionMatrix();
 }
 
@@ -2246,6 +2104,7 @@ function drawPdfIsoOnDots(pdf, x, y, w, h, withCubes = true, cubeBox = null) {
   // weil der Anker selbst ein Eck ist.)
   // Wir scannen einen großzügigen Bereich.
   const range = Math.ceil(Math.max(w, h) / Math.min(ox, oy)) + 5;
+  if (!(range > 0) || range > 150) return;   // Schutz gegen Endlosschleifen bei unsinnigen Grössen
 
   for (let i = -range; i <= range; i++) {
     for (let j = -range; j <= range; j++) {
@@ -2438,13 +2297,6 @@ function isoProject(r, c, h, ox, oy, size) {
 // EVENTS
 // ====================================================================
 document.getElementById('btn-random').addEventListener('click', generateRandom);
-document.getElementById('btn-distanzen').addEventListener('click', () => {
-  const file = 'wuerfelkoerper-distanz.html';
-  const base = /^https?:/.test(location.protocol)
-    ? location.href.split('#')[0].replace(/[^\/]*$/, file)
-    : 'https://raphaelfisch.github.io/unterricht/mathe/' + file;
-  window.open(base + '#p=' + encodePlanToHash(plan), '_blank');
-});
 document.getElementById('btn-clear').addEventListener('click', () => {
   plan = Array.from({length: SIZE}, () => Array(SIZE).fill(0));
   updateAll();
@@ -2854,176 +2706,6 @@ function exportSideViewsPNG() {
   link.click();
 }
 
-// ====================================================================
-// BEAMER-MODUS
-// ====================================================================
-let beamerSlide = 0;
-const beamerSlides = [
-  { title: '3D-Ansicht',           render: renderBeamer3D },
-  { title: 'Bauplan',              render: renderBeamerBauplan },
-  { title: 'auf Punktraster',      render: renderBeamerDots },
-  { title: 'auf Häuschenpapier',   render: renderBeamerGrid },
-  { title: 'Seitenansichten',      render: renderBeamerSideViews }
-];
-
-function renderBeamer3D(stage) {
-  const box = document.createElement('div');
-  box.className = 'beamer-box';
-  stage.appendChild(box);
-  const container = document.getElementById('threed-container');
-  box.appendChild(container);
-  // Renderer auf neue Größe anpassen (nachdem Layout angewendet wurde)
-  requestAnimationFrame(() => {
-    if (renderer) {
-      renderer.setSize(box.clientWidth, box.clientHeight, false);
-      updateCameraPosition();
-    }
-  });
-}
-
-function renderBeamerBauplan(stage) {
-  const box = document.createElement('div');
-  box.className = 'beamer-box';
-  stage.appendChild(box);
-  const canvas = document.getElementById('bauplan-canvas');
-  box.appendChild(canvas);
-  requestAnimationFrame(() => drawBauplan());
-}
-
-function renderBeamerDots(stage) {
-  const box = document.createElement('div');
-  box.className = 'beamer-box';
-  stage.appendChild(box);
-  const canvas = document.getElementById('dots-canvas');
-  box.appendChild(canvas);
-  requestAnimationFrame(() => drawDotsOnCanvas());
-}
-
-function renderBeamerGrid(stage) {
-  const box = document.createElement('div');
-  box.className = 'beamer-box';
-  stage.appendChild(box);
-  const canvas = document.getElementById('grid-canvas');
-  box.appendChild(canvas);
-  requestAnimationFrame(() => drawGridOnCanvas());
-}
-
-function renderBeamerSideViews(stage) {
-  // Eigenes DOM mit größeren Zellen
-  const wrap = document.createElement('div');
-  wrap.className = 'beamer-sideviews';
-  const views = [
-    { label: 'von vorne',  data: computeView('front'), w: SIZE, h: SIZE },
-    { label: 'von rechts', data: computeView('right'), w: SIZE, h: SIZE },
-    { label: 'von oben',   data: computeTopView(),    w: SIZE, h: SIZE }
-  ];
-  for (const v of views) {
-    const box = document.createElement('div');
-    box.className = 'beamer-sideview-box';
-    box.innerHTML = `<div class="beamer-sideview-title">${v.label}</div>`;
-    const grid = document.createElement('div');
-    grid.className = 'beamer-sideview-grid';
-    grid.style.gridTemplateColumns = `repeat(${v.w}, max-content)`;
-    if (Array.isArray(v.data) && typeof v.data[0] === 'number') {
-      // Vorder/rechts: heights pro Spalte
-      for (let row = 0; row < v.h; row++) {
-        for (let col = 0; col < v.w; col++) {
-          const cell = document.createElement('div');
-          const filled = (v.h - row) <= v.data[col];
-          cell.className = 'beamer-sideview-cell ' + (filled ? 'filled' : 'empty');
-          grid.appendChild(cell);
-        }
-      }
-    } else {
-      // Top: 2D-Daten
-      for (let r = 0; r < v.h; r++) {
-        for (let c = 0; c < v.w; c++) {
-          const cell = document.createElement('div');
-          const filled = v.data[r] && v.data[r][c];
-          cell.className = 'beamer-sideview-cell ' + (filled ? 'filled' : 'empty');
-          grid.appendChild(cell);
-        }
-      }
-    }
-    box.appendChild(grid);
-    wrap.appendChild(box);
-  }
-  stage.appendChild(wrap);
-}
-
-function setBeamerSlide(index) {
-  beamerSlide = (index + beamerSlides.length) % beamerSlides.length;
-  const slide = beamerSlides[beamerSlide];
-  document.getElementById('beamer-title').textContent = slide.title;
-  const stage = document.getElementById('beamer-stage');
-  restoreBeamerElements();
-  // Nur Slide-Inhalt entfernen, Pfeile (beamer-nav) erhalten
-  Array.from(stage.children).forEach(child => {
-    if (!child.classList.contains('beamer-nav')) stage.removeChild(child);
-  });
-  slide.render(stage);
-  updateBeamerPagination();
-}
-
-function updateBeamerPagination() {
-  const pag = document.getElementById('beamer-pagination');
-  pag.innerHTML = '';
-  for (let i = 0; i < beamerSlides.length; i++) {
-    const dot = document.createElement('button');
-    dot.className = 'beamer-dot' + (i === beamerSlide ? ' active' : '');
-    dot.addEventListener('click', () => setBeamerSlide(i));
-    pag.appendChild(dot);
-  }
-}
-
-function restoreBeamerElements() {
-  // Elemente, die in den Beamer ausgeliehen wurden, zurück in normale Position bringen
-  const threed = document.getElementById('threed-container');
-  const bauplan = document.getElementById('bauplan-canvas');
-  const dots = document.getElementById('dots-canvas');
-  const grid = document.getElementById('grid-canvas');
-  [threed, bauplan, dots, grid].forEach(el => {
-    if (el) {
-      el.style.width = '';
-      el.style.height = '';
-    }
-  });
-  // Original-Container wiederherstellen
-  document.getElementById('threed-host').appendChild(threed);
-  document.getElementById('bauplan-host').appendChild(bauplan);
-  document.getElementById('dots-host').appendChild(dots);
-  document.getElementById('grid-host').appendChild(grid);
-  // Renderer und Canvas zurücksetzen
-  if (renderer) {
-    const c = document.getElementById('threed-container');
-    renderer.setSize(c.clientWidth || 400, c.clientHeight || 400, false);
-    updateCameraPosition();
-  }
-  drawBauplan();
-  drawDotsOnCanvas();
-  drawGridOnCanvas();
-}
-
-function enterBeamer() {
-  document.getElementById('beamer-overlay').classList.add('active');
-  // Fullscreen anfordern (nicht alle Browser/Geräte unterstützen das)
-  const el = document.documentElement;
-  try {
-    if (el.requestFullscreen) el.requestFullscreen();
-    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-  } catch (e) { /* okay */ }
-  setBeamerSlide(0);
-}
-
-function exitBeamer() {
-  document.getElementById('beamer-overlay').classList.remove('active');
-  restoreBeamerElements();
-  try {
-    if (document.exitFullscreen) document.exitFullscreen();
-    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-  } catch (e) { /* okay */ }
-}
-
 // Vollbild: zeigt die gewählten Ansichten auf dem ganzen Bildschirm
 function syncFullBtn() {
   const on = !!(document.fullscreenElement || document.webkitFullscreenElement);
@@ -3042,33 +2724,6 @@ document.getElementById('btn-beamer').addEventListener('click', () => {
     if (el.requestFullscreen) el.requestFullscreen(); else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
   } else if (d.exitFullscreen) d.exitFullscreen(); else if (d.webkitExitFullscreen) d.webkitExitFullscreen();
 });
-document.getElementById('beamer-exit').addEventListener('click', exitBeamer);
-document.getElementById('beamer-prev').addEventListener('click', () => setBeamerSlide(beamerSlide - 1));
-document.getElementById('beamer-next').addEventListener('click', () => setBeamerSlide(beamerSlide + 1));
-document.getElementById('beamer-random').addEventListener('click', () => {
-  generateRandom();
-  setBeamerSlide(beamerSlide); // re-render
-});
-document.getElementById('beamer-clear').addEventListener('click', () => {
-  plan = Array.from({length: SIZE}, () => Array(SIZE).fill(0));
-  updateAll();
-  setBeamerSlide(beamerSlide);
-});
-
-// Tastatur-Steuerung im Beamer-Modus
-document.addEventListener('keydown', (e) => {
-  if (!document.getElementById('beamer-overlay').classList.contains('active')) return;
-  if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
-    e.preventDefault();
-    setBeamerSlide(beamerSlide + 1);
-  } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
-    e.preventDefault();
-    setBeamerSlide(beamerSlide - 1);
-  } else if (e.key === 'Escape') {
-    exitBeamer();
-  }
-});
-
 // ====================================================================
 // MAIN
 // ====================================================================
@@ -3113,6 +2768,18 @@ function layoutViews() {
   });
   const n = sel.length, has3d = sel[0] === '3d';
   const portrait = window.innerHeight > window.innerWidth;
+  // Handy: bei 1–2 Ansichten füllen sie den Bildschirm (kein Scrollen), ab 3 scrollt die Seite
+  const phone = window.matchMedia('(max-width: 700px)').matches;
+  document.body.classList.toggle('vfit', phone && n <= 2);
+  document.body.classList.toggle('v1', n === 1);
+  if (phone) {
+    // Halbe Höhe einmal ausrechnen: gilt bei 2 Ansichten und auch ab 3 (dann scrollt die Seite), damit nichts springt
+    const top = wrap.getBoundingClientRect().top + window.scrollY;
+    const cs = getComputedStyle(document.querySelector('.container'));
+    const gap = parseFloat(getComputedStyle(wrap).rowGap) || 12;
+    const avail = window.innerHeight - top - parseFloat(cs.paddingBottom);
+    document.body.style.setProperty('--half', ((avail - gap) / 2).toFixed(2) + 'px');
+  }
   let areas, cols, rows;
   if (n === 1) { areas = ['v0']; cols = '1fr'; rows = '1fr'; }
   else if (n === 2) {
@@ -3145,8 +2812,12 @@ function fitSideViews() {
   if (!host || !host.offsetParent) return;
   const hint = host.querySelector('.hint');
   const W = host.clientWidth, H = host.clientHeight - (hint ? hint.offsetHeight + 12 : 0);
-  const c = Math.max(12, Math.min(70, Math.floor((W - 100) / 9), Math.floor((H - 50) / 3)));
-  host.style.setProperty('--cell', c + 'px');
+  // nebeneinander oder (bei hoher, schmaler Box) untereinander – je nachdem, was grösser wird
+  const cRow = Math.min(70, Math.floor((W - 100) / 9), Math.floor((H - 50) / 3));
+  const cCol = Math.min(70, Math.floor((W - 40) / 3), Math.floor((H - 160) / 9));
+  const stack = cCol > cRow + 2;
+  host.classList.toggle('stack', stack);
+  host.style.setProperty('--cell', Math.max(12, stack ? cCol : cRow) + 'px');
 }
 document.getElementById('view-toggle').addEventListener('click', (e) => {
   const b = e.target.closest('button');
@@ -3188,6 +2859,16 @@ function fitHeader() {
     if (!wraps()) break;
     h.classList.add(c);
   }
+  const t1 = h.querySelector('h1');
+  const spread = !t1 || getComputedStyle(t1).display === 'none';
+  h.classList.toggle('spread', spread);
+  if (spread) {
+    // Spalten: Hauptknopf so breit wie sein Text, alle anderen teilen sich den Rest gleichmässig
+    const items = Array.from(h.querySelectorAll('button, .dropdown')).filter(function (e) {
+      return !e.closest('.dropdown-menu') && !(e.tagName === 'BUTTON' && e.parentElement.classList.contains('dropdown')) && getComputedStyle(e).display !== 'none';
+    });
+    h.style.gridTemplateColumns = items.map(function (e) { return e.classList.contains('primary') ? 'auto' : 'minmax(0, 1fr)'; }).join(' ');
+  } else h.style.gridTemplateColumns = '';
   void h.offsetWidth;
   h.classList.remove('fitting');
 }
@@ -3196,6 +2877,13 @@ if (typeof ResizeObserver !== 'undefined') { let fhFrame = 0; new ResizeObserver
 window.addEventListener('orientationchange', () => setTimeout(fitHeader, 200));
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitHeader);
 setTimeout(fitHeader, 0);
+
+// Vollbild: Klasse setzen, damit die Breitenbegrenzung entfällt
+(function () {
+  function fsSync() { document.documentElement.classList.toggle('fs', !!(document.fullscreenElement || document.webkitFullscreenElement)); }
+  document.addEventListener('fullscreenchange', fsSync);
+  document.addEventListener('webkitfullscreenchange', fsSync);
+})();
 </script>
 
 </body>

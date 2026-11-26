@@ -3,6 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>html.loading body { opacity: 0; } body { transition: opacity 0.15s; }</style>
+<script>
+  // Seite erst zeigen, wenn alles geladen und angeordnet ist (kein Springen beim Öffnen)
+  document.documentElement.classList.add('loading');
+  (function () {
+    function reveal() { document.documentElement.classList.remove('loading'); }
+    window.addEventListener('load', function () {
+      setTimeout(function () { requestAnimationFrame(function () { requestAnimationFrame(reveal); }); }, 80);
+    });
+    setTimeout(reveal, 4000);   // Sicherheitsnetz, falls etwas nicht lädt
+  })();
+</script>
 <title>Drahtgitterwürfel</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -209,6 +221,120 @@
   header.fit1 .lt { display: none !important; }
   header.fit1 .hb { width: 40px; padding: 0; }
   header.fit2 h1 { display: none; }
+
+  /* Kopfzeile wie in den anderen Würfel-Tools: Inhalt bündig mit den Boxen */
+  header.fitting, header.fitting * { transition: none !important; }
+  @media (max-width: 700px) { header { padding-left: 10px; padding-right: 10px; } }
+  @media (max-width: 420px) { header { padding-left: 8px; padding-right: 8px; } }
+  @media (max-width: 340px) { header { padding-left: 4px; padding-right: 4px; } }
+
+  /* Ebenen (eine Farbe = eine Ebene) */
+  .layers { display: flex; flex-direction: column; gap: 4px; }
+  .layer { border: 1px solid #e8e6dd; border-radius: 10px; }
+  .lhead { display: flex; align-items: center; gap: 8px; min-height: 46px; padding: 4px 4px 4px 6px; cursor: pointer; border-radius: 10px; }
+  .lhead:hover { background: #f8f7f2; }
+  .lhead .chev { color: #888780; display: inline-flex; transition: transform 0.15s; }
+  .layer.open .lhead .chev { transform: rotate(90deg); }
+  .lhead .dot { width: 14px; height: 14px; border-radius: 50%; flex: none; }
+  .lhead .nm { flex: 1; font-size: 16px; font-weight: 600; line-height: 1.2; }
+  .lhead .nm small { display: block; font-weight: 400; font-size: 13px; color: #888780; }
+  .lhead button { width: 36px; min-height: 36px; height: 36px; padding: 0; border-color: transparent; background: transparent; color: #5f5e5a; }
+  .lhead button:hover { border-color: #b4b2a9; background: white; }
+  .lhead button[data-dellayer]:hover { color: #b91c1c; }
+  .layer.hid .lhead .nm, .layer.hid .lhead .dot { opacity: 0.4; }
+  .lbody { padding: 0 4px 6px 30px; }
+  .lbody .item { min-height: 38px; }
+  .lsum { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; font-size: 15px; color: #444441; border-top: 1px solid #e8e6dd; margin-top: 4px; padding: 6px 4px 0 6px; }
+  .lsum b { text-align: right; }
+
+  /* Kopfzeile ohne Titel (Handy): Knöpfe gleichmässig über die ganze Breite verteilen */
+  header.spread { justify-content: space-between; }
+  header.spread .toolbar, header.spread .toolbar-group { display: contents; }
+  header.spread > *, header.spread .toolbar-group > * { margin-left: 0 !important; margin-right: 0 !important; }
+  header.spread .spacer { display: none; }
+
+  /* Handy: Knöpfe teilen sich die Breite gleichmässig (Raster: gleich breit, gleicher Abstand) */
+  header.spread { display: grid !important; grid-auto-flow: column; gap: 6px !important; align-items: center; }
+  header.spread button, header.spread .dropdown, header.spread .dropdown > button { width: 100% !important; min-width: 0; margin: 0 !important; }
+  header.spread button.primary { font-size: 14px !important; padding: 0 12px !important; gap: 6px !important; white-space: nowrap; }
+  header.spread button.primary .ic { width: 18px; height: 18px; }
+
+  /* Handy: Abstände zwischen den Boxen = Randabstand (8 px) */
+  @media (max-width: 420px) {
+    #viewer { margin-top: 8px !important; }
+    #panel { padding-top: 8px !important; gap: 8px !important; }
+    #panel-content { gap: 8px !important; }
+  }
+
+  /* Rechte Seite als Box «Zeichnen» wie bei Distanzen: Abschnitte durch feine Linien getrennt */
+  #panel { overflow: hidden !important; }
+  .calc-box {
+    flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px;
+    background: white; border: 1px solid #d3d1c7; border-radius: 12px; padding: 20px 20px 0;
+  }
+  .calc-box .viewbar { flex: none; height: 32px; display: flex; align-items: center; }
+  #panel-content { flex: 1; min-height: 0; overflow-y: auto; gap: 0 !important; padding-bottom: 20px; }
+  .calc-box .card { border: none; border-radius: 0; padding: 14px 0; border-top: 1px solid #ebe9e1; background: transparent; }
+  .calc-box .card:first-child { border-top: none; padding-top: 4px; }
+  .calc-box .card .stufe-toggle { margin-bottom: 12px; }
+  .calc-box .sticky-bottom {
+    position: sticky; bottom: -20px; margin: auto 0 -20px !important; padding: 12px 0 20px;
+    background: linear-gradient(rgba(255,255,255,0), #fff 30%);
+  }
+  @media (orientation: portrait) { #panel { overflow: hidden !important; } }
+  @media (max-width: 700px) { .calc-box { padding: 14px 14px 0; } .calc-box .sticky-bottom { bottom: -14px; margin-bottom: -14px !important; padding-bottom: 14px; } #panel-content { padding-bottom: 14px; } }
+  @media (max-width: 420px) { .calc-box { padding: 12px 12px 0; } .calc-box .sticky-bottom { bottom: -12px; margin-bottom: -12px !important; padding-bottom: 12px; } #panel-content { padding-bottom: 12px; } }
+  @media (orientation: landscape) and (max-height: 500px) { .calc-box { padding: 10px 10px 0; } }
+
+  /* 50:50 wie bei Distanzen */
+  #viewer { min-width: 0; min-height: 0; }
+  #panel { flex: 1 1 0 !important; width: auto !important; min-width: 0; min-height: 0; }
+  @media (orientation: portrait) { #viewer { height: auto !important; } }
+  .calc-box .swatches { padding: 0; margin: 4px 0 0; }
+  /* gewählte Farbe: Ring innen statt aussen, damit am Rand nichts abgeschnitten wird */
+  .sw.on { border-color: #2c2c2a !important; box-shadow: inset 0 0 0 3px white !important; }
+
+  /* ===== Ansichten-Leiste wie in Würfelkörper und Distanzen ===== */
+  .dviews-wrap { flex: none; width: 100%; max-width: 1440px; margin: 0 auto; padding: 20px 20px 0; }
+  .views-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .views-bar h2 { font-size: 16px; font-weight: 600; white-space: nowrap; }
+  .view-toggle { display: flex; background: #e8e6dd; border-radius: 12px; padding: 4px; gap: 4px; }
+  .view-toggle button {
+    border: none; background: transparent; min-height: 36px; padding: 0 14px;
+    font-size: 15px; font-weight: 600; color: #5f5e5a; border-radius: 9px;
+  }
+  .view-toggle button:hover { background: rgba(255,255,255,0.5); }
+  .view-toggle button.on { background: white; color: #2c2c2a; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+  .view-toggle button.fixed { cursor: default; }
+  #viewer { margin-top: 12px !important; }
+  @media (orientation: landscape) { #panel { padding-top: 12px !important; } }
+  @media (max-width: 700px) {
+    .dviews-wrap { padding: 10px 10px 0; }
+    .views-bar { flex-direction: column; align-items: stretch; gap: 6px; }
+    .views-bar h2 { display: none; }
+    .view-toggle button { flex: 1; padding: 0 4px; font-size: 14px; }
+    #viewer { margin-top: 10px !important; }
+  }
+  @media (max-width: 700px) and (orientation: landscape) { #panel { padding-top: 10px !important; } }
+  @media (max-width: 420px) { .dviews-wrap { padding: 8px 8px 0; } #viewer { margin-top: 8px !important; } }
+  @media (orientation: landscape) and (max-height: 500px) {
+    .dviews-wrap { padding: 8px 10px 0; }
+    .view-toggle button { min-height: 30px; }
+    #viewer { margin-top: 8px !important; }
+    #panel { padding-top: 8px !important; }
+  }
+  /* «Zeichnen» ausgeblendet: 3D über die ganze Fläche */
+  body.v-none #panel { display: none; }
+  body.v-none #viewer { margin-right: 20px !important; }
+  @media (orientation: portrait) { body.v-none #viewer { flex: 1 !important; margin-bottom: 20px !important; } }
+  @media (max-width: 700px) { body.v-none #viewer { margin-right: 10px !important; margin-bottom: 10px !important; } }
+  @media (max-width: 420px) { body.v-none #viewer { margin-right: 8px !important; margin-bottom: 8px !important; } }
+  @media (orientation: landscape) and (max-height: 500px) { body.v-none #viewer { margin-right: 10px !important; } }
+
+  /* Vollbild: keine Breitenbegrenzung, Inhalt nutzt die ganze Breite (Beamer) */
+  html.fs main, html.fs .container, html.fs .dviews-wrap { max-width: none !important; }
+  @media (min-width: 701px) { html.fs header { padding-left: 20px !important; padding-right: 20px !important; } }
+  .tot .sub2 { font-size: 14px; color: #5f5e5a; font-weight: 400; padding-left: 12px; }
 </style>
 </head>
 <body>
@@ -228,13 +354,19 @@
   <button id="btn-full" class="hb" title="Vollbild"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg><span class="lt">Vollbild</span></button>
 </header>
 
+<div class="dviews-wrap"><div class="views-bar">
+  <h2>Ansichten</h2>
+  <div class="view-toggle" id="view-toggle">
+    <button data-v="3d" class="on fixed" title="Die 3D-Ansicht bleibt immer sichtbar">3D</button>
+    <button data-v="draw" class="on">Zeichnen</button>
+  </div>
+</div></div>
 <main>
   <div id="viewer">
     <div class="viewbar">
-      <h2 class="box-title">Drahtgitterwürfel</h2>
+      <h2 class="box-title">3D-Ansicht</h2>
       <div class="viewctl">
         <button id="v-undo" title="Schritt zurück"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
-        <button id="v-clear" title="Alles löschen"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>
         <button id="v-reset" title="Ansicht zurücksetzen"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 9.5V20h14V9.5"/></svg></button>
       </div>
       <div class="dropdown" id="show-dd"></div>
@@ -245,7 +377,10 @@
     </div>
   </div>
   <div id="panel">
-    <div id="panel-content"></div>
+    <div class="calc-box" id="draw-box">
+      <div class="viewbar"><h2 class="box-title">Zeichnen</h2></div>
+      <div id="panel-content"></div>
+    </div>
   </div>
 </main>
 
@@ -300,9 +435,12 @@ const state = {
   dashed: true,
   showPts: true,
   lengths: false,
+  sums: false,         // Summen (Draht, Oberfläche) zeigen – am Anfang aus, damit die Lösung nicht dasteht
   a: 2,               // Kantenlänge des Würfels in cm
   mode: 'wurzel',     // Längen als 'wurzel' oder 'dezimal'
-  menuOpen: false
+  menuOpen: false,
+  hidden: {},         // ausgeblendete Ebenen (Farbindex → true)
+  open: {}            // aufgeklappte Ebenen in der Liste
 };
 const view = { theta: START_THETA, phi: START_PHI, zoom: 1 };
 let history = [];
@@ -321,6 +459,7 @@ function norm(a) { const l = Math.hypot(a[0], a[1], a[2]); return l < 1e-12 ? nu
 function fmt(x) { return (Math.round(x * 100) / 100).toFixed(2).replace('.', ','); }
 function samePair(a, b) { return (a[0] === b[0] && a[1] === b[1]) || (a[0] === b[1] && a[1] === b[0]); }
 
+function shown(it) { return !state.hidden[it.c]; }
 function pushHistory() {
   history.push(JSON.stringify(state.items));
   if (history.length > 200) history.shift();
@@ -356,7 +495,7 @@ let POLYS = [];
 function prepPolys() {
   POLYS = [];
   state.items.forEach(function (it) {
-    if (it.t !== 'f') return;
+    if (it.t !== 'f' || !shown(it)) return;
     const P = it.p.map(function (i) { return PTS[i]; });
     const n = norm(newell(P));
     if (!n) return;
@@ -450,7 +589,7 @@ function render(g, W, H, opt) {
   // 1) Flächen (hinten zuerst)
   const fills = [];
   state.items.forEach(function (it, idx) {
-    if (it.t !== 'f') return;
+    if (it.t !== 'f' || !shown(it)) return;
     const pr = it.p.map(function (i) { return proj(PTS[i]); });
     const z = pr.reduce(function (s, q) { return s + q.z; }, 0) / pr.length;
     fills.push({ it: it, idx: idx, pr: pr, z: z });
@@ -474,6 +613,7 @@ function render(g, W, H, opt) {
   EDGES.forEach(function (e) { addLine(PTS[e[0]], PTS[e[1]], '#2c2c2a', lw, 'cube'); });
   const drawnEdges = {};
   state.items.forEach(function (it, idx) {
+    if (!shown(it)) return;
     const w = (state.hl === idx && !opt.export) ? segW * 1.6 : segW;
     if (it.t === 's') { addLine(PTS[it.p[0]], PTS[it.p[1]], COLORS[it.c], w, 'seg'); return; }
     for (let i = 0; i < it.p.length; i++) {
@@ -521,7 +661,7 @@ function render(g, W, H, opt) {
   // 5) Längen an den Strecken
   if (!opt.export) labelBoxes = [];
   if (state.lengths) {
-    state.items.forEach(function (it, idx) { if (it.t === 's') drawLengthLabel(g, it, idx, !opt.export); });
+    state.items.forEach(function (it, idx) { if (it.t === 's' && shown(it) && state.tool === 's') drawLengthLabel(g, it, idx, !opt.export); });
   }
 }
 let labelBoxes = [];   // {idx, x0, y0, x1, y1} der Längenbeschriftungen (zum Verschieben)
@@ -727,8 +867,13 @@ function tapPoint(i) {
 function toggleSegment(a, b) {
   pushHistory();
   const k = state.items.findIndex(function (it) { return it.t === 's' && samePair(it.p, [a, b]); });
-  if (k >= 0) { state.items.splice(k, 1); toast('Strecke entfernt.'); }
-  else state.items.push({ t: 's', c: state.color, p: [a, b] });
+  if (k >= 0 && !shown(state.items[k])) {
+    history.pop();
+    delete state.hidden[state.items[k].c];
+    toast('Diese Strecke war ausgeblendet – die Ebene ' + COLOR_NAMES[state.items[k].c] + ' ist wieder sichtbar.');
+  }
+  else if (k >= 0) { state.items.splice(k, 1); toast('Strecke entfernt.'); }
+  else { state.items.push({ t: 's', c: state.color, p: [a, b] }); delete state.hidden[state.color]; }
 }
 
 function planarOK(idx) {
@@ -745,6 +890,7 @@ function closePolygon() {
   if (!n) { toast('Die Punkte liegen auf einer Geraden – das gibt keine Fläche.'); return; }
   pushHistory();
   state.items.push({ t: 'f', c: state.color, p: d });
+  delete state.hidden[state.color];
   state.draft = [];
   toast('Fläche mit ' + d.length + ' Ecken gezeichnet.');
 }
@@ -867,6 +1013,10 @@ function lengthHTML(it) {
   return state.mode === 'dezimal' ? '≈ ' + fmt(L) + ' cm' : rad(L2) + ' cm';
 }
 const ICON_TRASH = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+const ICON_CHEV = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
+const ICON_EYE = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+const ICON_EYE_OFF = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.1A10.6 10.6 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-2.9 3.8M6.5 6.6C3.7 8.4 2 12 2 12s3.5 7 10 7c1.8 0 3.4-.5 4.7-1.3"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>';
+const ICON_BIN = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
 const ICON_CHECK = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>';
 
 // ====================================================================
@@ -924,10 +1074,27 @@ function areaTerms(it) {
   addTerm(T, h * h / 2, dot(N, N));
   return T;
 }
-function totals() {
+function wireParts(keep) {
+  const h = state.a / 2, items = state.items.filter(keep || shown);
+  const face = {}, all = {}, faceT = {}, segT = {}, allT = {};
+  items.forEach(function (it) {
+    if (it.t !== 'f') return;
+    itemEdges(it).forEach(function (e) { pieces(e[0], e[1]).forEach(function (pc) { if (!face[pc.key]) { face[pc.key] = true; addTerm(faceT, h, pc.n); } }); });
+  });
+  items.forEach(function (it) {
+    itemEdges(it).forEach(function (e) { pieces(e[0], e[1]).forEach(function (pc) {
+      if (all[pc.key]) return;
+      all[pc.key] = true; addTerm(allT, h, pc.n);
+      if (!face[pc.key]) addTerm(segT, h, pc.n);
+    }); });
+  });
+  return { all: allT, face: faceT, seg: segT, hasFace: Object.keys(face).length > 0, hasSeg: Object.keys(segT).some(function (r) { return Math.abs(segT[r]) > 1e-12; }) };
+}
+function totals(kind, keep) {
   const h = state.a / 2;
   const seen = {}, edgeT = {};
-  state.items.forEach(function (it) {
+  const items = state.items.filter(keep || shown);
+  items.filter(function (it) { return !kind || it.t === kind; }).forEach(function (it) {
     itemEdges(it).forEach(function (e) {
       pieces(e[0], e[1]).forEach(function (pc) {
         if (seen[pc.key]) return;
@@ -937,7 +1104,7 @@ function totals() {
     });
   });
   // geschlossener Körper: jedes Kantenstück gehört zu genau zwei Flächen
-  const polys = state.items.filter(function (it) { return it.t === 'f'; });
+  const polys = items.filter(function (it) { return it.t === 'f'; });
   const cnt = {};
   polys.forEach(function (it) { itemEdges(it).forEach(function (e) { pieces(e[0], e[1]).forEach(function (pc) { cnt[pc.key] = (cnt[pc.key] || 0) + 1; }); }); });
   const closed = polys.length >= 4 && Object.keys(cnt).every(function (k) { return cnt[k] === 2; });
@@ -949,11 +1116,9 @@ function totals() {
 function renderPanel() {
   const el = document.getElementById('panel-content');
   let h = '';
-  h += '<div class="stufe-toggle">' +
+  h += '<div class="card"><div class="stufe-toggle">' +
        '<button data-tool="s" class="' + (state.tool === 's' ? 'on' : '') + '">Strecke</button>' +
        '<button data-tool="f" class="' + (state.tool === 'f' ? 'on' : '') + '">Fläche</button></div>';
-
-  h += '<div class="card">';
   if (state.tool === 's') {
     h += '<p>' + (state.sel == null ? 'Tippe zwei Punkte an, um sie zu verbinden.' : 'Tippe jetzt den zweiten Punkt an.') + '</p>' +
          '<p class="tip">Nochmals dieselben zwei Punkte antippen entfernt die Strecke.</p>';
@@ -973,20 +1138,54 @@ function renderPanel() {
   }).join('') + '</div>';
   h += '</div>';
 
-  // Liste
-  h += '<div class="card"><div class="h"><span>Gezeichnet</span></div>';
+  // Ebenen: eine Farbe = eine Ebene, eingeklappt nur eine Zeile pro Farbe
+  h += '<div class="card"><div class="h"><span>Ebenen</span></div>';
   if (!state.items.length) {
     h += '<div class="empty">Noch nichts gezeichnet.</div>';
   } else {
-    let ns = 0, nf = 0;
-    h += '<div class="list">';
-    state.items.forEach(function (it, idx) {
-      const name = it.t === 's' ? 'Strecke ' + (++ns) : 'Fläche ' + (++nf) + '<small>' + it.p.length + ' Ecken</small>';
-      h += '<div class="item' + (state.hl === idx ? ' hl' : '') + '" data-idx="' + idx + '">' +
-           '<span class="dot' + (it.t === 'f' ? ' poly' : '') + '" style="background:' + COLORS[it.c] + '"></span>' +
-           '<span class="nm">' + name + '</span>' +
-           (state.lengths ? '<span class="len">' + (it.t === 's' ? lengthHTML(it) : valueHTML(areaTerms(it), 'cm²', false)) + '</span>' : '') +
-           '<button data-del="' + idx + '" title="Löschen">' + ICON_TRASH + '</button></div>';
+    h += '<div class="layers">';
+    COLORS.forEach(function (col, c) {
+      const mine = [];
+      state.items.forEach(function (it, idx) { if (it.c === c) mine.push({ it: it, idx: idx }); });
+      if (!mine.length) return;
+      const segs = mine.filter(function (o) { return o.it.t === 's'; }), polys = mine.filter(function (o) { return o.it.t === 'f'; });
+      const hid = !!state.hidden[c], open = !!state.open[c];
+      const cnt = [];
+      if (segs.length) cnt.push(segs.length + (segs.length === 1 ? ' Strecke' : ' Strecken'));
+      if (polys.length) cnt.push(polys.length + (polys.length === 1 ? ' Fläche' : ' Flächen'));
+      h += '<div class="layer' + (hid ? ' hid' : '') + (open ? ' open' : '') + '">' +
+           '<div class="lhead" data-layer="' + c + '">' +
+             '<span class="chev">' + ICON_CHEV + '</span>' +
+             '<span class="dot" style="background:' + col + '"></span>' +
+             '<span class="nm">' + COLOR_NAMES[c] + '<small>' + cnt.join(', ') + '</small></span>' +
+             '<button data-eye="' + c + '" title="' + (hid ? 'Einblenden' : 'Ausblenden') + '">' + (hid ? ICON_EYE_OFF : ICON_EYE) + '</button>' +
+             '<button data-dellayer="' + c + '" title="Ebene löschen">' + ICON_BIN + '</button>' +
+           '</div>';
+      if (open) {
+        h += '<div class="lbody">';
+        segs.forEach(function (o, n) {
+          h += '<div class="item' + (state.hl === o.idx ? ' hl' : '') + '" data-idx="' + o.idx + '">' +
+               '<span class="nm">Strecke ' + (n + 1) + '</span>' +
+               (state.lengths ? '<span class="len">' + lengthHTML(o.it) + '</span>' : '') +
+               '<button data-del="' + o.idx + '" title="Löschen">' + ICON_TRASH + '</button></div>';
+        });
+        polys.forEach(function (o, n) {
+          h += '<div class="item' + (state.hl === o.idx ? ' hl' : '') + '" data-idx="' + o.idx + '">' +
+               '<span class="nm">Fläche ' + (n + 1) + '<small>' + o.it.p.length + ' Ecken</small></span>' +
+               (state.lengths ? '<span class="len">' + valueHTML(areaTerms(o.it), 'cm²', false) + '</span>' : '') +
+               '<button data-del="' + o.idx + '" title="Löschen">' + ICON_TRASH + '</button></div>';
+        });
+        if (state.lengths && state.sums && (segs.length > 1 || polys.length > 0)) {
+          const mine = function (it) { return it.c === c; };
+          const T = totals(null, mine);
+          h += '<div class="lsum">';
+          h += '<span>Draht</span><b>' + valueHTML(wireParts(mine).all, 'cm', false) + '</b>';
+          if (polys.length > 1) h += '<span>Flächen zusammen</span><b>' + valueHTML(T.areaT, 'cm²', false) + '</b>';
+          h += '</div>';
+        }
+        h += '</div>';
+      }
+      h += '</div>';
     });
     h += '</div>';
   }
@@ -994,28 +1193,32 @@ function renderPanel() {
     h += '<div class="sub">Kantenlänge des Würfels: <select id="sel-a" class="inline-sel">' +
          [2, 4, 6, 8, 10, 12, 14, 16, 18, 20].map(function (v) { return '<option value="' + v + '"' + (v === state.a ? ' selected' : '') + '>' + v + ' cm</option>'; }).join('') +
          '</select></div>' +
-         '<div class="sub">Längen angeben als <select id="sel-mode" class="inline-sel">' +
+         '<div class="sub">Resultate angeben als <select id="sel-mode" class="inline-sel">' +
          '<option value="wurzel"' + (state.mode === 'wurzel' ? ' selected' : '') + '>Wurzel</option>' +
          '<option value="dezimal"' + (state.mode === 'dezimal' ? ' selected' : '') + '>Dezimalzahl</option>' +
-         '</select></div>' +
-         '<p class="tip" style="margin-top:6px">Längen im Würfel lassen sich verschieben. Doppelklick: zurück an den Platz.</p>';
+         '</select></div>';
+    if (!state.sums && state.items.length) h += '<p class="tip" style="margin-top:8px">Summen (Draht, Oberfläche): oben bei «Anzeige» einschalten.</p>';
+  } else if (state.items.length) {
+    h += '<p class="tip" style="margin-top:8px">Längen und Flächeninhalte: oben bei «Anzeige» einschalten.</p>';
   }
   h += '</div>';
 
-  // Gesamt
-  if (state.lengths && state.items.length) {
+  // Gesamt über alle sichtbaren Ebenen
+  if (state.lengths && state.sums && state.items.some(shown)) {
     const T = totals();
+    const W = wireParts();
     h += '<div class="card"><div class="h"><span>Gesamt</span></div><div class="tot">';
-    h += '<span class="tl">Alle Kanten zusammen</span><span class="tv">' + valueHTML(T.edgeT, 'cm', true) + '</span>';
+    h += '<span class="tl">Draht total</span><span class="tv">' + valueHTML(W.all, 'cm', true) + '</span>';
+    if (W.hasFace && W.hasSeg) {
+      h += '<span class="tl sub2">davon Flächenränder</span><span class="tv sub2">' + valueHTML(W.face, 'cm', false) + '</span>';
+      h += '<span class="tl sub2">davon übrige Strecken</span><span class="tv sub2">' + valueHTML(W.seg, 'cm', false) + '</span>';
+    }
     if (T.polys) {
-      if (T.closed) {
-        h += '<span class="tl">Oberfläche<small>Summe aller ' + T.polys + ' Teilflächen</small></span><span class="tv">' + valueHTML(T.areaT, 'cm²', true) + '</span>';
-      } else {
-        h += '<span class="tl">Flächen zusammen<small>noch kein geschlossener Körper</small></span><span class="tv">' + valueHTML(T.areaT, 'cm²', true) + '</span>';
-      }
+      if (T.closed) h += '<span class="tl">Oberfläche<small>Summe aller ' + T.polys + ' Teilflächen</small></span><span class="tv">' + valueHTML(T.areaT, 'cm²', true) + '</span>';
+      else h += '<span class="tl">Flächen zusammen<small>noch kein geschlossener Körper</small></span><span class="tv">' + valueHTML(T.areaT, 'cm²', true) + '</span>';
     }
     h += '</div>';
-    if (T.polys && !T.closed) h += '<p class="tip" style="margin-top:8px">Die Oberfläche erscheint, sobald die Flächen den Körper rundum abschliessen.</p>';
+    if (Object.keys(state.hidden).some(function (c) { return state.items.some(function (it) { return it.c === +c; }); })) h += '<p class="tip" style="margin-top:8px">Ausgeblendete Ebenen zählen nicht mit.</p>';
     h += '</div>';
   }
 
@@ -1033,7 +1236,7 @@ function renderShowMenu() {
   el.className = 'dropdown' + (state.menuOpen ? ' open' : '');
   el.innerHTML = '<button id="btn-show"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Anzeige ▾</button>' +
     '<div class="dropdown-menu show-menu">' +
-    item('dashed', 'Verdeckte Linien gestrichelt') + item('showPts', 'Punkte zeigen') + item('lengths', 'Längen anzeigen') +
+    item('dashed', 'Verdeckte Linien gestrichelt') + item('showPts', 'Punkte zeigen') + item('lengths', 'Längen anzeigen') + (state.lengths ? item('sums', 'Summen zeigen') : '') +
     '</div>';
 }
 
@@ -1047,7 +1250,21 @@ function update() {
 const panel = document.getElementById('panel');
 panel.addEventListener('click', function (e) {
   const b = e.target.closest('button');
-  if (!b) return;
+  if (!b) {
+    const lh = e.target.closest('.lhead');
+    if (lh) { const c = +lh.dataset.layer; state.open[c] = !state.open[c]; renderPanel(); }
+    return;
+  }
+  if (b.dataset.eye != null) { const c = +b.dataset.eye; if (state.hidden[c]) delete state.hidden[c]; else state.hidden[c] = true; update(); return; }
+  if (b.dataset.dellayer != null) {
+    const c = +b.dataset.dellayer;
+    pushHistory();
+    state.items = state.items.filter(function (it) { return it.c !== c; });
+    delete state.hidden[c]; state.hl = null;
+    update();
+    toast('Ebene ' + COLOR_NAMES[c] + ' gelöscht. «Schritt zurück» holt sie wieder.');
+    return;
+  }
   if (b.dataset.tool) { state.tool = b.dataset.tool; state.sel = null; state.draft = []; update(); }
   else if (b.dataset.color != null) { state.color = parseInt(b.dataset.color, 10); update(); }
   else if (b.dataset.del != null) {
@@ -1090,7 +1307,6 @@ document.getElementById('show-dd').addEventListener('click', function (e) {
 });
 document.getElementById('v-reset').addEventListener('click', resetView);
 document.getElementById('v-undo').addEventListener('click', undo);
-document.getElementById('v-clear').addEventListener('click', clearAll);
 document.getElementById('btn-clear').addEventListener('click', clearAll);
 
 document.addEventListener('keydown', function (e) {
@@ -1105,7 +1321,7 @@ function hashString() {
   const d = state.items.map(function (it) {
     return it.t + it.c + it.p.map(function (i) { return CHARS[i]; }).join('') + (it.lo ? '_' + it.lo[0] + '_' + it.lo[1] : '');
   }).join('.');
-  return 'd=' + d + '&a=' + state.a + '&g=' + (state.dashed ? 1 : 0) + '&l=' + (state.lengths ? 1 : 0) + '&m=' + state.mode[0] + '&p=' + (state.showPts ? 1 : 0) +
+  return 'd=' + d + '&a=' + state.a + '&g=' + (state.dashed ? 1 : 0) + '&l=' + (state.lengths ? 1 : 0) + (state.sums ? '&s=1' : '') + '&m=' + state.mode[0] + '&p=' + (state.showPts ? 1 : 0) + (Object.keys(state.hidden).length ? '&h=' + Object.keys(state.hidden).join('') : '') +
     '&v=' + Math.round(view.theta * 100) + '_' + Math.round(view.phi * 100) + '_' + Math.round(view.zoom * 100);
 }
 function writeHash() { try { history_replace('#' + hashString()); } catch (e) { /* lokal egal */ } }
@@ -1124,6 +1340,8 @@ function readHash() {
     view.zoom = Math.max(0.5, Math.min(3, +vm[3] / 100));
   }
   if (o.p === '0') state.showPts = false;
+  if (o.s === '1') state.sums = true;
+  if (/^[0-4]{1,5}$/.test(o.h || '')) o.h.split('').forEach(function (c) { state.hidden[+c] = true; });
   if (o.d) {
     o.d.split('.').forEach(function (s) {
       const m = /^([sf])([0-4])([0-9a-q]+)(?:_(-?\d+)_(-?\d+))?$/.exec(s);
@@ -1216,6 +1434,7 @@ document.getElementById('btn-full').addEventListener('click', function () {
 });
 function fitHeader() {
   const h = document.querySelector('header');
+  h.classList.add('fitting');
   h.classList.remove('fit1', 'fit2');
   const wraps = function () {
     const items = Array.from(h.querySelectorAll('h1, header > button, header > .dropdown > button')).filter(function (e) { return e.offsetParent !== null; });
@@ -1223,20 +1442,65 @@ function fitHeader() {
     const cs = items.map(function (e) { const r = e.getBoundingClientRect(); return r.top + r.height / 2; });
     return Math.max.apply(null, cs) - Math.min.apply(null, cs) > 12;
   };
-  for (const c of ['fit1', 'fit2']) { if (!wraps()) return; h.classList.add(c); }
+  for (const c of ['fit1', 'fit2']) { if (!wraps()) break; h.classList.add(c); }
+  const t1 = h.querySelector('h1');
+  const spread = !t1 || getComputedStyle(t1).display === 'none';
+  h.classList.toggle('spread', spread);
+  if (spread) {
+    // Spalten: Hauptknopf so breit wie sein Text, alle anderen teilen sich den Rest gleichmässig
+    const items = Array.from(h.querySelectorAll('button, .dropdown')).filter(function (e) {
+      return !e.closest('.dropdown-menu') && !(e.tagName === 'BUTTON' && e.parentElement.classList.contains('dropdown')) && getComputedStyle(e).display !== 'none';
+    });
+    h.style.gridTemplateColumns = items.map(function (e) { return e.classList.contains('primary') ? 'auto' : 'minmax(0, 1fr)'; }).join(' ');
+  } else h.style.gridTemplateColumns = '';
+  void h.offsetWidth;
+  h.classList.remove('fitting');
 }
 
 // ====================================================================
 // START
 // ====================================================================
+
+// 3D-Box und Box «Zeichnen» genau gleich gross (Breite im Querformat, Höhe im Hochformat)
+function splitHalf() {
+  const main = document.querySelector('main'), vw = document.getElementById('viewer'), pn = document.getElementById('panel');
+  if (document.body.classList.contains('v-none')) { vw.style.flex = ''; return; }
+  const col = getComputedStyle(main).flexDirection === 'column';
+  const cv = getComputedStyle(vw), cp = getComputedStyle(pn);
+  const X = col
+    ? (main.clientHeight - parseFloat(cv.marginTop) - parseFloat(cv.marginBottom) - parseFloat(cp.paddingTop) - parseFloat(cp.paddingBottom)) / 2
+    : (main.clientWidth - parseFloat(cv.marginLeft) - parseFloat(cv.marginRight) - parseFloat(cp.paddingLeft) - parseFloat(cp.paddingRight)) / 2;
+  vw.style.flex = '0 0 ' + Math.max(100, Math.floor(X)) + 'px';
+}
+if (typeof ResizeObserver !== 'undefined') new ResizeObserver(function () { splitHalf(); }).observe(document.querySelector('main'));
+// Ansichten: 3D bleibt immer, «Zeichnen» lässt sich aus- und einblenden
+document.getElementById('view-toggle').addEventListener('click', function (e) {
+  const b = e.target.closest('button');
+  if (!b) return;
+  if (b.dataset.v === '3d') { toast('Die 3D-Ansicht bleibt immer sichtbar.'); return; }
+  const hide = !document.body.classList.contains('v-none');
+  document.body.classList.toggle('v-none', hide);
+  b.classList.toggle('on', !hide);
+  splitHalf();
+  requestAnimationFrame(function () { resize(); });
+});
+window.addEventListener('resize', splitHalf);
 readHash();
 if (typeof ResizeObserver !== 'undefined') new ResizeObserver(function () { resize(); fitHeader(); }).observe(document.getElementById('stage'));
-window.addEventListener('resize', function () { resize(); fitHeader(); });
+window.addEventListener('resize', function () { resize(); fitHeader(); clearTimeout(window.__fhT); window.__fhT = setTimeout(fitHeader, 150); });
+splitHalf();
 resize();
 setupPointer();
 update();
 setTimeout(fitHeader, 0);
 requestAnimationFrame(loop);
+
+// Vollbild: Klasse setzen, damit die Breitenbegrenzung entfällt
+(function () {
+  function fsSync() { document.documentElement.classList.toggle('fs', !!(document.fullscreenElement || document.webkitFullscreenElement)); }
+  document.addEventListener('fullscreenchange', fsSync);
+  document.addEventListener('webkitfullscreenchange', fsSync);
+})();
 </script>
 </body>
 </html>
