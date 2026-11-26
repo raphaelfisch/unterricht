@@ -1,0 +1,1446 @@
+<!DOCTYPE html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bundesratswahl verstehen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@600;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: klar und ruhig, kurze Sätze für 14-Jährige, ernst genommen wie Erwachsene
+   IDEA: der Nationalratssaal am Wahltag – Halbrund, Wahlzettel, Resultattafel des Ratsbüros
+   PICTURE: Halbrund mit 246 Sitzen (200 Nationalrat, 46 Ständerat), umschaltbar Rat/Fraktion
+   COLOUR and TYPE: Weiss bzw. Nachtgrau, Tinte, Schweizer Rot #d52b1e; Inter Tight + Inter
+   LAYOUT: Kopfleiste mit drei Bereichen; Lernpfad als Stationen; Simulation als Beamer-Tafel */
+:root{color-scheme:light dark;--bg:light-dark(#fff,#121316);--ink:light-dark(#17181c,#eceef2);--mut:light-dark(#5b5f6c,#a4a9b6);--line:light-dark(#e2e3e8,#2b2d34);--card:light-dark(#f4f4f6,#1c1e23);--red:#d52b1e;--redink:light-dark(#b8241a,#ff7b70);--redsoft:light-dark(#fdeceb,#36160f);--ok:light-dark(#17703f,#62d69a);--oksoft:light-dark(#e5f4eb,#12301f);--bad:light-dark(#b42318,#ff8a80);--badsoft:light-dark(#fdecea,#3a1714);--nr:light-dark(#8b93a7,#7c849a);--sr:light-dark(#3d4252,#c9cedb)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16.5px/1.55 Inter,system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3{font-family:"Inter Tight",Inter,sans-serif;line-height:1.08;text-wrap:balance;margin:0 0 .5em}
+h2{font-size:clamp(26px,3.4vw,40px);font-weight:800}
+h3{font-size:20px;font-weight:600;margin-top:1.4em}
+p{margin:.5em 0 .9em;max-width:68ch}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+.top{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:12px max(4vw,16px);border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5}
+.brand{display:flex;align-items:center;gap:10px;font-family:"Inter Tight",Inter,sans-serif;font-weight:800;font-size:18px;margin-right:auto}
+.flag{width:28px;height:28px;background:var(--red);border-radius:5px;position:relative;flex:none}
+.flag:before,.flag:after{content:"";position:absolute;background:#fff;left:50%;top:50%;transform:translate(-50%,-50%)}
+.flag:before{width:16px;height:5px}.flag:after{width:5px;height:16px}
+nav{display:flex;gap:4px;flex-wrap:wrap}
+nav a{padding:10px 14px;border-radius:8px;text-decoration:none;color:var(--ink);font-weight:600;min-height:44px;display:flex;align-items:center}
+nav a[aria-current=page]{background:var(--ink);color:var(--bg)}
+.view{display:none}.view.on{display:block}
+.wrap{max-width:1240px;margin:0 auto;padding:clamp(20px,3vw,40px) max(4vw,16px) 60px}
+/* Lernpfad */
+.lp{display:block;max-width:1100px}
+.side ol{list-style:none;margin:0;padding:0;counter-reset:s}
+.side li button{width:100%;text-align:left;background:none;border:0;padding:9px 10px;border-radius:8px;display:flex;gap:10px;align-items:center;min-height:44px;font-size:15px}
+.side li button:before{counter-increment:s;content:counter(s);width:26px;height:26px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:13px;font-weight:700;flex:none}
+.side li.done button:before{content:"✓";background:var(--ok);border-color:var(--ok);color:#fff}
+.side li.cur button{background:var(--card);font-weight:700}
+.boxes{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:6px;margin:6px 0 14px}
+.boxes button{min-height:44px;border-radius:9px;border:2px solid var(--bad);background:var(--badsoft);color:var(--bad);font-weight:800;font-size:16px;padding:0;position:relative}
+.boxes button.ok{background:var(--ok);border-color:var(--ok);color:#fff}
+.boxes button.cur{box-shadow:0 0 0 3px var(--bg),0 0 0 5px var(--ink)}
+.boxes button small{display:block;font-size:10.5px;font-weight:600;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 3px}
+@media(max-width:600px){.boxes{gap:4px}.boxes button small{display:none}}
+.bar{height:8px;background:var(--card);border-radius:9px;overflow:hidden;margin:4px 0 18px}
+.bar i{display:block;height:100%;background:var(--red);transition:width .4s}
+.kicker{color:var(--redink);font-weight:700;font-size:14px;margin-bottom:6px}
+.lead{font-size:19px}
+.task{background:var(--card);border-radius:14px;padding:18px 20px;margin:20px 0}
+.task>b:first-child{display:block;margin-bottom:8px}
+.opts{display:grid;gap:8px;margin-top:8px}
+.opt{background:var(--bg);border:2px solid var(--line);border-radius:10px;padding:11px 14px;text-align:left;min-height:48px}
+.opt:hover{border-color:var(--mut)}
+.opt.right{border-color:var(--ok);background:var(--oksoft)}
+.opt.wrong{border-color:var(--bad);background:var(--badsoft)}
+.fb{margin-top:10px;padding:12px 14px;border-radius:10px;display:none}
+.fb.show{display:block}.fb.ok{background:var(--oksoft)}.fb.no{background:var(--badsoft)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{background:var(--ink);color:var(--bg);border:0;border-radius:10px;padding:11px 18px;font-weight:600;min-height:44px}
+.btn.red{background:var(--red);color:#fff}
+.btn.ghost{background:none;color:var(--ink);border:2px solid var(--line)}
+.btn:disabled{opacity:.4;cursor:default}
+.num{width:96px;padding:10px;border:2px solid var(--line);border-radius:10px;background:var(--bg);font-size:17px;text-align:right}
+.nav2{display:flex;justify-content:space-between;gap:12px;margin-top:32px;border-top:1px solid var(--line);padding-top:18px}
+.t{background:none;border:0;border-bottom:2px dotted var(--red);padding:0;font-weight:600;color:inherit}
+#gloss{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);width:min(560px,calc(100% - 24px));background:var(--ink);color:var(--bg);padding:16px 48px 16px 18px;border-radius:14px;z-index:20;display:none;box-shadow:0 10px 30px #0004}
+#gloss.show{display:block}#gloss b{display:block;font-family:"Inter Tight",Inter,system-ui,sans-serif;font-size:18px;margin-bottom:4px}
+#gloss button{position:absolute;right:8px;top:8px;background:none;border:0;color:inherit;font-size:22px;width:40px;height:40px}
+.chain{display:flex;align-items:stretch;gap:10px;flex-wrap:wrap;margin:18px 0}.chain>span{align-self:center}.chain>div{display:flex;flex-direction:column;justify-content:center}
+.chain div{background:var(--card);border-radius:12px;padding:12px 16px;font-weight:600;text-align:center;flex:1 1 140px}
+.chain div small{display:block;font-weight:400;color:var(--mut);font-size:13px}
+.chain span{font-size:24px;color:var(--red)}
+.seats{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0}
+.kt{display:flex;flex-direction:column;gap:3px}
+.kt small{font-size:12px;color:var(--mut);font-weight:600}
+.kt .sq{display:flex;flex-wrap:wrap;gap:3px;max-width:96px}
+.kt .sq i{width:13px;height:13px;border-radius:3px;background:var(--nr)}
+.kt.hl .sq i{background:var(--red)}.kt.hl small{color:var(--redink)}
+.kt.sr .sq i{background:var(--sr)}
+.cmp{display:grid;grid-template-columns:120px minmax(0,1fr) 70px;gap:8px 12px;align-items:center;margin:14px 0}
+.cmp .b{height:22px;border-radius:5px;background:var(--nr)}.cmp .b.s{background:var(--sr)}
+.cmp span:nth-child(3n){text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.fig{position:relative}
+.hemi{width:100%;max-width:720px;display:block;margin:10px auto}
+.legend{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:15px;justify-content:center}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend i{width:14px;height:14px;border-radius:50%}
+.seg{display:inline-flex;border:2px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:none;padding:9px 14px;min-height:44px;font-weight:600}
+.seg button.on{background:var(--ink);color:var(--bg)}
+.br{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:14px 0}
+.brc{border:2px solid var(--line);border-radius:12px;padding:12px;position:relative}
+.brc b{display:block;font-size:15.5px}.brc small{color:var(--mut);display:block;font-size:13.5px}
+.brc .p{display:inline-block;margin-top:8px;padding:2px 8px;border-radius:20px;font-size:13px;font-weight:700;color:#fff}
+.brc.leave{border-style:dashed;opacity:.75}
+
+.cands{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;margin:14px 0}
+.cand{border:2px solid var(--line);border-radius:14px;padding:14px;text-align:left;background:var(--bg)}
+.cand.on{border-color:var(--red);box-shadow:0 0 0 3px var(--redsoft)}
+.cand b{font-size:17px;display:block}.cand small{display:block;color:var(--mut)}
+.tag{display:inline-block;font-size:12.5px;font-weight:700;padding:2px 8px;border-radius:20px;background:var(--card);margin:6px 4px 0 0}
+.tag.r{background:var(--redsoft);color:var(--redink)}
+.tl{list-style:none;padding:0;margin:16px 0;border-left:3px solid var(--line)}
+.tl li{position:relative;padding:0 0 4px 22px}
+.tl li:before{content:"";position:absolute;left:-9px;top:14px;width:15px;height:15px;border-radius:50%;background:var(--bg);border:3px solid var(--mut)}
+.tl li.big:before{border-color:var(--red);background:var(--red)}
+.tl details{padding:8px 0}
+.tl summary{cursor:pointer;font-weight:600;min-height:32px;padding-top:4px}
+.tl summary em{font-style:normal;color:var(--redink);font-weight:700;margin-right:6px;white-space:nowrap}
+.tl details p{margin:.4em 0;color:var(--ink)}
+.calc{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 14px;align-items:center;max-width:460px}
+.calc .res{font-size:18px;font-weight:700;text-align:center;padding-right:0;font-variant-numeric:tabular-nums}
+.calc .big{font-size:32px;color:var(--redink)}
+.tally{width:100%;border-collapse:collapse;margin:10px 0;font-variant-numeric:tabular-nums}
+.tally td{padding:7px 4px;border-bottom:1px solid var(--line)}
+.tally td:last-child{text-align:right;white-space:nowrap}
+.tally tr.sum td{font-weight:700}
+.tally tr.x td{text-decoration:line-through;color:var(--mut)}
+.score{font-size:56px;font-family:"Inter Tight",Inter,system-ui,sans-serif;font-weight:800;color:var(--ink);line-height:1}
+.rule{border:3px solid var(--red);border-radius:14px;padding:14px 18px;margin:16px 0;background:var(--bg)}
+.rule ol{margin:6px 0 0;padding-left:22px;font-size:17px}.rule li{margin:3px 0}
+.rt2{width:100%;border-collapse:collapse;margin:8px 0 14px;font-size:15.5px}.rt2 th,.rt2 td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:top}.rt2 tr.now td{background:var(--redsoft);font-weight:600}
+.share{display:grid;grid-template-columns:62px minmax(0,1fr) 66px;gap:6px 10px;align-items:center;margin:10px 0;max-width:560px}.share .b{height:16px;border-radius:4px}.share span:nth-child(3n){text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.check label{display:flex;gap:10px;align-items:center;padding:6px 0;min-height:40px}
+.check input{width:22px;height:22px;accent-color:var(--red)}
+/* Simulation */
+.steps{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
+.steps button{border:2px solid var(--line);background:none;border-radius:30px;padding:8px 14px;font-weight:600;min-height:44px}
+.steps button.on{background:var(--red);border-color:var(--red);color:#fff}
+.board{background:light-dark(#14161b,#0b0c0f);color:#f2f3f6;border-radius:18px;padding:clamp(20px,4vw,48px);min-height:420px}
+.board h2{font-size:clamp(30px,4.6vw,58px);color:#fff}
+.board p{font-size:clamp(17px,1.9vw,24px);max-width:none;color:#d9dce4}
+.board .k{color:#ff8a80;font-weight:700;letter-spacing:.02em;font-size:clamp(14px,1.4vw,18px)}
+.rt{width:100%;border-collapse:collapse;font-size:clamp(17px,2vw,26px);font-variant-numeric:tabular-nums}
+.rt td{padding:8px 4px;border-bottom:1px solid #ffffff22}
+.rt td:last-child{text-align:right;font-weight:700;white-space:nowrap}
+.rt tr.hl td{color:#fff;font-weight:800}
+.rt tr.x td{text-decoration:line-through;color:#8a8f9c}
+.rt tr.win td{color:#7be3a6}
+.rt td small{font-size:.6em;color:#ff8a80;font-weight:700;margin-left:8px;text-decoration:none;display:inline-block}
+.cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(18px,3vw,44px)}
+.timer{font-family:"Inter Tight",Inter,system-ui,sans-serif;font-weight:800;font-size:clamp(56px,10vw,130px);line-height:1;color:#fff;font-variant-numeric:tabular-nums}
+.bcard{background:#ffffff10;border-radius:14px;padding:16px}
+.bcard b{display:block;font-size:clamp(18px,2vw,24px);color:#fff}
+.bcard span{display:block;color:#c3c7d1;font-size:clamp(14px,1.4vw,17px)}
+.ctrl{margin-top:18px;border:2px solid var(--line);border-radius:16px;padding:18px}
+.ctrl h3{margin-top:0}
+.grid2{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px 18px}
+.field{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:4px 0}
+.field .num{width:84px}
+.warn{color:var(--bad);font-weight:600;min-height:1.5em;margin:8px 0}
+.dist{display:grid;grid-template-columns:110px minmax(0,1fr) 56px;gap:6px 10px;align-items:center;margin:8px 0}
+.dist .b{height:18px;border-radius:4px}
+.dist span:nth-child(3n){text-align:right;font-weight:700}
+/* Lehrperson */
+.plan{width:100%;border-collapse:collapse;margin:12px 0}
+.plan th,.plan td{text-align:left;vertical-align:top;padding:10px 8px;border-bottom:1px solid var(--line)}
+.plan th{font-size:14px;color:var(--mut)}
+.plan td:first-child{white-space:nowrap;font-weight:700}
+.note{background:var(--redsoft);border-radius:12px;padding:14px 16px;margin:16px 0}
+.src{font-size:14.5px;color:var(--mut)}
+.src a{color:inherit}
+
+/* Querformat / Surface Go: Navigation immer sichtbar, kompakter */
+.nav2{position:sticky;bottom:0;background:var(--bg);z-index:4;padding-bottom:10px}
+.side{position:sticky;top:76px;align-self:start}
+.fb,.task{scroll-margin:90px 0 96px}
+@media(min-width:1000px){
+ #v-simulation .wrap{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:16px;align-items:start}
+ #v-simulation .steps{grid-column:1/-1;margin-bottom:0}
+ #v-simulation .ctrl{margin-top:0;position:sticky;top:70px;max-height:calc(100vh - 86px);overflow:auto}
+ #v-simulation .ctrl .grid2{grid-template-columns:minmax(0,1fr)}
+}
+@media(min-width:700px) and (max-height:900px){
+ .top{padding:6px max(3vw,14px)}nav a{min-height:40px;padding:8px 12px}
+ .wrap{padding:14px max(3vw,14px) 0}
+
+ .side li button{min-height:38px;padding:5px 8px;font-size:14px}
+ .side{top:62px}
+ h2{font-size:clamp(24px,2.6vw,32px)}h3{margin-top:.9em;font-size:18px}
+ .lead{font-size:17px}p{margin:.35em 0 .6em}
+ .task{padding:12px 16px;margin:12px 0}.opts{gap:6px}.opt{min-height:44px;padding:9px 12px}
+ .bar{margin:2px 0 10px}.nav2{margin-top:14px;padding-top:10px}
+ .hemi{max-height:min(300px,40vh);width:auto;max-width:100%}
+ .br{grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px}.brc{padding:8px 10px}.brc b{font-size:14px}.brc small{font-size:12.5px}
+ .cands{grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}.cand{padding:10px 12px}
+ .seats{gap:6px}.kt .sq i{width:11px;height:11px}
+ .chain{margin:10px 0}.chain div{padding:8px 12px}
+ .tally td{padding:5px 4px}.rule{padding:10px 14px;margin:10px 0}
+ .cmp{margin:8px 0;gap:4px 12px}.cmp .b{height:16px}
+ .board{padding:22px 28px;min-height:0}.board h2{font-size:clamp(26px,3.4vw,44px)}.board p{font-size:clamp(16px,1.6vw,21px);margin:.3em 0 .5em}
+ .rt{font-size:clamp(15px,1.6vw,21px)}.rt td{padding:5px 4px}
+ .timer{font-size:clamp(48px,7vw,96px)}.bcard{padding:10px 12px}
+ .ctrl{padding:14px}
+}
+.duo{display:grid;grid-template-columns:minmax(0,1fr);gap:0 24px;align-items:start}
+.tri{display:grid;grid-template-columns:minmax(0,1fr);gap:0 12px}
+@media(min-width:1000px){.duo{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.tri{grid-template-columns:repeat(3,minmax(0,1fr))}.duo>*>.task:first-child,.duo>.task,.tri>.task{margin-top:0}.duo .rule{margin-top:0}}
+@media(max-width:860px){.lp{grid-template-columns:minmax(0,1fr)}.side{display:none}.cols{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){body{font-size:16px}.cmp{grid-template-columns:84px minmax(0,1fr) 54px}.plan,.plan tbody,.plan tr,.plan td{display:block}.plan thead{display:none}.plan tr{padding:10px 0;border-bottom:1px solid var(--line)}.plan td{border:0;padding:3px 0}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* Design-Review: Wahlzettel-Motiv, ruhige Rückmeldungen, Kontraste */
+:root{--ctl:light-dark(#6b7080,#8a90a0);--onok:light-dark(#fff,#06210f);--r:6px}
+:focus-visible{outline:3px solid var(--ink);outline-offset:3px;box-shadow:0 0 0 6px var(--bg)}
+.board :focus-visible{outline-color:#fff;box-shadow:0 0 0 6px #14161b}
+.top{border-top:4px solid var(--red);border-bottom:2px solid var(--ink)}
+.flag{border-radius:3px}nav a{border-radius:var(--r)}
+p,.lead{text-wrap:pretty}
+.src{font-size:15.5px}
+h2{letter-spacing:-.015em}
+/* Aufgabe = Wahlzettel */
+.task{background:var(--bg);border:2px solid var(--ink);border-top:6px solid var(--red);border-radius:var(--r)}
+.info{background:var(--card);border-left:5px solid var(--ink);border-radius:var(--r);padding:12px 16px;margin:12px 0}
+.info>b:first-child{display:block;margin-bottom:6px}
+.why{border-left-color:var(--red)}
+.opt{border-color:var(--ctl);border-radius:var(--r);display:flex;gap:12px;align-items:center}
+.opt:before{content:"";width:20px;height:20px;border:2px solid var(--ink);border-radius:3px;flex:none;display:grid;place-items:center;font-size:14px;font-weight:800;line-height:1}
+.opt.right{border-color:var(--ok);background:var(--oksoft);font-weight:600}
+.opt.right:before{content:"✓";background:var(--ok);border-color:var(--ok);color:var(--onok)}
+.opt.wrong{border-color:var(--bad);background:var(--bg);font-weight:600}
+.opt.wrong:before{content:"✕";background:var(--bad);border-color:var(--bad);color:#fff}
+.opt:active{transform:scale(.99)}
+@media(hover:none){.opt:hover{border-color:var(--ctl)}}
+.opt:disabled{cursor:default;opacity:1}
+/* Rückmeldung mit Randbalken statt Fläche */
+.fb{border-left:5px solid var(--mut);border-radius:4px var(--r) var(--r) 4px;background:var(--card)}
+.fb.ok{border-left-color:var(--ok);background:var(--oksoft)}
+.fb.no{border-left-color:var(--bad);background:var(--card)}
+.rule{border-width:2px;border-radius:var(--r)}
+/* Bedienelemente mit genug Kontrast */
+.num,.btn.ghost,.seg,.cand{border-color:var(--ctl)}
+.btn,.num,.seg,.cand,.brc,.ctrl,.board,.bcard{border-radius:var(--r)}
+/* Fortschrittsboxen: offen neutral, erledigt grün, aktuell rot umrandet */
+.boxes button{border:2px solid var(--ctl);background:var(--bg);color:var(--ink);border-radius:var(--r)}
+.boxes button.ok{background:var(--ok);border-color:var(--ok);color:var(--onok)}
+.boxes button.cur{box-shadow:none;outline:3px solid var(--red);outline-offset:2px}
+.boxes button small{font-size:12px;white-space:normal;line-height:1.1}
+/* Glossarwörter: grössere Tippfläche */
+.t{position:relative}.t:after{content:"";position:absolute;inset:-10px -3px}
+/* Kandidatenkarten */
+.cand{position:relative;padding-right:30px}
+.cand:before{content:"›";position:absolute;right:12px;top:10px;color:var(--mut);font-size:24px;line-height:1}
+.cand.seen{background:var(--card)}.cand.seen b:after{content:" ✓";color:var(--ok)}
+.cand:active{transform:scale(.98)}
+/* Bundesrat-Karten */
+.brc .p{font-size:13.5px}.brc .p.lt{color:#17181c}
+.brc.leave{opacity:1;background:var(--card)}
+/* Zeitstrahl */
+.tl summary{min-height:44px;display:flex;align-items:center;gap:6px;list-style:none;padding:6px 36px 6px 0;position:relative}
+.tl summary::-webkit-details-marker{display:none}
+.tl summary:after{content:"+";position:absolute;right:6px;font-size:24px;color:var(--redink);font-weight:700}
+.tl details[open] summary:after{content:"–"}
+/* Navigation unten mit Bedingung in der Mitte */
+.nav2{align-items:center}
+.nav2 #stneed{flex:1;text-align:center;font-size:14.5px}
+@media(max-width:600px){.nav2 #stneed{font-size:13px}}
+.steps button{border-radius:var(--r)}.steps button.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+/* Resultattafel */
+.board{border-top:8px solid var(--red)}
+.board .k{font-size:clamp(16px,1.8vw,26px);color:#ffb4ab}
+.board p{color:#e6e8ee}
+.verdict{font:800 clamp(26px,3.6vw,56px)/1.1 "Inter Tight",Inter,sans-serif;padding:.3em .55em;border-radius:var(--r);margin:.1em 0 .45em}
+.verdict.ok{background:#7be3a6;color:#0b2a18}.verdict.no{background:#ffd54f;color:#2a2200}.verdict.wait{background:#ffffff14;color:#fff}
+.stats{display:flex;flex-wrap:wrap;gap:6px 22px;font-size:clamp(15px,1.5vw,22px);color:#c9cdd8;margin:0 0 .8em;font-variant-numeric:tabular-nums}
+.stats b{color:#fff}.stats .hi{color:#ffd54f}
+.crs{--m:50%;position:relative}
+.cr{display:grid;grid-template-columns:minmax(0,15em) minmax(0,1fr) 2.4em;gap:14px;align-items:center;font-size:clamp(19px,2.4vw,36px);padding:.22em 0;color:#fff}
+.cr .bar{background:#ffffff14;height:.9em;border-radius:4px;position:relative;overflow:visible}
+.cr .bar i{display:block;height:100%;background:#9aa3b5;border-radius:4px;transition:width .8s ease-out}
+.cr .bar:after{content:"";position:absolute;top:-.25em;bottom:-.25em;left:var(--m);border-left:3px dashed #ffd54f}
+.cr b{text-align:right;font-variant-numeric:tabular-nums}
+.cr.win .bar i{background:#7be3a6}.cr.win{color:#7be3a6}
+.cr.x{opacity:.7}
+.mlab{display:grid;grid-template-columns:minmax(0,15em) minmax(0,1fr) 2.4em;gap:14px;font-size:clamp(13px,1.3vw,18px);color:#ffd54f;font-weight:700}
+.mlab span{position:relative;left:var(--m);transform:translateX(-50%);white-space:nowrap;width:max-content}
+.pill{display:inline-block;font:800 .72em/1 Inter,sans-serif;padding:.4em .65em;border-radius:99px;margin-left:.6em;vertical-align:middle}
+.pill.out{background:#ff8a80;color:#2b0907}.pill.win{background:#7be3a6;color:#0b2a18}
+.notes p{margin:4px 0 0}
+@media(prefers-reduced-motion:reduce){.cr .bar i{transition:none}}
+
+.simbig .cr{font-size:clamp(24px,5vh,60px)}.simbig .verdict{font-size:clamp(32px,7vh,84px)}
+.simbig .stats{font-size:clamp(18px,3vh,30px)}.simbig .board p{font-size:clamp(20px,3.2vh,34px)}
+.simbig .board h2{font-size:clamp(34px,7vh,80px)}.simbig .bcard span{font-size:clamp(17px,2.6vh,26px)}
+#v-simulation .ctrl .grid2.zettel{grid-template-columns:1fr 1fr;gap:4px 12px}.ctrl .zettel .num{width:64px}.ctrl .field{padding:2px 0}.ctrl .field .num{padding:6px 8px;min-height:40px}.ctrl .field{padding:2px 0}.ctrl .field .num{padding:6px 8px;min-height:40px}.ctrl h3{margin:.6em 0 .3em}
+.ctrl .evalrow{position:sticky;bottom:-14px;background:var(--bg);padding:6px 0 12px;margin:0 -2px}
+.sumok{color:var(--ok)!important}
+.ctrl .btn.red.sec{background:none;color:var(--ink);border:2px solid var(--ctl)}
+
+/* Kompakter Rahmen, kein Scrollen */
+.boxrow{display:flex;gap:8px;align-items:stretch;margin:2px 0 10px}
+.boxrow .boxes{flex:1;margin:0}
+#lpreset,
+#simreset{min-height:40px;width:128px;flex:none;padding:0 6px;font-size:13.5px;white-space:nowrap}
+#lpreset.sure,
+#simreset.sure{border-color:var(--bad);color:var(--bad)}
+.boxes button{min-height:40px}
+#pgdots{font-size:14px;font-weight:700;color:var(--redink);white-space:nowrap}
+#pgdots:empty{display:none}
+.nav2{gap:12px}
+.pg>.kicker{margin-bottom:4px}
+@media(min-width:700px) and (max-height:1000px){
+ .top{padding:4px max(3vw,14px)}nav a{min-height:38px;padding:6px 12px}.brand{font-size:16px}
+ .wrap{padding:10px max(3vw,14px) 0}
+ h2{font-size:clamp(22px,2.4vw,30px)}.kicker{font-size:13px;margin-bottom:2px}
+ .nav2{margin-top:10px;padding-top:8px;padding-bottom:8px}
+ .task{margin:10px 0}.info{margin:8px 0}
+}
+
+/* Simulation: füllt den Bildschirm, nie Seiten-Scrollen */
+#v-simulation{background:var(--bg)}
+#v-simulation .simwrap{max-width:none;display:grid;grid-template-columns:minmax(0,1fr) 330px;grid-template-rows:auto minmax(0,1fr);gap:10px 14px;height:calc(100dvh - var(--hh,60px));padding:10px max(2vw,12px)}
+#v-simulation .simbar{grid-column:1/-1;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+#v-simulation .steps{margin:0;gap:4px}
+#v-simulation .steps button{min-height:38px;padding:5px 10px;font-size:14.5px}
+.simtools{display:flex;gap:6px}.simtools .btn{min-height:38px;padding:6px 12px;font-size:14.5px}
+#v-simulation .board{min-height:0;overflow:auto;display:flex;flex-direction:column}
+#v-simulation .board>*:first-child{margin-top:auto}#v-simulation .board>*:last-child{margin-bottom:auto}
+#v-simulation .ctrl{margin:0;position:static;max-height:none;min-height:0;overflow:auto}
+#v-simulation.noctrl .simwrap{grid-template-columns:minmax(0,1fr)}
+#v-simulation.noctrl .ctrl{display:none}
+.simbig .board .k{font-size:clamp(18px,2.6vh,30px)}
+@media(max-width:699px){#v-simulation .simwrap{grid-template-columns:minmax(0,1fr)}#v-simulation .board{overflow-y:auto!important}}
+
+#v-simulation .simwrap{align-items:stretch}
+#v-simulation .board,#v-simulation .ctrl{max-height:100%}
+@media(min-width:700px) and (max-height:1000px){
+ .hemi{max-height:min(260px,34vh)}
+ .br{grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:6px}.brc{padding:6px 8px}.brc b{font-size:13.5px;line-height:1.2}.brc small{font-size:12.5px;line-height:1.3}.brc .p{margin-top:4px;font-size:12.5px}
+ .share{margin:6px 0;gap:3px 10px}.share .b{height:12px}
+ .tl summary{min-height:38px;padding:3px 32px 3px 0}.tl li{padding-bottom:0}.tl details{padding:2px 0}.tl details p{margin:.2em 0 .4em}
+ .calc{gap:4px 14px}.calc .num{padding:6px 8px}.calc .big{font-size:26px}
+ .tally td{padding:3px 4px;font-size:15px}
+ #trainer .opts{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .rt2{font-size:14.5px;margin:4px 0 8px}.rt2 th,.rt2 td{padding:5px 5px}
+ .cands .cand small{font-size:13px}
+}
+.hdrfs{min-height:38px;padding:6px 12px;font-size:14px}
+
+.chips{display:flex;flex-wrap:wrap;gap:4px 6px;margin:6px 0 4px;font-size:14.5px}
+.chips span{background:var(--card);border-radius:5px;padding:3px 8px;white-space:nowrap}
+.chips .hi{background:var(--redsoft);color:var(--redink)}
+@media(min-width:700px) and (max-height:1000px){
+ .board h2{font-size:clamp(22px,4.4vh,42px)}.board p{font-size:clamp(14px,2.5vh,21px)}
+ .bcard{padding:8px 10px}.bcard b{font-size:clamp(15px,2.4vh,22px)}.bcard span{font-size:clamp(12.5px,1.9vh,16px)}
+ .timer{font-size:clamp(40px,9vh,96px)}
+ #v-simulation .board{padding:16px 22px}
+ .ctrl p{margin:.3em 0 .5em;font-size:15px}.ctrl .field .num{min-height:36px;padding:4px 8px}.ctrl .btn{min-height:40px;padding:8px 14px}
+}
+
+@media(min-width:700px) and (max-height:690px){
+ .boxes button small{display:none}.boxes button{min-height:32px}#lpreset,#simreset{min-height:32px}
+ h2{font-size:clamp(20px,2.2vw,26px)}.lead{font-size:16px}
+ .hemi{max-height:30vh}.task{padding:10px 14px}.opt{min-height:42px;padding:7px 12px}
+}
+
+.cands.c2{grid-template-columns:repeat(2,minmax(0,1fr))}
+#trainer .opts{display:flex;flex-wrap:wrap;gap:6px}#trainer .opt{flex:1 1 calc(50% - 6px);min-height:42px;padding:6px 10px}
+#trainer .tally td{padding:2px 4px}
+#trainer .fb .row{margin-top:6px!important}
+.tl details p{font-size:15px}
+.check label{min-height:34px;padding:3px 0}
+@media(min-width:700px) and (max-height:1000px){.tri .task{padding:10px 12px}.tri .task b{font-size:15px}}
+
+.cand{padding:8px 30px 8px 10px}.cand b{font-size:16px}.cand small{font-size:13px;line-height:1.3}.cand .tag{margin-top:4px}
+@media(min-width:700px) and (max-height:1000px){.nav2{margin-top:6px;padding-top:6px;padding-bottom:6px}.chain div{padding:6px 10px}}
+[hidden]{display:none!important}
+@media(min-width:700px) and (max-height:690px){.wrap{padding-top:6px}#station .kicker{display:none}.tl summary{min-height:34px}.boxrow{margin-bottom:6px}}
+.trn{display:grid;grid-template-columns:minmax(0,1fr);gap:0 24px}@media(min-width:900px){.trn{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.rnow{background:var(--redsoft);border-radius:var(--r);padding:8px 12px;margin-top:8px;font-size:15px}
+.trn>div:last-child>b:first-child{display:block;margin-bottom:6px}
+
+
+/* Gleiche Breite für Kopf, Lernpfad und Simulation */
+:root{--W:1100px}
+.top{padding:0!important;display:block}
+.topin{max-width:var(--W);margin:0 auto;display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:6px max(3vw,14px)}
+.wrap.lp{max-width:var(--W);margin:0 auto}
+#v-simulation .simwrap{max-width:var(--W);margin:0 auto;padding-left:max(3vw,14px);padding-right:max(3vw,14px)}
+/* 7 Schritte gleich breit */
+#v-simulation .simbar{display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:6px}#tglctrl{min-height:38px;padding:5px 4px;font-size:14px;white-space:nowrap;border-style:dashed}
+#v-simulation .steps{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+#v-simulation .steps button{padding:5px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}
+.simtools .btn{width:118px;padding:6px 4px}
+/* Boxen-Beschriftung einzeilig */
+.boxes button small{white-space:nowrap;overflow:hidden;text-overflow:clip;font-size:11.5px}
+/* Lernpfad füllt die Höhe; Inhalt vertikal verteilt, Navigation unten fix (alle Grössen) */
+@media all{
+ #v-lernpfad .lp{display:flex;flex-direction:column;height:calc(100dvh - var(--hh,52px));padding-bottom:0}
+ #v-lernpfad .lp>div{display:flex;flex-direction:column;flex:1;min-height:0}
+ #station{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column}
+ #station .pg{flex:1;display:flex;flex-direction:column}
+ #station .pgbody{flex:1;display:flex;flex-direction:column;justify-content:center;padding:4px 0 8px}
+ #station .pgbody>:first-child{margin-top:0}#station .pgbody>:last-child{margin-bottom:0}
+ .nav2{position:static;flex:none}
+}
+@media(min-width:700px) and (max-height:1000px){.kt .sq i{width:10px;height:10px}.kt .sq{gap:2px;max-width:84px}.seats{gap:5px}.kt small{font-size:11.5px}.tl summary{min-height:36px}}
+#v-simulation .simbar .steps{grid-column:auto}
+#v-simulation .steps button{font-size:14px;padding:5px 2px;text-overflow:clip}
+.hdrtools{display:flex;gap:6px;flex:none}.hdrtools .btn{width:118px;flex:none;padding:6px 4px;white-space:nowrap;min-height:38px;font-size:14px}
+nav a{white-space:nowrap}
+.nav2{display:grid!important;grid-template-columns:172px minmax(0,1fr) 172px;align-items:center;gap:12px}
+.nav2 #prev,.nav2 #next{width:172px;padding-left:6px;padding-right:6px;white-space:nowrap}
+.nav2 #next{justify-self:end}
+.navmid{min-height:42px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:1px;min-width:0}
+.navmid #stneed{flex:none!important;text-align:center;text-wrap:balance;line-height:1.35}
+.navmid #pgdots{font-size:13px}
+@media(max-width:600px){.nav2{grid-template-columns:110px minmax(0,1fr) 110px}.nav2 #prev,.nav2 #next{width:110px;font-size:14px}}
+/* Zeitstrahl: Kreise ganz sichtbar und auf der Textzeile zentriert */
+.tl{--sh:40px;margin-left:10px!important;padding-left:0}
+.tl summary{min-height:var(--sh)!important;padding-top:0!important;padding-bottom:0!important}
+.tl li:before{top:calc(var(--sh) / 2 - 7.5px)!important;left:-9px;width:15px;height:15px;box-sizing:border-box}
+.tl details{padding:0!important}
+@media(min-width:700px) and (max-height:1000px){.tl{--sh:37px}}
+@media(min-width:700px) and (max-height:690px){.tl{--sh:34px}}
+.tl{max-width:640px}
+.boxes button small{padding:0 4px!important;font-size:clamp(10px,.92vw,11px)!important;letter-spacing:-.01em;text-overflow:clip}.boxes{gap:4px!important}.boxrow{gap:6px!important}
+@media(max-width:1000px){.boxes button small{display:none!important}}
+#station .pgbody.locked{justify-content:flex-start!important}
+
+.rs{display:none}
+/* ---------- Handy (Hochformat) ---------- */
+@media(max-width:600px){
+ .rl{display:none}.rs{display:inline}
+ .topin{flex-wrap:nowrap;gap:6px;padding:6px 10px}
+ .brand{margin-right:auto}
+ nav{flex-wrap:nowrap;gap:2px}nav a{min-height:40px;padding:6px 9px;font-size:15px}
+ .hdrtools{display:none}
+ .wrap{padding:10px 10px 0}
+ .boxrow{gap:4px!important;margin:0 0 8px}.boxes{gap:3px!important}
+ .boxes button{min-height:36px;font-size:14px;border-width:2px}
+ .boxes button.cur{outline-width:2px;outline-offset:1px}
+ #lpreset,
+ #simreset{width:62px;min-height:36px;font-size:14px;padding:0 4px}
+ h2{font-size:24px}.lead{font-size:16.5px}
+ .nav2{position:sticky;bottom:0;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;grid-template-areas:"mid mid" "prev next";gap:6px 8px!important;padding:6px 0 10px!important;margin-top:10px}
+ .nav2 .navmid{grid-area:mid;min-height:0}.nav2 #prev{grid-area:prev;width:100%!important}.nav2 #next{grid-area:next;width:100%!important;justify-self:stretch}
+ .navmid #stneed{font-size:12.5px}
+ .opts{gap:6px}.opt{padding:9px 11px}
+ .cands.c2{grid-template-columns:minmax(0,1fr)}
+ .tri{grid-template-columns:minmax(0,1fr)}
+ .tl{max-width:none}
+ .calc{grid-template-columns:minmax(0,1fr) auto}
+ .chips{font-size:13.5px}
+ #trainer .opt{flex-basis:100%}
+ .cmp{grid-template-columns:96px minmax(0,1fr) 58px}
+ .share{grid-template-columns:54px minmax(0,1fr) 58px}
+ .hemi{max-height:none}
+ #gloss{bottom:10px}
+ /* Simulation: Schritte in zwei Reihen */
+ #v-simulation .simbar{grid-template-columns:minmax(0,1fr)!important}
+ #v-simulation .steps{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+ #v-simulation .steps button{font-size:12px}
+ #v-simulation .simwrap{padding:10px}
+}
+
+@media(max-width:600px){
+ .tl{--sh:auto;margin-left:9px!important}
+ .tl summary{display:block!important;min-height:44px!important;padding:6px 34px 6px 0!important;line-height:1.3}
+ .tl summary em{display:block;font-size:13.5px;margin:0 0 1px}
+ .tl summary:after{top:50%;transform:translateY(-50%)}
+ .tl li:before{top:9px!important}
+ .tl li{padding-left:18px}
+ #lpreset,
+ #simreset{font-size:14px;line-height:1}#lpreset .ric,#simreset .ric{font-size:20px}
+}
+.ctrlhd{font-size:12.5px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:8px}
+#tglctrl{width:auto}
+.tmr{display:grid;gap:6px;margin:6px 0}
+.tmr4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.tmr2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.tmr .btn{min-height:40px;padding:6px 2px;white-space:nowrap;width:100%}
+.tmr4 .btn.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.lpwrap{max-width:var(--W);margin:0 auto;padding-top:28px!important;padding-bottom:48px!important}
+.lpwrap>*{max-width:900px}.lpwrap>.plan{max-width:none}
+@media(max-width:600px){.lpwrap{padding:18px 14px 40px!important}}
+#fsexit{display:none;min-height:38px;padding:5px 12px;font-size:14px;white-space:nowrap}
+/* Vollbild in der Simulation: ganzer Bildschirm */
+html.fs body[data-view=simulation] .top{display:none}
+html.fs body[data-view=simulation] #fsexit{display:block}
+#fsexit2{display:none;flex:none;min-height:40px;padding:5px 10px;font-size:13.5px;white-space:nowrap}
+html.fs body[data-view=lernpfad] .top{display:none}
+html.fs body[data-view=lernpfad] #fsexit2{display:block}
+html.fs body[data-view=lernpfad] #v-lernpfad .lp{padding-top:8px}
+/* Bedienfeld breiter */
+@media(min-width:1000px){#v-simulation .simwrap{grid-template-columns:minmax(0,1fr) 370px}
+html.fs #v-simulation .simwrap{grid-template-columns:minmax(0,1fr) clamp(390px,25vw,480px)}}
+#v-simulation.noctrl .simwrap{grid-template-columns:minmax(0,1fr)!important}
+.ctrl .field{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
+.ctrl .zettel .field label{white-space:nowrap}
+/* Lernpfad-Vollbild: kompakte Regeln */
+html.fs body[data-view=lernpfad] .top{padding:4px max(3vw,14px)}
+html.fs body[data-view=lernpfad] nav a{min-height:38px;padding:6px 12px}
+html.fs body[data-view=lernpfad] .brand{font-size:16px}
+html.fs body[data-view=lernpfad] .wrap{padding:10px max(3vw,14px) 0}
+html.fs body[data-view=lernpfad] h2{font-size:clamp(22px,2.4vw,30px)}
+html.fs body[data-view=lernpfad] .kicker{font-size:13px;margin-bottom:2px}
+html.fs body[data-view=lernpfad] .nav2{margin-top:10px;padding-top:8px;padding-bottom:8px}
+html.fs body[data-view=lernpfad] .task{margin:10px 0}
+html.fs body[data-view=lernpfad] .info{margin:8px 0}
+html.fs body[data-view=lernpfad] .hemi{max-height:min(260px,34vh)}
+html.fs body[data-view=lernpfad] .br{grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:6px}
+html.fs body[data-view=lernpfad] .brc{padding:6px 8px}
+html.fs body[data-view=lernpfad] .brc b{font-size:13.5px;line-height:1.2}
+html.fs body[data-view=lernpfad] .brc small{font-size:12.5px;line-height:1.3}
+html.fs body[data-view=lernpfad] .brc .p{margin-top:4px;font-size:12.5px}
+html.fs body[data-view=lernpfad] .share{margin:6px 0;gap:3px 10px}
+html.fs body[data-view=lernpfad] .share .b{height:12px}
+html.fs body[data-view=lernpfad] .tl summary{min-height:38px;padding:3px 32px 3px 0}
+html.fs body[data-view=lernpfad] .tl li{padding-bottom:0}
+html.fs body[data-view=lernpfad] .tl details{padding:2px 0}
+html.fs body[data-view=lernpfad] .tl details p{margin:.2em 0 .4em}
+html.fs body[data-view=lernpfad] .calc{gap:4px 14px}
+html.fs body[data-view=lernpfad] .calc .num{padding:6px 8px}
+html.fs body[data-view=lernpfad] .calc .big{font-size:26px}
+html.fs body[data-view=lernpfad] .tally td{padding:3px 4px;font-size:15px}
+html.fs body[data-view=lernpfad] #trainer .opts{grid-template-columns:repeat(2,minmax(0,1fr))}
+html.fs body[data-view=lernpfad] .rt2{font-size:14.5px;margin:4px 0 8px}
+html.fs body[data-view=lernpfad] .rt2 th,html.fs body[data-view=lernpfad] .rt2 td{padding:5px 5px}
+html.fs body[data-view=lernpfad] .cands .cand small{font-size:13px}
+html.fs body[data-view=lernpfad] .board h2{font-size:clamp(22px,4.4vh,42px)}
+html.fs body[data-view=lernpfad] .board p{font-size:clamp(14px,2.5vh,21px)}
+html.fs body[data-view=lernpfad] .bcard{padding:8px 10px}
+html.fs body[data-view=lernpfad] .bcard b{font-size:clamp(15px,2.4vh,22px)}
+html.fs body[data-view=lernpfad] .bcard span{font-size:clamp(12.5px,1.9vh,16px)}
+html.fs body[data-view=lernpfad] .timer{font-size:clamp(40px,9vh,96px)}
+html.fs body[data-view=lernpfad] #v-simulation .board{padding:16px 22px}
+html.fs body[data-view=lernpfad] .ctrl p{margin:.3em 0 .5em;font-size:15px}
+html.fs body[data-view=lernpfad] .ctrl .field .num{min-height:36px;padding:4px 8px}
+html.fs body[data-view=lernpfad] .ctrl .btn{min-height:40px;padding:8px 14px}
+html.fs body[data-view=lernpfad] .boxes button small{display:none}
+html.fs body[data-view=lernpfad] .boxes button{min-height:32px}
+html.fs body[data-view=lernpfad] #lpreset,
+html.fs body[data-view=lernpfad] #simreset{min-height:32px}
+html.fs body[data-view=lernpfad] h2{font-size:clamp(20px,2.2vw,26px)}
+html.fs body[data-view=lernpfad] .lead{font-size:16px}
+html.fs body[data-view=lernpfad] .hemi{max-height:30vh}
+html.fs body[data-view=lernpfad] .task{padding:10px 14px}
+html.fs body[data-view=lernpfad] .opt{min-height:42px;padding:7px 12px}
+html.fs body[data-view=lernpfad] .tri .task{padding:10px 12px}
+html.fs body[data-view=lernpfad] .tri .task b{font-size:15px}
+html.fs body[data-view=lernpfad] .nav2{margin-top:6px;padding-top:6px;padding-bottom:6px}
+html.fs body[data-view=lernpfad] .chain div{padding:6px 10px}
+html.fs body[data-view=lernpfad] .wrap{padding-top:6px}
+html.fs body[data-view=lernpfad] #station .kicker{display:none}
+html.fs body[data-view=lernpfad] .tl summary{min-height:34px}
+html.fs body[data-view=lernpfad] .boxrow{margin-bottom:6px}
+html.fs body[data-view=lernpfad] .kt .sq i{width:10px;height:10px}
+html.fs body[data-view=lernpfad] .kt .sq{gap:2px;max-width:84px}
+html.fs body[data-view=lernpfad] .seats{gap:5px}
+html.fs body[data-view=lernpfad] .kt small{font-size:11.5px}
+html.fs body[data-view=lernpfad] .tl summary{min-height:36px}
+html.fs body[data-view=lernpfad] .tl{--sh:37px}
+html.fs body[data-view=lernpfad] .tl{--sh:34px}
+html.fs body[data-view=lernpfad] .boxes button small{display:block!important}html.fs body[data-view=lernpfad] .boxes button{min-height:40px}
+.ctrl .zettel .field{grid-template-columns:minmax(0,1fr)!important;gap:2px;align-items:start}.ctrl .zettel .field label{font-size:13px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ctrl .zettel .num{width:100%!important}
+.num,input.num{text-align:center!important;font-variant-numeric:tabular-nums}
+/* Variante A: Tafel voll, Leiste unten, Eingabe als Fenster */
+@media(min-width:1000px){#v-simulation .simwrap,html.fs #v-simulation .simwrap{grid-template-columns:minmax(0,1fr)!important}}
+#v-simulation .simwrap{grid-template-rows:auto minmax(0,1fr) auto!important}
+#v-simulation .simbar,html.fs #v-simulation .simbar{grid-template-columns:minmax(0,1fr) auto!important}
+#v-simulation .ctrl{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:8px 10px;border:2px solid var(--line);border-radius:var(--r);max-height:none;overflow:visible}
+#v-simulation .ctrl .sp{flex:1}
+#v-simulation .ctrl .btn{min-height:40px;padding:6px 14px;font-size:15px}
+#v-simulation .ctrl .tmr{display:flex;gap:6px;margin:0;flex-wrap:wrap}
+#v-simulation .ctrl .tmr4,#v-simulation .ctrl .tmr2{display:flex;gap:6px}
+#v-simulation .ctrl .tmr .btn{width:auto;min-width:64px;padding:6px 10px}
+.barinfo{font-size:14.5px;color:var(--mut)}
+.bf{display:flex;align-items:center;gap:6px;font-size:14.5px;white-space:nowrap}
+.bf .num{width:64px!important;min-height:38px;padding:4px}
+.bf input[type=checkbox]{width:20px;height:20px;accent-color:var(--red)}
+.modal{position:fixed;inset:0;background:rgba(10,12,16,.55);display:flex;align-items:center;justify-content:center;z-index:30;padding:16px}
+.modal[hidden]{display:none!important}
+.mbox{background:var(--bg);color:var(--ink);border-radius:10px;border-top:6px solid var(--red);width:min(760px,96vw);max-height:92vh;overflow:auto;padding:18px 22px 0;box-shadow:0 20px 60px #0006}
+.mhd{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px}.mhd h3{margin:0;font-size:22px}
+.mbox h4{margin:14px 0 6px;font-size:15px;color:var(--mut);font-weight:600}
+.mbox .zettel{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.mbox .votes{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.mbox .field{display:grid;grid-template-columns:minmax(0,1fr)!important;gap:3px;padding:0}
+.mbox .field label{font-size:14px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mbox .num{width:100%!important;min-height:46px;font-size:20px}
+.mbox .evalrow{position:sticky;bottom:0;background:var(--bg);padding:10px 0 16px;margin-top:6px}
+@media(max-width:600px){.mbox .zettel{grid-template-columns:repeat(2,minmax(0,1fr))}#v-simulation .ctrl .btn{font-size:14px}}
+#v-simulation .board{justify-content:flex-start;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain}
+#v-simulation .board>.bi{margin-top:clamp(0px,1.5vh,14px)}#v-simulation .board>.bi:last-child{margin-bottom:0}
+#v-simulation .board .bi{width:100%}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}input[type=number]{-moz-appearance:textfield;appearance:textfield}
+/* Simulation wie Lernpfad */
+.sboxes{grid-template-columns:repeat(7,minmax(0,1fr))!important}
+#v-simulation .simbar{display:flex!important;margin:0}
+#v-simulation .ctrl{border:0!important;padding:0!important;display:block!important}
+#v-simulation .simnav{margin-top:0;padding-top:8px;border-top:1px solid var(--line)}
+.simmid{flex-direction:row!important;flex-wrap:wrap;gap:6px 10px!important}
+.simmid .btn{min-height:40px;padding:6px 14px;font-size:15px}
+.simmid .tmr{display:flex;gap:6px;margin:0;flex-wrap:wrap;justify-content:center}
+.simmid .tmr4,.simmid .tmr2{display:flex;gap:6px}
+.simmid .tmr .btn{width:auto;min-width:62px;padding:6px 10px}
+html.fs body[data-view=simulation] #fsexit{display:block}
+#fsexit{flex:none}
+@media(max-width:600px){.sboxes button small{display:none}}
+#v-simulation .simwrap{padding-bottom:0!important}
+/* Lernpfad und Simulation: identischer Rahmen */
+#v-lernpfad .lp,#v-simulation .simwrap{padding-top:12px!important}
+#v-lernpfad .boxrow,#v-simulation .boxrow{margin:0 0 10px!important}
+#v-lernpfad .nav2,#v-simulation .nav2{padding:8px 0 10px!important;margin-top:0!important;border-top:1px solid var(--line)}
+.nav2 #prev,.nav2 #next,.nav2 #sprev,.nav2 #snext{width:172px;min-height:44px;height:44px;padding:0 6px;white-space:nowrap;font-size:16px}
+.nav2 #snext{justify-self:end}
+#v-simulation .simwrap{row-gap:0!important}
+#v-simulation .board{margin-bottom:10px}
+@media(max-width:600px){.nav2 #prev,.nav2 #next,.nav2 #sprev,.nav2 #snext{width:100%;font-size:15px}}
+#v-lernpfad .lp,#v-simulation .simwrap,.lpwrap{padding-left:max(3vw,14px)!important;padding-right:max(3vw,14px)!important}
+@media(max-width:600px){#v-lernpfad .lp,#v-simulation .simwrap{padding-left:10px!important;padding-right:10px!important}}
+@media all{body[data-view=lehrperson]{height:100dvh;overflow:hidden}#v-lehrperson.on{height:calc(100dvh - var(--hh,52px));overflow-y:auto;overscroll-behavior:contain}}
+/* Simulation-Vollbild: gleiche Regeln */
+html.fs body[data-view=simulation] .top{padding:4px max(3vw,14px)}
+html.fs body[data-view=simulation] nav a{min-height:38px;padding:6px 12px}
+html.fs body[data-view=simulation] .brand{font-size:16px}
+html.fs body[data-view=simulation] .wrap{padding:10px max(3vw,14px) 0}
+html.fs body[data-view=simulation] h2{font-size:clamp(22px,2.4vw,30px)}
+html.fs body[data-view=simulation] .kicker{font-size:13px;margin-bottom:2px}
+html.fs body[data-view=simulation] .nav2{margin-top:10px;padding-top:8px;padding-bottom:8px}
+html.fs body[data-view=simulation] .task{margin:10px 0}
+html.fs body[data-view=simulation] .info{margin:8px 0}
+html.fs body[data-view=simulation] .hemi{max-height:min(260px,34vh)}
+html.fs body[data-view=simulation] .br{grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:6px}
+html.fs body[data-view=simulation] .brc{padding:6px 8px}
+html.fs body[data-view=simulation] .brc b{font-size:13.5px;line-height:1.2}
+html.fs body[data-view=simulation] .brc small{font-size:12.5px;line-height:1.3}
+html.fs body[data-view=simulation] .brc .p{margin-top:4px;font-size:12.5px}
+html.fs body[data-view=simulation] .share{margin:6px 0;gap:3px 10px}
+html.fs body[data-view=simulation] .share .b{height:12px}
+html.fs body[data-view=simulation] .tl summary{min-height:38px;padding:3px 32px 3px 0}
+html.fs body[data-view=simulation] .tl li{padding-bottom:0}
+html.fs body[data-view=simulation] .tl details{padding:2px 0}
+html.fs body[data-view=simulation] .tl details p{margin:.2em 0 .4em}
+html.fs body[data-view=simulation] .calc{gap:4px 14px}
+html.fs body[data-view=simulation] .calc .num{padding:6px 8px}
+html.fs body[data-view=simulation] .calc .big{font-size:26px}
+html.fs body[data-view=simulation] .tally td{padding:3px 4px;font-size:15px}
+html.fs body[data-view=simulation] #trainer .opts{grid-template-columns:repeat(2,minmax(0,1fr))}
+html.fs body[data-view=simulation] .rt2{font-size:14.5px;margin:4px 0 8px}
+html.fs body[data-view=simulation] .rt2 th,html.fs body[data-view=simulation] .rt2 td{padding:5px 5px}
+html.fs body[data-view=simulation] .cands .cand small{font-size:13px}
+html.fs body[data-view=simulation] .board h2{font-size:clamp(22px,4.4vh,42px)}
+html.fs body[data-view=simulation] .board p{font-size:clamp(14px,2.5vh,21px)}
+html.fs body[data-view=simulation] .bcard{padding:8px 10px}
+html.fs body[data-view=simulation] .bcard b{font-size:clamp(15px,2.4vh,22px)}
+html.fs body[data-view=simulation] .bcard span{font-size:clamp(12.5px,1.9vh,16px)}
+html.fs body[data-view=simulation] .timer{font-size:clamp(40px,9vh,96px)}
+html.fs body[data-view=simulation] #v-simulation .board{padding:16px 22px}
+html.fs body[data-view=simulation] .ctrl p{margin:.3em 0 .5em;font-size:15px}
+html.fs body[data-view=simulation] .ctrl .field .num{min-height:36px;padding:4px 8px}
+html.fs body[data-view=simulation] .ctrl .btn{min-height:40px;padding:8px 14px}
+html.fs body[data-view=simulation] .boxes button small{display:block!important}html.fs body[data-view=simulation] .boxes button{min-height:40px}
+html.fs body[data-view=simulation] .top{display:none}
+#fsexit,#fsexit2{flex:none!important;min-height:40px!important;height:auto!important;padding:5px 10px!important;font-size:13.5px!important;white-space:nowrap;align-self:stretch;width:auto!important}
+#simreset,#lpreset{align-self:stretch}
+html.fs #lpreset,html.fs #simreset{width:62px!important;font-size:14px}
+html.fs #lpreset .rl,html.fs #simreset .rl{display:none}html.fs #lpreset .rs,html.fs #simreset .rs{display:inline}
+html.fs #lpreset .ric,html.fs #simreset .ric{font-size:20px}
+html.fs .boxes button small{font-size:10.5px!important;padding:0 3px!important}
+/* Vollbild: Kopfzeile bleibt (vergrössert), kein extra Knopf in der Boxenzeile */
+html.fs body .top{display:block!important}
+#fsexit,#fsexit2,html.fs body #fsexit,html.fs body #fsexit2{display:none!important}
+html.fs #lpreset,html.fs #simreset{width:128px!important;font-size:13.5px}
+html.fs #lpreset .rl,html.fs #simreset .rl{display:inline}html.fs #lpreset .rs,html.fs #simreset .rs{display:none}
+html.fs #lpreset .ric,html.fs #simreset .ric{font-size:inherit}
+html.fs .boxes button small{font-size:11px!important;padding:0 4px!important}
+html.fs body #v-lernpfad .lp,html.fs body #v-simulation .simwrap{padding-top:12px!important}
+.boxes button.cur{outline:2px solid var(--red)!important;outline-offset:1px!important;box-shadow:none!important}
+@media(max-width:600px){.boxes button.cur{outline-offset:0!important}}
+#board .t{border-bottom-color:#ffd54f;color:#fff}
+.qm{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;border:1.5px solid var(--mut);color:var(--mut);font-size:12px;font-weight:700;cursor:help}
+#v-simulation .board .tight p{margin:.15em 0 .45em}
+@media(min-width:700px){#v-simulation .board .cols .grid2{grid-template-columns:1fr 1fr}}
+#v-simulation .board .qgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 28px}#v-simulation .board .qgrid p{margin:.1em 0}#v-simulation .board .qgrid .qh{grid-column:1/-1}
+@media(max-width:699px){#v-simulation .board .qgrid{grid-template-columns:1fr}}
+@media(min-width:700px){#v-simulation .board .cards4{grid-template-columns:repeat(4,1fr)}}
+#v-simulation .board{position:relative}#v-simulation .board .timer{position:absolute;z-index:2;bottom:clamp(14px,2.5vh,26px);right:clamp(18px,2.5vw,36px);font-size:clamp(40px,8vh,84px);background:#14161b;padding:.08em .25em;border:3px solid #ffffff;border-radius:14px;cursor:grab;touch-action:none;user-select:none;box-shadow:0 6px 20px #0008}#v-simulation .board .timer.drag{cursor:grabbing;border-color:#ffd54f}
+@media(max-width:699px){html:not(.fs) #v-simulation .board .timer{position:sticky!important;top:0!important;left:auto!important;right:auto!important;float:none;width:fit-content;margin:0 0 6px auto;z-index:3;font-size:34px!important;border-width:2px}html:not(.fs) #v-simulation .board .tmspace{display:none}}
+.tmr [data-tstart].btn{width:8em!important;min-width:8em!important;flex:0 0 auto!important;padding-left:0!important;padding-right:0!important}
+.btn .ic{width:1em;height:1em;vertical-align:-.12em;margin-right:.4em;flex:none;position:relative;top:-.05em}
+.tmr [data-tstart].btn,.tmr [data-tstop].btn{display:inline-flex;align-items:center;justify-content:center}
+.tmr4 .btn.on{background:light-dark(#fff,#1b1d22)!important;color:var(--ink)!important;border-color:var(--ink)!important;box-shadow:inset 0 0 0 2px var(--ink)}
+.tmr [data-tstop].btn{width:5.4em!important;min-width:5.4em!important;flex:0 0 auto!important;padding-left:0!important;padding-right:0!important;font-variant-numeric:tabular-nums}
+@media(max-width:699px){html:not(.fs) #v-simulation #ctrl{position:sticky;bottom:0;z-index:4;background:var(--bg);top:auto;max-height:none;overflow:visible}html:not(.fs) #v-simulation #ctrl .nav2{position:static}}
+@media(max-width:600px){#v-simulation .board h2{font-size:clamp(24px,7.5vw,32px)!important;hyphens:auto;overflow-wrap:break-word}}
+@media(max-width:999px){#v-simulation .simwrap{grid-template-columns:minmax(0,1fr)!important}}
+@media all{#v-lehrperson.on{overflow:hidden!important;display:flex;flex-direction:column}
+#v-lehrperson.on .lpwrap{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;box-sizing:border-box;max-width:none;width:calc(min(var(--W),100%) - 2*max(3vw,14px));margin:0 auto;padding-left:0!important;padding-right:0!important}}
+@media(max-width:699px){#v-simulation .board p{font-size:17px!important}#v-simulation .board{padding:16px 18px!important}}
+#v-simulation .board .bi h2{font-size:40px!important}#v-simulation .board .bi p{font-size:19px!important}#v-simulation .board .bi .k{font-size:17px!important}#v-simulation .board .bi .rt{font-size:20px!important}#v-simulation .board .bi .bcard b{font-size:20px!important}#v-simulation .board .bi .bcard span{font-size:15px!important}#v-simulation .board .bi .stats{font-size:18px!important}#v-simulation .board .bi .cr{font-size:24px!important;padding:.12em 0!important}#v-simulation .board .bi .mlab{font-size:15px!important}#v-simulation .board .bi .verdict{font-size:36px!important}
+@media(max-width:699px){html:not(.fs) #v-simulation .board .bi h2{font-size:28px!important}html:not(.fs) #v-simulation .board .bi p{font-size:17px!important}html:not(.fs) #v-simulation .board .bi .cr{font-size:20px!important}html:not(.fs) #v-simulation .board .bi .verdict{font-size:26px!important}}
+html.fs body[data-view=lehrperson] .top{padding:4px max(3vw,14px)}html.fs body[data-view=lehrperson] nav a{min-height:38px;padding:6px 12px}html.fs body[data-view=lehrperson] .brand{font-size:16px}
+#v-simulation .board .rtabs{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}#v-simulation .board .rtab{font:inherit;font-size:15px;font-weight:700;color:#d9dce4;background:transparent;border:2px solid #4a4f5c;border-radius:8px;padding:6px 12px;min-height:36px;cursor:pointer}#v-simulation .board .rtab:hover{border-color:#9aa0ad;color:#fff}#v-simulation .board .rtab.on{background:#fff;color:#15171c;border-color:#fff}
+
+
+.brt{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}
+.brt th{text-align:left;font-size:12px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.04em;padding:0 6px 6px;border-bottom:2px solid var(--line)}
+.brt td{padding:6px 6px;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:middle}
+.brt .p{display:inline-block;min-width:3.2em;text-align:center;padding:2px 8px;border-radius:20px;font-size:12.5px;font-weight:700;color:#fff}
+.brt .p.lt{color:#15171c}
+.brt tr.leave td{background:var(--redsoft)}
+.brt .brgo{display:inline-block;font-size:11.5px;font-weight:700;color:var(--redink);border:1.5px solid currentColor;border-radius:20px;padding:0 6px;margin-left:4px}
+@media(max-width:560px){.brt .brsp{display:none}.brt{font-size:13px}.brt .brgo{display:block;width:max-content;margin:2px 0 0}.brt td,.brt th{padding-left:5px;padding-right:5px}}
+
+.face{display:inline-block;flex:none;border-radius:50%;overflow:hidden;vertical-align:middle;line-height:0}
+.face svg{display:block}
+.cand:has(.face){display:grid;grid-template-columns:44px minmax(0,1fr);column-gap:10px;align-content:start;justify-items:start}.cand:has(.face)>*{grid-column:1/-1}.cand:has(.face)>.face{grid-column:1;grid-row:1;margin-bottom:4px}.cand:has(.face)>b{grid-column:2;grid-row:1;align-self:center}
+.bcard .face.fb{float:right;margin:0 0 4px 8px}
+#v-simulation .board .elect{display:flex;align-items:center;gap:22px;margin:.2em 0 .3em}
+#v-simulation .board .elect h2{margin:0}
+
+#v-simulation .board .bi p.bigq{font-size:30px!important;line-height:1.3}
+.brt th button{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:4px;font:inherit;color:inherit;text-transform:inherit;letter-spacing:inherit}
+.brt th button:hover{color:var(--ink)}
+.brt th button:focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:3px}
+.brt th button:after{content:"↕";font-size:11px;opacity:.45}
+.brt th[aria-sort=ascending] button:after{content:"▲";opacity:1;font-size:9px}
+.brt th[aria-sort=descending] button:after{content:"▼";opacity:1;font-size:9px}
+.brt th[aria-sort=ascending],.brt th[aria-sort=descending]{color:var(--ink)}
+.cand:has(.face){padding-right:10px}.cand:has(.face)>b{padding-right:20px}.cand .tags{display:flex;flex-wrap:wrap;gap:4px 6px;margin-top:4px}.cand .tags .tag{margin:0}
+
+.tgbox{border:2px solid var(--line);border-radius:var(--r);padding:8px 14px;margin-top:8px}
+.tgbox h3{margin:0 0 4px;font-size:16px}
+.tgcols{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:4px 24px}.tgcols>div:first-child ul{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:16px}
+.tgcols b{font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut)}
+.tgcols ul{list-style:none;margin:4px 0 0;padding:0;display:grid;gap:4px}
+.tgcols li{display:flex;align-items:center;gap:8px;font-size:15px}
+.tgcols .p{display:inline-block;width:3.9em;flex:none;box-sizing:border-box;text-align:center;padding:1px 8px;border-radius:20px;font-size:12px;font-weight:700;color:#fff}
+.tgcols .p.lt{color:#15171c}
+@media(max-width:520px){.tgcols{grid-template-columns:minmax(0,1fr)}.tgcols>div:first-child ul{grid-template-columns:minmax(0,1fr)}}
+.cands.c2{grid-auto-rows:1fr}.cands.c2 .cand{height:100%;box-sizing:border-box}.cand:has(.face)>b span{display:block;line-height:1.2}
+.cand.seen b:has(span):after{content:none}.cand.seen b span:last-child:after{content:" ✓";color:var(--ok)}
+.cand.seen .tags .tag:not(.r){background:var(--bg)}
+.seats{align-items:flex-start}.seats .kt{background:var(--card);border-radius:6px;padding:3px 5px 5px}
+.seats .kt.hl{background:#fdeceb;box-shadow:inset 0 0 0 1.5px var(--red)}
+.kt.hl.sr .sq i{background:var(--red)}
+.seats{column-gap:6px!important;row-gap:6px!important}
+span.face{padding:0!important;background:none!important;border:0!important;box-shadow:none!important;min-width:0!important;min-height:0!important;box-sizing:content-box!important}
+.seats{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));grid-auto-flow:row;align-items:start}
+.seats .kt .sq{max-width:none!important}
+.seats:has(.kt.sr){grid-template-columns:repeat(auto-fill,minmax(52px,1fr))}
+
+.brtw{overflow-x:auto;max-width:100%}
+@media(max-width:699px){html:not(.fs) #v-simulation .crs .cr{grid-template-columns:minmax(0,1fr) auto!important;row-gap:4px}html:not(.fs) #v-simulation .crs .cr .bar{grid-column:1/-1;grid-row:2;min-height:12px}html:not(.fs) .mlab{display:none}}
+#v-simulation .board .rueck .verdict{background:transparent!important;border:3px dashed currentColor;color:#d9dce4!important}
+.seats .kt .sq{display:grid!important;grid-template-columns:repeat(5,9px);gap:2px!important}.seats .kt .sq i{width:9px!important;height:9px!important;border-radius:2px!important}.seats{grid-template-columns:repeat(auto-fill,minmax(60px,1fr))!important}
+
+.minihemi{max-width:290px;justify-self:center}.minihemi svg{width:100%;height:auto}.minihemi .legend{font-size:13px}
+.brstrip{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 12px}.brstrip b{margin-right:4px}
+.brstrip .p{display:inline-block;min-width:3.6em;text-align:center;padding:3px 10px;border-radius:20px;font-size:14px;font-weight:700;color:#fff}.brstrip .p.lt{color:#15171c}
+#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:15px;font-weight:600;max-width:min(90vw,520px);text-align:center;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:50;box-shadow:0 6px 20px #0004}#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#modal.modal{background:#14161b;flex-direction:column;gap:18px}
+#modal.modal:before{content:"Stimmen werden ausgezählt …";color:#ffd54f;font:800 clamp(26px,4vw,52px)/1.1 Inter,system-ui,sans-serif;text-align:center}
+#modal.modal #mbox{zoom:.8}
+html.fs #modal.modal #mbox{zoom:.62}
+#v-simulation .board .bi p.say{color:#fff;margin:.4em 0 .5em;padding-left:14px;border-left:4px solid #ffd54f}#v-simulation .board .bi p.say .hi{color:#ffd54f}
+#v-simulation .board .notes p{font-size:16px!important;color:#b9bdc8}
+
+#v-simulation .board .timer{top:clamp(14px,2.5vh,26px);bottom:auto!important}
+#v-simulation .board .tmspace{float:right}
+#v-simulation .board .timer .tt{display:block}
+#v-simulation .board .timer.up{border-color:#ff8a80;color:#ff8a80;animation:tup 1s ease-in-out 3}
+#v-simulation .board .timer .tu{display:block;font-size:.32em;text-align:center;letter-spacing:.02em;line-height:1.2;margin-top:-.1em}
+@keyframes tup{50%{transform:scale(1.06);background:#3a1512}}
+#station h2:focus,#station .kicker:focus{outline:none}
+
+@media(max-width:600px){
+ #v-lernpfad .boxrow .boxes{grid-template-columns:repeat(5,minmax(0,1fr))!important;row-gap:5px}
+ #v-lernpfad .boxes button{min-height:34px}
+ .navmid #stneed{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;display:block}
+ .nav2{padding:4px 0 8px!important;margin-top:6px!important}
+}
+@media(min-width:1000px){.duo.d5{grid-template-columns:minmax(0,1.18fr) minmax(0,1fr)}}
+.brt td,.brt th{padding-left:4px!important;padding-right:4px!important}
+@media(max-width:1100px){.brt{font-size:12.5px!important}.brt .p{min-width:0;padding:2px 6px}}
+@media(max-width:420px){.brt{font-size:12px!important}.brt td,.brt th{padding-left:3px!important;padding-right:3px!important}}
+@media(max-width:380px){.brt td:nth-child(2){white-space:normal}}
+</style>
+</head>
+<body>
+<header class="top"><div class="topin">
+  <div class="brand"><span class="flag" aria-hidden="true"></span><span class="rl">Bundesratswahl 9.12.2026</span></div>
+  <nav aria-label="Bereiche">
+    <a href="#lernpfad" data-v="lernpfad">Lernpfad</a>
+    <a href="#simulation" data-v="simulation">Simulation</a>
+    <a href="#lehrperson" data-v="lehrperson"><span class="rl">Für&nbsp;</span>Lehrpersonen</a>
+  </nav>
+  <div class="hdrtools"><button class="btn ghost hdrfs" id="hdrfs">Vollbild</button></div>
+</div></header>
+
+<main>
+<section class="view" id="v-lernpfad">
+  <div class="wrap lp">
+    
+    <div>
+      <div class="boxrow"><button class="btn" id="fsexit2">Vollbild aus</button><div class="boxes" id="boxes" role="group" aria-label="Stationen"></div>
+      <span hidden><span class="src" id="stdone"></span></span><button class="btn ghost" id="lpreset" title="Fortschritt zurücksetzen" aria-label="Fortschritt zurücksetzen"><span class="ric">↺</span><span class="rl"> Zurücksetzen</span></button></div>
+      <span class="kicker" id="stcount" hidden>Station 1 von 10</span>
+      <article id="station"></article>
+      <div class="nav2">
+        <button class="btn ghost" id="prev">← Zurück</button>
+        <div class="navmid"><span id="pgdots"></span><span class="src" id="stneed"></span></div>
+        <button class="btn ghost" id="next">Weiter →</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="view" id="v-simulation">
+  <div class="wrap simwrap">
+    <div class="boxrow simbar"><button class="btn" id="fsexit">Vollbild aus</button><div class="boxes sboxes" id="simsteps" role="group" aria-label="Schritte der Simulation"></div><button class="btn ghost" id="simreset" title="Simulation zurücksetzen" aria-label="Simulation zurücksetzen"><span class="ric">↺</span><span class="rl"> Zurücksetzen</span></button></div>
+    <div class="board" id="board"></div>
+    <div class="ctrl" id="ctrl"></div>
+  </div>
+  <div class="modal" id="modal" hidden><div class="mbox" id="mbox" role="dialog" aria-modal="true" aria-label="Stimmen eingeben"></div></div>
+</section>
+
+<section class="view" id="v-lehrperson">
+  <div class="wrap lpwrap">
+    <h2>Unterlagen für 4 Lektionen</h2>
+    <p class="lead">Lernpfad am Surface (Lektion 1–2), Simulation der Wahl im Schulzimmer (Lektion 3–4), danach der Vergleich mit der echten Wahl am 9. Dezember.</p>
+    <table class="plan">
+      <thead><tr><th>Lektion</th><th>Ablauf</th><th>Material</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><b>Einstieg im Plenum (5'):</b> Handzeichen zur Frage «Wer wählt den Bundesrat?» – Antworten stehen lassen.<br><b>Lernpfad Station 1–5 (35'):</b> einzeln oder zu zweit. Zu zweit klappt es oft besser, weil die beiden miteinander reden müssen.<br><b>Abschluss (5'):</b> Die Wahlkette Volk → Parlament → Bundesrat an die Wandtafel, die Einstiegsfrage auflösen.</td><td>Surface, Lernpfad</td></tr>
+        <tr><td>2</td><td><b>Lernpfad Station 6–10 (35'):</b> Kandidierende, Weg zur Wahl, absolutes Mehr, Wahlgang-Trainer, Quiz.<br><b>Abschluss (10'):</b> Quiz-Ergebnis zeigen lassen (Ziel: mind. 8/10). Kurz besprechen: Was macht eine Kandidatur «wählbar»? Auftrag bis Lektion 3: Nachrichten zum SVP-Ticket (geplant am 20.11.) anschauen.</td><td>Surface, Lernpfad</td></tr>
+        <tr><td>3</td><td><b>Simulation Teil 1.</b> Tab «Simulation» am Beamer.<br>1. Vorbereitung: Klassengrösse eingeben, Rollenkarten nach der angezeigten Verteilung austeilen, Pulte nach Fraktionen im Halbrund stellen (5').<br>2. Rücktritt vorlesen, Kandidierende bestimmen – sie bekommen ihren Steckbrief und bereiten 1 Minute Vorstellung vor. Dafür gibt es den Timer «Vorbereitung 5 Min.» (5').<br>3. Hearings: Die Kandidierenden stellen sich vor, die Fraktionen fragen nach. Pro Person: Timer «Rede 1 Min.», danach «Fragen 3 Min.» (15').<br>4. Fraktionssitzungen mit Timer «Sitzung 10 Min.», danach Gespräche zwischen den Fraktionen mit «Gespräche 5 Min.» (15').<br>5. Ratspräsidium und 2 Stimmenzählende bestimmen (5').</td><td>Beamer, Rollenkarten, Steckbriefe (PDF)</td></tr>
+        <tr><td>4</td><td><b>Simulation Teil 2.</b><br>1. Wahl: Wahlzettel austeilen, einsammeln, auszählen. Die Lehrperson tippt die Zahlen ins Tool, das Ratspräsidium verkündet. Wahlgänge, bis jemand das absolute Mehr hat (20–25').<br>2. Annahme der Wahl und Gelübde (3').<br>3. Auswertung mit den Fragen auf der Tafel, danach Tippspiel für den 9.12. ausfüllen (15').</td><td>Beamer, Wahlzettel, Ablaufkarte Ratspräsidium, Tippspiel (PDF)</td></tr>
+        <tr><td>9.12.</td><td><b>Echte Wahl:</b> Die Vereinigte Bundesversammlung tagt am Vormittag (SRF überträgt live). Je nach Stundenplan live schauen oder die Resultate am Nachmittag mit dem Beobachtungsbogen auswerten und mit dem Tippspiel und der Klassensimulation vergleichen.</td><td>Beobachtungsbogen (PDF)</td></tr>
+      </tbody>
+    </table>
+    <div class="note"><b>Neutralität.</b> Die Kandidierenden in der Simulation und im Lernpfad sind erfunden. So stimmt die Klasse über Eigenschaften ab und nicht über bekannte Namen oder über die Meinung der Eltern. Echte Kandidierende kommen erst beim Vergleich am 9. Dezember dazu, und dann nur mit Fakten (Kanton, Sprache, Amt).</div>
+    <h3>Hinweise zum Tool</h3>
+    <p><b>Lernpfad:</b> Der Fortschritt bleibt im Browser des Geräts gespeichert, sofern der Browser das erlaubt. Für die Klasse den Link über «Teilen» auf der Artefakt-Seite freigeben.</p>
+    <p><b>Simulation:</b> Die schwarze Tafel füllt den Bildschirm. Darunter liegt eine schmale Leiste mit dem, was im jeweiligen Schritt nötig ist. Der Knopf rechts nennt den nächsten Schritt. Beim Timer ist die passende Zeit schon gewählt: «▶ Start» startet, «Pause» hält an, «▶ Fortsetzen» läuft weiter, «↺ 1:00» (mit der gewählten Zeit) stellt die Uhr zurück und hält sie an. Die Zeit auf der Tafel lässt sich mit der Maus oder dem Finger verschieben. Zum Auszählen öffnet «Stimmen eingeben» ein Fenster mit Zettelzahlen und Stimmen; «Resultat verkünden» schliesst es und zeigt das Resultat auf der Tafel. «Vollbild» oben rechts füllt den ganzen Bildschirm (beenden mit «Vollbild aus» oder Esc). Die Wahlregeln wendet das Tool automatisch an (absolutes Mehr, Ausscheiden, keine neuen Namen ab dem 3. Wahlgang).</p>
+    <p><b>Eine Anpassung an die Klassengrösse:</b> Im echten Parlament scheidet ab dem 2. Wahlgang aus, wer weniger als 10 von 246 Stimmen hat. In der Klasse ist diese Grenze verkleinert (Standard: weniger als 2 Stimmen) und lässt sich in der Vorbereitung einstellen.</p>
+    <h3>Einstellungen bei «1. Vorbereitung»</h3>
+    <p><b>Lernende:</b> Anzahl Personen in der Klasse (Standard 18). Daraus berechnet das Tool, wie viele Rollenkarten jede Fraktion bekommt, und die Zahl der ausgeteilten Wahlzettel.</p>
+    <p><b>Ausscheiden unter … Stimmen:</b> die Grenze für das Ausscheiden ab dem 2. Wahlgang (Standard 2, siehe unten).</p>
+    <p><b>Grüne kandidieren</b> (Standard: aus): Ohne Häkchen ist die Simulation wie die echte Wahl 2026. Die SVP beansprucht den Sitz, die Grünen kandidieren nicht. Es geht um das SVP-Ticket und um wilde Kandidaturen. Mit Häkchen kandidiert zusätzlich die erfundene Grüne Sara Keller. Dann diskutiert die Klasse auch, ob die Zauberformel gelten soll. Sagen Sie der Klasse in diesem Fall deutlich, dass das eine Variante ist: 2019 (Regula Rytz) und 2023 (Gerhard Andrey) haben die Grünen einen FDP-Sitz angegriffen, 2022 haben sie einen Angriff auf den SVP-Sitz geprüft und darauf verzichtet. Die Rollenkarten funktionieren in beiden Varianten. Den Steckbrief von Sara Keller brauchen Sie nur mit Häkchen.</p>
+    <h3>So entscheidet das Tool beim Auszählen</h3>
+    <p>Zuerst prüft das Tool, ob jemand das absolute Mehr erreicht hat (gültige Stimmen ÷ 2, Kommastellen weglassen, plus 1). Wenn ja, ist die Wahl fertig. Wenn nein:</p>
+    <table class="plan"><thead><tr><th>Wahlgang</th><th>Neue Namen</th><th>Wer scheidet aus?</th></tr></thead><tbody>
+    <tr><td>1.</td><td>erlaubt («+ Name» im Eingabefenster)</td><td>niemand</td></tr>
+    <tr><td>2.</td><td>erlaubt</td><td>wer unter der Grenze liegt (Standard: weniger als 2 Stimmen, einstellbar bei «1. Vorbereitung»)</td></tr>
+    <tr><td>ab 3.</td><td>nicht mehr möglich; solche Zettel als ungültig zählen</td><td>wer unter der Grenze liegt. Liegt niemand darunter: wer am wenigsten Stimmen hat</td></tr></tbody></table>
+    <p><b>Sonderfälle:</b> Haben mehrere Personen gleich wenig Stimmen, scheidet niemand aus. Liegen alle unter der Grenze, scheidet ebenfalls niemand aus. Stimmen für ausgeschiedene Personen sind ungültig. Lehnt die gewählte Person die Wahl ab, scheidet sie aus und die Wahl beginnt neu. Im echten Parlament liegt die Grenze bei 10 von 246 Stimmen (Art. 132 ParlG); in der Klasse ist sie verkleinert.</p>
+    <h3>Fakten, auf denen das Tool aufbaut</h3>
+    <p class="src">Ersatzwahl für Guy Parmelin am 9.12.2026, Amtszeit bis Dezember 2027: <a href="https://www.parlament.ch/de/ratsbetrieb/wahlen/ersatzwahl-br-parmelin">parlament.ch – Ersatzwahl BR Parmelin</a> · Wahlregeln (Art. 130–133 ParlG): <a href="https://www.parlament.ch/de/%C3%BCber-das-parlament/Seiten/faktenblatt-wahl-des-bundesrates.aspx">parlament.ch – Faktenblatt Wahl des Bundesrates</a> · Fraktionsstärken zu Beginn der Legislatur, Dezember 2023 (SVP 74, SP 50, Mitte-EVP 46, FDP 39, Grüne 26, GLP 11; seither sind einzelne Wechsel möglich): <a href="https://www.parlament.ch/centers/documents/de/Faktenblatt%20Fraktionen-d.pdf">parlament.ch – Faktenblatt Fraktionen</a> · Sitzverteilung Nationalrat nach den Wahlen 2023. Stand der Angaben: 15. November 2026.</p>
+  </div>
+</section>
+</main>
+
+<div id="gloss" role="dialog" aria-live="polite"><button aria-label="Schliessen" id="glossx">×</button><b id="glosst"></b><span id="glossd"></span></div>
+
+<script>
+{
+/* ---------- Daten ---------- */
+const KT=[["ZH","Zürich",36,2],["BE","Bern",24,2],["VD","Waadt",19,2],["AG","Aargau",16,2],["SG","St. Gallen",12,2],["GE","Genf",12,2],["LU","Luzern",9,2],["TI","Tessin",8,2],["VS","Wallis",8,2],["FR","Freiburg",7,2],["BL","Basel-Landschaft",7,1],["SO","Solothurn",6,2],["TG","Thurgau",6,2],["GR","Graubünden",5,2],["BS","Basel-Stadt",4,1],["NE","Neuenburg",4,2],["SZ","Schwyz",4,2],["ZG","Zug",3,2],["SH","Schaffhausen",2,2],["JU","Jura",2,2],["AR","Appenzell A.Rh.",1,1],["AI","Appenzell I.Rh.",1,1],["NW","Nidwalden",1,1],["OW","Obwalden",1,1],["GL","Glarus",1,2],["UR","Uri",1,2]];
+const FR=[{k:"Grüne",nr:23,sr:3,c:"#7cb342"},{k:"SP",nr:41,sr:9,c:"#e3242b"},{k:"GLP",nr:10,sr:1,c:"#b8c400"},{k:"Mitte",nr:31,sr:15,c:"#f39200"},{k:"FDP",nr:28,sr:11,c:"#1f63b5"},{k:"SVP",nr:67,sr:7,c:"#17733a"}];
+const PC={SVP:"#17733a",SP:"#e3242b",FDP:"#1f63b5",Mitte:"#f39200",Grüne:"#7cb342",GLP:"#b8c400"};
+const BR=[["Guy Parmelin","SVP","Waadt","französisch","seit 2016",1],["Ignazio Cassis","FDP","Tessin","italienisch","seit 2017"],["Karin Keller-Sutter","FDP","St. Gallen","deutsch","seit 2019"],["Albert Rösti","SVP","Bern","deutsch","seit 2023"],["Elisabeth Baume-Schneider","SP","Jura","französisch","seit 2023"],["Beat Jans","SP","Basel-Stadt","deutsch","seit 2024"],["Martin Pfister","Mitte","Zug","deutsch","seit 2025"]];
+const CANDS=[
+ {n:"Andrea Rochat",p:"SVP",kt:"Waadt",l:"französisch",a:52,role:"Regierungsrätin im Kanton Waadt",ticket:true,trait:"gilt als kompromissbereit",f:true},
+ {n:"Markus Inderbitzin",p:"SVP",kt:"Schwyz",l:"deutsch",a:47,role:"Nationalrat seit 12 Jahren",ticket:true,trait:"hält sich eng an die Parteilinie",f:false},
+ {n:"Corinne Baumann",p:"SVP",kt:"Thurgau",l:"deutsch",a:58,role:"Ständerätin",ticket:false,trait:"bei anderen Fraktionen beliebt",f:true},
+ {n:"Sara Keller",p:"Grüne",kt:"Bern",l:"deutsch",a:44,role:"Nationalrätin seit 8 Jahren",ticket:false,trait:"gilt als gute Erklärerin",f:true}];
+const GL={
+ fraktion:["Fraktion","Eine Gruppe von Parlamentsmitgliedern der gleichen Partei (oder von Parteien, die ähnlich denken). Die Partei gibt es im ganzen Land, die Fraktion nur im Parlament. Die Fraktion bespricht vor einer Wahl, wen sie wählen will. Französisch: groupe parlementaire."],
+ konkordanz:["Konkordanz","Die grossen Parteien regieren gemeinsam, statt dass eine Partei allein regiert. Man sucht Kompromisse."],
+ zauberformel:["Zauberformel","Eine Faustregel, wie die 7 Bundesratssitze auf die grössten Parteien verteilt werden. Heute: SVP 2, SP 2, FDP 2, Mitte 1. Sie steht in keinem Gesetz."],
+ mehr:["Absolutes Mehr","Mehr als die Hälfte der gültigen Stimmen. So rechnest du: gültige Stimmen ÷ 2, Kommastellen weglassen, plus 1. Bei 240: 120 + 1 = 121. Französisch: majorité absolue."],
+ ticket:["Ticket","Kein Billett! Gemeint ist der Vorschlag einer Fraktion: meist zwei Personen, aus denen das Parlament auswählen soll. Das Parlament muss sich aber nicht daran halten. Französisch: ticket."],
+ hearing:["Hearing","Ein Gespräch, in dem sich die Kandidierenden den anderen Fraktionen vorstellen und Fragen beantworten."],
+ vbv:["Vereinigte Bundesversammlung","Nationalrat und Ständerat tagen zusammen im Nationalratssaal: 200 + 46 = 246 Personen. Sie wählen zum Beispiel den Bundesrat. Französisch: Assemblée fédérale."],
+ praes:["Ratspräsidium","Die Person, die die Sitzung leitet. Sie eröffnet die Wahlgänge und verkündet die Resultate."],
+ vereinzelt:["Vereinzelte","Mehrere verschiedene Personen, die je nur ganz wenige Stimmen bekommen. Man zählt sie zusammen, damit die Liste kurz bleibt."],
+ gelubde:["Gelübde","Ein feierliches Versprechen. Wer in den Bundesrat gewählt wird, verspricht vor dem Parlament, die Verfassung und die Gesetze zu beachten. Statt des Gelübdes kann man auch einen Eid schwören."],
+ kompromiss:["Kompromiss","Eine Lösung, bei der alle ein bisschen nachgeben, damit man sich einigen kann."],
+ eingegangen:["Eingegangene Wahlzettel","Die Wahlzettel, die nach der Wahl wieder eingesammelt wurden."],
+ regrat:["Regierungsrat","Die Regierung eines Kantons. Eine Regierungsrätin ist ein Mitglied dieser Regierung, ähnlich wie der Bundesrat für die ganze Schweiz."],
+ kantpartei:["Kantonalpartei","Die Partei in einem Kanton, zum Beispiel die SVP Thurgau. Sie gehört zur Partei der ganzen Schweiz."],
+ amtsantritt:["Amtsantritt","Der erste Arbeitstag in einem neuen Amt."],
+ bverw:["Bundesverwaltung","Alle Ämter und Angestellten des Bundes, zum Beispiel für Steuern, Strassen oder das Militär. Der Bundesrat leitet sie."],
+ legislatur:["Legislatur","Die 4 Jahre zwischen zwei Parlamentswahlen. Die jetzige Legislatur dauert von Dezember 2023 bis Dezember 2027."],
+ eid:["Eid","Ein feierliches Versprechen mit den Worten «… so wahr mir Gott helfe». Wer das nicht will, legt stattdessen das Gelübde ab. Beides gilt gleich."],
+ faustregel:["Faustregel","Eine einfache Regel, an die man sich meistens hält. Sie steht aber in keinem Gesetz."],
+ buergerrecht:["Bürgerrecht","Wer das Schweizer Bürgerrecht hat, ist Schweizerin oder Schweizer. Nur sie können in den Bundesrat gewählt werden."],
+ gesamtwahl:["Gesamtwahl","Alle 4 Jahre, nach den Parlamentswahlen, wählt das Parlament alle 7 Mitglieder des Bundesrats neu. Die nächste Gesamtwahl ist im Dezember 2027."],
+ parteilinie:["Parteilinie","Das, was eine Partei offiziell will. Wer sich eng an die Parteilinie hält, vertritt genau die Meinung der Partei."],
+ stimmber:["Stimmberechtigte","Schweizerinnen und Schweizer ab 18 Jahren. Sie dürfen wählen und abstimmen."],
+ wahlgang:["Wahlgang","Eine Runde der Wahl: Alle schreiben einen Namen auf einen Zettel, dann wird ausgezählt. Hat niemand das absolute Mehr, gibt es einen weiteren Wahlgang."],
+ gueltig:["Gültige Stimmen","Alle Wahlzettel, auf denen klar ein wählbarer Name steht. Leere und ungültige Wahlzettel zählen nicht dazu."],
+ wild:["Wilde Kandidatur","Eine Person, die nicht auf dem Ticket ihrer Fraktion steht, aber trotzdem Stimmen bekommt oder sogar gewählt wird."],
+ aus:["Ausscheiden","Wer ausscheidet, ist nicht mehr im Rennen. Stimmen für diese Person sind danach ungültig."],
+ gruene:["Grüne kandidieren","Bei der echten Wahl 2026 kandidieren die Grünen nicht. Mit Häkchen spielt ihr eine Variante: Sara Keller (Grüne, erfunden) kandidiert zusätzlich. Dann geht es auch um die Frage, ob die SVP nach der Zauberformel ihren zweiten Sitz behalten soll. So war es bei früheren Wahlen: 2019 und 2023 traten die Grünen gegen die FDP an."],
+ romandie:["Romandie","Der französischsprachige Teil der Schweiz, zum Beispiel die Kantone Waadt, Genf, Neuenburg und Jura."]};
+const t=(k,txt)=>`<button class="t" data-t="${k}">${txt||GL[k][0]}</button>`;
+const $=s=>document.querySelector(s);
+const store={get(k,d){try{const v=localStorage.getItem("brw_"+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem("brw_"+k,JSON.stringify(v))}catch(e){}}};
+
+/* ---------- Bausteine ---------- */
+const intOf=v=>{v=String(v).trim().replace(",",".");const n=Number(v);return v!==""&&Number.isInteger(n)?n:NaN;};const DECMSG="Das absolute Mehr ist immer eine ganze Zahl. Steht nach dem Teilen «,5» da, streichst du es weg. Dann zählst du 1 dazu.";
+function mc(id,q,opts,fbs){ // opts: [text,correct?]
+  return `<div class="task" data-mc="${id}"><b>${q}</b><div class="opts">${opts.map((o,i)=>`<button class="opt" data-i="${i}" data-ok="${o[1]?1:0}">${o[0]}</button>`).join("")}</div><div class="fb"></div></div>`;
+}
+const FB={};
+function bindMC(root,id,fbs,onRight){
+  const box=root.querySelector(`[data-mc="${id}"]`);if(!box)return;
+  box.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{
+    const ok=b.dataset.ok==="1";box.querySelectorAll(".opt").forEach(x=>x.classList.remove("right","wrong"));
+    b.classList.add(ok?"right":"wrong");const f=box.querySelector(".fb");f.className="fb show "+(ok?"ok":"no");
+    f.innerHTML=fbs[b.dataset.i]||"";if(ok&&onRight)onRight();
+    if(!bindMC.restoring){const m=store.get("mc",{});m[cur+":"+id]=+b.dataset.i;store.set("mc",m);}});
+  const m=store.get("mc",{}),k=cur+":"+id;if(k in m){const b=box.querySelector(`.opt[data-i="${m[k]}"]`);if(b){bindMC.restoring=true;try{b.onclick();}finally{bindMC.restoring=false;}}}
+}
+function hemi(mode){
+  const W=200,cx=100,cy=104,R=95,rows=8,r0=.36,r1=.84,pts=[];
+  const rs=[...Array(rows)].map((_,i)=>r0+(r1-r0)*i/(rows-1)),sum=rs.reduce((a,b)=>a+b,0);
+  let ns=rs.map(r=>Math.round(200*r/sum));ns[rows-1]+=200-ns.reduce((a,b)=>a+b,0);
+  rs.forEach((r,i)=>{for(let j=0;j<ns[i];j++){const th=Math.PI-Math.PI*j/(ns[i]-1);pts.push({x:cx+R*r*Math.cos(th),y:cy-R*r*Math.sin(th),th,ch:"nr"})}});
+  const sr=[];for(let j=0;j<46;j++){const th=Math.PI-Math.PI*j/45;sr.push({x:cx+R*Math.cos(th),y:cy-R*Math.sin(th),th,ch:"sr"})}
+  const assign=(arr,key)=>{arr.sort((a,b)=>b.th-a.th);let i=0;FR.forEach(f=>{for(let k=0;k<f[key];k++)arr[i++].c=f.c})};
+  assign(pts,"nr");assign(sr,"sr");
+  const all=pts.concat(sr);
+  return `<svg class="hemi" viewBox="0 0 ${W} 108" role="img" aria-label="Halbrund mit 246 Sitzen">${all.map(p=>`<circle cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="2.55" fill="${mode==="rat"?(p.ch==="nr"?"var(--nr)":"var(--sr)"):p.c}"/>`).join("")}<rect x="86" y="96" width="28" height="8" rx="1.5" fill="var(--red)"/></svg>`;
+}
+const legRat=`<div class="legend"><span><i style="background:var(--nr)"></i>Nationalrat 200</span><span><i style="background:var(--sr)"></i>Ständerat 46 (hinterste Reihe)</span><span><i style="background:var(--red);border-radius:2px"></i>${t("praes")}</span></div>`;
+const legFr=`<div class="legend">${FR.map(f=>`<span><i style="background:${f.c}"></i>${f.k} ${f.nr+f.sr}</span>`).join("")}</div>`;
+
+/* ---------- Stationen ---------- */
+const ST=[
+{title:"Wer wählt?",html:()=>`
+<div class="kicker">Station 1 · Einstieg</div>
+<h2>Wer wählt eigentlich den Bundesrat?</h2>
+<div class="duo"><div><p class="lead" style="margin-top:0">Bundespräsident Guy Parmelin (SVP, Kanton Waadt) hört Ende 2026 auf. Am <b>9. Dezember 2026</b> wird gewählt, wer seinen Platz im Bundesrat bekommt.</p><div class="info why" style="margin-top:0"><b>Warum geht dich das etwas an?</b>Der Bundesrat ist die Regierung der Schweiz. Er führt die Bundesverwaltung und schlägt neue Gesetze vor, zum Beispiel zu Krankenkassen, Armee, Verkehr oder Berufsbildung. Ab 18 wählst du selbst das Parlament, und das Parlament wählt den Bundesrat.</div><div id="s1slot"></div></div>
+${mc("s1","Was denkst du: Wer wählt die neue Person?",[["Alle Stimmberechtigten der Schweiz an der Urne"],["Die 26 Kantone"],["Das Parlament in Bern (Nationalrat und Ständerat zusammen)",1],["Die anderen sechs Mitglieder des Bundesrates"]])}
+<div id="s1chain" hidden>
+<h3>Die Wahlkette</h3>
+<div class="chain"><div>Volk<small>rund 5,6 Mio. Stimmberechtigte</small></div><span aria-hidden="true">→</span><div>Parlament<small>246 Mitglieder, vom Volk alle 4 Jahre gewählt</small></div><span aria-hidden="true">→</span><div>Bundesrat<small>7 Mitglieder, vom Parlament alle 4 Jahre gewählt</small></div></div>
+<p>Merke: <b>Das Volk wählt das Parlament. Das Parlament wählt den Bundesrat.</b></p></div></div>`,
+init:r=>bindMC(r,"s1",["Das denken viele, aber es stimmt nicht. Das Volk wählt den Bundesrat nicht direkt. Das Volk wählt das Parlament, und das Parlament wählt den Bundesrat.","Nicht ganz. Die Kantone haben zwar ihre Vertretung im Parlament (den Ständerat), aber die Kantone selbst wählen nicht.","Genau. Das Parlament wählt den Bundesrat. Wie das genau geht, lernst du in den nächsten Stationen.","Nein. Der Bundesrat kann sich nicht selbst ergänzen. Das wäre so, als würde eine Klasse ihre Lehrperson selbst aussuchen."],()=>done(0)) || r.querySelectorAll('[data-mc="s1"] .opt').forEach(b=>b.addEventListener("click",()=>{const c=r.querySelector("#s1chain");r.querySelector("#s1slot").appendChild(c);c.hidden=false;const w=r.querySelector(".why");if(w)w.hidden=true}))},
+
+{title:"Nationalrat",html:()=>`
+<div class="kicker">Station 2 · Nationalrat</div>
+<h2>Der Nationalrat: 200 Sitze für das Volk</h2>
+<p>Der Nationalrat vertritt die Bevölkerung. Darum gilt: <b>Je mehr Menschen in einem Kanton wohnen, desto mehr Sitze hat er.</b> Jeder Kanton hat aber mindestens 1 Sitz.</p>
+<div class="duo"><div class="task" style="margin-top:0"><b>Schätze: Wie viele der 200 Sitze hat der Thurgau?</b> <span class="src">(Im Thurgau wohnen knapp 300'000 Menschen. In der ganzen Schweiz sind es rund 9 Millionen.)</span>
+<div class="row" style="margin-top:10px"><input type="range" id="tgr" min="1" max="20" value="10" style="flex:1;accent-color:var(--red);min-height:44px" aria-label="Schätzung"><span class="num" style="width:64px;text-align:center" id="tgv">10</span><button class="btn" id="tgb">Prüfen</button></div><div class="fb" id="tgf"></div></div>
+<div><div id="ntph" class="info" style="margin-top:0">Hier erscheinen die Sitze aller Kantone, sobald du geprüft hast.</div><div id="ntwrap" hidden><div class="seats" id="ntgrid" aria-label="Sitze pro Kanton">${KT.map(k=>`<div class="kt${k[2]>=20?" big":""}" data-k="${k[0]}"><small>${k[0]} ${k[2]}</small><div class="sq">${"<i></i>".repeat(k[2])}</div></div>`).join("")}</div>
+<p class="src">Jedes Kästchen ist ein Sitz. Stand: Wahlen 2023. Quelle: parlament.ch, <a href="https://www.parlament.ch/de/organe/nationalrat/mitgliederverzeichnis-nationalrat-nach-kantonen" target="_blank" rel="noopener">Nationalrat nach Kantonen</a> · <a href="https://www.parlament.ch/de/organe/nationalrat/mitgliederverzeichnis-nationalrat-nach-kantonen/mitglieder-nationalrat-kanton-thurgau" target="_blank" rel="noopener">Mitglieder Thurgau</a></p></div></div></div>
+<!--pg-->${mc("s2","Warum hat Zürich 36 Sitze, Uri aber nur 1?",[["Weil Zürich reicher ist"],["Weil in Zürich viel mehr Menschen wohnen",1],["Weil Zürich mehr Parteien hat"]])}`,
+init:r=>{const s=r.querySelector("#tgr"),v=r.querySelector("#tgv");s.oninput=()=>v.textContent=s.value;
+ r.querySelector("#tgb").onclick=()=>{const g=+s.value,f=r.querySelector("#tgf"),d=Math.abs(g-6);r.querySelector('[data-k="TG"]').classList.add("hl");
+ r.querySelector("#ntwrap").hidden=false;r.querySelector("#ntph").hidden=true;f.className="fb show "+(d<=2?"ok":"no");f.innerHTML=(d===0?"Genau richtig! ":d<=2?"Sehr nah! ":"Daneben, aber kein Problem. ")+"Der Thurgau hat <b>6 Sitze</b> (in der Grafik rot markiert). 6 von 200 sind 3 %, und rund 3 % der Schweizer Bevölkerung wohnen im Thurgau.";};
+ bindMC(r,"s2",["Nein, Geld spielt keine Rolle. Gezählt wird nur, wie viele Menschen im Kanton wohnen.","Richtig. Die Sitze werden nach der Einwohnerzahl verteilt. Zürich hat rund 1,6 Millionen Einwohner, Uri nur rund 38'000.","Nein. Gezählt wird nur, wie viele Menschen im Kanton wohnen."],()=>done(1));}},
+
+{title:"Ständerat",html:()=>`
+<div class="kicker">Station 3 · Ständerat</div>
+<h2>Der Ständerat: 46 Sitze für die Kantone</h2>
+<p>Der Ständerat vertritt die Kantone. Hier gilt: <b>Jeder Kanton hat 2 Sitze, egal wie gross er ist.</b> Ausnahme: 6 Kantone haben nur 1 Sitz (z. B. Basel-Stadt und die beiden Appenzell).</p>
+<p><b>Achtung, nicht verwechseln:</b> Der Thurgau hat <b>6</b> Sitze im Nationalrat, aber <b>2</b> im Ständerat.</p>
+<div class="duo"><div><div class="seats">${KT.map(k=>`<div class="kt sr${k[0]==="TG"?" hl":""}"><small>${k[0]} ${k[3]}</small><div class="sq">${"<i></i>".repeat(k[3])}</div></div>`).join("")}</div>
+</div><div><h3 style="margin-top:0">Zürich und Uri im Vergleich</h3>
+<div class="cmp">
+<span>Einwohner ZH</span><div class="b" style="width:100%"></div><span>1,6 Mio.</span>
+<span>Einwohner UR</span><div class="b" style="width:2.4%"></div><span>38'000</span>
+<span>Nationalrat ZH</span><div class="b" style="width:100%"></div><span>36</span>
+<span>Nationalrat UR</span><div class="b" style="width:2.8%"></div><span>1</span>
+<span>Ständerat ZH</span><div class="b s" style="width:100%"></div><span>2</span>
+<span>Ständerat UR</span><div class="b s" style="width:100%"></div><span>2</span>
+</div><p class="src">Quelle: parlament.ch, <a href="https://www.parlament.ch/de/organe/staenderat/mitglieder-nach-kantonen" target="_blank" rel="noopener">Ständerat nach Kantonen</a> · <a href="https://www.parlament.ch/de/organe/staenderat/mitglieder-nach-kantonen/sr-thurgau" target="_blank" rel="noopener">Mitglieder Thurgau</a></p></div></div>
+<!--pg-->${mc("s3","Warum haben Uri und Zürich gleich viele Sitze im Ständerat?",[["Damit die kleinen Kantone nicht immer von den grossen überstimmt werden",1],["Weil in Uri mehr Leute wählen gehen"],["Weil das ein alter Fehler ist, den niemand korrigiert hat"]])}
+<p><b>Diskutiere mit deiner Nachbarin oder deinem Nachbarn:</b> Findest du das fair? Was spricht dafür, was dagegen?</p>`,
+init:r=>bindMC(r,"s3",["Richtig. So zählt jeder Kanton gleich viel. Nationalrat (Volk) und Ständerat (Kantone) gleichen sich aus. Und für ein neues Gesetz müssen beide Räte zustimmen.","Nein. Wie viele Leute wählen gehen, ändert nichts an der Zahl der Sitze. Im Ständerat hat jeder Kanton 2 Sitze, damit kleine Kantone gleich viel zählen.","Nein, das ist Absicht und steht so in der Bundesverfassung: Im Ständerat sollen kleine Kantone gleich viel zählen wie grosse."],()=>done(2))},
+
+{title:"Im Saal",html:()=>`
+<div class="kicker">Station 4 · Wer sitzt im Saal?</div>
+<h2>200 + 46 = 246 Stimmen</h2>
+<p>Für die Bundesratswahl kommen beide Räte im Nationalratssaal zusammen. Das nennt man ${t("vbv")}. Jede Person hat eine Stimme.</p>
+<div class="duo"><div><div class="row" style="justify-content:center"><div class="seg" role="group" aria-label="Färbung"><button data-m="rat" class="on" aria-pressed="true">Nach Rat</button><button data-m="fr" aria-pressed="false">Nach Fraktion</button></div></div>
+<div id="hemibox">${hemi("rat")}${legRat}</div></div><div>
+<div class="task"><b>Gewählt ist, wer mehr als die Hälfte der Stimmen bekommt. Wie viele Stimmen braucht man, wenn alle 246 eine gültige Stimme abgeben?</b><span class="src">Achtung: <i>mehr als</i> die Hälfte, nicht genau die Hälfte.</span>
+<div class="row" style="margin-top:8px"><input class="num" id="s4n" inputmode="numeric" aria-label="Anzahl Stimmen"><button class="btn" id="s4b">Prüfen</button></div><div class="fb" id="s4f"></div></div><p class="src" style="margin-top:12px">Sitze nach Fraktion: Stand zu Beginn der Legislatur (Dezember 2023). Quelle: <a href="https://www.parlament.ch/centers/documents/de/Faktenblatt%20Fraktionen-d.pdf" target="_blank" rel="noopener">parlament.ch</a></p></div></div>
+<!--pg--><div class="duo s4b"><div><p style="margin-top:0">Im Saal sitzen die Parlamentsmitglieder nach ${t("fraktion","Fraktionen")}. Eine Fraktion bespricht vor der Wahl, wen sie unterstützen will.</p>${mc("s4m","Die grösste Fraktion (SVP) hat 74 Stimmen. Kann sie allein bestimmen, wer gewählt wird?",[["Ja, sie ist ja die grösste"],["Nein, sie braucht Stimmen von anderen Fraktionen",1]])}</div><div class="minihemi">${hemi("fr")}${legFr}</div></div><div class="tgbox"><h3>Aus dem Thurgau wählen 8 von 246 mit: 6 im Nationalrat, 2 im Ständerat</h3><div class="tgcols"><div><b>Nationalrat</b><ul><li><span class="p${["Mitte","Grüne","GLP"].includes("SVP")?" lt":""}" style="background:${PC["SVP"]}">SVP</span>Diana Gutjahr</li><li><span class="p${["Mitte","Grüne","GLP"].includes("SVP")?" lt":""}" style="background:${PC["SVP"]}">SVP</span>Manuel Strupler</li><li><span class="p${["Mitte","Grüne","GLP"].includes("SVP")?" lt":""}" style="background:${PC["SVP"]}">SVP</span>Pascal Schmid</li><li><span class="p${["Mitte","Grüne","GLP"].includes("Mitte")?" lt":""}" style="background:${PC["Mitte"]}">Mitte</span>Christian Lohr</li><li><span class="p${["Mitte","Grüne","GLP"].includes("SP")?" lt":""}" style="background:${PC["SP"]}">SP</span>Nina Schläfli</li><li><span class="p${["Mitte","Grüne","GLP"].includes("FDP")?" lt":""}" style="background:${PC["FDP"]}">FDP</span>Kris Vietze</li></ul></div><div><b>Ständerat</b><ul><li><span class="p${["Mitte","Grüne","GLP"].includes("Mitte")?" lt":""}" style="background:${PC["Mitte"]}">Mitte</span>Brigitte Häberli-Koller</li><li><span class="p${["Mitte","Grüne","GLP"].includes("SVP")?" lt":""}" style="background:${PC["SVP"]}">SVP</span>Jakob Stark</li></ul></div></div><p class="src" style="margin:6px 0 0">Zwei davon wohnen in Weinfelden: Strupler und Schmid. Stand: Legislatur 2023–2027. Quelle: parlament.ch, <a href="https://www.parlament.ch/de/organe/nationalrat/mitgliederverzeichnis-nationalrat-nach-kantonen/mitglieder-nationalrat-kanton-thurgau" target="_blank" rel="noopener">Nationalrat TG</a>, <a href="https://www.parlament.ch/de/organe/staenderat/mitglieder-nach-kantonen/sr-thurgau" target="_blank" rel="noopener">Ständerat TG</a></p></div>`,
+init:r=>{r.querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{r.querySelectorAll(".seg button").forEach(x=>{x.classList.toggle("on",x===b);x.setAttribute("aria-pressed",x===b);});r.querySelector("#hemibox").innerHTML=hemi(b.dataset.m)+(b.dataset.m==="rat"?legRat:legFr);uiSet("seg",b.dataset.m);});
+ r.querySelector("#s4b").onclick=()=>{const raw=r.querySelector("#s4n").value,v=intOf(raw),f=r.querySelector("#s4f");if(/[.,]/.test(raw)){f.className="fb show no";f.innerHTML=DECMSG;return;}
+ if(v===124){f.className="fb show ok";f.innerHTML="Richtig: 246 ÷ 2 = 123. Mehr als die Hälfte heisst: mindestens <b>124</b> Stimmen. Das nennt man das "+t("mehr","absolute Mehr")+".";}
+ else if(v===123){f.className="fb show no";f.innerHTML="Fast! 123 ist <b>genau</b> die Hälfte, das wäre unentschieden (123 gegen 123). Es braucht <b>eine Stimme mehr</b>.";}
+ else{f.className="fb show no";f.innerHTML="Noch nicht. Schritt 1: 246 ÷ 2 = ? Schritt 2: noch 1 dazu.";}};
+ bindMC(r,"s4m",["Nein. 74 von 246 ist nicht einmal ein Drittel. Darum muss die SVP andere Fraktionen überzeugen.","Genau. Keine Fraktion hat allein 124 Stimmen. Darum wird vor der Wahl viel miteinander geredet und verhandelt."],()=>done(3));}},
+
+{title:"Bundesrat",html:()=>`
+<div class="kicker">Station 5 · Die Regierung</div>
+<h2>Der Bundesrat: 7 gleichberechtigte Mitglieder</h2>
+<p>Der Bundesrat ist die Regierung der Schweiz. Alle 7 Mitglieder haben gleich viel zu sagen. Bundespräsident 2026 ist Guy Parmelin.</p>
+<div class="duo d5"><div><div class="brtw"><table class="brt"><thead><tr><th aria-sort="none"><button data-sk="0">Partei</button></th><th aria-sort="none"><button data-sk="1">Name</button></th><th aria-sort="none"><button data-sk="2">Kanton</button></th><th class="brsp" aria-sort="none"><button data-sk="3">Sprache</button></th><th aria-sort="ascending"><button data-sk="4">seit</button></th></tr></thead><tbody>${BR.map(b=>`<tr${b[5]?' class="leave"':""}><td><span class="p${["Mitte","Grüne","GLP"].includes(b[1])?" lt":""}" style="background:${PC[b[1]]}">${b[1]}</span></td><td><b>${b[0]}</b>${b[5]?' <span class="brgo">tritt zurück</span>':""}</td><td>${b[2]}</td><td class="brsp">${b[3]}</td><td>${b[4].replace("seit ","")}</td></tr>`).join("")}</tbody></table></div><p class="src" style="margin-top:4px">Porträts und Lebensläufe: <a href="https://www.admin.ch/de/bundesrat-mitglieder" target="_blank" rel="noopener">admin.ch › Mitglieder des Bundesrates</a></p>
+</div><div><p style="margin-top:0">Die grossen Parteien teilen sich die Sitze nach einer Faustregel, der ${t("zauberformel")}: Die drei grössten Parteien bekommen 2 Sitze, die viertgrösste 1 Sitz. Die Idee dahinter heisst ${t("konkordanz")}: Möglichst viele grosse Parteien regieren gemeinsam.</p>
+<p class="src" style="margin-bottom:0"><b>Wähleranteile bei den Nationalratswahlen 2023</b></p>
+<div class="share">${[["SVP",27.9],["SP",18.3],["FDP",14.3],["Mitte",14.1],["Grüne",9.8],["GLP",7.6]].map(([k,v])=>`<span>${k}</span><div class="b" style="width:${v/27.9*100}%;background:${PC[k]}"></div><span>${v.toLocaleString("de-CH")} %</span>`).join("")}</div></div></div>
+<!--pg--><div class="brstrip"><b>Der Bundesrat heute:</b> ${BR.map(b=>`<span class="p${["Mitte","Grüne","GLP"].includes(b[1])?" lt":""}" style="background:${PC[b[1]]}" title="${b[0]}">${b[1]}</span>`).join("")}</div><div class="duo">${mc("s5a","Zähle nach: Welche Partei hat nur einen Sitz im Bundesrat?",[["SP"],["FDP"],["Mitte",1],["SVP"]])}
+${mc("s5b","Parmelin (SVP) geht. Welche Partei hat nach der Zauberformel Anspruch auf seinen Sitz?",[["Die SVP",1],["Die Partei, die am lautesten danach ruft"],["Das entscheidet das Los"]])}</div>`,
+init:r=>{bindMC(r,"s5a",["Nein, die SP hat 2 Sitze (Baume-Schneider und Jans).","Nein, die FDP hat 2 Sitze (Cassis und Keller-Sutter).","Richtig. Die Mitte hat 1 Sitz (Pfister). Also: SVP 2, SP 2, FDP 2, Mitte 1.","Nein, die SVP hat 2 Sitze (Parmelin und Rösti)."]);
+ bindMC(r,"s5b",["Richtig, so sehen es die meisten Parteien. Aber die Zauberformel steht in keinem Gesetz, und das Parlament entscheidet bei jeder Wahl neu.","Nein. Lautstärke ist keine Regel.","Nein. Es gibt kein Los. Das Parlament wählt."],()=>done(4));}},
+
+{title:"Wer passt?",html:()=>`
+<div class="kicker">Station 6 · Kandidierende vergleichen</div>
+<h2>Wer passt in den Bundesrat?</h2>
+<p>Hier sind vier <b>erfundene</b> Kandidierende. Tippe sie an und schau, was sich im Bundesrat ändern würde. Eine einzige richtige Antwort gibt es nicht.</p>
+<div class="duo"><div class="cands c2">${CANDS.map((c,i)=>`<button class="cand" data-c="${i}">${face(c.n,44,"fl")}<b><span>${c.n.split(" ")[0]}</span><span>${c.n.split(" ").slice(1).join(" ")}</span></b><small>${c.p} · ${c.kt} · ${c.a} Jahre</small><small>${c.role}</small><span class="tags"><span class="tag">${c.l}</span><span class="tag${c.ticket?" r":""}">${c.ticket?"SVP-Ticket":c.p==="SVP"?"ohne Ticket":"Grüne Kandidatur"}</span></span></button>`).join("")}</div>
+<div class="info" id="s6info" style="margin-top:0"><b>Tippe eine Person an.</b><span class="src">Zum Vergleich, die anderen 6 Mitglieder ohne Parmelin: 4 deutschsprachig, 1 französischsprachig, 1 italienischsprachig · 2 Frauen, 4 Männer.</span></div></div>
+<!--pg--><p style="margin-top:0">Die Schweiz hat vier Landessprachen. Damit sich alle Landesteile vertreten fühlen, achtet das Parlament darauf, dass nicht nur Deutschschweizerinnen und Deutschschweizer im Bundesrat sitzen.</p><div class="duo">
+<div class="task check" id="s6chk"><b>Was ist dir bei der Wahl am wichtigsten? Wähle genau 3.</b>
+${["Die Zauberformel einhalten (Partei)","Sprache und Landesgegend","Mehr Frauen oder mehr Männer","Erfahrung in einer Regierung","Kompromissbereitschaft","Das Ticket der Fraktion respektieren"].map((x,i)=>`<label><input type="checkbox" value="${i}">${x}</label>`).join("")}
+</div><div><div class="fb" id="s6f" style="margin-top:0"></div></div></div>`,
+init:r=>{const info=[
+ "<b>Andrea Rochat (SVP, Waadt)</b><ul><li>Zauberformel bleibt: SVP 2, SP 2, FDP 2, Mitte 1.</li><li>Die "+t("romandie")+" hätte wieder 2 Sitze, wie mit Parmelin.</li><li>3 Frauen im Bundesrat.</li><li>Sie ist "+t("regrat","Regierungsrätin")+" im Kanton Waadt und kennt die Arbeit in einer Regierung. Manche in ihrer Partei finden, sie gebe zu schnell nach.</li></ul>",
+ "<b>Markus Inderbitzin (SVP, Schwyz)</b><ul><li>Zauberformel bleibt.</li><li>5 von 7 wären deutschsprachig, die Romandie hätte nur noch 1 Sitz.</li><li>2 Frauen, 5 Männer.</li><li>12 Jahre im Nationalrat, er kennt das Parlament sehr gut. Er hält sich eng an die "+t("parteilinie")+", darum vertraut ihm seine Partei. Andere Fraktionen fragen sich, ob er Kompromisse eingeht.</li></ul>",
+ "<b>Corinne Baumann (SVP, Thurgau)</b><ul><li>Gehört zur SVP, die Zauberformel bliebe also. Aber: Sie steht <b>nicht</b> auf dem "+t("ticket")+". Ihre eigene Fraktion wäre verärgert.</li><li>Die Ostschweiz hätte 2 Sitze (mit Karin Keller-Sutter aus St. Gallen), die Romandie nur noch 1.</li><li>3 Frauen.</li><li>Sie wäre eine "+t("wild","wilde Kandidatin")+".</li></ul>",
+ "<b>Sara Keller (Grüne, Bern)</b><ul><li>Die Zauberformel würde sich ändern: SVP 1, SP 2, FDP 2, Mitte 1, Grüne 1.</li><li>Wer sie unterstützt, sagt: Fast 10 % wählen grün, darum sollen die Grünen mitregieren. Wer dagegen ist, sagt: Die SVP ist mit Abstand die grösste Partei und soll 2 Sitze behalten.</li><li>3 Frauen, 5 Deutschsprachige.</li><li>Viel Erfahrung im Parlament, aber nie in einer Regierung.</li></ul>"];
+ const s6=store.get("s6",{seen:[],cur:null})||{seen:[],cur:null};const seen=new Set(s6.seen||[]);
+ const showC=b=>{r.querySelectorAll(".cand").forEach(x=>x.classList.toggle("on",x===b));b.classList.add("seen");seen.add(b.dataset.c);r.querySelector("#s6info").innerHTML=info[b.dataset.c]+`<p class="src" style="margin:0">Angeschaut: ${seen.size} von 4</p>`;};
+ r.querySelectorAll(".cand").forEach(b=>b.onclick=()=>{showC(b);store.set("s6",{seen:[...seen],cur:b.dataset.c});});
+ r.querySelectorAll(".cand").forEach(b=>{if(seen.has(b.dataset.c))b.classList.add("seen")});
+ if(s6.cur!=null){const b=r.querySelector(`.cand[data-c="${s6.cur}"]`);if(b)showC(b);}
+ const boxes=[...r.querySelectorAll("#s6chk input")];
+ boxes.forEach(c=>c.onchange=()=>{const on=boxes.filter(x=>x.checked);boxes.forEach(x=>x.disabled=!x.checked&&on.length>=3);const f=r.querySelector("#s6f");
+  if(on.length===3){const C6=["Dann passen Rochat, Inderbitzin oder Baumann (alle SVP).","Rochat würde die Romandie stärken. Die anderen drei kommen aus der Deutschschweiz.","Mit Rochat, Baumann oder Keller hätte der Bundesrat 3 Frauen und 4 Männer, mit Inderbitzin 2 Frauen und 5 Männer.","Nur Rochat war schon in einer Regierung. Die anderen kennen dafür das Parlament in Bern gut.","Das zeigt sich bei den Hearings. Rochat gilt als kompromissbereit, Inderbitzin vertritt klar die Linie seiner Partei, Baumann ist auch bei anderen Fraktionen beliebt.","Dann kommen nur Rochat oder Inderbitzin in Frage."];f.className="fb show ok";f.innerHTML="<ul style='margin:0 0 8px'>"+on.map(x=>`<li>${C6[x.value]}</li>`).join("")+"</ul>Genau solche Fragen besprechen die Fraktionen vor der Wahl. Die Bundesverfassung verlangt nur, dass Landesgegenden und Sprachregionen <b>angemessen vertreten</b> sind (Art. 175). Alles andere entscheidet jede und jeder im Parlament selbst.";done(5);}else f.className="fb";});}},
+
+{title:"Weg zur Wahl",html:()=>`
+<div class="kicker">Station 7 · Vom Rücktritt bis zur Wahl</div>
+<h2>Der Weg zur Wahl am 9. Dezember</h2>
+<p>Tippe die Schritte an, um mehr zu erfahren.</p>
+<ol class="tl" style="margin-top:0">
+<li><details><summary><em>Anfang Oktober</em> Parmelin gibt seinen Rücktritt bekannt</summary><p>Er tritt per Ende 2026 zurück, nach 11 Jahren im Bundesrat. Ein Bundesratsmitglied darf jederzeit zurücktreten.</p></details></li>
+<li><details><summary><em>Okt.–Nov.</em> Die Kantonalparteien melden Kandidierende</summary><p>Die SVP-Parteien in den Kantonen schlagen Personen vor. Danach entscheidet die SVP-Fraktion in Bern.</p></details></li>
+<li><details><summary><em>20. Nov.</em> Die SVP-Fraktion stellt ihr Ticket vor</summary><p>Ein ${t("ticket")} besteht meist aus zwei Personen. So kann das Parlament auswählen, und die Fraktion bestimmt trotzdem mit.</p></details></li>
+<li><details><summary><em>Ende Nov.</em> Hearings bei den anderen Fraktionen</summary><p>Bei den ${t("hearing","Hearings")} stellen sich die Kandidierenden den anderen Fraktionen vor. Die Fraktionen fragen zum Beispiel: Wie stehen Sie zur EU? Können Sie Kompromisse machen?</p></details></li>
+<li><details><summary><em>Vorabend</em> Die «Nacht der langen Messer»</summary><p>Der Name klingt gefährlich, gemeint ist aber nur Reden und Verhandeln: Am Abend vor der Wahl treffen sich Parlamentsmitglieder in Berner Hotels und Restaurants, machen Absprachen und versuchen, andere zu überzeugen.</p></details></li>
+<li class="big"><details><summary><em>9. Dez.</em> Wahl in der Vereinigten Bundesversammlung</summary><p>Es gibt ${t("wahlgang","Wahlgänge")}, bis jemand das ${t("mehr","absolute Mehr")} erreicht. Die Wahl ist geheim: Alle schreiben einen Namen auf einen Zettel.</p></details></li>
+<li><details><summary><em>Gleich danach</em> Annahme und Gelübde</summary><p>Die gewählte Person sagt, ob sie die Wahl annimmt. Danach legt sie im Saal den Eid oder das Gelübde ab.</p></details></li>
+<li><details><summary><em>1. Jan. 2027</em> Amtsantritt (voraussichtlich)</summary><p>Parmelin bleibt bis Ende Dezember im Amt. Danach übernimmt die neue Person. Sie bleibt mindestens bis zur nächsten Gesamtwahl im Dezember 2027.</p></details></li>
+</ol>
+<!--pg--><div><div class="info why"><b>Wichtig: Das Ticket ist nur ein Vorschlag.</b> Das Parlament darf alle ${t("stimmber","Stimmberechtigten")} wählen. Wird jemand anderes gewählt, nennt man das eine «wilde» Wahl. Beispiel: 2007 wurde Eveline Widmer-Schlumpf statt Christoph Blocher (beide SVP) gewählt.</div>
+${mc("s7","Die Fraktion schlägt Person A und Person B vor. Darf das Parlament Person C wählen?",[["Nein, nur Personen auf dem Ticket dürfen gewählt werden"],["Ja, das Parlament darf alle Stimmberechtigten wählen",1],["Nur wenn der Bundesrat zustimmt"]])}</div>`,
+init:r=>{const dts=[...r.querySelectorAll(".tl details")];dts.forEach((d,i)=>d.addEventListener("toggle",()=>{if(d.open){dts.forEach(o=>{if(o!==d)o.open=false});uiSet("det",i);}else if(!dts.some(o=>o.open))uiSet("det",-1);}));bindMC(r,"s7",["Doch, das darf es. Das Ticket ist nur ein Vorschlag.","Richtig. Das Ticket ist nur ein Vorschlag. Darum wird es am Wahltag manchmal spannend.","Nein, der Bundesrat hat bei der Wahl nichts zu sagen."],()=>done(6))}},
+
+{title:"Abs. Mehr",html:()=>`
+<div class="kicker">Station 8 · Die wichtigste Rechnung</div>
+<h2>Das absolute Mehr berechnen</h2>
+<div class="duo"><div><p style="margin-top:0">Gewählt ist, wer auf <b>mehr als der Hälfte der gültigen Wahlzettel</b> steht. <b>Leere</b> und <b>ungültige</b> Zettel zählen nicht mit.</p><div class="rule"><b>Merkregel: absolutes Mehr in 3 Schritten</b><ol><li>Gültige Stimmen = eingegangen − leer − ungültig</li><li>Durch 2 teilen. Steht «,5» da, streichst du es einfach weg (nicht aufrunden!).</li><li><b>Plus 1</b></li></ol><span class="src">Beispiel 1: 240 → 120 → <b>121</b><br>Beispiel 2: 233 → 116,5 → 116 → <b>117</b><br>Warum plus 1? Genau die Hälfte wäre ein Unentschieden (120 gegen 120). Gewählt ist man erst mit einer Stimme mehr.</span></div>
+</div><div>
+<div class="task"><b>Rechner zum Ausprobieren</b>
+<div class="calc">
+<label for="c1">Eingegangene Wahlzettel</label><input class="num" id="c1" value="246" inputmode="numeric">
+<label for="c2">davon leer</label><input class="num" id="c2" value="4" inputmode="numeric">
+<label for="c3">davon ungültig</label><input class="num" id="c3" value="2" inputmode="numeric">
+<span>Gültige Stimmen</span><span class="res" id="cg"></span>
+<span>Hälfte</span><span class="res" id="ch"></span>
+<span><b>Absolutes Mehr</b></span><span class="res big" id="cm"></span>
+</div><p class="src" id="cx" style="margin-bottom:0"></p></div></div></div>
+<!--pg--><p style="margin-top:0">Ungültig ist ein Zettel zum Beispiel, wenn ein Name darauf steht, der nicht gewählt werden kann (z. B. jemand ohne Schweizer Bürgerrecht), wenn eine Beleidigung darauf steht oder wenn man nicht weiss, wer gemeint ist.</p><h3 style="margin-top:6px">Jetzt du</h3>
+<div class="rule" style="margin:0 0 10px;padding:8px 12px"><b>Merkregel:</b> gültige Stimmen → ÷ 2 → «,5» wegstreichen → <b>plus 1</b></div>
+<div id="drill" class="tri"></div>`,
+init:r=>{const up=()=>{const a=+r.querySelector("#c1").value||0,b=+r.querySelector("#c2").value||0,c=+r.querySelector("#c3").value||0,g=Math.max(0,a-b-c),m=Math.floor(g/2)+1;
+ r.querySelector("#cg").textContent=g;r.querySelector("#ch").textContent=(g/2).toLocaleString("de-CH");r.querySelector("#cm").textContent=g?m:"–";
+ r.querySelector("#cx").textContent=g?`${a} − ${b} − ${c} = ${g} gültige Stimmen. Die Hälfte ist ${(g/2).toLocaleString("de-CH")}. Die nächste ganze Zahl darüber ist ${m}.`:"";};
+ ["#c1","#c2","#c3"].forEach(s=>r.querySelector(s).oninput=up);up();
+ const D=[["Es gibt 200 gültige Stimmen.",101],["Es kamen 244 Wahlzettel zurück, 5 davon leer, 1 ungültig.",120],["Es gibt 237 gültige Stimmen.",119]];
+ let ok=0;r.querySelector("#drill").innerHTML=D.map((d,i)=>`<div class="task"><b>Aufgabe ${i+1}: ${d[0]} Wie gross ist das absolute Mehr?</b><div class="row" style="margin-top:8px"><input class="num" data-d="${i}" inputmode="numeric" aria-label="Absolutes Mehr Aufgabe ${i+1}"><button class="btn" data-db="${i}">Prüfen</button></div><div class="fb" data-df="${i}"></div></div>`).join("");
+ const hint=["200 ÷ 2 = 100. Genau die Hälfte reicht nicht. Plus 1: 101.","244 − 5 − 1 = 238 gültige. 238 ÷ 2 = 119. Plus 1: 120.","237 ÷ 2 = 118,5. Komma weg: 118. Plus 1: 119."];
+ const wrongHint=(i,v)=>{const g=[200,238,237][i],h=Math.floor(g/2);if(v===h)return "Du hast nur halbiert. Es fehlt Schritt 3: plus 1.";if(i===1&&(v===123||v===122))return "Zuerst die leeren und ungültigen Zettel abziehen (Schritt 1).";if(v===h+2)return "Eins zu viel. Hast du aufgerundet? Bei «,5» wird nicht aufgerundet, sondern weggestrichen: 118,5 → 118. Dann plus 1.";return "Schau dir die Merkregel oben an und geh Schritt für Schritt.";};
+ r.querySelectorAll("[data-db]").forEach(b=>b.onclick=()=>{const i=+b.dataset.db,raw=r.querySelector(`[data-d="${i}"]`).value,v=intOf(raw),f=r.querySelector(`[data-df="${i}"]`);if(/[.,]/.test(raw)){f.className="fb show no";f.innerHTML=DECMSG;return;}const right=v===D[i][1];
+  f.className="fb show "+(right?"ok":"no");f.innerHTML=right?"Richtig! "+hint[i]:"Noch nicht. "+wrongHint(i,v);if(right&&!b.dataset.got){b.dataset.got=1;ok++;if(ok===3)done(7);}});}},
+
+{title:"Trainer",html:()=>`
+<div class="kicker">Station 9 · Ein ganzer Wahltag</div>
+<h2>Wahlgang-Trainer</h2>
+<div style="max-width:820px"><p style="margin-top:0">Du wertest eine erfundene Wahl aus. Zuerst immer: <b>Hat jemand das absolute Mehr?</b> Wenn ja, ist die Wahl fertig. Wenn nein, gilt:</p>
+<table class="rt2" id="rules"><tr><th>Wahlgang</th><th>Neue Namen erlaubt?</th><th>Wer scheidet aus?</th></tr>
+<tr data-r="1"><td>1.</td><td>ja</td><td>niemand</td></tr>
+<tr data-r="2"><td>2.</td><td>ja</td><td>wer weniger als 10 Stimmen hat</td></tr>
+<tr data-r="3"><td>ab 3.</td><td>nein (Stimmen für neue Namen sind ungültig)</td><td>Wer weniger als 10 Stimmen hat, scheidet aus.<br>Hat niemand weniger als 10, scheidet die Person mit den wenigsten Stimmen aus.<br>Haben zwei gleich wenig, scheidet niemand aus.</td></tr></table>
+<p class="src">Stimmen für Personen, die schon ausgeschieden sind, sind ungültig. Wenn es unentschieden steht, wird einfach nochmals gewählt.</p><p><b>Tippe auf «Weiter», um den Trainer zu starten.</b></p></div>
+<!--pg--><div id="trainer"></div>`,
+init:r=>trainer(r.querySelector("#trainer"))},
+
+{title:"Quiz",html:()=>`
+<div class="kicker">Station 10 · Abschluss</div>
+<h2>Quiz: Hast du alles verstanden?</h2>
+<p>10 Fragen. Du siehst sofort, ob deine Antwort stimmt und warum.</p>
+<div id="quiz"></div>`,
+init:r=>quiz(r.querySelector("#quiz"))}
+];
+
+/* ---------- Wahlgang-Trainer ---------- */
+const TR0=[
+ {ein:244,leer:6,ung:2,v:[["Andrea Rochat",88],["Markus Inderbitzin",71],["Corinne Baumann",52],["Sara Keller",18],["Vereinzelte",7]],ask:true,el:"Niemand",out:"Niemand",
+  why:"Niemand hat mindestens 119 Stimmen. Im 1. Wahlgang scheidet noch niemand aus. «Vereinzelte» sind mehrere Personen mit je ganz wenigen Stimmen."},
+ {ein:245,leer:4,ung:1,v:[["Andrea Rochat",101],["Markus Inderbitzin",66],["Corinne Baumann",64],["Sara Keller",9]],ask:true,el:"Niemand",out:"Sara Keller",
+  why:"Niemand hat mindestens 121 Stimmen. Ab dem 2. Wahlgang scheidet aus, wer weniger als 10 Stimmen hat: Sara Keller (9)."},
+ {ein:245,leer:3,ung:0,v:[["Andrea Rochat",117],["Markus Inderbitzin",58],["Corinne Baumann",67]],ask:false,el:"Niemand",out:"Markus Inderbitzin",
+  why:"Niemand hat mindestens 122 Stimmen. Ab dem 3. Wahlgang scheidet aus, wer am wenigsten Stimmen hat: Markus Inderbitzin (58)."},
+ {ein:246,leer:2,ung:1,v:[["Andrea Rochat",128],["Corinne Baumann",115]],ask:false,el:"Andrea Rochat",out:null,
+  why:"Andrea Rochat hat 128 Stimmen, das absolute Mehr ist 122. Damit ist Andrea Rochat gewählt!"}];
+let TR=TR0;
+const TRN=["Andrea Rochat","Markus Inderbitzin","Corinne Baumann","Sara Keller"];
+function trMap(p){let j=JSON.stringify(TR0);TRN.forEach((n,k)=>{j=j.split(n).join("§"+k+"§");});TRN.forEach((n,k)=>{j=j.split("§"+k+"§").join(p[k]);});return JSON.parse(j);}
+const shuf=a=>{a=a.slice();for(let k=a.length-1;k>0;k--){const r=Math.floor(Math.random()*(k+1));[a[k],a[r]]=[a[r],a[k]];}return a;};
+function trainer(box){
+  const ts=store.get("tr",{i:0,stage:0})||{};let i=Math.min(ts.i||0,TR0.length-1),stage=ts.stage||0,perm=Array.isArray(ts.p)&&ts.p.length===4?ts.p:shuf(TRN);TR=trMap(perm);
+  const render=()=>{store.set("tr",{i,stage,p:perm});const R=TR[i],g=R.ein-R.leer-R.ung,m=Math.floor(g/2)+1,names=R.v.map(x=>x[0]).filter(n=>n!=="Vereinzelte");
+   document.querySelectorAll("#rules tr[data-r]").forEach(tr=>tr.classList.toggle("now",+tr.dataset.r===Math.min(3,i+1)));
+   const RULE=["1. Wahlgang: Neue Namen erlaubt. Es scheidet niemand aus.","2. Wahlgang: Neue Namen erlaubt. Wer weniger als 10 Stimmen hat, scheidet aus.","Ab dem 3. Wahlgang: Keine neuen Namen. Wer weniger als 10 Stimmen hat, scheidet aus. Hat niemand weniger als 10, scheidet die Person mit den wenigsten Stimmen aus. Bei Gleichstand scheidet niemand aus."];
+   let h=`<div class="task trn"><div><b>${i+1}. Wahlgang</b> <div class="chips"><span>eingegangen <b>${R.ein}</b></span><span>leer <b>${R.leer}</b></span><span>ungültig <b>${R.ung}</b></span><span>gültig <b>${g}</b></span><span class="hi">absolutes Mehr <b>${stage>0||!R.ask?m:"?"}</b></span></div>
+   <table class="tally">${R.v.map(x=>`<tr><td>${x[0]==="Vereinzelte"?t("vereinzelt")+" <span class='src'>(mehrere Personen mit je 1–2 Stimmen)</span>":x[0]}</td><td>${x[1]}</td></tr>`).join("")}</table>`;
+   h+=`<div class="rnow"><b>Regel:</b> ${RULE[Math.min(i,2)]}</div></div><div>`;
+   if(i===2&&stage===0)h+=`<p class="src">Hinweis: Ab jetzt dürfen keine neuen Namen mehr dazukommen. Stimmen für neue Personen wären ungültig.</p>`;
+   if(stage===0&&R.ask)h+=`<b>a) Berechne das absolute Mehr.</b><div class="row" style="margin:8px 0"><input class="num" id="trm" data-norestore="1" inputmode="numeric" aria-label="Absolutes Mehr"><button class="btn" id="tmb">Prüfen</button></div><div class="fb" id="tmf"></div>`;
+   else if(stage<=1){h+=`<b>${R.ask?"b":"a"}) Ist jemand gewählt?</b><div class="opts">${["Niemand",...names].map(n=>`<button class="opt" data-a="el" data-n="${n}">${n}</button>`).join("")}</div><div class="fb" id="tf"></div>`;}
+   else if(stage===2){h+=`<b>${R.ask?"c":"b"}) Wer scheidet aus?</b> <span class="src">Schau dir die rot hinterlegte Regel an.</span><div class="opts">${["Niemand",...names].map(n=>`<button class="opt" data-a="out" data-n="${n}">${n}</button>`).join("")}</div><div class="fb" id="tf"></div>`;}
+   h+=`</div></div>`;box.innerHTML=h;
+   const tmb=box.querySelector("#tmb");if(tmb)tmb.onclick=()=>{const raw=box.querySelector("#trm").value,v=intOf(raw),f=box.querySelector("#tmf");if(/[.,]/.test(raw)){f.className="fb show no";f.innerHTML=DECMSG;return;}
+    if(v===m){stage=1;render();}else{f.className="fb show no";f.innerHTML=(v===Math.floor(g/2))?`Du hast nur halbiert. ${g} ÷ 2 = ${(g/2).toLocaleString("de-CH")}. Es fehlt: plus 1.`:(v===Math.floor(R.ein/2)+1)?`Du hast mit allen Zetteln gerechnet. Zieh zuerst leere und ungültige ab: ${R.ein} − ${R.leer} − ${R.ung} = ${g}.`:`Noch nicht. Schritt 1: ${g} gültige Stimmen. Schritt 2: ÷ 2, Komma weglassen. Schritt 3: plus 1.`;}};
+   box.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{const want=b.dataset.a==="el"?R.el:R.out,ok=b.dataset.n===want,f=box.querySelector("#tf");
+    box.querySelectorAll(".opt").forEach(x=>x.classList.remove("right","wrong"));b.classList.add(ok?"right":"wrong");f.className="fb show "+(ok?"ok":"no");
+    if(!ok){f.innerHTML=b.dataset.a==="el"?`Schau nochmals: Das absolute Mehr ist ${m}. Hat jemand so viele Stimmen?`:(i===0?"Schau dir die rot hinterlegte Regel an: Im 1. Wahlgang scheidet noch niemand aus, auch nicht die Person mit den wenigsten Stimmen.":i===1?"Schau dir die rot hinterlegte Regel an: Raus ist nur, wer weniger als 10 Stimmen hat.":"Schau dir die rot hinterlegte Regel an: Hat jemand weniger als 10? Wenn nicht: Wer hat am wenigsten?");return;}
+    box.querySelectorAll(".opt").forEach(x=>{x.disabled=true});const op=b.closest(".opts");if(op)op.hidden=true;const last=b.dataset.a==="el"&&R.el!=="Niemand";
+    f.innerHTML=`<b>✓ ${b.dataset.n}</b> ist richtig. `+(b.dataset.a==="el"&&R.el==="Niemand"?`Niemand hat mindestens ${m} Stimmen, also ist noch niemand gewählt.`:R.why)+`<div class="row" style="margin-top:10px"><button class="btn red" id="tn">${last?"Fertig":b.dataset.a==="el"?"Weiter: Wer scheidet aus?":"Nächster Wahlgang"}</button></div>`;
+    box.querySelector("#tn").onclick=()=>{if(last){box.innerHTML=`<div class="task"><b>Die Ratspräsidentin fragt: «${anrede(R.el)}, nehmen Sie die Wahl an?»</b><p>«Ich nehme die Wahl an.» Danach ${(CANDS.find(x=>x.n===R.el)||{}).f?"legt sie":"legt er"} das Gelübde ab: «Ich gelobe, die Verfassung und die Gesetze zu beachten und die Pflichten meines Amtes zu erfüllen.»</p><p><b>Super, du hast einen ganzen Wahltag ausgewertet!</b> Es brauchte 4 Wahlgänge. Das kommt auch in Wirklichkeit vor.</p><button class="btn ghost" id="tr0">Nochmals von vorn</button></div>`;box.querySelector("#tr0").onclick=()=>{i=0;stage=0;perm=shuf(TRN);TR=trMap(perm);render()};done(8);return;}
+     if(b.dataset.a==="el"){stage=2;render();}else{i++;stage=0;render();}};});
+  };render();
+}
+
+/* ---------- Quiz ---------- */
+const QZ=[
+ ["Wer wählt den Bundesrat?",[["Das Volk an der Urne"],["Die Vereinigte Bundesversammlung",1],["Die Kantonsregierungen"]],"Nationalrat und Ständerat zusammen, also 246 Personen."],
+ ["3. Wahlgang, absolutes Mehr 121: A hat 120, B hat 60, C hat 60 Stimmen. Was passiert?",[["B und C scheiden beide aus"],["A ist gewählt"],["Niemand ist gewählt, niemand scheidet aus",1]],"A fehlt eine Stimme. B und C haben gleich wenig, darum scheidet niemand aus. Es gibt einen 4. Wahlgang."],
+ ["Wie viele Sitze hat der Thurgau im Ständerat?",[["2",1],["6"],["1"]],"Im Ständerat hat jeder Kanton 2 Sitze (ausser sechs Kantone mit 1). Die 6 sind die Sitze im Nationalrat."],
+ ["Im 3. Wahlgang schreibt jemand einen ganz neuen Namen auf den Wahlzettel. Was gilt?",[["Der Zettel ist ungültig",1],["Die neue Person ist jetzt auch im Rennen"],["Der Zettel zählt als leer"]],"Ab dem 3. Wahlgang dürfen keine neuen Namen mehr dazukommen. Der Zettel ist ungültig."],
+ ["Es gibt 230 gültige Stimmen. Wie gross ist das absolute Mehr?",[["115"],["231"],["116",1]],"230 ÷ 2 = 115. Genau die Hälfte reicht nicht. Plus 1: 116."],
+ ["Zählen leere Wahlzettel beim absoluten Mehr mit?",[["Ja"],["Nein",1]],"Leere und ungültige Wahlzettel zählen nicht. Man rechnet nur mit den gültigen Stimmen."],
+ ["Ab welchem Wahlgang dürfen keine neuen Namen mehr dazukommen?",[["Ab dem 3.",1],["Ab dem 2."],["Es dürfen immer neue Namen dazukommen"]],"In den ersten beiden Wahlgängen ist alles offen, ab dem 3. Wahlgang nicht mehr."],
+ ["3. Wahlgang, absolutes Mehr 121: A hat 120, B hat 70, C hat 50 Stimmen. Was passiert?",[["A ist gewählt"],["Niemand ist gewählt, niemand scheidet aus"],["Niemand ist gewählt, C scheidet aus",1]],"A fehlt eine Stimme! Ab dem 3. Wahlgang scheidet aus, wer am wenigsten Stimmen hat: C."],
+ ["Was ist ein «Ticket»?",[["Die Eintrittskarte ins Bundeshaus"],["Der Vorschlag einer Fraktion mit meist zwei Kandidierenden",1],["Der Wahlzettel"]],"Das Ticket ist ein Vorschlag. Das Parlament muss sich nicht daran halten."],
+ ["Was beschreibt die «Zauberformel»?",[["Wie die 7 Bundesratssitze auf die grössten Parteien verteilt werden",1],["Wie man das absolute Mehr berechnet"],["Ein Gesetz, das die Parteien im Bundesrat festlegt"]],"Heute SVP 2, SP 2, FDP 2, Mitte 1. Sie ist eine Gewohnheit und kein Gesetz."]];
+function quiz(box){
+  const qs=store.get("qz",{i:0,s:0,p:null,w:[]})||{};let i=Math.min(qs.i||0,QZ.length),score=qs.s||0,answered=false,pend=qs.p,wr=qs.w||[];
+  const qsave=(p)=>store.set("qz",{i,s:score,p,w:wr});
+  const render=()=>{if(i>=QZ.length){box.innerHTML=`<div class="task" style="text-align:center"><div class="score">${score} von 10</div><p style="margin:10px auto">${score>=8?"Stark! Du bist bereit für die Simulation in der Klasse.":score>=5?"Gut gemacht! Schau dir die Fragen unten nochmals an.":"Ein guter Anfang. Schau dir die Fragen unten nochmals an und versuch es dann noch einmal."}</p>${(()=>{const op=ST.map((x,k)=>k).filter(k=>k<ST.length-1&&!doneSet.has(k));return op.length?`<p class="src" style="margin:6px 0">Noch offen: ${op.map(k=>`Station ${k+1} (${ST[k].title})`).join(", ")}</p>`:""})()}${wr.length?`<div style="text-align:left;margin:8px 0 12px"><b>Diese Fragen nochmals anschauen:</b><ul style="margin:6px 0 0">${wr.map(k=>`<li>${QZ[k][0]}<br><span class="src">${QZ[k][2]}</span></li>`).join("")}</ul></div>`:""}<button class="btn ghost" id="qr">Quiz wiederholen</button></div>`;box.querySelector("#qr").onclick=()=>{i=0;score=0;wr=[];qsave(null);render()};qsave(null);store.set("quiz",Math.max(score,store.get("quiz",0)));done(9);return;}
+   const q=QZ[i];answered=false;
+   box.innerHTML=`<div class="task"><span class="src">Frage ${i+1} von 10 · ${score} richtig</span><b style="display:block;font-size:18px;margin:6px 0">${q[0]}</b><div class="opts">${q[1].map((o,k)=>`<button class="opt" data-k="${k}">${o[0]}</button>`).join("")}</div><div class="fb" id="qf"></div></div>`;
+   box.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{if(answered)return;answered=true;qsave(+b.dataset.k);const ok=!!q[1][b.dataset.k][1];if(ok)score++;else if(!wr.includes(i))wr.push(i);
+    box.querySelectorAll(".opt").forEach(x=>{if(q[1][x.dataset.k][1])x.classList.add("right")});if(!ok)b.classList.add("wrong");
+    const f=box.querySelector("#qf");f.className="fb show "+(ok?"ok":"no");f.innerHTML=(ok?"Richtig! ":"Leider falsch. ")+q[2]+`<div class="row" style="margin-top:10px"><button class="btn red" id="qn">${i<9?"Nächste Frage":"Auswertung"}</button></div>`;
+    box.querySelector("#qn").onclick=()=>{i++;qsave(null);render()};});
+   if(pend!=null){const b=box.querySelector(`.opt[data-k="${pend}"]`);pend=null;if(b)b.onclick();}};
+  render();
+}
+
+/* ---------- Lernpfad-Steuerung ---------- */
+let cur=Math.min(store.get("cur",0),ST.length-1);const doneSet=new Set(store.get("done",[]));
+const NEED=["die richtige Antwort angetippt ist","die Frage «Warum hat Zürich 36 Sitze?» richtig beantwortet ist","die Frage zu Uri und Zürich richtig beantwortet ist","die letzte Frage (SVP mit 74 Stimmen) richtig beantwortet ist","die zweite Frage (Parmelins Sitz) richtig beantwortet ist","genau 3 Kästchen angekreuzt sind","die Ticket-Frage richtig beantwortet ist","alle drei Aufgaben richtig gelöst sind","alle 4 Wahlgänge bis «Fertig» durchgespielt sind","alle 10 Fragen bis zur Auswertung beantwortet sind"];
+function done(i){doneSet.add(i);store.set("done",[...doneSet]);side();}
+function side(){if($("#sidelist"))$("#sidelist").innerHTML=ST.map((s,i)=>`<li class="${doneSet.has(i)?"done":""} ${i===cur?"cur":""}"><button data-g="${i}">${s.title}</button></li>`).join("");
+ if($("#sidelist"))$("#sidelist").querySelectorAll("button").forEach(b=>b.onclick=()=>go(+b.dataset.g));
+ $("#boxes").innerHTML=ST.map((st,i)=>`<button class="${doneSet.has(i)?"ok":""} ${i===cur?"cur":""}" ${i===cur?'aria-current="step"':""} data-go="${i}" title="${i+1}. ${st.title}" aria-label="Station ${i+1} ${st.title}, ${doneSet.has(i)?"erledigt":"offen"}">${doneSet.has(i)?"✓":i+1}<small>${st.title}</small></button>`).join("");
+ $("#boxes").querySelectorAll("button").forEach(b=>b.onclick=()=>go(+b.dataset.go));
+ const open=ST.map((_,i)=>i).filter(i=>!doneSet.has(i));
+ $("#stdone").innerHTML=`<b style="color:var(--ok)">${doneSet.size} erledigt</b> · ${open.length} offen`;
+ const nx=doneSet.has(cur)||pg<npg-1||cur===ST.length-1;$("#next").classList.toggle("red",nx);$("#next").classList.toggle("ghost",!nx);
+ $("#stneed").innerHTML=doneSet.has(cur)?`<b style="color:var(--ok)">✓ Erledigt</b>`:pg<npg-1?`Lies alles und probiere aus. Die Aufgabe kommt in Teil ${npg}.`:`Erledigt, wenn ${NEED[cur]}.`;}
+let pg=0,npg=1;
+function lockPg(){const b=document.querySelector("#station .pg:not([hidden]) .pgbody");if(!b)return;b.style.paddingTop="0px";
+ if(getComputedStyle(b).justifyContent!=="center"&&!b.dataset.locked){}
+ b.dataset.locked="";b.classList.remove("locked");const kids=[...b.children].filter(c=>c.offsetParent!==null||c.offsetHeight);const h=kids.length?(kids[kids.length-1].offsetTop+kids[kids.length-1].offsetHeight-kids[0].offsetTop):0;
+ const cs=getComputedStyle(b);if(cs.display!=="flex"){return;}
+ const free=b.clientHeight-h;b.classList.add("locked");b.style.paddingTop=Math.max(0,Math.round(Math.min(free*0.35,free-160)))+"px";}
+addEventListener("resize",()=>lockPg());
+function unOverflow(){const st=document.querySelector("#station"),b=st&&st.querySelector(".pg:not([hidden]) .pgbody");if(!b)return;const over=st.scrollHeight-st.clientHeight;if(over>0){const pt=parseFloat(b.style.paddingTop)||0;b.style.paddingTop=Math.max(0,pt-over)+"px";}}
+document.addEventListener("click",e=>{if(e.target.closest&&e.target.closest("#station"))setTimeout(()=>requestAnimationFrame(unOverflow),30);});
+function showPg(k){pg=k;store.set("pg",pg);const el=$("#station");el.querySelectorAll(".pg").forEach(p=>p.hidden=+p.dataset.pg!==pg);requestAnimationFrame(lockPg);
+ $("#prev").disabled=cur===0&&pg===0;const lastPg=pg>=npg-1;
+ $("#next").textContent=!lastPg?"Weiter →":cur===ST.length-1?"Zum Anfang ↺":"Nächste Station →";
+ $("#pgdots").innerHTML=npg>1?`Teil ${pg+1} von ${npg}`:"";side();window.scrollTo({top:0});
+ if(showPg.kb){const h=document.querySelector("#station .pg:not([hidden]) h2, #station .pg:not([hidden]) .kicker");if(h){h.tabIndex=-1;h.focus({preventScroll:true});}}showPg.kb=false;}
+document.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target&&(e.target.id==="next"||e.target.id==="prev"))showPg.kb=true;});
+function toast(msg){let t=document.querySelector("#toast");if(!t){t=document.createElement("div");t.id="toast";t.setAttribute("role","status");document.body.appendChild(t);}t.textContent=msg;t.classList.add("show");clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove("show"),3200);}
+function go(i,atEnd){const from=cur;if(go.ready&&from!==i&&!doneSet.has(from)&&from!==ST.length-1)toast(`Station ${from+1} «${ST[from].title}» ist noch offen. Du kannst später zurückkommen.`);go.ready=true;cur=Math.max(0,Math.min(ST.length-1,i));store.set("cur",cur);const el=$("#station");const parts=ST[cur].html().split("<!--pg-->");npg=parts.length;
+ el.innerHTML=parts.map((p,k)=>`<div class="pg" data-pg="${k}">${k?`<div class="kicker">Station ${cur+1} · ${ST[cur].title} · Teil ${k+1}</div>`:""}${p}</div>`).join("");
+ el.querySelectorAll(".pg").forEach(pgEl=>{const body=document.createElement("div");body.className="pgbody";const kids=[...pgEl.children];const h=kids.findIndex(c=>c.tagName==="H2");const start=h>=0?h+1:(kids[0]&&kids[0].classList.contains("kicker")?1:0);kids.slice(start).forEach(c=>body.appendChild(c));pgEl.appendChild(body);});
+ ST[cur].init(el);el.querySelectorAll(".fb").forEach(f=>f.setAttribute("aria-live","polite"));restoreInp(el);restoreUi(el);
+ $("#stcount").textContent=`Station ${cur+1} von ${ST.length}`;showPg(atEnd===true?npg-1:typeof atEnd==="number"?Math.min(atEnd,npg-1):0);}
+/* Ansicht im Lernpfad merken (Sortierung, Umschalter, aufgeklappte Zeile) */
+function uiSet(k,v){const u=store.get("ui",{})||{};(u[cur]=u[cur]||{})[k]=v;store.set("ui",u);}
+function restoreUi(el){const u=(store.get("ui",{})||{})[cur];if(!u)return;
+ if(u.seg!=null){const b=el.querySelector(`.seg button[data-m="${u.seg}"]`);if(b&&!b.classList.contains("on"))b.click();}
+ if(u.sort){const t=el.querySelector(".brt");if(t)sortBrt(t,u.sort[0],u.sort[1]);}
+ if(u.det!=null&&u.det>=0){const d=el.querySelectorAll(".tl details")[u.det];if(d)d.open=true;}}
+/* Eingaben im Lernpfad merken (pro Station) */
+function inpKey(el,i){return cur+":"+(el.id||el.name||("i"+i));}
+function restoreInp(root){const m=store.get("inp",{})||{};const chk=new Set();root.querySelectorAll("input,textarea").forEach((e,i)=>{if(e.dataset.norestore)return;const k=inpKey(e,i);if(!(k in m))return;
+ if(e.type==="checkbox"||e.type==="radio"){if(e.checked!==m[k]){e.checked=m[k];e.dispatchEvent(new Event("change",{bubbles:true}));}}else{e.value=m[k];e.dispatchEvent(new Event("input",{bubbles:true}));if(String(m[k]).trim()!==""){const row=e.closest(".row");const btn=row&&[...row.querySelectorAll("button")].find(x=>/Prüfen/.test(x.textContent));if(btn)chk.add(btn);}}});
+ chk.forEach(b=>b.click());}
+document.addEventListener("input",ev=>{const e=ev.target;const st=$("#station");if(!st||!st.contains(e)||!e.matches("input,textarea"))return;const all=[...st.querySelectorAll("input,textarea")];const m=store.get("inp",{});m[inpKey(e,all.indexOf(e))]=(e.type==="checkbox"||e.type==="radio")?e.checked:e.value;store.set("inp",m);});
+document.addEventListener("change",ev=>{const e=ev.target;if(!e.matches||!e.matches("#station input[type=checkbox],#station input[type=radio]"))return;const all=[...$("#station").querySelectorAll("input,textarea")];const m=store.get("inp",{});m[inpKey(e,all.indexOf(e))]=e.checked;store.set("inp",m);});
+{const b=$("#simreset");b.onclick=()=>{if(!b.dataset.sure){b.dataset.sure=1;b.innerHTML='<span class="rl">Wirklich löschen?</span><span class="rs">Sicher?</span>';b.classList.add("sure");setTimeout(()=>{delete b.dataset.sure;b.innerHTML='<span class="ric">↺</span><span class="rl"> Zurücksetzen</span>';b.classList.remove("sure")},4000);return;}
+ delete b.dataset.sure;b.innerHTML='<span class="ric">↺</span><span class="rl"> Zurücksetzen</span>';b.classList.remove("sure");S=SIM0();store.set("tpos2",null);modalOpen=false;saveS();sim();};}
+["#lpreset"].forEach(id=>{const b=$(id);b.onclick=()=>{if(!b.dataset.sure){b.dataset.sure=1;b.innerHTML='<span class="rl">Wirklich löschen?</span><span class="rs">Sicher?</span>';b.classList.add("sure");setTimeout(()=>{delete b.dataset.sure;b.innerHTML='<span class="ric">↺</span><span class="rl"> Zurücksetzen</span>';b.classList.remove("sure")},4000);return;}
+ delete b.dataset.sure;b.innerHTML='<span class="ric">↺</span><span class="rl"> Zurücksetzen</span>';b.classList.remove("sure");doneSet.clear();store.set("done",[]);store.set("quiz",0);store.set("inp",{});store.set("mc",{});store.set("qz",{i:0,s:0,p:null,w:[]});store.set("tr",{i:0,stage:0});store.set("pg",0);store.set("s6",{seen:[],cur:null});store.set("ui",{});go(0);};});
+$("#prev").onclick=()=>{if(pg>0)showPg(pg-1);else if(cur>0)go(cur-1,true);};
+$("#next").onclick=()=>{if(pg<npg-1)showPg(pg+1);else go(cur===ST.length-1?0:cur+1);};
+
+/* ---------- Rückmeldung sichtbar machen ---------- */
+document.addEventListener("click",e=>{const box=e.target.closest("#trainer,#quiz,[data-mc],.task");if(!box||e.target.closest(".t"))return;setTimeout(()=>{const f=[...box.querySelectorAll(".fb.show")].pop();if(f)f.scrollIntoView({block:"nearest",behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});},40);});
+/* ---------- Glossar automatisch: erstes Vorkommen pro Seite ---------- */
+const GRX=[["vbv",/Vereinigte[n]? Bundesversammlung/],["mehr",/absolute[sn]? Mehr(s)?\b/i],["gueltig",/gültige[n]? Stimmen/],["eingegangen",/[Ee]ingegangen(e[n]?)?( Wahlzettel)?\b/],
+ ["fraktion",/\bFraktion(en)?\b/],["ticket",/\b(SVP-)?Ticket(s)?\b/],["zauberformel",/Zauberformel/],["konkordanz",/Konkordanz/],["hearing",/\bHearings?\b/],["wahlgang",/\bWahlg(a|ä)ng(e|es|en|s)?\b/],
+ ["wild",/\bwilde[nr]? (Kandidat(in|ur)|Wahl)\b/],["romandie",/\bRomandie\b/],["praes",/Ratspräsidi\w*/],["vereinzelt",/\bVereinzelte\b/],["stimmber",/\bStimmberechtigte[n]?\b/],
+ ["gelubde",/\bGelübde\b/],["kompromiss",/\bKompromiss\w*/],["regrat",/\bRegierungsr(at|ätin|äte)\b/],["kantpartei",/\bKantonalpartei(en)?\b/],["amtsantritt",/\bAmtsantritt\b/],["bverw",/\bBundesverwaltung\b/],["parteilinie",/\bParteilinie\b/],["legislatur",/\bLegislatur\b/],["eid",/\bEid\b/],["faustregel",/\bFaustregel\b/],["buergerrecht",/\bBürgerrecht\b/],["gesamtwahl",/\bGesamtwahl\b/]];
+const GSKIP="h2,.kicker,.opt,button,.check label,input,.t,#quiz,.boxes,.nav2,.rt2 th,script,style";
+let glossBusy=false;
+function autoGloss(){if(glossBusy)return;glossBusy=true;try{
+ document.querySelectorAll("#station .pg").forEach(page=>{
+  for(const [k,re] of GRX){if(page.querySelector(`.t[data-t="${k}"]`))continue;
+   const tw=document.createTreeWalker(page,NodeFilter.SHOW_TEXT,{acceptNode:n=>n.parentElement&&!n.parentElement.closest(GSKIP)&&re.test(n.nodeValue)?1:3});
+   const n=tw.nextNode();if(!n)continue;const m=n.nodeValue.match(re);const i=m.index;
+   const after=n.splitText(i);after.nodeValue=after.nodeValue.slice(m[0].length);
+   const b=document.createElement("button");b.className="t";b.dataset.t=k;b.textContent=m[0];n.parentNode.insertBefore(b,after);}
+ });}finally{glossBusy=false;}}
+new MutationObserver(()=>{if(!glossBusy)requestAnimationFrame(autoGloss)}).observe(document.querySelector("#station"),{childList:true,subtree:true});
+/* ---------- Glossar ---------- */
+document.addEventListener("click",e=>{const b=e.target.closest(".t");if(!b||!GL[b.dataset.t])return;if(b.closest("label,summary"))e.preventDefault();const g=GL[b.dataset.t];$("#glosst").textContent=g[0];$("#glossd").textContent=g[1];$("#gloss").classList.add("show");});
+$("#glossx").onclick=()=>$("#gloss").classList.remove("show");
+document.addEventListener("pointerdown",e=>{if(!e.target.closest("#gloss,.t"))$("#gloss").classList.remove("show")});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){$("#gloss").classList.remove("show");const md=$("#modal");if(md&&!md.hidden){modalOpen=false;md.hidden=true;const o=$("#openin");if(o)o.focus({preventScroll:true});}}
+ if(e.key==="Enter"&&e.target.matches("input.num")){const b=e.target.closest(".row")?.querySelector(".btn");if(b){e.preventDefault();b.click();}}});
+document.addEventListener("focusin",e=>{if(e.target.matches("input.num"))try{e.target.select()}catch(x){}});
+
+/* ---------- Simulation ---------- */
+const PH=["Vorbereitung","Rücktritt","Hearings","Fraktionen","Wahl","Annahme","Auswertung"];
+const FRK=[["SVP",74],["SP",50],["Mitte",46],["FDP",39],["Grüne",26],["GLP",11]];
+function distribute(N){const tot=246,q=FRK.map(([k,v])=>({k,ex:v*N/tot}));q.forEach(o=>o.n=Math.floor(o.ex));let rest=N-q.reduce((a,o)=>a+o.n,0);
+ [...q].sort((a,b)=>(b.ex-b.n)-(a.ex-a.n)).slice(0,rest).forEach(o=>o.n++);return q;}
+function evaluate(round,votes,g,thr,active){ // votes: {name:count} only active candidates (others count as invalid)
+  const m=Math.floor(g/2)+1,res={m,elected:null,out:[],notes:[]};
+  const names=Object.keys(votes);
+  const top=names.find(n=>votes[n]>=m);
+  if(top){res.elected=top;res.notes.push(`${top} hat das absolute Mehr von ${m} Stimmen erreicht.`);return res;}
+  res.notes.push(`Niemand hat das absolute Mehr von ${m} Stimmen erreicht.`);
+  if(round===1){res.notes.push("Im 1. Wahlgang scheidet niemand aus.");return res;}
+  const low=names.filter(n=>votes[n]<thr);
+  if(low.length&&low.length<names.length){res.out=low;res.notes.push(`Ausgeschieden (weniger als ${thr} Stimme${thr>1?"n":""}): ${low.join(", ")}.`);}
+  else if(low.length){res.notes.push(`Alle haben weniger als ${thr} Stimmen. Darum scheidet niemand aus.`);}
+  if(round>=3&&!res.out.length&&!(low.length&&low.length===names.length)){const left=names;if(left.length>1){const mn=Math.min(...left.map(n=>votes[n])),who=left.filter(n=>votes[n]===mn);
+    if(who.length===1){res.out=who;res.notes.push(`Ab dem 3. Wahlgang scheidet aus, wer am wenigsten Stimmen hat: ${who[0]} (${mn}).`);}
+    else res.notes.push(who.length===left.length?`Alle haben gleich viele Stimmen (${mn}). Darum scheidet niemand aus. Es wird nochmals gewählt.`:`${who.join(" und ")} haben gleich wenige Stimmen (${mn}). Darum scheidet niemand aus.`);}}
+  if(round===2)res.notes.push("Achtung: Ab dem 3. Wahlgang dürfen keine neuen Namen mehr dazukommen.");
+  return res;
+}
+const SIM0=()=>({ph:0,N:18,thr:2,green:false,cands:CANDS.map(c=>({n:c.n,p:c.p,out:false,extra:false})),rounds:[],elected:null,accepted:null,draft:null,timer:0,timerEnd:0});
+let S=store.get("sim",null)||SIM0();
+const saveS=()=>store.set("sim",S);
+function activeC(){return S.cands.filter(c=>!c.out&&(S.green||c.p!=="Grüne"||c.extra));}
+function simSteps(){$("#simsteps").innerHTML=PH.map((p,i)=>`<button ${i===S.ph?'aria-current="step"':""} aria-label="Schritt ${i+1} ${p}${i<S.ph?", erledigt":""}" class="${i<S.ph?"ok":""} ${i===S.ph?"cur":""}" data-p="${i}" title="${i+1}. ${p}">${i<S.ph?"✓":i+1}<small>${p}</small></button>`).join("");$("#simsteps").querySelectorAll("button").forEach(b=>b.onclick=()=>{S.ph=+b.dataset.p;S.timerEnd=0;modalOpen=false;saveS();sim();});}
+let tick=null;
+function placeTimer(){const t=$("#tm"),B=$("#board");if(!t||!B)return;{const bi=B.querySelector(".bi"),sp=B.querySelector(".tmspace");if(bi&&sp&&getComputedStyle(t).position==="absolute"){const z=parseFloat(bi.style.zoom)||1;sp.style.width=((t.offsetWidth+18)/z)+"px";sp.style.height=((t.offsetHeight+6)/z)+"px";const cs=getComputedStyle(B);t.style.top=(bi.offsetTop*1+0)+"px";}else if(sp){sp.style.display="none";}}const p=store.get("tpos2",null);
+ if(p&&getComputedStyle(t).position==="absolute"){t.style.right="auto";t.style.bottom="auto";t.style.left=Math.min(Math.max(0,p.x*B.clientWidth),B.clientWidth-t.offsetWidth)+"px";t.style.top=Math.min(Math.max(0,p.y*B.clientHeight),B.clientHeight-t.offsetHeight)+"px";}
+ t.onpointerdown=e=>{if(getComputedStyle(t).position!=="absolute")return;e.preventDefault();t.setPointerCapture(e.pointerId);t.classList.add("drag");
+  const br=B.getBoundingClientRect(),tr=t.getBoundingClientRect(),zx=br.width/B.offsetWidth||1,dx=e.clientX-tr.left,dy=e.clientY-tr.top;
+  const mv=ev=>{t.style.bottom="auto";const x=Math.min(Math.max(0,(ev.clientX-br.left-dx)/zx),B.clientWidth-t.offsetWidth),y=Math.min(Math.max(0,(ev.clientY-br.top-dy)/zx),B.clientHeight-t.offsetHeight);t.style.right="auto";t.style.left=x+"px";t.style.top=y+"px";};
+  const up=()=>{t.classList.remove("drag");t.removeEventListener("pointermove",mv);t.removeEventListener("pointerup",up);t.removeEventListener("pointercancel",up);store.set("tpos2",{x:parseFloat(t.style.left)/B.clientWidth,y:parseFloat(t.style.top)/B.clientHeight});};
+  t.addEventListener("pointermove",mv);t.addEventListener("pointerup",up);t.addEventListener("pointercancel",up);};}
+addEventListener("resize",()=>requestAnimationFrame(placeTimer));
+function timerHTML(){if(!S.timer&&!S.timerEnd)return "";return `<div class="timer${S.tup?" up":""}" id="tm" title="Zum Verschieben ziehen">${S.tup?`<span class="tt">0:00</span><span class="tu">Zeit um!</span>`:`<span class="tt">${fmt(S.timerEnd?Math.max(0,S.timerEnd-Date.now()):(S.tleft||S.timer*60000))}</span>`}</div>`;}
+function fmt(ms){const s=Math.ceil(ms/1000);return `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;}
+function runTimer(){clearInterval(tick);const step=()=>{const el=$("#tm");if(!el||!S.timerEnd){clearInterval(tick);return;}const left=S.timerEnd-Date.now();const tt=el.querySelector(".tt")||el;tt.textContent=fmt(Math.max(0,left));if(left<=0){clearInterval(tick);S.timerEnd=0;S.tleft=0;S.tup=true;saveS();sim();}};step();tick=setInterval(step,250);}
+const IC={play:'<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.6 2.2v11.6l9.8-5.8z" fill="currentColor" stroke="currentColor" stroke-width=".6" stroke-linejoin="round"/></svg>',pause:'<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><rect x="3.4" y="2.2" width="3.4" height="11.6" rx="1" fill="currentColor"/><rect x="9.2" y="2.2" width="3.4" height="11.6" rx="1" fill="currentColor"/></svg>',reset:'<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8a5 5 0 1 0 1.6-3.7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M2.2 1.8v3.6h3.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'};
+const TPRE={1:[["Vorbereitung",5]],2:[["Rede",1],["Fragen",3]],3:[["Sitzung",10],["Gespräche",5]]};
+const timerCtrl=()=>`<div class="tmr"><div class="tmr4">${(TPRE[S.ph]||[]).map(([l,m])=>`<button class="btn ghost${S.timer===m?" on":""}" data-tmin="${m}">${l} ${m} Min.</button>`).join("")}</div><div class="tmr2"><button class="btn" data-tstart>${S.timerEnd?IC.pause+"Pause":IC.play+(S.tleft?"Fortsetzen":"Start")}</button><button class="btn ghost" data-tstop title="Zeit zurückstellen und anhalten">${IC.reset}${fmt(S.timer*60000)}</button></div></div>`;
+function bindTimer(){document.querySelectorAll("[data-tmin]").forEach(b=>b.onclick=()=>{S.timer=+b.dataset.tmin;S.timerEnd=0;S.tleft=0;S.tup=false;saveS();sim();});
+ const st=document.querySelector("[data-tstart]");if(st)st.onclick=()=>{S.tup=false;if(S.timerEnd){S.tleft=Math.max(0,S.timerEnd-Date.now());S.timerEnd=0;}else{S.timerEnd=Date.now()+(S.tleft||(S.timer||5)*60000);S.tleft=0;}saveS();sim();};
+ const sp=document.querySelector("[data-tstop]");if(sp)sp.onclick=()=>{S.timerEnd=0;S.tleft=0;S.tup=false;saveS();sim();};if(S.timerEnd)runTimer();}
+const FACES={"Andrea Rochat": "<rect x=\"0\" y=\"0\" width=\"200\" height=\"200\" fill=\"#dcebe1\"></rect><path d=\"M30 200c4-38 34-58 70-58s66 20 70 58z\" fill=\"#2f3b4c\"></path><path d=\"M82 146l18 26 18-26z\" fill=\"#f2efe9\"></path><rect x=\"88\" y=\"118\" width=\"24\" height=\"30\" rx=\"8\" fill=\"#e2b48f\"></rect><path d=\"M58 92c0-34 18-54 42-54s42 20 42 54c0 22-4 36-10 44l-6-40H74l-6 40c-6-8-10-22-10-44z\" fill=\"#8a6a52\"></path><ellipse cx=\"100\" cy=\"94\" rx=\"30\" ry=\"36\" fill=\"#eac19e\"></ellipse><path d=\"M70 84c6-22 20-30 34-30 14 0 24 8 28 26-12-10-30-14-50-6-4 2-8 6-12 10z\" fill=\"#8a6a52\"></path><circle cx=\"89\" cy=\"96\" r=\"3.2\" fill=\"#2a2420\"></circle><circle cx=\"111\" cy=\"96\" r=\"3.2\" fill=\"#2a2420\"></circle><path d=\"M82 87q7-4 13 0M105 87q7-4 13 0\" stroke=\"#5b4636\" stroke-width=\"2.6\" fill=\"none\" stroke-linecap=\"round\"></path><path d=\"M90 113q10 7 20 0\" stroke=\"#a8604a\" stroke-width=\"3\" fill=\"none\" stroke-linecap=\"round\"></path><circle cx=\"70\" cy=\"104\" r=\"3\" fill=\"#d9b44a\"></circle><circle cx=\"130\" cy=\"104\" r=\"3\" fill=\"#d9b44a\"></circle>", "Markus Inderbitzin": "<rect x=\"0\" y=\"0\" width=\"200\" height=\"200\" fill=\"#dcebe1\"></rect><path d=\"M28 200c4-40 36-60 72-60s68 20 72 60z\" fill=\"#1f2a36\"></path><path d=\"M84 142l16 22 16-22z\" fill=\"#ffffff\"></path><path d=\"M96 148h8l3 30-7 8-7-8z\" fill=\"#8c1d22\"></path><rect x=\"87\" y=\"116\" width=\"26\" height=\"30\" rx=\"8\" fill=\"#d9a77f\"></rect><ellipse cx=\"100\" cy=\"92\" rx=\"31\" ry=\"37\" fill=\"#e3b28b\"></ellipse><path d=\"M69 86c-2-28 14-42 32-42 20 0 32 14 30 40-6-14-16-20-30-20-14 0-26 8-32 22z\" fill=\"#3a2a1f\"></path><path d=\"M72 104c4 22 16 30 28 30s24-8 28-30c-4 8-10 12-16 12H88c-6 0-12-4-16-12z\" fill=\"#4a3628\"></path><circle cx=\"89\" cy=\"94\" r=\"3.2\" fill=\"#22201e\"></circle><circle cx=\"111\" cy=\"94\" r=\"3.2\" fill=\"#22201e\"></circle><path d=\"M81 85h14M105 85h14\" stroke=\"#3a2a1f\" stroke-width=\"3.4\" stroke-linecap=\"round\"></path><path d=\"M91 115q9 4 18 0\" stroke=\"#7a4a3a\" stroke-width=\"3\" fill=\"none\" stroke-linecap=\"round\"></path>", "Corinne Baumann": "<rect x=\"0\" y=\"0\" width=\"200\" height=\"200\" fill=\"#dcebe1\"></rect><path d=\"M30 200c4-38 34-58 70-58s66 20 70 58z\" fill=\"#5a3d6b\"></path><path d=\"M70 150c10 10 20 14 30 14s20-4 30-14l8 10c-12 14-24 20-38 20s-26-6-38-20z\" fill=\"#e0a43a\"></path><rect x=\"88\" y=\"118\" width=\"24\" height=\"30\" rx=\"8\" fill=\"#c99a78\"></rect><ellipse cx=\"100\" cy=\"94\" rx=\"30\" ry=\"36\" fill=\"#dcae8a\"></ellipse><path d=\"M68 96c-6-34 10-50 32-50s40 14 34 48c-4-16-12-26-22-30-10 8-28 12-44 32z\" fill=\"#c9c9cc\"></path><circle cx=\"89\" cy=\"97\" r=\"9\" fill=\"none\" stroke=\"#2b2b2b\" stroke-width=\"2.6\"></circle><circle cx=\"111\" cy=\"97\" r=\"9\" fill=\"none\" stroke=\"#2b2b2b\" stroke-width=\"2.6\"></circle><path d=\"M98 97h4\" stroke=\"#2b2b2b\" stroke-width=\"2.6\"></path><circle cx=\"89\" cy=\"97\" r=\"2.8\" fill=\"#2a2420\"></circle><circle cx=\"111\" cy=\"97\" r=\"2.8\" fill=\"#2a2420\"></circle><path d=\"M88 115q12 9 24 0\" stroke=\"#9a5a48\" stroke-width=\"3\" fill=\"none\" stroke-linecap=\"round\"></path>", "Sara Keller": "<rect x=\"0\" y=\"0\" width=\"200\" height=\"200\" fill=\"#e3eed6\"></rect><path d=\"M64 84Q56 140 68 176L132 176Q144 140 136 84Q100 52 64 84z\" fill=\"#a8562d\"></path><path d=\"M30 200c4-38 34-58 70-58s66 20 70 58z\" fill=\"#2e6f6a\"></path><path d=\"M86 144q14 14 28 0v8q-14 12-28 0z\" fill=\"#f2efe9\"></path><rect x=\"88\" y=\"118\" width=\"24\" height=\"28\" rx=\"8\" fill=\"#b9805a\"></rect><ellipse cx=\"100\" cy=\"94\" rx=\"29\" ry=\"35\" fill=\"#c98e66\"></ellipse><path d=\"M70 92c-2-30 12-46 30-46s34 14 30 46c-6-20-18-28-30-28-6 10-18 20-30 28z\" fill=\"#a8562d\"></path><circle cx=\"89\" cy=\"97\" r=\"3.2\" fill=\"#241c18\"></circle><circle cx=\"111\" cy=\"97\" r=\"3.2\" fill=\"#241c18\"></circle><path d=\"M82 88q7-4 13 0M105 88q7-4 13 0\" stroke=\"#6b3a20\" stroke-width=\"2.6\" fill=\"none\" stroke-linecap=\"round\"></path><path d=\"M89 113q11 8 22 0\" stroke=\"#8a4a38\" stroke-width=\"3\" fill=\"none\" stroke-linecap=\"round\"></path>"};
+const face=(n,px,cls="")=>FACES[n]?`<span class="face ${cls}" style="width:${px}px;height:${px}px" aria-hidden="true"><svg viewBox="16 24 168 168" width="${px}" height="${px}">${FACES[n]}</svg></span>`:"";
+
+function sortBrt(t,k,dir){const th=t.querySelector(`th button[data-sk="${k}"]`)?.parentElement;if(!th)return;t.querySelectorAll("th").forEach(x=>x.setAttribute("aria-sort","none"));th.setAttribute("aria-sort",dir>0?"ascending":"descending");
+ const tb=t.tBodies[0],rows=[...tb.rows],v=r=>{const x=r.cells[k].textContent.replace("tritt zurück","").trim();return k===1?x.split(" ").pop():x};
+ rows.sort((a,c)=>{const x=v(a),y=v(c);return (k===4?(+x)-(+y):x.localeCompare(y,"de"))*dir;});rows.forEach(r=>tb.appendChild(r));}
+document.addEventListener("click",e=>{const b=e.target.closest(".brt th button");if(!b)return;const th=b.parentElement,t=th.closest("table"),k=+b.dataset.sk;
+ const dir=th.getAttribute("aria-sort")==="ascending"?-1:1;sortBrt(t,k,dir);if(t.closest("#station"))uiSet("sort",[k,dir]);});
+function cardsOf(){return CANDS.filter(c=>S.green||c.p!=="Grüne");}
+let VR=(S&&S.vr!=null)?S.vr:null; // angezeigter früherer Wahlgang (Rückblick), null = aktueller Stand
+let SIMMEASURE=false,ZUNI={k:"",z:1};
+const DW=1000; // Tafel wie eine Folie: feste Breite, wird als Ganzes skaliert
+function uniH(B,w){ // höchster Schritt (ausser Wahl-Resultate) bei Breite w
+  const key=[S.N,S.green,S.elected,S.thr,Math.round(w)].join("|");if(ZUNI.k===key)return ZUNI.z;
+  const tmp=document.createElement("div");tmp.className="bi";tmp.style.cssText=`position:absolute;visibility:hidden;left:0;top:0;zoom:1;width:${w}px`;B.appendChild(tmp);
+  const ph=S.ph,nx=NX,mo=modalOpen;let hm=0;SIMMEASURE=true;window.SIMH=[];
+  try{for(const i of [0,1,2,3,5,6]){S.ph=i;tmp.innerHTML=sim();const h=tmp.offsetHeight;SIMH.push(i+":"+h);hm=Math.max(hm,h);}}
+  finally{SIMMEASURE=false;S.ph=ph;NX=nx;modalOpen=mo;tmp.remove();simSteps();}
+  ZUNI={k:key,z:hm};return hm;}
+function sim(){
+  if(S.ph!==4&&!SIMMEASURE){VR=null;S.vr=null;}
+  if(!SIMMEASURE&&TPRE[S.ph]&&S.tph!==S.ph){S.timer=TPRE[S.ph][0][1];S.timerEnd=0;S.tleft=0;S.tup=false;S.tph=S.ph;}
+  {const th=S.thr,st=`Stimme${th>1?"n":""}`;GL.aus[1]=`Wer ausscheidet, ist nicht mehr im Rennen. Stimmen für diese Person sind danach ungültig. Im 1. Wahlgang scheidet niemand aus. Ab dem 2. Wahlgang scheidet aus, wer weniger als ${th} ${st} hat (im echten Parlament: weniger als 10 von 246). Ab dem 3. Wahlgang scheidet zusätzlich aus, wer am wenigsten Stimmen hat. Bei Gleichstand scheidet niemand aus.`;}
+  simSteps();const B=$("#board"),C=$("#ctrl");let b="",c="",m="";NX={t:"Weiter →",red:false,to:Math.min(6,S.ph+1)};
+  const beamBtn="";
+  if(S.ph===0){const d=distribute(S.N);
+   b=`<div class="k">SIMULATION · VEREINIGTE BUNDESVERSAMMLUNG</div><h2>Unsere Klasse wählt ein Mitglied des Bundesrates</h2><p>Die Fraktionen sind im gleichen Verhältnis wie im echten Parlament (Stand: Beginn der Legislatur, Dezember 2023).</p>
+   <div class="dist" style="max-width:700px;margin:0">${d.map(o=>`<span style="color:#fff;font-weight:700">${o.k}</span><div class="b" style="width:${o.n/Math.max(...d.map(x=>x.n))*100}%;background:${PC[o.k]}"></div><span style="color:#fff">${o.n}</span>`).join("")}</div>`;
+   b+=`<p style="font-size:.95em;margin:.5em 0 .2em;color:#c9ccd4">Rollenkarten: ${d.filter(o=>o.n).map(o=>`${o.k} ${o.n>1?"1–"+o.n:"1"}`).join(" · ")}</p><p style="margin-top:.4em"><b style="color:#fff">Jetzt:</b> Rollenkarten austeilen und lesen, Pulte nach Fraktionen stellen.</p>`;
+   NX={t:"Starten →",red:true,to:1};
+   c=`<label class="bf">Lernende <input class="num" id="sN" type="number" min="8" max="32" value="${S.N}"></label>
+   <label class="bf" ><span class="t" role="button" tabindex="0" data-t="aus">Ausscheiden</span>&nbsp;unter <input class="num" id="sT" type="number" min="1" max="6" value="${S.thr}"> Stimmen</label>
+   <label class="bf"><input type="checkbox" id="sG" ${S.green?"checked":""}> <span class="t" role="button" tabindex="0" data-t="gruene">Grüne kandidieren</span></label>
+`;}
+  else if(S.ph===1){b=`<div class="k">EILMELDUNG</div><h2>Bundesrat Guy Parmelin tritt zurück</h2><p>Wie in Wirklichkeit: Guy Parmelin (SVP, Waadt) tritt per Ende Jahr zurück. Die SVP-Fraktion schlägt zwei Personen vor, aber auch andere hoffen. <span style="color:#ff8a80">Unsere Kandidierenden sind erfunden.</span></p>
+   <div class="grid2 cards4" style="margin-top:14px">${cardsOf().map(k=>`<div class="bcard">${face(k.n,56,"fb")}<b>${k.n}</b><span>${k.p} · ${k.kt} · ${k.l}</span><span>${k.ticket?"Offizielles Ticket der SVP":k.p==="SVP"?"Nicht auf dem Ticket":"Kandidatur der Grünen"}</span></div>`).join("")}</div><p style="margin-top:.5em"><b style="color:#fff">Jetzt:</b> Kandidierende bestimmen. Sie bereiten mit dem Steckbrief in 5 Minuten eine Rede von 1 Minute vor. Die Reden halten sie im nächsten Schritt, bei den Hearings.</p>`;
+   c=timerCtrl();NX={t:"Weiter →",red:true,to:2};
+   }
+  else if(S.ph===2){b=`<div class="k">HEARINGS</div><h2>Die Kandidierenden stellen sich vor</h2><p><b style="color:#fff">Jetzt:</b> Jede Person hält ihre Rede (1 Minute), danach fragen die Fraktionen (3 Minuten).</p><div class="qgrid"><p class="qh"><b style="color:#fff">Mögliche Fragen:</b></p><p>Warum wollen Sie in den Bundesrat?</p><p>Sind Sie bereit, Kompromisse zu machen?</p><p>Wie vertreten Sie die ganze Schweiz, nicht nur Ihre Partei?</p><p>Was tun Sie, wenn der Bundesrat anders entscheidet als Ihre Partei?</p></div>
+   <div class="grid2 cards4" style="margin-top:8px">${cardsOf().map(k=>`<div class="bcard">${face(k.n,56,"fb")}<b>${k.n}</b><span>${k.role}, ${k.a} J.</span><span>${k.trait}</span></div>`).join("")}</div>`;
+   c=timerCtrl();NX={t:"Weiter →",red:true,to:3};}
+  else if(S.ph===3){b=`<div class="k">FRAKTIONSSITZUNG</div><h2>Die Fraktionen beraten</h2><p><b style="color:#fff">Jetzt:</b> Jede Fraktion trifft sich 10 Minuten und klärt drei Fragen:</p><p>1. Wen unterstützen wir im 1. Wahlgang?</p><p>2. Was machen wir, wenn unsere Person ausscheidet?</p><p>3. Mit welcher anderen Fraktion reden wir?</p><p style="color:#ff8a80">Danach: 5 Minuten Gespräche zwischen den Fraktionen. Dann beginnt die Wahl.</p>`;
+   c=timerCtrl();NX={t:"Weiter →",red:true,to:4};}
+  else if(S.ph===4){[b,c,m]=wahl(beamBtn);}
+  else if(S.ph===5){const e=S.elected,last=S.rounds[S.rounds.length-1];
+   if(!e){b=`<div class="k">ANNAHME</div><h2>Noch ist niemand gewählt</h2><p>Zuerst die Wahlgänge durchführen.</p>`;c=`<span class="barinfo">Zuerst die Wahlgänge durchführen.</span>`;NX={t:"Weiter →",red:false,to:6};}
+   else if(S.accepted===null){b=`<div class="k">GEWÄHLT IM ${S.rounds.length}. WAHLGANG</div><div class="elect">${face(e,120)}<h2>${e}</h2></div><p>mit ${last.votes[e]} Stimmen (absolutes Mehr: ${last.res.m})</p><p class="bigq" style="color:#fff;margin-top:30px">«${anrede(e)}, nehmen Sie die Wahl an?»</p>`;
+    c=`<button class="btn ghost" id="dec">Lehnt ab</button><button class="btn red" id="acc">Nimmt an</button>`;NX={t:"Weiter →",red:false,to:6};}
+   else{b=`<div class="k">GELÜBDE</div><div class="elect">${face(e,120)}<h2>${e}</h2></div><p class="bigq" style="color:#fff">«Ich gelobe, die Verfassung und die Gesetze zu beachten und die Pflichten meines Amtes zu erfüllen.»</p><p>Alle im Saal stehen auf. Danach Applaus und Blumen.</p>`;
+    c=`<span class="barinfo">Die gewählte Person spricht das Gelübde nach, alle stehen.</span>`;NX={t:"Weiter →",red:true,to:6};}}
+  else if(S.ph===6&&!S.elected){b=`<div class="k">AUSWERTUNG</div><h2>Noch ist niemand gewählt</h2><p>Die Auswertung gibt es, sobald die Wahl abgeschlossen ist. Zuerst bei «5. Wahl» die Wahlgänge durchführen.</p>`;c=`<span class="barinfo">Zuerst die Wahl abschliessen.</span>`;NX={t:"Zur Wahl",red:true,to:4};}
+  else if(S.ph===6){const e=S.elected;b=`<div class="k">AUSWERTUNG</div><h2>Was hat die Wahl entschieden?</h2><div class="tight"><div><p>1. Warum wurde ${e} gewählt? War es die Partei, die Sprache, die Person oder Absprachen?</p><p>2. Hat sich deine Fraktion an ihren Plan gehalten?</p><p>3. Wurde das Ticket respektiert? Ist das wichtig?</p><p>4. Welche Fraktion hat ihr Ziel erreicht? Welche nicht, und warum?</p><p>5. Was wäre, wenn das Volk direkt wählen würde?</p></div><div style="margin-top:.6em"><p><b style="color:#fff">Unsere Wahl in Zahlen:</b> ${S.rounds.length===1?"1 Wahlgang":S.rounds.length+" Wahlgänge"}<br>${S.rounds.map((r,i)=>`${i+1}. WG: ${Object.entries(r.votes).sort((a,b)=>b[1]-a[1]).map(([n,v])=>`${n.split(" ").slice(-1)[0]} ${v}`).join(", ")}`).join("<br>")}</p><p style="color:#ff8a80">Am 9. Dezember vergleichen wir mit der echten Wahl.</p></div></div>`;
+   c=`<span class="barinfo">Fragen in Gruppen besprechen, danach Tippspiel ausfüllen (PDF).</span>`;NX={t:"Zum Anfang ↺",red:true,to:0};}
+  if(SIMMEASURE)return b;
+  if(!m)modalOpen=false;B.innerHTML=`${TPRE[S.ph]?timerHTML():""}<div class="bi">${TPRE[S.ph]?'<div class="tmspace" aria-hidden="true"></div>':""}${b}</div>`;placeTimer();requestAnimationFrame(placeTimer);requestAnimationFrame(fitBoard);C.innerHTML=c;$("#mbox").innerHTML=m;
+  C.innerHTML=`<div class="nav2 simnav"><button class="btn ghost" id="sprev" ${S.ph===0?"disabled":""}>← Zurück</button><div class="navmid simmid">${c}</div><button class="btn ${NX.red?"red":"ghost"}" id="snext">${NX.t==="Weiter →"?`${PH[NX.to]} →`:NX.t}</button></div>`;$("#modal").hidden=!(m&&modalOpen);bindSim();
+  if(m&&modalOpen){const f=document.querySelector("#mbox [data-v]");if(f&&!document.querySelector("#mbox").contains(document.activeElement))f.focus();}
+}
+let modalOpen=false,NX=null;
+document.addEventListener("keydown",e=>{const m=document.querySelector("#modal");if(!m||m.hidden||e.key!=="Tab")return;const f=[...m.querySelectorAll("button,input,select,textarea,[tabindex]:not([tabindex='-1'])")].filter(x=>!x.disabled&&x.offsetParent);if(!f.length)return;const a=f[0],z=f[f.length-1];if(e.shiftKey&&document.activeElement===a){e.preventDefault();z.focus();}else if(!e.shiftKey&&document.activeElement===z){e.preventDefault();a.focus();}});
+new MutationObserver(()=>{const m=document.querySelector("#modal");if(m&&m.hidden&&document.activeElement===document.body){const o=document.querySelector("#openin");if(o)o.focus({preventScroll:true});}}).observe(document.querySelector("#modal"),{attributes:true,attributeFilter:["hidden"]});
+
+function fitBoard(){const B=$("#board"),bi=B&&B.querySelector(".bi");if(!bi)return;bi.style.zoom="";bi.style.width="";
+ // Nur im Vollbild: ganze Tafel gleichmässig vergrössern. Ein Faktor für alle Schritte, damit keine Schriftgrösse springt.
+ if(!document.documentElement.classList.contains("fs")||!B.clientHeight)return;
+ const cs=getComputedStyle(B),aw=B.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight),ah=B.clientHeight-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom)-24;
+ let z=1;for(let k=0;k<3;k++){const h=uniH(B,aw/z);const nz=Math.max(1,Math.min(1.8,Math.floor(ah/h*z*100)/100/ z * z));z=Math.max(1,Math.min(1.8,ah/h*0.96));}
+ z=Math.floor(z*100)/100;if(z>1){bi.style.width=(aw/z)+"px";bi.style.zoom=z;}}
+addEventListener("resize",()=>fitBoard());document.addEventListener("fullscreenchange",()=>setTimeout(fitBoard,60));
+function newDraft(){const l=S.rounds[S.rounds.length-1];const a=l?l.aus:S.N;return {aus:a,ein:a,leer:0,ung:0,v:{}};}
+function wahl(beamBtn){
+  const nr=S.rounds.length+1,act=activeC(),lastR=S.rounds[S.rounds.length-1];
+  let b,c;
+  if(VR!==null&&!(VR>=0&&VR<S.rounds.length))VR=null;
+  const cur=S.elected||(lastR&&!S.draft)?S.rounds.length-1:-1;
+  const tabs=S.rounds.length>(cur>=0?1:0)?`<div class="rtabs" role="group" aria-label="Wahlgänge anschauen">${S.rounds.map((r,i)=>`<button class="rtab${(VR===null?cur:VR)===i?" on":""}" data-vr="${i===cur?-1:i}">${i+1}. Wahlgang</button>`).join("")}${cur<0?`<button class="rtab${VR===null?" on":""}" data-vr="-1">${nr}. Wahlgang</button>`:""}</div>`:"";
+  if(VR!==null){b=`${tabs}<div class="k">RÜCKBLICK · ${VR+1}. WAHLGANG</div><div class="rueck">${roundTable(S.rounds[VR],VR+1)}</div>`;c=`<button class="btn red" data-vr="-1">Zurück zum aktuellen Stand</button>`;NX={t:"Weiter →",red:false,to:5};return [b,c,""];}
+  if(S.elected){b=`${tabs}<div class="k">WAHL ABGESCHLOSSEN · ${S.rounds.length}. WAHLGANG</div>${roundTable(lastR,S.rounds.length)}`;c=`<button class="btn ghost" id="undo">Letzten Wahlgang korrigieren</button>`;NX={t:"Weiter →",red:true,to:5};return [b,c,""];}
+  if(lastR&&!S.draft){b=`${tabs}<div class="k">RESULTAT ${S.rounds.length}. WAHLGANG</div>${roundTable(lastR,S.rounds.length)}`;}
+  else{b=`${tabs}${S.declined&&nr===1?`<p class="say">«${S.declined} hat die Wahl nicht angenommen. Wir führen eine neue Wahl durch.» Alle sind wieder wählbar, ausser ${S.declined}.</p>`:""}<div class="k">${nr}. WAHLGANG</div><h2>«Ich eröffne den ${nr}. Wahlgang.»</h2><p>Die Stimmenzählenden verteilen die Wahlzettel. Schreibe <b style="color:#fff">einen</b> Namen auf deinen Zettel.</p><p>Noch im Rennen:<br>${act.map(x=>`<b style="color:#fff">${x.n}</b>`).join(", ")}</p><p><span class="pill ${nr<=2?"win":"out"}" style="font-size:.75em;margin:0">${nr<=2?"Neue Namen sind erlaubt":"Keine neuen Namen mehr: Stimmen für andere Personen sind ungültig"}</span></p><p>Erreicht niemand das ${t("mehr","absolute Mehr")}, gibt es einen weiteren Wahlgang. Wer zu wenige Stimmen hat, ${t("aus","scheidet aus")}.</p>${S.draft&&S.draft.open?`<div class="verdict wait" style="margin-top:.6em">Stimmen werden ausgezählt …</div>`:""}`;}
+  const d=S.draft||newDraft();
+  if(lastR&&!S.draft){c=`<button class="btn ghost" id="undo">Korrigieren</button><button class="btn red" id="newr">${nr}. Wahlgang eröffnen</button>`;NX={t:"Weiter →",red:false,to:5};return [b,c,""];}
+  c=`<span class="barinfo">${nr}. Wahlgang: austeilen, einsammeln, auszählen</span><button class="btn red" id="openin">Stimmen eingeben</button>`;NX={t:"Weiter →",red:false,to:5};
+  let m=`<div class="mhd"><h3>${nr}. Wahlgang auszählen</h3><button class="btn ghost" id="mclose">Abbrechen</button></div><h4>Wahlzettel</h4><div class="grid2 zettel"><div class="field"><label for="mf-aus">ausgeteilt</label><input class="num" id="mf-aus" data-f="aus" type="number" min="0" value="${d.aus}"></div><div class="field"><label for="mf-ein">eingegangen</label><input class="num" id="mf-ein" data-f="ein" type="number" min="0" value="${d.ein}"></div><div class="field"><label for="mf-leer">leer</label><input class="num" id="mf-leer" data-f="leer" type="number" min="0" value="${d.leer}"></div><div class="field"><label for="mf-ung">ungültig</label><input class="num" id="mf-ung" data-f="ung" type="number" min="0" value="${d.ung}"></div></div>
+  <h4>Stimmen</h4><div class="grid2 votes">${act.map((x,xi)=>`<div class="field"><label for="mv-${xi}">${x.n}</label><input class="num" id="mv-${xi}" data-v="${x.n}" type="number" min="0" value="${d.v[x.n]||0}"></div>`).join("")}</div>
+  ${nr<=2?`<div class="row" style="margin-top:10px"><input id="newn" aria-label="Neuer Name" placeholder="Neuer Name" style="flex:1;min-width:0;padding:8px 10px;border:2px solid var(--ctl);border-radius:var(--r);background:var(--bg)"><button class="btn ghost" id="addn" style="min-height:40px;padding:6px 12px">+ Name</button></div>`:`<p class="src">Ab dem 3. Wahlgang können keine Namen mehr hinzugefügt werden. Zettel mit anderen Namen als «ungültig» zählen.</p>`}
+  <div class="evalrow"><div class="warn" id="wn"></div><div class="row"><button class="btn red" id="eval" style="width:100%;min-height:52px;font-size:18px">Resultat verkünden</button></div></div>`;
+  return [b,c,m];
+}
+function anrede(e){const cd=CANDS.find(x=>x.n===e);return cd?(cd.f?"Frau ":"Herr ")+e.split(" ").slice(-1)[0]:e;}
+function roundTable(r,nr){const g=r.ein-r.leer-r.ung,m=r.res.m,rows=Object.entries(r.votes).sort((a,b)=>b[1]-a[1]),mp=Math.min(100,m/g*100);
+ const v=r.res.elected?`<div class="verdict ok">${r.res.elected} ist gewählt</div>`:`<div class="verdict no">Niemand gewählt${r.res.out.length?" · "+r.res.out.join(", ")+" scheidet aus":""}</div>`;
+ const ann=r.res.elected?`Gewählt ist ${r.res.elected} mit ${r.votes[r.res.elected]} Stimmen.`:`Gewählt ist niemand.${r.res.out.length?` Aus der Wahl scheidet aus: ${r.res.out.join(", ")}.`:""}`;
+ return `${v}<p class="say">«Resultat des ${nr}. Wahlgangs: Ausgeteilte Wahlzettel <b>${r.aus}</b>, eingegangen <b>${r.ein}</b>, leer <b>${r.leer}</b>, ungültig <b>${r.ung}</b>, gültig <b>${g}</b>. Das absolute Mehr beträgt <b class="hi">${m}</b>. Stimmen haben erhalten:»</p>
+ <div class="crs" style="--m:${mp}%">${rows.map(([n,x])=>{const w=r.res.elected===n,o=r.res.out.includes(n);return `<div class="cr ${w?"win":o?"x":""}"><span>${n}${w?'<span class="pill win">gewählt</span>':o?'<span class="pill out">scheidet aus</span>':""}</span><span class="bar"><i style="width:${g?x/g*100:0}%"></i></span><b>${x}</b></div>`}).join("")}</div>
+ <p class="say">«${ann}»</p><div class="notes">${r.res.notes.filter(n=>!/^Niemand hat das absolute Mehr|^Ausgeschieden \(|hat das absolute Mehr von/.test(n)).map(n=>`<p>${n}</p>`).join("")}</div>`;}
+function bindSim(){
+  const q=s=>document.querySelector(s);
+
+  document.querySelectorAll("[data-nx]").forEach(b=>b.onclick=()=>{S.ph++;S.timerEnd=0;saveS();sim();});
+  document.querySelectorAll("[data-vr]").forEach(b=>b.onclick=()=>{const v=+b.dataset.vr;VR=v<0?null:v;S.vr=VR;saveS();sim();});
+  const sp=q("#sprev");if(sp)sp.onclick=()=>{if(S.ph>0){S.ph--;S.timerEnd=0;modalOpen=false;saveS();sim();}};
+  const sn=q("#snext");if(sn)sn.onclick=()=>{S.ph=NX.to;S.timerEnd=0;modalOpen=false;saveS();sim();};
+  document.querySelectorAll("[data-goto]").forEach(b=>b.onclick=()=>{S.ph=+b.dataset.goto;saveS();sim();});
+  const rs=q("#reset");if(rs)rs.onclick=()=>{if(rs.dataset.sure){S=SIM0();saveS();sim();}else{rs.dataset.sure=1;rs.textContent="Wirklich? Nochmals klicken";}};
+  if(S.ph===0){q("#sN").onchange=e=>{S.N=Math.max(8,Math.min(32,+e.target.value||18));saveS();sim();};q("#sT").onchange=e=>{S.thr=Math.max(1,Math.min(6,+e.target.value||2));saveS();};q("#sG").onchange=e=>{S.green=e.target.checked;saveS();sim();};}
+  bindTimer();
+  if(S.ph===4){
+   const nw=q("#newr");if(nw)nw.onclick=()=>{S.draft=newDraft();modalOpen=false;saveS();sim();};
+   const oi=q("#openin");if(oi)oi.onclick=()=>{if(!S.draft)S.draft=newDraft();S.draft.open=true;modalOpen=true;saveS();sim();};
+   const mc=q("#mclose");if(mc)mc.onclick=()=>{modalOpen=false;$("#modal").hidden=true;const o=$("#openin");if(o)o.focus({preventScroll:true});};
+   const un=q("#undo");if(un)un.onclick=()=>{const r=S.rounds.pop();if(!r)return;S.cands.forEach(c=>{if(c.outRound===S.rounds.length+1){c.out=false;delete c.outRound}});S.elected=null;S.draft={aus:r.aus,ein:r.ein,leer:r.leer,ung:r.ung,v:{...r.votes}};saveS();sim();};
+   const readD=()=>{const d=S.draft||newDraft();document.querySelectorAll("#mbox [data-f]").forEach(i=>{const v=Math.max(0,parseInt(i.value,10)||0);d[i.dataset.f]=v;if(i.value!==""&&String(v)!==i.value)i.value=v;});document.querySelectorAll("#mbox [data-v]").forEach(i=>{const v=Math.max(0,parseInt(i.value,10)||0);d.v[i.dataset.v]=v;if(i.value!==""&&String(v)!==i.value)i.value=v;});S.draft=d;saveS();return d;};
+   const live=()=>{const d=readD(),g=d.ein-d.leer-d.ung,sum=activeC().reduce((a,c)=>a+(d.v[c.n]||0),0),w=q("#wn");if(!w)return;w.textContent=`Summe der Stimmen: ${sum} von ${g} gültigen`;w.classList.toggle("sumok",sum===g&&g>0);};
+   document.querySelectorAll("[data-f],[data-v]").forEach(i=>{i.inputMode="numeric";i.oninput=live;});if(q("#wn"))live();
+   const an=q("#addn");if(an)an.onclick=()=>{const inp=q("#newn"),n=inp.value.replace(/[<>"'&`\\]/g,"").replace(/\s+/g," ").trim().slice(0,40);if(!n)return;const ex=S.cands.find(c=>c.n.toLowerCase()===n.toLowerCase());if(ex){inp.value="";inp.placeholder=ex.out?`${ex.n} ist ausgeschieden`:`${ex.n} steht schon auf der Liste`;inp.focus();return;}readD();S.cands.push({n,p:"–",out:false,extra:true});saveS();sim();setTimeout(()=>{const f=document.querySelector(`#mbox [data-v="${n.replace(/"/g,"")}"]`);if(f)f.focus();},0);};
+   const nn=q("#newn");if(nn)nn.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();an&&an.onclick();}};
+   const ev=q("#eval");if(ev)ev.onclick=()=>{const d=readD(),act=activeC(),g=d.ein-d.leer-d.ung,sum=act.reduce((a,c)=>a+(d.v[c.n]||0),0),w=q("#wn");
+    if(d.ein>d.aus){w.textContent=`Es sind mehr Zettel eingegangen (${d.ein}) als ausgeteilt (${d.aus}). Bitte nachzählen.`;return;}
+    if(g<0){w.textContent="Leer und ungültig zusammen sind mehr als die eingegangenen Zettel.";return;}
+    if(sum!==g){w.textContent=`Die Stimmen ergeben ${sum}, es gibt aber ${g} gültige Stimmen (${d.ein} − ${d.leer} − ${d.ung}). Bitte nachzählen.`;return;}
+    if(g===0){w.textContent="Es gibt keine gültigen Stimmen.";return;}
+    const nr=S.rounds.length+1,votes={};act.forEach(c=>votes[c.n]=d.v[c.n]||0);
+    const res=evaluate(nr,votes,g,S.thr);
+    S.rounds.push({aus:d.aus,ein:d.ein,leer:d.leer,ung:d.ung,votes,res});
+    res.out.forEach(n=>{const c=S.cands.find(x=>x.n===n);if(c){c.out=true;c.outRound=nr}});
+    if(res.elected)S.elected=res.elected;S.draft=null;modalOpen=false;saveS();sim();};}
+  if(S.ph===5){const a=q("#acc");if(a)a.onclick=()=>{S.accepted=true;saveS();sim();};const de=q("#dec");if(de)de.onclick=()=>{const who=S.elected;S.cands.forEach(c=>{if(c.outRound){c.out=false;delete c.outRound}if(c.n===who)c.out=true;});S.declined=who;S.elected=null;S.accepted=null;S.rounds=[];S.draft=null;S.ph=4;saveS();sim();};}
+}
+{const hf=$("#hdrfs");hf.onclick=()=>{try{if(document.fullscreenElement)document.exitFullscreen();else{const p=document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen();if(p&&p.catch)p.catch(()=>{hf.textContent="Geht nicht"});}}catch(e){hf.textContent="Geht nicht"}};
+ const fsSync=()=>{const on=!!document.fullscreenElement;hf.textContent=on?"Vollbild aus":"Vollbild";document.documentElement.classList.toggle("fs",on);document.documentElement.style.setProperty("--hh",$(".top").offsetHeight+"px");if(typeof lockPg==="function")requestAnimationFrame(lockPg);};
+ document.addEventListener("fullscreenchange",fsSync);document.addEventListener("webkitfullscreenchange",fsSync);
+ $("#fsexit").onclick=$("#fsexit2").onclick=()=>{try{document.exitFullscreen&&document.exitFullscreen()}catch(e){}};
+ /* Lernpfad im Vollbild: wie eine Folie hochskalieren */
+ const fitLp=()=>{const fs=document.documentElement.classList.contains("fs"),view=document.body.dataset.view;
+  const top=document.querySelector(".top");const zt=fs?Math.max(1,Math.min(innerWidth/1000,innerHeight/740)):1;top.style.zoom=fs?zt:"";const ti=top.querySelector(".topin");if(ti)ti.style.maxWidth=fs?(innerWidth/zt)+"px":"";
+  document.documentElement.style.setProperty("--hh",top.getBoundingClientRect().height+"px");
+  [["lernpfad","#v-lernpfad .lp"],["simulation","#v-simulation .simwrap"]].forEach(([v,sel])=>{const el=document.querySelector(sel);if(!el)return;
+   if(!(fs&&view===v)){el.style.zoom="";el.style.height="";el.style.maxWidth="";return;}
+   const z=Math.max(1,Math.min(innerWidth/1000,innerHeight/740));el.style.zoom=z;el.style.maxWidth=(innerWidth/z)+"px";const th=document.querySelector(".top").getBoundingClientRect().height;el.style.height=((innerHeight-th)/z)+"px";});
+  requestAnimationFrame(()=>{if(typeof lockPg==="function")lockPg();if(typeof fitBoard==="function")fitBoard();});};
+ window.__fitLp=fitLp;document.addEventListener("fullscreenchange",()=>setTimeout(fitLp,50));addEventListener("resize",fitLp);addEventListener("hashchange",()=>setTimeout(fitLp,0));}
+{const V=$("#v-simulation");V.classList.add("simbig");
+ const hh=()=>document.documentElement.style.setProperty("--hh",$(".top").getBoundingClientRect().height+"px");hh();}
+
+/* ---------- Routing ---------- */
+function route(){const v=(location.hash||"#lernpfad").slice(1),name=["lernpfad","simulation","lehrperson"].includes(v)?v:"lernpfad";document.body.dataset.view=name;
+ document.querySelectorAll(".view").forEach(s=>s.classList.toggle("on",s.id==="v-"+name));document.querySelectorAll("nav a").forEach(a=>a.toggleAttribute("aria-current",a.dataset.v===name)&&a.setAttribute("aria-current","page"));
+ if(name==="simulation")sim();}
+window.addEventListener("hashchange",route);
+go(cur,store.get("pg",0));route();
+window.__BRW={evaluate,distribute,TR,QZ,ST,GL,CANDS};
+}
+</script>
+</body>
+</html>

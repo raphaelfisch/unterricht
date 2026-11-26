@@ -25,6 +25,12 @@ Interaktive Web-Tools für den Unterricht.
 | `reiz-reaktions-schema.html` | Reiz-Reaktions-Schema |
 | `schallausbreitung.html` | Schallausbreitung und Wellenformen |
 
+### Räume, Zeiten, Gesellschaften (`rzg/`)
+| Tool | Beschreibung |
+|------|-------------|
+| `bundesratswahl.html` | Bundesratswahl verstehen: Lernpfad, Klassensimulation der Wahl, Hinweise für Lehrpersonen |
+| `bundesratswahl-druckvorlagen.pdf` | Druckvorlagen zur Simulation (Rollenkarten, Steckbriefe, Wahlzettel) |
+
 ## Verwendung
 
 Die Tools laufen direkt im Browser, ohne Installation oder Backend.  
