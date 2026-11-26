@@ -519,6 +519,65 @@
   @media (max-width: 340px) { header { padding-left: 4px !important; padding-right: 4px !important; } }
 
   header.fitting, header.fitting * { transition: none !important; }
+
+  /* ===== Ansichten wie im Würfelkörper: 3D immer, rechts Bauplan oder Berechnung ===== */
+  .dviews-wrap { flex: none; width: 100%; max-width: 1440px; margin: 0 auto; padding: 20px 20px 0; }
+  .views-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .views-bar h2 { font-size: 16px; font-weight: 600; white-space: nowrap; }
+  .view-toggle { display: flex; background: #e8e6dd; border-radius: 12px; padding: 4px; gap: 4px; }
+  .view-toggle button {
+    border: none; background: transparent; min-height: 36px; padding: 0 14px;
+    font-size: 15px; font-weight: 600; color: #5f5e5a; border-radius: 9px;
+  }
+  .view-toggle button:hover { background: rgba(255,255,255,0.5); }
+  .view-toggle button.on { background: white; color: #2c2c2a; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+  .view-toggle button.fixed { cursor: default; }
+  #viewer { margin-top: 12px !important; }
+  #panel { padding-top: 12px !important; }
+  body.v-plan #panel-content { display: none; }
+  body:not(.v-plan) #plan-box { display: none; }
+  .plan-box {
+    flex: 1; min-height: 300px; display: flex; flex-direction: column; gap: 8px;
+    background: white; border: 1px solid #d3d1c7; border-radius: 12px; padding: 20px;
+  }
+  .plan-box .viewbar { height: 32px; }
+  .plan-wrap { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
+  .plan-box #plan-canvas { width: auto; aspect-ratio: auto; flex: none; }
+  .plan-box .plan-cap { margin: 0; }
+  @media (orientation: portrait) {
+    #viewer { margin-top: 12px !important; }
+    .plan-box { min-height: 340px; }
+  }
+  @media (max-width: 700px) {
+    .dviews-wrap { padding: 10px 10px 0; }
+    .views-bar { flex-direction: column; align-items: stretch; gap: 6px; }
+    .views-bar h2 { display: none; }
+    .view-toggle button { flex: 1; padding: 0 4px; font-size: 14px; }
+    #viewer { margin-top: 10px !important; }
+    #panel { padding-top: 10px !important; }
+    .plan-box { padding: 14px; }
+  }
+  @media (max-width: 420px) { .dviews-wrap { padding: 8px 8px 0; } .plan-box { padding: 12px; } }
+  @media (orientation: landscape) and (max-height: 500px) {
+    .dviews-wrap { padding: 8px 10px 0; }
+    .view-toggle button { min-height: 30px; }
+    #viewer { margin-top: 8px !important; }
+    #panel { padding-top: 8px !important; }
+  }
+
+  /* Mehrere Punkte: alle Buchstaben gleich gross, nicht gewählte blasser */
+  .pt.other span { font-size: 24px; left: -24px; top: -26px; color: rgba(220, 38, 38, 0.5); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .chips button {
+    min-height: 38px; padding: 0 12px; border-radius: 19px; font-size: 16px; font-weight: 600; gap: 5px;
+    background: white;
+  }
+  .chips button.cur { background: #fee2e2; border-color: #dc2626; color: #b91c1c; }
+  .chips button.done { color: #15803d; }
+  .chips button.done.cur { color: #b91c1c; }
+  .chips .ic { width: 16px; height: 16px; }
+  .chips-lbl { font-size: 14px; color: #5f5e5a; margin-top: 10px; }
+  .pts-list { font-size: 18px; font-weight: 700; color: #dc2626; letter-spacing: 1px; margin-top: 6px; min-height: 24px; }
 </style>
 </head>
 <body>
@@ -538,12 +597,20 @@
   <button id="btn-full" class="hb" title="Vollbild"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg><span class="lt">Vollbild</span></button>
 </header>
 
+<div class="dviews-wrap"><div class="views-bar">
+  <h2>Ansichten</h2>
+  <div class="view-toggle" id="view-toggle">
+    <button data-v="3d" class="on fixed" title="Die 3D-Ansicht bleibt immer sichtbar">3D</button>
+    <button data-v="bauplan">Bauplan</button>
+    <button data-v="calc">Berechnung</button>
+  </div>
+</div></div>
 <main>
   <div id="viewer">
     <div class="viewbar">
     <h2 class="box-title">Distanzen</h2>
     <div class="viewctl">
-      <button class="icon" id="v-pick" title="Eigene Strecke wählen"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="5.5" r="2.5"/><path d="M7.5 16.5l9-9"/></svg></button>
+      <button class="icon" id="v-pick" title="Punkte setzen"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="14" r="3"/><path d="M10 21v-4M10 11V7M3 14h4M13 14h4"/><path d="M19 3v6M16 6h6"/></svg></button>
       <button class="icon" id="v-reset" title="Ansicht zurücksetzen"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 9.5V20h14V9.5"/></svg></button>
       <button class="icon" id="v-glass" title="Körper durchsichtig"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5l8.5 4.75v9.5L12 21.5l-8.5-4.75v-9.5z"/><path d="M3.5 16.75L12 12l8.5 4.75M12 12V2.5" stroke-dasharray="2 2.5"/></svg></button>
     </div>
@@ -556,12 +623,10 @@
     </div>
   </div>
   <div id="panel">
-    <div class="card plan-card" id="plan-card">
-      <button class="plan-head" id="plan-toggle"><span>Bauplan</span><svg class="ic chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
-      <div class="plan-body">
-        <canvas id="plan-canvas" width="600" height="600"></canvas>
-        <div class="plan-cap">Antippen: Höhe ändern · Ziehen: drehen</div>
-      </div>
+    <div class="plan-box" id="plan-box">
+      <div class="viewbar"><h2 class="box-title">Bauplan</h2><div class="viewctl"><button class="icon" id="plan-reset" title="Ansicht zurücksetzen"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 9.5V20h14V9.5"/></svg></button></div></div>
+      <div class="plan-wrap" id="plan-wrap"><canvas id="plan-canvas" width="600" height="600"></canvas></div>
+      <div class="plan-cap">Antippen: Höhe ändern · Ziehen: drehen</div>
     </div>
     <div id="panel-content"></div>
   </div>
@@ -659,7 +724,8 @@ const state = {
   inputs: {},
   status: {},
   msgs: {},
-  solved: false
+  solved: false,
+  done: {}             // gelöste Strecken, Schlüssel 'i-j'
 };
 
 // ====================================================================
@@ -878,21 +944,100 @@ function resetWork() {
 function samePair(a, b) {
   return (eq(a[0], b[0]) && eq(a[1], b[1])) || (eq(a[0], b[1]) && eq(a[1], b[0]));
 }
-function setTaskPoints(a, b) {
-  state.points = [{ p: a.slice(), letter: 'A' }, { p: b.slice(), letter: 'B' }];
-  state.pair = [0, 1];
+// Mehrere Punkte A–E; gerechnet wird jeweils eine Strecke (state.pair)
+const MAX_PTS = 5;
+const TASK_PTS = 4;          // so viele Punkte setzt «Neue Aufgabe» (wenn möglich)
+const LETTERS = 'ABCDE';
+function pairKey(i, j) { return Math.min(i, j) + '-' + Math.max(i, j); }
+function allPairs() {
+  const r = [];
+  for (let i = 0; i < state.points.length; i++) for (let j = i + 1; j < state.points.length; j++) r.push([i, j]);
+  return r;
+}
+function relabel() { state.points.forEach(function (pt, i) { pt.letter = LETTERS[i]; }); }
+function setPoints(list, pair) {
+  state.points = list.map(function (p, i) { return { p: p.slice(), letter: LETTERS[i] }; });
+  state.pair = pair || [0, 1];
+  state.done = {};
   resetWork();
 }
+function setTaskPoints(a, b) { setPoints([a, b], [0, 1]); }
+function typeOk(t) { return !!t && (state.stufe === 'gemischt' || state.stufe === t); }
+function pointsKey(list) { return list.map(function (p) { return p.join(''); }).sort().join('|'); }
+// Zufällige Punkte: alle Strecken zwischen ihnen passen zur gewählten Art (Flächen- bzw. Raumdiagonale)
 function pickTask(avoidCurrent) {
   const c = state.corners;
-  let pairs = cornerPairs(c, state.stufe);
-  if (avoidCurrent && !isEmpty()) {
-    pairs = pairs.filter(function (pr) { return !samePair([c[pr[0]], c[pr[1]]], [P(), Q()]); });
+  if (c.length < 2) return false;
+  const cur = isEmpty() ? '' : pointsKey(state.points.map(function (pt) { return pt.p; }));
+  let best = null;
+  for (let tries = 0; tries < 400 && !(best && best.length >= TASK_PTS); tries++) {
+    const chosen = [];
+    shuffle(c.slice()).forEach(function (p) {
+      if (chosen.length >= TASK_PTS) return;
+      if (chosen.every(function (q) { return typeOk(pairType(p, q)); })) chosen.push(p);
+    });
+    if (chosen.length < 2) continue;
+    if (avoidCurrent && pointsKey(chosen) === cur) continue;
+    if (!best || chosen.length > best.length) best = chosen;
   }
-  if (!pairs.length) return false;
-  const pr = pairs[rnd(pairs.length)];
-  if (Math.random() < 0.5) setTaskPoints(c[pr[0]], c[pr[1]]); else setTaskPoints(c[pr[1]], c[pr[0]]);
+  if (!best) return false;
+  setPoints(best, [0, 1]);
   return true;
+}
+function nextOpenPair() {
+  const prs = allPairs();
+  const k = prs.findIndex(function (pr) { return pairKey(pr[0], pr[1]) === pairKey(state.pair[0], state.pair[1]); });
+  for (let n = 1; n <= prs.length; n++) {
+    const pr = prs[(k + n) % prs.length];
+    if (!state.done[pairKey(pr[0], pr[1])]) return pr;
+  }
+  return null;
+}
+function choosePair(pr) {
+  if (state.flat !== null) exitFlat(false);
+  state.pair = [pr[0], pr[1]];
+  resetWork();
+  afterChange();
+  document.getElementById('panel').scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Punkte setzen: Ecken antippen (höchstens 5), nochmals antippen entfernt
+function startPlacing() {
+  if (state.flat !== null) exitFlat(false);
+  state.pick = { prev: state.points.map(function (pt) { return pt.p.slice(); }), pair: state.pair.slice(), done: state.done };
+  state.pair = [0, 1];
+  setRightView('calc');
+  afterChange();
+}
+function placeCorner(p) {
+  const i = state.points.findIndex(function (pt) { return eq(pt.p, p); });
+  if (i >= 0) state.points.splice(i, 1);
+  else {
+    if (state.points.length >= MAX_PTS) { toast('Höchstens 5 Punkte. Tippe einen Punkt an, um ihn zu entfernen.'); return; }
+    state.points.push({ p: p.slice(), letter: '' });
+  }
+  relabel();
+  afterChange();
+}
+function finishPlacing() {
+  if (state.points.length < 2) { toast('Setze mindestens zwei Punkte.'); return; }
+  const old = state.pick;
+  state.pick = null;
+  const same = pointsKey(old.prev) === pointsKey(state.points.map(function (pt) { return pt.p; })) && old.prev.length === state.points.length;
+  if (same) { state.pair = old.pair; state.done = old.done; }
+  else { state.pair = [0, 1]; state.done = {}; resetWork(); }
+  afterChange();
+  if (!same && state.points.length === 2) {
+    const t = pairType(P(), Q());
+    toast(t === 'raum' ? 'Das ist eine Raumdiagonale.' : t === 'ebene' ? 'Das ist eine Flächendiagonale.' : 'Sonderfall: Die Strecke liegt auf einer Kante.');
+  }
+}
+function cancelPlacing() {
+  const old = state.pick;
+  state.pick = null;
+  state.points = old.prev.map(function (p, i) { return { p: p, letter: LETTERS[i] }; });
+  state.pair = old.pair; state.done = old.done;
+  afterChange();
 }
 function setBody(plan) {
   state.plan = plan;
@@ -1116,6 +1261,7 @@ function checkAll() {
   state.status = st;
   state.msgs = msgs;
   state.solved = allOk;
+  if (allOk) state.done[pairKey(state.pair[0], state.pair[1])] = true;
   renderPanel();
   setTimeout(function () {
     if (allOk) scrollPanelTo('.result');
@@ -1159,6 +1305,16 @@ function renderPanel() {
   const panel = document.getElementById('panel-content');
   document.getElementById('v-pick').classList.toggle('on', !!state.pick);
   renderHints();
+  if (state.pick) {
+    const n = state.points.length;
+    panel.innerHTML = '<div class="card task"><div class="q">Punkte setzen</div>' +
+      '<p style="margin-top:6px">Tippe im 3D auf Ecken des Körpers. Nochmals antippen entfernt einen Punkt. Höchstens 5 Punkte.</p>' +
+      '<div class="pts-list">' + (n ? state.points.map(function (pt) { return pt.letter; }).join(' ') : '–') + '</div>' +
+      '<div class="row-btns"><button id="btn-place-done" class="primary"' + (n < 2 ? ' disabled' : '') + '>Fertig</button>' +
+      (n ? '<button id="btn-place-clear">Alle entfernen</button>' : '') +
+      '<button id="btn-place-cancel">Abbrechen</button></div></div>';
+    return;
+  }
   if (isEmpty()) {
     panel.innerHTML = '<div class="card task"><div class="q">Noch kein Körper</div>' +
       '<p style="margin-top:6px">Tippe im Bauplan auf die Felder, um Würfel zu stapeln. Sobald ein Würfel steht, gibt es eine Aufgabe.</p>' +
@@ -1171,14 +1327,16 @@ function renderPanel() {
        '<button data-stufe="ebene" class="' + (state.stufe !== 'raum' ? 'on' : '') + '">Flächendiagonale</button>' +
        '<button data-stufe="raum" class="' + (state.stufe !== 'ebene' ? 'on' : '') + '">Raumdiagonale</button>' +
        '</div></div>';
-  if (state.pick) {
-    h += '<div class="card task"><div class="q">Eigene Strecke wählen</div>' +
-         '<p style="margin-top:6px">' + (state.pick.length ? 'Tippe jetzt die zweite Ecke an.' : 'Tippe zwei Ecken des Körpers an.') + '</p>' +
-         '<div class="row-btns"><button id="btn-pick">Abbrechen</button></div></div>';
-    panel.innerHTML = h;
-    return;
+  let chips = '';
+  if (state.points.length > 2) {
+    const curKey = pairKey(state.pair[0], state.pair[1]);
+    chips = '<div class="chips">' + allPairs().map(function (pr) {
+      const k = pairKey(pr[0], pr[1]), done = !!state.done[k];
+      return '<button data-pair="' + pr[0] + ',' + pr[1] + '" class="' + (k === curKey ? 'cur' : '') + (done ? ' done' : '') + '"' +
+        (done ? ' title="gelöst"' : '') + '>' + (done ? '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>' : '') + sg(state.points[pr[0]].letter + state.points[pr[1]].letter) + '</button>';
+    }).join('') + '</div>';
   }
-  h += '<div class="card task"><div class="q">Wie lang ist die Strecke <b>' + sg(p + q) + '</b>?</div>' +
+  h += '<div class="card task"><div class="q">Wie lang ist die Strecke <b>' + sg(p + q) + '</b>?</div>' + chips +
        '<div class="sub">Kantenlänge eines Würfels: <select id="sel-a" class="inline-sel">' +
          [1, 2, 3, 4, 5].map(function (v) { return '<option value="' + v + '"' + (v === state.a ? ' selected' : '') + '>' + v + ' cm</option>'; }).join('') +
        '</select></div>' +
@@ -1270,9 +1428,11 @@ function renderPanel() {
   // Leiste unten: Prüfen und Neue Aufgabe
   const nextBtn = '<button id="btn-task" class="' + (state.solved ? 'primary' : '') + '"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>Neue Aufgabe</button>';
   const pickBtn = '<button id="btn-pick" title="Eigene Strecke wählen"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="5.5" r="2.5"/><path d="M7.5 16.5l9-9"/></svg>Eigene Strecke</button>';
+  const open = state.solved && state.points.length > 2 ? nextOpenPair() : null;
+  const nextPairBtn = open ? '<button id="btn-nextpair" class="primary">Nächste Strecke ' + sg(state.points[open[0]].letter + state.points[open[1]].letter) + '</button>' : '';
   h += '<div class="sticky-bottom">' +
        (pathComplete() && !state.solved ? '<button id="check" class="primary full">Prüfen</button>' : '') +
-       nextBtn + '</div>';
+       nextPairBtn + (open ? nextBtn.replace(' class="primary"', ' class=""') : nextBtn) + '</div>';
   panel.innerHTML = h;
 }
 
@@ -1286,11 +1446,11 @@ document.getElementById('panel').addEventListener('click', function (e) {
     if (!e && !r) return;
     setStufe(e && r ? 'gemischt' : e ? 'ebene' : 'raum');
   }
-  else if (b.id === 'btn-pick') {
-    state.pick = state.pick ? null : [];
-    if (state.flat !== null) exitFlat(false);
-    afterChange();
-  }
+  else if (b.id === 'btn-place-done') { finishPlacing(); }
+  else if (b.id === 'btn-place-cancel') { cancelPlacing(); }
+  else if (b.id === 'btn-place-clear') { state.points = []; afterChange(); }
+  else if (b.dataset.pair) { const pr = b.dataset.pair.split(',').map(Number); if (pairKey(pr[0], pr[1]) !== pairKey(state.pair[0], state.pair[1])) choosePair(pr); }
+  else if (b.id === 'btn-nextpair') { const pr = nextOpenPair(); if (pr) choosePair(pr); }
   else if (b.id === 'btn-undo') { undoPath(); }
   else if (b.id === 'btn-pathmode') { state.pathMode = true; afterChange(); }
   else if (b.id === 'btn-repath') {
@@ -1545,19 +1705,20 @@ function buildOverlay() {
   }
   dotMeshes = [];
   pointMeshes = [];
-  if (isEmpty()) { buildLabels(); dirty = true; return; }
-  const p = P(), q = Q();
-
   if (state.pick) {
-    state.allCorners.forEach(function (c) {
-      const sel = state.pick.length && eq(state.pick[0], c);
-      const m = addSphere(c, sel ? 0.1 : 0.075, COL_PQ, sel ? 1 : 0.75, true);
+    const cand = state.allCorners.slice();
+    state.points.forEach(function (pt) { if (!cand.some(function (c) { return eq(c, pt.p); })) cand.push(pt.p); });
+    cand.forEach(function (c) {
+      const sel = state.points.some(function (pt) { return eq(pt.p, c); });
+      const m = addSphere(c, sel ? 0.1 : 0.07, sel ? COL_PQ : 0x6b7280, sel ? 1 : 0.8, true);
       dotMeshes.push({ mesh: m, p: c });
     });
     buildLabels();
     dirty = true;
     return;
   }
+  if (isEmpty()) { buildLabels(); dirty = true; return; }
+  const p = P(), q = Q();
   const flatOnly = state.flat !== null;
   if (state.hints.quader && !flatOnly) addBox(p, q);
 
@@ -1608,13 +1769,13 @@ function buildLabels() {
   layer.innerHTML = '';
   labelEls = [];
   if (state.pick) {
-    if (state.pick.length) {
+    state.points.forEach(function (pt) {
       const d = document.createElement('div');
       d.className = 'pt task';
-      d.innerHTML = '<span>A</span>';
+      d.innerHTML = '<span>' + pt.letter + '</span>';
       layer.appendChild(d);
-      labelEls.push({ el: d, p: state.pick[0], isPoint: true });
-    }
+      labelEls.push({ el: d, p: pt.p, isPoint: true });
+    });
     return;
   }
   state.points.forEach(function (pt, i) {
@@ -1825,23 +1986,9 @@ function setupPointer() {
   }, { passive: false });
 }
 
-function pickCorner(p) {
-  if (!state.pick.length) { state.pick = [p]; afterChange(); return; }
-  const a = state.pick[0];
-  if (eq(a, p)) { state.pick = []; afterChange(); return; }
-  const t = pairType(a, p);
-  state.pick = null;
-  if (t && state.stufe !== 'gemischt') state.stufe = t;
-  setTaskPoints(a, p);
-  afterChange();
-  toast(t === 'raum' ? 'Das ist eine Raumdiagonale.' : t === 'ebene' ? 'Das ist eine Flächendiagonale.'
-    : 'Sonderfall: Die Strecke liegt auf einer Kante.');
-}
-
 function tap(x, y) {
   if (onOrientationCube(x, y)) { resetViewFromCube(); return; }
-  if (isEmpty()) return;
-  if (!state.pick && (pathComplete() || !state.pathMode)) return;
+  if (!state.pick && (isEmpty() || pathComplete() || !state.pathMode)) return;
   let best = null, bestD = 34, bestZ = 2;
   dotMeshes.forEach(function (d) {
     if (!d.shown) return;
@@ -1851,7 +1998,7 @@ function tap(x, y) {
       if (dist < 34) { best = d; bestD = dist; bestZ = s.z; }
     }
   });
-  if (best) { if (state.pick) pickCorner(best.p); else tapDot(best.p); }
+  if (best) { if (state.pick) placeCorner(best.p); else tapDot(best.p); }
 }
 
 // ====================================================================
@@ -1860,11 +2007,13 @@ function tap(x, y) {
 function planCell(W) { return W / 6.6; }
 function drawPlan() {
   const cv = document.getElementById('plan-canvas');
-  document.getElementById('plan-card').classList.toggle('open', state.showPlan);
   if (!state.showPlan || !state.plan) return;
-  // Auflösung an die tatsächliche Grösse anpassen
+  // quadratisch, so gross wie der Platz in der Box erlaubt
+  const wrap = document.getElementById('plan-wrap');
+  const sz = Math.max(120, Math.floor(Math.min(wrap.clientWidth, wrap.clientHeight || wrap.clientWidth)));
+  if (cv.style.width !== sz + 'px') { cv.style.width = sz + 'px'; cv.style.height = sz + 'px'; }
   const dpr = window.devicePixelRatio || 1;
-  const cw = cv.clientWidth;
+  const cw = sz;
   if (cw && Math.abs(cv.width - cw * dpr) > 1) { cv.width = Math.round(cw * dpr); cv.height = Math.round(cw * dpr); }
   const ctx = cv.getContext('2d');
   const W = cv.width, H = cv.height;
@@ -1907,7 +2056,9 @@ function drawPlan() {
 // ====================================================================
 function hashString() {
   const plan = state.plan.map(function (r) { return r.join(''); }).join('');
-  return 'p=' + plan + (isEmpty() ? '' : '&k=' + P().join('') + Q().join('')) +
+  const pts = state.points.map(function (pt) { return pt.p.join(''); }).join('');
+  const pr = state.pair[0] === 0 && state.pair[1] === 1 ? '' : '&t=' + state.pair[0] + state.pair[1];
+  return 'p=' + plan + (state.points.length < 2 ? '' : '&k=' + pts + (state.pick ? '' : pr)) +
     '&a=' + state.a + '&m=' + state.mode[0] + '&s=' + state.stufe[0];
 }
 function writeHash() {
@@ -1922,17 +2073,21 @@ function readHash() {
   if (/^[1-5]$/.test(o.a || '')) state.a = parseInt(o.a, 10);
   const plan = planFromCode(o.p || '');
   if (!plan) return false;
-  let pts = null;
-  if (/^[0-4]{6}$/.test(o.k || '')) {
-    pts = [o.k.slice(0, 3), o.k.slice(3)].map(function (t) { return t.split('').map(Number); });
-  } else if (/^[0-3]{15}$/.test(o.k || '') && /^[0-4]{2}$/.test(o.t || '')) {
-    pts = [parseInt(o.t[0], 10), parseInt(o.t[1], 10)].map(function (i) {
-      return [0, 1, 2].map(function (k) { return parseInt(o.k[i * 3 + k], 10); });
-    });
+  // k = 2 bis 5 Punkte zu je 3 Ziffern, t = gewählte Strecke (Indizes)
+  let pts = null, pair = [0, 1];
+  if (/^([0-4]{3}){2,5}$/.test(o.k || '')) {
+    pts = [];
+    for (let i = 0; i < o.k.length; i += 3) pts.push(o.k.slice(i, i + 3).split('').map(Number));
+    const ok = pts.every(function (a, i) { return pts.every(function (b, j) { return i === j || !eq(a, b); }); });
+    if (!ok) pts = null;
+    else if (/^[0-4]{2}$/.test(o.t || '')) {
+      const t0 = +o.t[0], t1 = +o.t[1];
+      if (t0 !== t1 && t0 < pts.length && t1 < pts.length) pair = [t0, t1];
+    }
   }
   if (!plan.some(function (r) { return r.some(function (h) { return h > 0; }); })) { setEmptyBody(plan); return true; }
   setBody(plan);
-  if (pts && !eq(pts[0], pts[1])) { setTaskPoints(pts[0], pts[1]); return true; }
+  if (pts) { setPoints(pts, pair); return true; }
   // nur Bauplan (z. B. aus dem Würfelkörper-Tool): Strecke selbst wählen
   return pickTask(false);
 }
@@ -2032,19 +2187,32 @@ document.getElementById('btn-full').addEventListener('click', function () {
 });
 document.getElementById('v-reset').addEventListener('click', resetViewFromCube);
 document.getElementById('v-pick').addEventListener('click', function () {
-  if (isEmpty()) { toast('Zuerst im Bauplan einen Körper bauen.'); return; }
-  state.pick = state.pick ? null : [];
-  if (state.flat !== null) exitFlat(false);
-  afterChange();
+  if (!state.plan || !state.allCorners.length) { setRightView('bauplan'); toast('Zuerst im Bauplan einen Körper bauen.'); return; }
+  if (!state.pick) startPlacing();
+  else if (state.points.length >= 2) finishPlacing();
+  else cancelPlacing();
 });
 document.getElementById('v-glass').addEventListener('click', function () { state.glass = !state.glass; applyGlass(); });
-function togglePlan(open) {
-  state.showPlan = open;
+// Rechte Spalte: Bauplan oder Berechnung (3D bleibt immer sichtbar)
+function setRightView(v) {
+  state.showPlan = v === 'bauplan';
+  document.body.classList.toggle('v-plan', state.showPlan);
+  document.querySelectorAll('#view-toggle button').forEach(function (b) {
+    if (b.dataset.v !== '3d') b.classList.toggle('on', (b.dataset.v === 'bauplan') === state.showPlan);
+  });
   drawPlan();
   dirty = true;
-  if (open) document.getElementById('panel').scrollTo({ top: 0, behavior: 'smooth' });
 }
-document.getElementById('plan-toggle').addEventListener('click', function () { togglePlan(!state.showPlan); });
+function togglePlan(open) { setRightView(open ? 'bauplan' : 'calc'); }
+document.getElementById('view-toggle').addEventListener('click', function (e) {
+  const b = e.target.closest('button');
+  if (!b) return;
+  if (b.dataset.v === '3d') { toast('Die 3D-Ansicht bleibt immer sichtbar – dort legst du den Weg.'); return; }
+  if (state.pick && b.dataset.v === 'bauplan') { if (state.points.length >= 2) finishPlacing(); else cancelPlacing(); }
+  setRightView(b.dataset.v);
+});
+document.getElementById('plan-reset').addEventListener('click', resetViewFromCube);
+if (typeof ResizeObserver !== 'undefined') new ResizeObserver(function () { drawPlan(); }).observe(document.getElementById('plan-wrap'));
 document.getElementById('btn-wk').addEventListener('click', openInWuerfelkoerper);
 // Leeren: ein Würfel bleibt stehen (ohne Würfel gibt es keine Strecke), Bauplan klappt auf
 document.getElementById('btn-clear').addEventListener('click', function () {
@@ -2118,7 +2286,8 @@ function planTap(e) {
 function applyStufe() {
   const v = state.stufe;
   if (isEmpty()) { renderPanel(); writeHash(); return; }
-  if (v === 'gemischt' || pairType(P(), Q()) === v) { renderPanel(); writeHash(); }
+  const fits = allPairs().every(function (pr) { return typeOk(pairType(state.points[pr[0]].p, state.points[pr[1]].p)); });
+  if (fits) { renderPanel(); writeHash(); }
   else newTask();
 }
 function setStufe(v) {
@@ -2274,6 +2443,7 @@ if (readHash()) {
 } else {
   newBody();
 }
+setRightView(isEmpty() ? 'bauplan' : 'calc');
 
 // Kopfzeile auf einer Zeile halten: schrittweise kompakter machen, bis alles passt
 function fitHeader() {
