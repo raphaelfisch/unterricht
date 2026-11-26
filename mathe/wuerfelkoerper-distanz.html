@@ -509,6 +509,16 @@
 
   /* gleiche Maximalbreite wie im Würfelkörper (Inhalt höchstens 1400 px, zentriert) */
   main { width: 100%; max-width: 1440px; margin: 0 auto; }
+
+  /* Kopfzeile: Hintergrund über die ganze Breite, Inhalt bündig mit den Boxen (max. 1400 px) */
+  header { padding-left: max(20px, calc((100% - 1400px) / 2)) !important; padding-right: max(20px, calc((100% - 1400px) / 2)) !important; }
+  @media (max-width: 700px) { header { padding-left: 10px !important; padding-right: 10px !important; } }
+
+  @media (max-width: 420px) { header { padding-left: 8px !important; padding-right: 8px !important; } }
+
+  @media (max-width: 340px) { header { padding-left: 4px !important; padding-right: 4px !important; } }
+
+  header.fitting, header.fitting * { transition: none !important; }
 </style>
 </head>
 <body>
@@ -2269,6 +2279,7 @@ if (readHash()) {
 function fitHeader() {
   const h = document.querySelector('header');
   if (!h) return;
+  h.classList.add('fitting');
   h.classList.remove('fit1', 'fit2', 'fit3');
   const wraps = () => {
     const items = Array.from(h.querySelectorAll('h1, header > button, header > .dropdown > button, .toolbar button, .toolbar .dropdown > button'))
@@ -2278,11 +2289,13 @@ function fitHeader() {
     return Math.max.apply(null, cs) - Math.min.apply(null, cs) > 12;
   };
   for (const c of ['fit1', 'fit2', 'fit3']) {
-    if (!wraps()) return;
+    if (!wraps()) break;
     h.classList.add(c);
   }
+  void h.offsetWidth;
+  h.classList.remove('fitting');
 }
-window.addEventListener('resize', fitHeader);
+window.addEventListener('resize', () => { fitHeader(); clearTimeout(window.__fhT); window.__fhT = setTimeout(fitHeader, 150); });
 if (typeof ResizeObserver !== 'undefined') { let fhFrame = 0; new ResizeObserver(() => { cancelAnimationFrame(fhFrame); fhFrame = requestAnimationFrame(fitHeader); }).observe(document.documentElement); }
 window.addEventListener('orientationchange', () => setTimeout(fitHeader, 200));
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitHeader);

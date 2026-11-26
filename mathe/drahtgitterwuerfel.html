@@ -32,6 +32,10 @@
     background: white; border-bottom: 1px solid #d3d1c7; flex-wrap: wrap;
   }
   header h1 { font-size: 18px; font-weight: 600; margin-right: auto; }
+  /* Inhalt der Kopfzeile auf dieselbe Breite wie der Hauptbereich begrenzen (1440 px, bündig mit den Boxen) */
+  @media (min-width: 701px) {
+    header { padding-left: max(20px, calc((100% - 1440px) / 2 + 20px)); padding-right: max(20px, calc((100% - 1440px) / 2 + 20px)); }
+  }
 
   /* ---------- Hauptbereich ---------- */
   main { flex: 1; display: flex; min-height: 0; width: 100%; max-width: 1440px; margin: 0 auto; }
