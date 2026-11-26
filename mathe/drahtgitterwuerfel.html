@@ -1321,7 +1321,7 @@ function hashString() {
   const d = state.items.map(function (it) {
     return it.t + it.c + it.p.map(function (i) { return CHARS[i]; }).join('') + (it.lo ? '_' + it.lo[0] + '_' + it.lo[1] : '');
   }).join('.');
-  return 'd=' + d + '&a=' + state.a + '&g=' + (state.dashed ? 1 : 0) + '&l=' + (state.lengths ? 1 : 0) + (state.sums ? '&s=1' : '') + '&m=' + state.mode[0] + '&p=' + (state.showPts ? 1 : 0) + (Object.keys(state.hidden).length ? '&h=' + Object.keys(state.hidden).join('') : '') +
+  return 'd=' + d + '&a=' + state.a + '&g=' + (state.dashed ? 1 : 0) + '&l=' + (state.lengths ? 1 : 0) + (document.body.classList.contains('v-none') ? '&z=0' : '') + (state.sums ? '&s=1' : '') + '&m=' + state.mode[0] + '&p=' + (state.showPts ? 1 : 0) + (Object.keys(state.hidden).length ? '&h=' + Object.keys(state.hidden).join('') : '') +
     '&v=' + Math.round(view.theta * 100) + '_' + Math.round(view.phi * 100) + '_' + Math.round(view.zoom * 100);
 }
 function writeHash() { try { history_replace('#' + hashString()); } catch (e) { /* lokal egal */ } }
@@ -1341,6 +1341,7 @@ function readHash() {
   }
   if (o.p === '0') state.showPts = false;
   if (o.s === '1') state.sums = true;
+  if (o.z === '0') { document.body.classList.add('v-none'); const zb = document.querySelector('#view-toggle [data-v="draw"]'); if (zb) zb.classList.remove('on'); }
   if (/^[0-4]{1,5}$/.test(o.h || '')) o.h.split('').forEach(function (c) { state.hidden[+c] = true; });
   if (o.d) {
     o.d.split('.').forEach(function (s) {
@@ -1482,6 +1483,7 @@ document.getElementById('view-toggle').addEventListener('click', function (e) {
   document.body.classList.toggle('v-none', hide);
   b.classList.toggle('on', !hide);
   splitHalf();
+  writeHash();
   requestAnimationFrame(function () { resize(); });
 });
 window.addEventListener('resize', splitHalf);

@@ -691,7 +691,7 @@ function getCurrentPlanURL() {
   // Feste URL der gehosteten App, damit der QR-Code auch funktioniert,
   // wenn das PDF lokal aus der Datei heraus erstellt wurde
   const base = 'https://raphaelfisch.github.io/unterricht/mathe/wuerfelkoerper.html';
-  return base + '#p=' + encodePlanToHash(plan);
+  return base + '#p=' + encodePlanToHash(plan) + viewsParam();
 }
 
 // Meldung oben einblenden
@@ -2744,7 +2744,7 @@ function updateAll() {
   }
   // URL-Hash aktualisieren
   try {
-    const newHash = '#p=' + code;
+    const newHash = '#p=' + code + viewsParam();
     if (window.location.hash !== newHash) {
       history.replaceState(null, '', newHash);
     }
@@ -2757,6 +2757,25 @@ function updateAll() {
 // ===== Ansichten wählen und anordnen =====
 const VIEW_ORDER = ['3d', 'bauplan', 'dots', 'grid', 'side'];
 let shownViews = ['3d', 'bauplan'];
+// Gewählte Ansichten im Link: v=3bdgs (3 = 3D, b = Bauplan, d = Punktraster, g = Häuschen, s = Ansichten)
+const VIEW_KEYS = { '3d': '3', bauplan: 'b', dots: 'd', grid: 'g', side: 's' };
+function viewsParam() {
+  const v = VIEW_ORDER.filter(function (k) { return shownViews.includes(k); }).map(function (k) { return VIEW_KEYS[k]; }).join('');
+  return v === '3b' ? '' : '&v=' + v;
+}
+(function () {
+  const m = window.location.hash.match(/[#&]v=([3bdgs]{1,5})(?![a-z0-9])/);
+  if (!m) return;
+  const list = VIEW_ORDER.filter(function (k) { return m[1].indexOf(VIEW_KEYS[k]) >= 0; });
+  if (list.length) shownViews = list;
+})();
+function writeViewsHash() {
+  try {
+    const h = window.location.hash.replace(/&v=[3bdgs]*/, '');
+    const nh = (h || '#p=' + encodePlanToHash(plan)) + viewsParam();
+    if (window.location.hash !== nh) history.replaceState(null, '', nh);
+  } catch (e) { /* ignorieren */ }
+}
 function layoutViews() {
   const wrap = document.getElementById('views');
   const sel = VIEW_ORDER.filter(v => shownViews.includes(v));
@@ -2767,6 +2786,7 @@ function layoutViews() {
     p.style.gridArea = i < 0 ? '' : 'v' + i;
   });
   const n = sel.length, has3d = sel[0] === '3d';
+  writeViewsHash();
   const portrait = window.innerHeight > window.innerWidth;
   // Handy: bei 1–2 Ansichten füllen sie den Bildschirm (kein Scrollen), ab 3 scrollt die Seite
   const phone = window.matchMedia('(max-width: 700px)').matches;

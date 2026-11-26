@@ -956,6 +956,7 @@ function Q() { return state.points[state.pair[1]].p; }
 function nameP() { return state.points[state.pair[0]].letter; }
 function nameQ() { return state.points[state.pair[1]].letter; }
 function isEmpty() { return !state.points || state.points.length < 2; }
+function hasBody() { return !!state.plan && state.plan.some(function (r) { return r.some(function (h) { return h > 0; }); }); }
 function pathComplete() { return !isEmpty() && state.path.length > 1 && eq(state.path[state.path.length - 1], Q()); }
 function isRaum() { return !isEmpty() && nonzeroCount(P(), Q()) === 3; }
 // Körper ohne Würfel: keine Aufgabe, bis im Bauplan gebaut wird
@@ -1069,7 +1070,11 @@ function placeCorner(p) {
   afterChange();
 }
 function finishPlacing() {
-  if (state.points.length < 2) { toast('Setze mindestens zwei Punkte.'); return; }
+  if (state.points.length === 1) { toast('Für eine Strecke braucht es zwei Punkte – oder alle entfernen.'); return; }
+  if (!state.points.length) {
+    state.pick = null; state.pair = [0, 1]; state.done = {}; resetWork(); afterChange();
+    return;
+  }
   const old = state.pick;
   state.pick = null;
   const same = pointsKey(old.prev) === pointsKey(state.points.map(function (pt) { return pt.p; })) && old.prev.length === state.points.length;
@@ -1096,8 +1101,8 @@ function setBody(plan) {
 
 function newTask() {
   state.pick = null;
-  if (isEmpty()) { togglePlan(true); toast('Zuerst im Bauplan einen Körper bauen – oder «Neuer Körper».'); return; }
-  if (!pickTask(true)) { newBody(); return; }
+  if (!hasBody()) { togglePlan(true); toast('Zuerst im Bauplan einen Körper bauen – oder «Neuer Körper».'); return; }
+  if (!pickTask(!isEmpty())) { newBody(); return; }
   afterChange();
 }
 
@@ -1352,7 +1357,7 @@ function inputHTML(key, isHyp) {
 
 function renderTaskMenu() {
   const el = document.getElementById('taskctl');
-  if (state.pick || isEmpty()) { el.innerHTML = ''; return; }
+  if (state.pick || !hasBody()) { el.innerHTML = ''; return; }
   el.innerHTML = '<div class="dropdown' + (state.taskOpen ? ' open' : '') + '" id="task-dd">' +
     '<button id="btn-taskmenu"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"/></svg>Aufgabe ▾</button>' +
     '<div class="dropdown-menu task-menu">' +
@@ -1405,9 +1410,16 @@ function renderPanel() {
     panel.innerHTML = '<div class="card task"><div class="q">Punkte setzen</div>' +
       '<p style="margin-top:6px">Tippe im 3D auf Ecken des Körpers. Nochmals antippen entfernt einen Punkt. Höchstens 5 Punkte.</p>' +
       '<div class="pts-list">' + (n ? state.points.map(function (pt) { return pt.letter; }).join(' ') : '–') + '</div>' +
-      '<div class="row-btns"><button id="btn-place-done" class="primary"' + (n < 2 ? ' disabled' : '') + '>Fertig</button>' +
+      (n === 0 ? '<p class="tip" style="margin-top:4px">Ohne Punkte zeigt das 3D nur den Körper.</p>' : '') +
+      '<div class="row-btns"><button id="btn-place-done" class="primary"' + (n === 1 ? ' disabled' : '') + '>Fertig</button>' +
       (n ? '<button id="btn-place-clear">Alle entfernen</button>' : '') +
       '<button id="btn-place-cancel">Abbrechen</button></div></div>';
+    return;
+  }
+  if (isEmpty() && hasBody()) {
+    panel.innerHTML = '<div class="card task"><div class="q">Noch keine Punkte</div>' +
+      '<p style="margin-top:6px">Der Körper ist bereit. Lass Punkte zufällig setzen oder setze sie selbst.</p>' +
+      '<div class="row-btns"><button id="btn-task3" class="primary">Neue Aufgabe</button><button id="btn-place2">Punkte selbst setzen</button></div></div>';
     return;
   }
   if (isEmpty()) {
@@ -1555,7 +1567,8 @@ document.getElementById('panel').addEventListener('click', function (e) {
     renderPanel();
   }
   else if (b.id === 'check') { checkAll(); }
-  else if (b.id === 'btn-task' || b.id === 'btn-task2') { newTask(); }
+  else if (b.id === 'btn-task' || b.id === 'btn-task2' || b.id === 'btn-task3') { newTask(); }
+  else if (b.id === 'btn-place2') { placeButton(); }
   else if (b.id === 'btn-newbody') { newBody(); }
   else if (b.id === 'btn-place') { placeButton(); }
 });
@@ -2195,7 +2208,7 @@ function hashString() {
   const plan = state.plan.map(function (r) { return r.join(''); }).join('');
   const pts = state.points.map(function (pt) { return pt.p.join(''); }).join('');
   const pr = state.pair[0] === 0 && state.pair[1] === 1 ? '' : '&t=' + state.pair[0] + state.pair[1];
-  return 'p=' + plan + (state.points.length < 2 ? '' : '&k=' + pts + (state.pick ? '' : pr)) +
+  return 'p=' + plan + (!rightView && rightView !== null || rightView === 'calc' ? '' : '&v=' + (rightView === 'bauplan' ? 'b' : '0')) + (state.points.length < 2 ? (hasBody() && !state.pick ? '&k=x' : '') : '&k=' + pts + (state.pick ? '' : pr)) +
     (state.points.some(function (pt) { return pt.la != null && pt.la !== 5; }) ? '&l=' + state.points.map(labelDir).join('') : '') +
     '&a=' + state.a + '&m=' + state.mode[0] + '&s=' + state.stufe[0];
 }
@@ -2225,6 +2238,7 @@ function readHash() {
   }
   if (!plan.some(function (r) { return r.some(function (h) { return h > 0; }); })) { setEmptyBody(plan); return true; }
   setBody(plan);
+  if (o.k === 'x') { state.points = []; state.pair = [0, 1]; resetWork(); return true; }
   if (pts) {
     setPoints(pts, pair);
     if (/^[0-7]{2,5}$/.test(o.l || '') && o.l.length === pts.length) state.points.forEach(function (pt, i) { pt.la = +o.l[i]; });
@@ -2303,7 +2317,7 @@ document.getElementById('v-reset').addEventListener('click', resetViewFromCube);
 function placeButton() {
   if (!state.plan || !state.allCorners.length) { setRightView('bauplan'); toast('Zuerst im Bauplan einen Körper bauen.'); return; }
   if (!state.pick) startPlacing();
-  else if (state.points.length >= 2) finishPlacing();
+  else if (state.points.length !== 1) finishPlacing();
   else cancelPlacing();
 }
 document.getElementById('v-glass').addEventListener('click', function () { state.glass = !state.glass; applyGlass(); });
@@ -2323,13 +2337,14 @@ if (typeof ResizeObserver !== 'undefined') new ResizeObserver(function () { spli
 window.addEventListener('resize', splitHalf);
 // Rechte Spalte: Bauplan oder Berechnung (3D bleibt immer sichtbar)
 // v: 'bauplan', 'calc' oder null (rechte Spalte ganz ausgeblendet, 3D über die ganze Breite)
-let rightView = 'calc';
+var rightView = 'calc';
 function setRightView(v) {
   rightView = v;
   state.showPlan = v === 'bauplan';
   document.body.classList.toggle('v-plan', state.showPlan);
   document.body.classList.toggle('v-none', !v);
   splitHalf();
+  if (typeof writeHash === 'function' && state.plan) writeHash();
   document.querySelectorAll('#view-toggle button').forEach(function (b) {
     if (b.dataset.v !== '3d') b.classList.toggle('on', b.dataset.v === v);
   });
@@ -2342,7 +2357,7 @@ document.getElementById('view-toggle').addEventListener('click', function (e) {
   const b = e.target.closest('button');
   if (!b) return;
   if (b.dataset.v === '3d') { toast('Die 3D-Ansicht bleibt immer sichtbar – dort legst du den Weg.'); return; }
-  if (state.pick && b.dataset.v === 'bauplan') { if (state.points.length >= 2) finishPlacing(); else cancelPlacing(); }
+  if (state.pick && b.dataset.v === 'bauplan') { if (state.points.length !== 1) finishPlacing(); else cancelPlacing(); }
   setRightView(rightView === b.dataset.v ? null : b.dataset.v);
 });
 document.getElementById('plan-reset').addEventListener('click', resetViewFromCube);
@@ -2403,8 +2418,10 @@ function planTap(e) {
   let total = 0;
   plan.forEach(function (row) { row.forEach(function (h) { total += h; }); });
   if (!total) { setEmptyBody(plan); buildBody(); afterChange(); return; }
+  const hadPoints = !isEmpty();
   setBody(plan);
   state.pick = null;
+  if (!hadPoints) { state.points = []; state.pair = [0, 1]; resetWork(); buildBody(); afterChange(); return; }
   if (!pickTask(false)) {
     const keep = state.stufe;
     state.stufe = 'gemischt';
@@ -2546,6 +2563,7 @@ document.getElementById('share-copy').addEventListener('click', function () {
 // START
 // ====================================================================
 init3D();
+const INIT_V = (location.hash.match(/[#&]v=([b0])(?![a-z0-9])/) || [])[1];
 if (readHash()) {
   resetWork();
   buildBody();
@@ -2554,7 +2572,10 @@ if (readHash()) {
 } else {
   newBody();
 }
-setRightView(isEmpty() ? 'bauplan' : 'calc');
+(function () {
+  // Tab aus dem Link (v=b Bauplan, v=0 nur 3D), sonst Berechnung bzw. Bauplan bei leerem Körper
+  setRightView(INIT_V ? (INIT_V === 'b' ? 'bauplan' : null) : (hasBody() ? 'calc' : 'bauplan'));
+})();
 
 // Kopfzeile auf einer Zeile halten: schrittweise kompakter machen, bis alles passt
 function fitHeader() {
