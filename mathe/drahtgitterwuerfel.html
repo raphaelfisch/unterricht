@@ -335,12 +335,17 @@
   html.fs main, html.fs .container, html.fs .dviews-wrap { max-width: none !important; }
   @media (min-width: 701px) { html.fs header { padding-left: 20px !important; padding-right: 20px !important; } }
   .tot .sub2 { font-size: 14px; color: #5f5e5a; font-weight: 400; padding-left: 12px; }
+
+  /* Beamer: im Vollbild auf grossen Bildschirmen Schrift und Bedienelemente rund 1,3× grösser */
+  @media (min-width: 1400px) {
+    html.fs header, html.fs .views-bar, html.fs #panel-content { zoom: 1.3; }
+  }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>Würfelkörper</h1>
+  <h1>Drahtgitterwürfel</h1>
   <span class="spacer"></span>
   <button id="btn-clear" class="hb" title="Alles löschen"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg><span class="lt">Leeren</span></button>
   <button id="btn-share" class="hb" title="Zeichnung teilen"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM21 14v.01M14 21h.01M17 21h4v-4"/></svg><span class="lt">Teilen</span></button>

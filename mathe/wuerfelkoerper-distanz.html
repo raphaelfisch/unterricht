@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>html.loading body { opacity: 0; } body { transition: opacity 0.15s; }</style>
+<div id="undo-bar" role="status"><span id="undo-text"></span><button id="undo-btn">Rückgängig</button></div>
 <script>
   // Seite erst zeigen, wenn alles geladen und angeordnet ist (kein Springen beim Öffnen)
   document.documentElement.classList.add('loading');
@@ -669,12 +670,30 @@
   @media (max-width: 420px) { .viewbar #btn-ptsmenu, .calc-box .viewbar #btn-taskmenu { padding: 0 8px; } }
   /* Handy: Menüknöpfe in der 3D-Box nur mit Symbol */
   @media (max-width: 480px) { #viewer .viewbar .lbl { display: none; } #viewer .viewbar #btn-ptsmenu, #viewer .viewbar #btn-hints { gap: 3px; padding: 0 7px; } }
+
+  /* Rückgängig-Leiste nach «Leeren» und «Neuer Körper» */
+  #undo-bar {
+    position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 3000;
+    display: none; align-items: center; gap: 14px; max-width: min(560px, 94vw);
+    background: #2c2c2a; color: white; padding: 8px 8px 8px 18px; border-radius: 12px;
+    font-size: 15px; box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  }
+  #undo-bar.visible { display: flex; }
+  #undo-bar button { background: white; color: #2c2c2a; border: none; min-height: 40px; padding: 0 14px; font-weight: 600; border-radius: 8px; }
+  .task .ka { display: inline-block; margin-top: 10px; font-size: 15px; color: #2c2c2a; background: #f1efe8; border-radius: 8px; padding: 4px 10px; }
+  .task .ka b { font-weight: 700; }
+
+  /* Beamer: im Vollbild auf grossen Bildschirmen Schrift und Bedienelemente rund 1,3× grösser */
+  @media (min-width: 1400px) {
+    html.fs header, html.fs .views-bar, html.fs #panel-content { zoom: 1.3; }
+  }
+  button.primary:disabled { opacity: 0.35; cursor: default; }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>Würfelkörper</h1>
+  <h1>Würfelkörper – Distanzen</h1>
   <button id="btn-body" class="primary" title="Neuer Körper"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5l8.5 4.75v9.5L12 21.5l-8.5-4.75v-9.5z"/><path d="M3.5 7.25L12 12l8.5-4.75M12 12v9.5"/></svg>Neuer Körper</button>
   <button id="btn-clear" class="hb" title="Leeren"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg><span class="lt">Leeren</span></button>
   <button id="btn-share" class="hb" title="Code eingeben oder teilen"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM21 14v.01M14 21h.01M17 21h4v-4"/></svg><span class="lt">Code</span></button>
@@ -736,7 +755,7 @@
       <button id="code-load" class="primary">Laden</button>
     </div>
     <h2 style="margin-top:16px">Diese Aufgabe teilen</h2>
-    <p style="font-size:14px;color:#5f5e5a;margin-bottom:10px">Gleicher Körper, gleiche Punkte, gleiche Strecke. Danach kann jede und jeder mit «Neue Aufgabe» weiterüben.</p>
+    <p style="font-size:14px;color:#5f5e5a;margin-bottom:10px">Gleicher Körper, gleiche Punkte. Welche Strecke sie berechnen, wählen die Schüler selbst. Danach kann jede und jeder mit «Neue Aufgabe» weiterüben.</p>
     <div id="qr"></div>
     <input id="share-link" readonly>
     <div class="end">
@@ -1078,19 +1097,21 @@ function choosePair(pr) {
 // Punkte setzen: Ecken antippen (höchstens 5), nochmals antippen entfernt
 function startPlacing() {
   if (state.flat !== null) exitFlat(false);
-  state.pick = { prev: state.points.map(function (pt) { return pt.p.slice(); }), pair: state.pair.slice(), done: state.done, chosen: state.chosen };
+  state.pick = { prev: state.points.map(function (pt) { return pt.p.slice(); }), prevPts: JSON.stringify(state.points), pair: state.pair.slice(), done: state.done, chosen: state.chosen };
   state.pair = [0, 1];
   setRightView('calc');
   afterChange();
 }
 function placeCorner(p) {
   const i = state.points.findIndex(function (pt) { return eq(pt.p, p); });
-  if (i >= 0) state.points.splice(i, 1);
+  if (i >= 0) state.points.splice(i, 1);   // Buchstaben der anderen bleiben, die Lücke füllt der nächste Punkt
   else {
     if (state.points.length >= MAX_PTS) { toast('Höchstens 5 Punkte. Tippe einen Punkt an, um ihn zu entfernen.'); return; }
-    state.points.push({ p: p.slice(), letter: '' });
+    const used = state.points.map(function (pt) { return pt.letter; });
+    const free = LETTERS.split('').find(function (L) { return used.indexOf(L) < 0; });
+    state.points.push({ p: p.slice(), letter: free });
+    state.points.sort(function (a, b) { return a.letter < b.letter ? -1 : 1; });
   }
-  relabel();
   afterChange();
 }
 function finishPlacing() {
@@ -1109,7 +1130,7 @@ function finishPlacing() {
 function cancelPlacing() {
   const old = state.pick;
   state.pick = null;
-  state.points = old.prev.map(function (p, i) { return { p: p, letter: LETTERS[i] }; });
+  state.points = JSON.parse(old.prevPts);
   state.pair = old.pair; state.done = old.done; state.chosen = old.chosen;
   afterChange();
 }
@@ -1495,22 +1516,22 @@ function renderPanel() {
   const chips = chipsHTML();
   if (!taskOn()) {
     panel.innerHTML = '<div class="card task"><div class="q">Wähle eine Strecke aus.</div>' + chips +
-      '<div class="sub">Ein Würfel hat die Kantenlänge ' + state.a + ' cm.</div></div>';
+      '<div class="ka">Kantenlänge eines Würfels: <b>' + state.a + ' cm</b></div></div>';
     return;
   }
   h += '<div class="card task"><div class="q">Wie lang ist die Strecke <b>' + sg(p + q) + '</b>?</div>' + chips +
-       '<div class="sub">Ein Würfel hat die Kantenlänge ' + state.a + ' cm.</div></div>';
+       '<div class="ka">Kantenlänge eines Würfels: <b>' + state.a + ' cm</b></div></div>';
 
   const compact = pathComplete();
 
   // Schritt 1: Weg
   const names = state.path.map(function (_, i) { return ptName(i); });
-  h += '<div class="card' + (compact ? ' compact' : '') + '"><div class="h">① Weg entlang der Kanten</div>';
+  h += '<div class="card' + (compact ? ' compact' : '') + '"><div class="h">① Weg parallel zu den Kanten</div>';
   if (!pathComplete() && !state.pathMode) {
     h += '<p>Gehe von <b>' + p + '</b> nach <b>' + q + '</b>, aber nur parallel zu den Würfelkanten.</p>';
     h += '<div class="row-btns"><button id="btn-pathmode" class="primary">Weg legen</button></div>';
   } else if (!pathComplete()) {
-    h += '<p>Gehe von <b>' + p + '</b> nach <b>' + q + '</b>, aber nur parallel zu den Würfelkanten. Die grauen Linien zeigen die drei Kantenrichtungen. Tippe auf einen grauen Punkt, um dorthin zu gehen.</p>' +
+    h += '<p>Tippe auf graue Punkte, um von <b>' + p + '</b> nach <b>' + q + '</b> zu gehen.</p>' +
          '<p class="tip">Punkt versteckt? Körper drehen oder durchsichtig machen.</p>';
     h += '<div class="pathline">' + names.join(' → ') + ' → …</div>';
     if (state.path.length > 1) h += '<div class="row-btns"><button id="btn-undo"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>Schritt zurück</button></div>';
@@ -1542,7 +1563,7 @@ function renderPanel() {
       const title = (raum ? 'Dreieck ' + (ti + 1) + ': ' : 'Dreieck ') + n.join(' ');
       h += '<div class="card tri" style="border-left-color:' + t.color + '">' +
            '<div class="h"><span>' + title + '</span><button data-flat="' + ti + '">' +
-           (state.flat === ti ? 'zurück zu 3D' : 'flach ansehen') + '</button></div><div class="eq">';
+           (state.flat === ti ? 'zurück zu 3D' : 'gerade ansehen') + '</button></div><div class="eq">';
       function lbl(a, b, role, col) {
         return '<span class="lbl"><b style="color:' + col + '">' + sg(a + b) + '</b><small>' + role + '</small></span>';
       }
@@ -1611,7 +1632,14 @@ document.getElementById('panel').addEventListener('click', function (e) {
   else if (b.id === 'btn-place-done') { finishPlacing(); }
   else if (b.id === 'btn-place-cancel') { cancelPlacing(); }
   else if (b.id === 'btn-place-clear') { state.points = []; afterChange(); }
-  else if (b.dataset.pair) { const pr = b.dataset.pair.split(',').map(Number); if (!taskOn() || pairKey(pr[0], pr[1]) !== pairKey(state.pair[0], state.pair[1])) choosePair(pr); }
+  else if (b.dataset.pair) {
+    const pr = b.dataset.pair.split(',').map(Number);
+    if (taskOn() && pairKey(pr[0], pr[1]) === pairKey(state.pair[0], state.pair[1])) {
+      // gewählte Strecke nochmals antippen: Auswahl aufheben
+      if (state.flat !== null) exitFlat(false);
+      state.chosen = false; resetWork(); afterChange();
+    } else choosePair(pr);
+  }
   else if (b.id === 'btn-nextpair') { const pr = nextOpenPair(); if (pr) choosePair(pr); }
   else if (b.id === 'btn-undo') { undoPath(); }
   else if (b.id === 'btn-pathmode') { state.pathMode = true; afterChange(); }
@@ -1628,7 +1656,7 @@ document.getElementById('panel').addEventListener('click', function (e) {
   else if (b.id === 'check') { checkAll(); }
   else if (b.id === 'btn-task' || b.id === 'btn-task2' || b.id === 'btn-task3') { newTask(); }
   else if (b.id === 'btn-place2') { placeButton(); }
-  else if (b.id === 'btn-newbody') { newBody(); }
+  else if (b.id === 'btn-newbody') { newBodyWithUndo(); }
   else if (b.id === 'btn-place') { placeButton(); }
 });
 document.getElementById('panel').addEventListener('change', function (e) {
@@ -1653,7 +1681,7 @@ document.getElementById('panel').addEventListener('keydown', function (e) {
 // ====================================================================
 let scene, camera, renderer, bodyGroup, overlayGroup, bodyMat, edgeMat;
 let dirty = true;
-const view = { theta: START_THETA, phi: START_PHI, target: new THREE.Vector3(2, 1, 2), size: VIEW_SIZE };
+const view = { theta: START_THETA, phi: START_PHI, target: new THREE.Vector3(2, 1, 2), size: VIEW_SIZE, auto: true };
 let tween = null;
 let preFlat = null;
 let dotMeshes = [];   // { mesh, p }
@@ -1706,11 +1734,33 @@ function camDir() {
   return new THREE.Vector3(Math.cos(view.phi) * Math.sin(view.theta), Math.sin(view.phi), Math.cos(view.phi) * Math.cos(view.theta));
 }
 
+// Körper samt Grundplatte so gross wie möglich ins 3D-Feld einpassen (für die Startansicht berechnet)
+function fitHalfHeight(aspect) {
+  const d = new THREE.Vector3(Math.cos(START_PHI) * Math.sin(START_THETA), Math.sin(START_PHI), Math.cos(START_PHI) * Math.cos(START_THETA));
+  const r = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), d).normalize();
+  const u = new THREE.Vector3().crossVectors(d, r).normalize();
+  // Ausmass des Körpers (belegte Felder); leerer Körper: ganze Grundplatte
+  let m = 1, x0 = SIZE, x1 = 0, z0 = SIZE, z1 = 0;
+  for (let i = 0; i < SIZE; i++) for (let j = 0; j < SIZE; j++) {
+    const hgt = state.plan ? state.plan[i][j] : 0;
+    m = Math.max(m, hgt);
+    if (hgt > 0) { z0 = Math.min(z0, i); z1 = Math.max(z1, i + 1); x0 = Math.min(x0, j); x1 = Math.max(x1, j + 1); }
+  }
+  if (x1 <= x0) { x0 = 0; x1 = SIZE; z0 = 0; z1 = SIZE; }
+  const c = bodyCenter();
+  let hw = 0, hv = 0;
+  [x0 - 0.5, x1 + 0.5].forEach(function (x) { [0, m].forEach(function (y) { [z0 - 0.5, z1 + 0.5].forEach(function (z) {
+    const p = new THREE.Vector3(x, y, z).sub(c);
+    hw = Math.max(hw, Math.abs(p.dot(r))); hv = Math.max(hv, Math.abs(p.dot(u)));
+  }); }); });
+  return Math.max(hv, hw / aspect) * 1.15 + 0.35;   // etwas Rand für Buchstaben und Orientierungswürfel
+}
 function updateCamera() {
   const w = container.clientWidth || 1, h = container.clientHeight || 1;
   const aspect = w / h;
-  let hh = view.size;
-  if (aspect < 1) hh = view.size / aspect;
+  let hh = view.auto ? fitHalfHeight(aspect) : view.size;
+  if (!view.auto && aspect < 1) hh = view.size / aspect;
+  if (view.auto) view.size = aspect < 1 ? hh * aspect : hh;   // Ausgangswert für Zoomen
   camera.left = -hh * aspect; camera.right = hh * aspect;
   camera.top = hh; camera.bottom = -hh;
   camera.updateProjectionMatrix();
@@ -1721,9 +1771,16 @@ function updateCamera() {
 }
 
 function bodyCenter() {
-  let m = 0;
-  for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) m = Math.max(m, state.plan[r][c]);
-  return new THREE.Vector3(SIZE / 2, m * 0.45, SIZE / 2);
+  // Mitte des Körpers (belegte Felder); leer: Mitte der Grundplatte
+  if (!state.plan) return new THREE.Vector3(SIZE / 2, 0.5, SIZE / 2);
+  let m = 0, x0 = SIZE, x1 = 0, z0 = SIZE, z1 = 0;
+  for (let r = 0; r < SIZE; r++) for (let c = 0; c < SIZE; c++) {
+    const hgt = state.plan[r][c];
+    m = Math.max(m, hgt);
+    if (hgt > 0) { z0 = Math.min(z0, r); z1 = Math.max(z1, r + 1); x0 = Math.min(x0, c); x1 = Math.max(x1, c + 1); }
+  }
+  if (x1 <= x0) return new THREE.Vector3(SIZE / 2, 0.5, SIZE / 2);
+  return new THREE.Vector3((x0 + x1) / 2, m * 0.45, (z0 + z1) / 2);
 }
 
 function resetView(animated) {
@@ -2069,7 +2126,7 @@ function onOrientationCube(x, y) {
   const W = container.clientWidth, H = container.clientHeight, s = cubeSize(), m = 8;
   return x >= W - s - m && x <= W - m && y >= m && y <= m + s;
 }
-function resetViewFromCube() { view.size = VIEW_SIZE; resetView(true); }
+function resetViewFromCube() { view.auto = true; resetView(true); }
 function renderOrientationCube() {
   if (!oScene) return;
   const W = container.clientWidth, H = container.clientHeight;
@@ -2175,7 +2232,7 @@ function setupPointer() {
       const a = pointers[ids[0]], b = pointers[ids[1]];
       const d = Math.hypot(a.x - b.x, a.y - b.y);
       if (pinchDist > 0) {
-        view.size = Math.max(1.5, Math.min(7, view.size * pinchDist / d));
+        view.auto = false; view.size = Math.max(1.5, Math.min(7, view.size * pinchDist / d));
         updateCamera();
       }
       pinchDist = d;
@@ -2194,7 +2251,7 @@ function setupPointer() {
   el.addEventListener('pointercancel', up);
   el.addEventListener('wheel', function (e) {
     e.preventDefault();
-    view.size = Math.max(1.5, Math.min(7, view.size + e.deltaY * 0.004));
+    view.auto = false; view.size = Math.max(1.5, Math.min(7, view.size + e.deltaY * 0.004));
     updateCamera();
   }, { passive: false });
 }
@@ -2272,7 +2329,9 @@ function hashString(forShare) {
   const pts = state.points.map(function (pt) { return pt.p.join(''); }).join('');
   // gewählte Strecke nur in der Adresszeile (Neu laden), nicht im geteilten Link: dort wählen die Schüler selbst
   const pr = state.chosen && !forShare ? '&t=' + state.pair[0] + state.pair[1] : '';
-  return 'p=' + plan + (!rightView && rightView !== null || rightView === 'calc' ? '' : '&v=' + (rightView === 'bauplan' ? 'b' : '0')) + (state.points.length < 2 ? (hasBody() && !state.pick ? '&k=x' : '') : '&k=' + pts + (state.pick ? '' : pr)) +
+  const lets = state.points.map(function (pt) { return pt.letter; }).join('');
+  const nStd = LETTERS.slice(0, state.points.length);
+  return 'p=' + plan + (state.points.length >= 2 && lets !== nStd ? '&n=' + lets : '') + (!rightView && rightView !== null || rightView === 'calc' ? '' : '&v=' + (rightView === 'bauplan' ? 'b' : '0')) + (state.points.length < 2 ? (hasBody() && !state.pick ? '&k=x' : '') : '&k=' + pts + (state.pick ? '' : pr)) +
     (state.points.some(function (pt) { return pt.la != null && pt.la !== 5; }) ? '&l=' + state.points.map(labelDir).join('') : '') +
     '&a=' + state.a + '&m=' + state.mode[0] + '&s=' + state.stufe[0];
 }
@@ -2305,6 +2364,7 @@ function readHash() {
   if (o.k === 'x') { state.points = []; state.pair = [0, 1]; resetWork(); return true; }
   if (pts) {
     setPoints(pts, pair, chosen);
+    if (/^[A-E]{2,5}$/.test(o.n || '') && o.n.length === pts.length && new Set(o.n).size === pts.length) state.points.forEach(function (pt, i) { pt.letter = o.n[i]; });
     if (/^[0-7]{2,5}$/.test(o.l || '') && o.l.length === pts.length) state.points.forEach(function (pt, i) { pt.la = +o.l[i]; });
     return true;
   }
@@ -2356,7 +2416,20 @@ document.getElementById('hintctl').addEventListener('click', function (e) {
   else if (b.dataset.hint === 'quader') { state.hints.quader = !state.hints.quader; afterChange(); }
   else if (b.dataset.hint === 'weg') { togglePathHint(); }
 });
-document.getElementById('btn-body').addEventListener('click', newBody);
+function dSnapshotUndo(msg) {
+  if (!hasBody()) return null;
+  const snap = { plan: state.plan.map(function (r) { return r.slice(); }), points: JSON.stringify(state.points), pair: state.pair.slice(), chosen: state.chosen, done: JSON.stringify(state.done || {}), view: rightView };
+  return function () {
+    showUndo(msg, function () {
+      state.pick = null;
+      setBody(snap.plan.map(function (r) { return r.slice(); }));
+      state.points = JSON.parse(snap.points); state.pair = snap.pair; state.chosen = snap.chosen; state.done = JSON.parse(snap.done);
+      resetWork(); buildBody(); setRightView(snap.view); afterChange();
+    });
+  };
+}
+function newBodyWithUndo() { const u = dSnapshotUndo('Neuer Körper.'); newBody(); if (u) u(); }
+document.getElementById('btn-body').addEventListener('click', newBodyWithUndo);
 // Im Vollbild wird der Knopf zu «Vollbild beenden» (wie im Würfelkörper)
 function syncFullBtn() {
   const on = !!(document.fullscreenElement || document.webkitFullscreenElement);
@@ -2428,6 +2501,8 @@ document.getElementById('plan-reset').addEventListener('click', resetViewFromCub
 if (typeof ResizeObserver !== 'undefined') new ResizeObserver(function () { drawPlan(); }).observe(document.getElementById('plan-wrap'));
 // Leeren: ein Würfel bleibt stehen (ohne Würfel gibt es keine Strecke), Bauplan klappt auf
 document.getElementById('btn-clear').addEventListener('click', function () {
+  const u = dSnapshotUndo('Körper geleert.');
+  setTimeout(function () { if (u) u(); }, 0);
   const plan = [];
   for (let r = 0; r < SIZE; r++) { plan.push([]); for (let c = 0; c < SIZE; c++) plan[r].push(0); }
   setEmptyBody(plan);
@@ -2687,6 +2762,23 @@ setTimeout(fitHeader, 0);
   document.addEventListener('fullscreenchange', fsSync);
   document.addEventListener('webkitfullscreenchange', fsSync);
 })();
+
+// Rückgängig für «Leeren» und «Neuer Körper» (ein Schritt, einige Sekunden lang)
+let undoFn = null, undoTimer = null;
+function showUndo(msg, fn) {
+  undoFn = fn;
+  document.getElementById('undo-text').textContent = msg;
+  const bar = document.getElementById('undo-bar');
+  bar.classList.add('visible');
+  clearTimeout(undoTimer);
+  undoTimer = setTimeout(function () { bar.classList.remove('visible'); undoFn = null; }, 8000);
+}
+document.getElementById('undo-btn').addEventListener('click', function () {
+  document.getElementById('undo-bar').classList.remove('visible');
+  clearTimeout(undoTimer);
+  const f = undoFn; undoFn = null;
+  if (f) f();
+});
 </script>
 </body>
 </html>

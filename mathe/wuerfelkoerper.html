@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>html.loading body { opacity: 0; } body { transition: opacity 0.15s; }</style>
+<div id="undo-bar" role="status"><span id="undo-text"></span><button id="undo-btn">Rückgängig</button></div>
 <script>
   // Seite erst zeigen, wenn alles geladen und angeordnet ist (kein Springen beim Öffnen)
   document.documentElement.classList.add('loading');
@@ -509,6 +510,23 @@
   /* Vollbild: keine Breitenbegrenzung, Inhalt nutzt die ganze Breite (Beamer) */
   html.fs main, html.fs .container, html.fs .dviews-wrap { max-width: none !important; }
   @media (min-width: 701px) { html.fs header { padding-left: 20px !important; padding-right: 20px !important; } }
+
+  /* Rückgängig-Leiste nach «Leeren» und «Neuer Körper» */
+  #undo-bar {
+    position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 3000;
+    display: none; align-items: center; gap: 14px; max-width: min(560px, 94vw);
+    background: #2c2c2a; color: white; padding: 8px 8px 8px 18px; border-radius: 12px;
+    font-size: 15px; box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  }
+  #undo-bar.visible { display: flex; }
+  #undo-bar button { background: white; color: #2c2c2a; border: none; min-height: 40px; padding: 0 14px; font-weight: 600; border-radius: 8px; }
+  .view-toggle .sm { display: none; }
+  @media (max-width: 560px) { .view-toggle .lg { display: none; } .view-toggle .sm { display: inline; } }
+
+  /* Beamer: im Vollbild auf grossen Bildschirmen Schrift und Bedienelemente rund 1,3× grösser */
+  @media (min-width: 1400px) {
+    html.fs header, html.fs .views-bar, html.fs #panel-content { zoom: 1.3; }
+  }
 </style>
 </head>
 <body>
@@ -548,7 +566,7 @@
       <button data-v="bauplan">Bauplan</button>
       <button data-v="dots">Punktraster</button>
       <button data-v="grid">Häuschen</button>
-      <button data-v="side">Ansichten</button>
+      <button data-v="side"><span class="lg">Seitenansichten</span><span class="sm">Seiten</span></button>
     </div>
   </div>
   <div id="views">
@@ -2296,10 +2314,22 @@ function isoProject(r, c, h, ox, oy, size) {
 // ====================================================================
 // EVENTS
 // ====================================================================
-document.getElementById('btn-random').addEventListener('click', generateRandom);
+function wkSnapshotUndo(msg) {
+  const had = plan.some(function (r) { return r.some(function (h) { return h > 0; }); });
+  if (!had) return null;
+  const copy = plan.map(function (r) { return r.slice(); });
+  return function () { showUndo(msg, function () { plan = copy.map(function (r) { return r.slice(); }); updateAll(); }); };
+}
+document.getElementById('btn-random').addEventListener('click', function () {
+  const u = wkSnapshotUndo('Neuer Körper.');
+  generateRandom();
+  if (u) u();
+});
 document.getElementById('btn-clear').addEventListener('click', () => {
+  const u = wkSnapshotUndo('Körper geleert.');
   plan = Array.from({length: SIZE}, () => Array(SIZE).fill(0));
   updateAll();
+  if (u) u();
 });
 
 const planCodeInput = document.getElementById('plan-code-input');
@@ -2904,6 +2934,23 @@ setTimeout(fitHeader, 0);
   document.addEventListener('fullscreenchange', fsSync);
   document.addEventListener('webkitfullscreenchange', fsSync);
 })();
+
+// Rückgängig für «Leeren» und «Neuer Körper» (ein Schritt, einige Sekunden lang)
+let undoFn = null, undoTimer = null;
+function showUndo(msg, fn) {
+  undoFn = fn;
+  document.getElementById('undo-text').textContent = msg;
+  const bar = document.getElementById('undo-bar');
+  bar.classList.add('visible');
+  clearTimeout(undoTimer);
+  undoTimer = setTimeout(function () { bar.classList.remove('visible'); undoFn = null; }, 8000);
+}
+document.getElementById('undo-btn').addEventListener('click', function () {
+  document.getElementById('undo-bar').classList.remove('visible');
+  clearTimeout(undoTimer);
+  const f = undoFn; undoFn = null;
+  if (f) f();
+});
 </script>
 
 </body>
