@@ -215,6 +215,25 @@
   @media (max-width: 700px) { header { padding-left: 10px; padding-right: 10px; } }
   @media (max-width: 420px) { header { padding-left: 8px; padding-right: 8px; } }
   @media (max-width: 340px) { header { padding-left: 4px; padding-right: 4px; } }
+
+  /* Ebenen (eine Farbe = eine Ebene) */
+  .layers { display: flex; flex-direction: column; gap: 4px; }
+  .layer { border: 1px solid #e8e6dd; border-radius: 10px; }
+  .lhead { display: flex; align-items: center; gap: 8px; min-height: 46px; padding: 4px 4px 4px 6px; cursor: pointer; border-radius: 10px; }
+  .lhead:hover { background: #f8f7f2; }
+  .lhead .chev { color: #888780; display: inline-flex; transition: transform 0.15s; }
+  .layer.open .lhead .chev { transform: rotate(90deg); }
+  .lhead .dot { width: 14px; height: 14px; border-radius: 50%; flex: none; }
+  .lhead .nm { flex: 1; font-size: 16px; font-weight: 600; line-height: 1.2; }
+  .lhead .nm small { display: block; font-weight: 400; font-size: 13px; color: #888780; }
+  .lhead button { width: 36px; min-height: 36px; height: 36px; padding: 0; border-color: transparent; background: transparent; color: #5f5e5a; }
+  .lhead button:hover { border-color: #b4b2a9; background: white; }
+  .lhead button[data-dellayer]:hover { color: #b91c1c; }
+  .layer.hid .lhead .nm, .layer.hid .lhead .dot { opacity: 0.4; }
+  .lbody { padding: 0 4px 6px 30px; }
+  .lbody .item { min-height: 38px; }
+  .lsum { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; font-size: 15px; color: #444441; border-top: 1px solid #e8e6dd; margin-top: 4px; padding: 6px 4px 0 6px; }
+  .lsum b { text-align: right; }
 </style>
 </head>
 <body>
@@ -307,7 +326,9 @@ const state = {
   lengths: false,
   a: 2,               // Kantenlänge des Würfels in cm
   mode: 'wurzel',     // Längen als 'wurzel' oder 'dezimal'
-  menuOpen: false
+  menuOpen: false,
+  hidden: {},         // ausgeblendete Ebenen (Farbindex → true)
+  open: {}            // aufgeklappte Ebenen in der Liste
 };
 const view = { theta: START_THETA, phi: START_PHI, zoom: 1 };
 let history = [];
@@ -326,6 +347,7 @@ function norm(a) { const l = Math.hypot(a[0], a[1], a[2]); return l < 1e-12 ? nu
 function fmt(x) { return (Math.round(x * 100) / 100).toFixed(2).replace('.', ','); }
 function samePair(a, b) { return (a[0] === b[0] && a[1] === b[1]) || (a[0] === b[1] && a[1] === b[0]); }
 
+function shown(it) { return !state.hidden[it.c]; }
 function pushHistory() {
   history.push(JSON.stringify(state.items));
   if (history.length > 200) history.shift();
@@ -361,7 +383,7 @@ let POLYS = [];
 function prepPolys() {
   POLYS = [];
   state.items.forEach(function (it) {
-    if (it.t !== 'f') return;
+    if (it.t !== 'f' || !shown(it)) return;
     const P = it.p.map(function (i) { return PTS[i]; });
     const n = norm(newell(P));
     if (!n) return;
@@ -455,7 +477,7 @@ function render(g, W, H, opt) {
   // 1) Flächen (hinten zuerst)
   const fills = [];
   state.items.forEach(function (it, idx) {
-    if (it.t !== 'f') return;
+    if (it.t !== 'f' || !shown(it)) return;
     const pr = it.p.map(function (i) { return proj(PTS[i]); });
     const z = pr.reduce(function (s, q) { return s + q.z; }, 0) / pr.length;
     fills.push({ it: it, idx: idx, pr: pr, z: z });
@@ -479,6 +501,7 @@ function render(g, W, H, opt) {
   EDGES.forEach(function (e) { addLine(PTS[e[0]], PTS[e[1]], '#2c2c2a', lw, 'cube'); });
   const drawnEdges = {};
   state.items.forEach(function (it, idx) {
+    if (!shown(it)) return;
     const w = (state.hl === idx && !opt.export) ? segW * 1.6 : segW;
     if (it.t === 's') { addLine(PTS[it.p[0]], PTS[it.p[1]], COLORS[it.c], w, 'seg'); return; }
     for (let i = 0; i < it.p.length; i++) {
@@ -526,7 +549,7 @@ function render(g, W, H, opt) {
   // 5) Längen an den Strecken
   if (!opt.export) labelBoxes = [];
   if (state.lengths) {
-    state.items.forEach(function (it, idx) { if (it.t === 's') drawLengthLabel(g, it, idx, !opt.export); });
+    state.items.forEach(function (it, idx) { if (it.t === 's' && shown(it)) drawLengthLabel(g, it, idx, !opt.export); });
   }
 }
 let labelBoxes = [];   // {idx, x0, y0, x1, y1} der Längenbeschriftungen (zum Verschieben)
@@ -732,8 +755,13 @@ function tapPoint(i) {
 function toggleSegment(a, b) {
   pushHistory();
   const k = state.items.findIndex(function (it) { return it.t === 's' && samePair(it.p, [a, b]); });
-  if (k >= 0) { state.items.splice(k, 1); toast('Strecke entfernt.'); }
-  else state.items.push({ t: 's', c: state.color, p: [a, b] });
+  if (k >= 0 && !shown(state.items[k])) {
+    history.pop();
+    delete state.hidden[state.items[k].c];
+    toast('Diese Strecke war ausgeblendet – die Ebene ' + COLOR_NAMES[state.items[k].c] + ' ist wieder sichtbar.');
+  }
+  else if (k >= 0) { state.items.splice(k, 1); toast('Strecke entfernt.'); }
+  else { state.items.push({ t: 's', c: state.color, p: [a, b] }); delete state.hidden[state.color]; }
 }
 
 function planarOK(idx) {
@@ -750,6 +778,7 @@ function closePolygon() {
   if (!n) { toast('Die Punkte liegen auf einer Geraden – das gibt keine Fläche.'); return; }
   pushHistory();
   state.items.push({ t: 'f', c: state.color, p: d });
+  delete state.hidden[state.color];
   state.draft = [];
   toast('Fläche mit ' + d.length + ' Ecken gezeichnet.');
 }
@@ -872,6 +901,10 @@ function lengthHTML(it) {
   return state.mode === 'dezimal' ? '≈ ' + fmt(L) + ' cm' : rad(L2) + ' cm';
 }
 const ICON_TRASH = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+const ICON_CHEV = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
+const ICON_EYE = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+const ICON_EYE_OFF = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"/><path d="M10.6 5.1A10.6 10.6 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-2.9 3.8M6.5 6.6C3.7 8.4 2 12 2 12s3.5 7 10 7c1.8 0 3.4-.5 4.7-1.3"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>';
+const ICON_BIN = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>';
 const ICON_CHECK = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>';
 
 // ====================================================================
@@ -929,10 +962,11 @@ function areaTerms(it) {
   addTerm(T, h * h / 2, dot(N, N));
   return T;
 }
-function totals(kind) {
+function totals(kind, keep) {
   const h = state.a / 2;
   const seen = {}, edgeT = {};
-  state.items.filter(function (it) { return !kind || it.t === kind; }).forEach(function (it) {
+  const items = state.items.filter(keep || shown);
+  items.filter(function (it) { return !kind || it.t === kind; }).forEach(function (it) {
     itemEdges(it).forEach(function (e) {
       pieces(e[0], e[1]).forEach(function (pc) {
         if (seen[pc.key]) return;
@@ -942,7 +976,7 @@ function totals(kind) {
     });
   });
   // geschlossener Körper: jedes Kantenstück gehört zu genau zwei Flächen
-  const polys = state.items.filter(function (it) { return it.t === 'f'; });
+  const polys = items.filter(function (it) { return it.t === 'f'; });
   const cnt = {};
   polys.forEach(function (it) { itemEdges(it).forEach(function (e) { pieces(e[0], e[1]).forEach(function (pc) { cnt[pc.key] = (cnt[pc.key] || 0) + 1; }); }); });
   const closed = polys.length >= 4 && Object.keys(cnt).every(function (k) { return cnt[k] === 2; });
@@ -978,58 +1012,81 @@ function renderPanel() {
   }).join('') + '</div>';
   h += '</div>';
 
-  // Liste: nur das, was zum gewählten Werkzeug gehört (Strecken oder Flächen)
-  const kind = state.tool;
-  const isS = kind === 's';
-  const shown = [];
-  let ns = 0, nf = 0;
-  state.items.forEach(function (it, idx) {
-    const nr = it.t === 's' ? ++ns : ++nf;
-    if (it.t === kind) shown.push({ it: it, idx: idx, nr: nr });
-  });
-  const otherN = isS ? nf : ns;
-  h += '<div class="card"><div class="h"><span>' + (isS ? 'Strecken' : 'Flächen') + '</span></div>';
-  if (!shown.length) {
-    h += '<div class="empty">' + (isS ? 'Noch keine Strecke gezeichnet.' : 'Noch keine Fläche gezeichnet.') + '</div>';
+  // Ebenen: eine Farbe = eine Ebene, eingeklappt nur eine Zeile pro Farbe
+  h += '<div class="card"><div class="h"><span>Ebenen</span></div>';
+  if (!state.items.length) {
+    h += '<div class="empty">Noch nichts gezeichnet.</div>';
   } else {
-    h += '<div class="list">';
-    shown.forEach(function (o) {
-      const it = o.it, idx = o.idx;
-      const name = isS ? 'Strecke ' + o.nr : 'Fläche ' + o.nr + '<small>' + it.p.length + ' Ecken</small>';
-      h += '<div class="item' + (state.hl === idx ? ' hl' : '') + '" data-idx="' + idx + '">' +
-           '<span class="dot' + (isS ? '' : ' poly') + '" style="background:' + COLORS[it.c] + '"></span>' +
-           '<span class="nm">' + name + '</span>' +
-           (state.lengths ? '<span class="len">' + (isS ? lengthHTML(it) : valueHTML(areaTerms(it), 'cm²', false)) + '</span>' : '') +
-           '<button data-del="' + idx + '" title="Löschen">' + ICON_TRASH + '</button></div>';
+    h += '<div class="layers">';
+    COLORS.forEach(function (col, c) {
+      const mine = [];
+      state.items.forEach(function (it, idx) { if (it.c === c) mine.push({ it: it, idx: idx }); });
+      if (!mine.length) return;
+      const segs = mine.filter(function (o) { return o.it.t === 's'; }), polys = mine.filter(function (o) { return o.it.t === 'f'; });
+      const hid = !!state.hidden[c], open = !!state.open[c];
+      const cnt = [];
+      if (segs.length) cnt.push(segs.length + (segs.length === 1 ? ' Strecke' : ' Strecken'));
+      if (polys.length) cnt.push(polys.length + (polys.length === 1 ? ' Fläche' : ' Flächen'));
+      h += '<div class="layer' + (hid ? ' hid' : '') + (open ? ' open' : '') + '">' +
+           '<div class="lhead" data-layer="' + c + '">' +
+             '<span class="chev">' + ICON_CHEV + '</span>' +
+             '<span class="dot" style="background:' + col + '"></span>' +
+             '<span class="nm">' + COLOR_NAMES[c] + '<small>' + cnt.join(', ') + '</small></span>' +
+             '<button data-eye="' + c + '" title="' + (hid ? 'Einblenden' : 'Ausblenden') + '">' + (hid ? ICON_EYE_OFF : ICON_EYE) + '</button>' +
+             '<button data-dellayer="' + c + '" title="Ebene löschen">' + ICON_BIN + '</button>' +
+           '</div>';
+      if (open) {
+        h += '<div class="lbody">';
+        segs.forEach(function (o, n) {
+          h += '<div class="item' + (state.hl === o.idx ? ' hl' : '') + '" data-idx="' + o.idx + '">' +
+               '<span class="nm">Strecke ' + (n + 1) + '</span>' +
+               (state.lengths ? '<span class="len">' + lengthHTML(o.it) + '</span>' : '') +
+               '<button data-del="' + o.idx + '" title="Löschen">' + ICON_TRASH + '</button></div>';
+        });
+        polys.forEach(function (o, n) {
+          h += '<div class="item' + (state.hl === o.idx ? ' hl' : '') + '" data-idx="' + o.idx + '">' +
+               '<span class="nm">Fläche ' + (n + 1) + '<small>' + o.it.p.length + ' Ecken</small></span>' +
+               (state.lengths ? '<span class="len">' + valueHTML(areaTerms(o.it), 'cm²', false) + '</span>' : '') +
+               '<button data-del="' + o.idx + '" title="Löschen">' + ICON_TRASH + '</button></div>';
+        });
+        if (state.lengths && (segs.length > 1 || polys.length > 1)) {
+          const T = totals(null, function (it) { return it.c === c; });
+          h += '<div class="lsum">';
+          if (segs.length > 1) h += '<span>Strecken zusammen</span><b>' + valueHTML(totals('s', function (it) { return it.c === c; }).edgeT, 'cm', false) + '</b>';
+          if (polys.length > 1) h += '<span>Flächen zusammen</span><b>' + valueHTML(T.areaT, 'cm²', false) + '</b>';
+          h += '</div>';
+        }
+        h += '</div>';
+      }
+      h += '</div>';
     });
     h += '</div>';
   }
-  if (otherN) h += '<p class="tip" style="margin-top:6px">Ausserdem ' + otherN + ' ' + (isS ? (otherN === 1 ? 'Fläche' : 'Flächen') : (otherN === 1 ? 'Strecke' : 'Strecken')) + ' gezeichnet – unter «' + (isS ? 'Fläche' : 'Strecke') + '» aufgelistet.</p>';
   if (state.lengths) {
     h += '<div class="sub">Kantenlänge des Würfels: <select id="sel-a" class="inline-sel">' +
          [2, 4, 6, 8, 10, 12, 14, 16, 18, 20].map(function (v) { return '<option value="' + v + '"' + (v === state.a ? ' selected' : '') + '>' + v + ' cm</option>'; }).join('') +
          '</select></div>' +
-         '<div class="sub">' + (isS ? 'Längen' : 'Flächeninhalte') + ' angeben als <select id="sel-mode" class="inline-sel">' +
+         '<div class="sub">Resultate angeben als <select id="sel-mode" class="inline-sel">' +
          '<option value="wurzel"' + (state.mode === 'wurzel' ? ' selected' : '') + '>Wurzel</option>' +
          '<option value="dezimal"' + (state.mode === 'dezimal' ? ' selected' : '') + '>Dezimalzahl</option>' +
-         '</select></div>' +
-         (isS ? '<p class="tip" style="margin-top:6px">Längen im Würfel lassen sich verschieben. Doppelklick: zurück an den Platz.</p>' : '');
+         '</select></div>';
+  } else if (state.items.length) {
+    h += '<p class="tip" style="margin-top:8px">Längen und Flächeninhalte: oben bei «Anzeige» einschalten.</p>';
   }
   h += '</div>';
 
-  // Gesamt: bei Strecken die Länge aller Strecken, bei Flächen die Flächen bzw. Oberfläche
-  if (state.lengths && shown.length > (isS ? 1 : 0)) {
-    const T = totals(kind);
+  // Gesamt über alle sichtbaren Ebenen
+  if (state.lengths && state.items.some(shown)) {
+    const T = totals();
+    const nS = state.items.filter(function (it) { return it.t === 's' && shown(it); }).length;
     h += '<div class="card"><div class="h"><span>Gesamt</span></div><div class="tot">';
-    if (isS) {
-      h += '<span class="tl">Alle Strecken zusammen</span><span class="tv">' + valueHTML(T.edgeT, 'cm', true) + '</span>';
-    } else if (T.closed) {
-      h += '<span class="tl">Oberfläche<small>Summe aller ' + T.polys + ' Teilflächen</small></span><span class="tv">' + valueHTML(T.areaT, 'cm²', true) + '</span>';
-    } else {
-      h += '<span class="tl">Flächen zusammen<small>noch kein geschlossener Körper</small></span><span class="tv">' + valueHTML(T.areaT, 'cm²', true) + '</span>';
+    if (nS) h += '<span class="tl">Alle Strecken zusammen</span><span class="tv">' + valueHTML(totals('s').edgeT, 'cm', true) + '</span>';
+    if (T.polys) {
+      if (T.closed) h += '<span class="tl">Oberfläche<small>Summe aller ' + T.polys + ' Teilflächen</small></span><span class="tv">' + valueHTML(T.areaT, 'cm²', true) + '</span>';
+      else h += '<span class="tl">Flächen zusammen<small>noch kein geschlossener Körper</small></span><span class="tv">' + valueHTML(T.areaT, 'cm²', true) + '</span>';
     }
     h += '</div>';
-    if (!isS && !T.closed) h += '<p class="tip" style="margin-top:8px">Die Oberfläche erscheint, sobald die Flächen den Körper rundum abschliessen.</p>';
+    if (Object.keys(state.hidden).some(function (c) { return state.items.some(function (it) { return it.c === +c; }); })) h += '<p class="tip" style="margin-top:8px">Ausgeblendete Ebenen zählen nicht mit.</p>';
     h += '</div>';
   }
 
@@ -1061,7 +1118,21 @@ function update() {
 const panel = document.getElementById('panel');
 panel.addEventListener('click', function (e) {
   const b = e.target.closest('button');
-  if (!b) return;
+  if (!b) {
+    const lh = e.target.closest('.lhead');
+    if (lh) { const c = +lh.dataset.layer; state.open[c] = !state.open[c]; renderPanel(); }
+    return;
+  }
+  if (b.dataset.eye != null) { const c = +b.dataset.eye; if (state.hidden[c]) delete state.hidden[c]; else state.hidden[c] = true; update(); return; }
+  if (b.dataset.dellayer != null) {
+    const c = +b.dataset.dellayer;
+    pushHistory();
+    state.items = state.items.filter(function (it) { return it.c !== c; });
+    delete state.hidden[c]; state.hl = null;
+    update();
+    toast('Ebene ' + COLOR_NAMES[c] + ' gelöscht. «Schritt zurück» holt sie wieder.');
+    return;
+  }
   if (b.dataset.tool) { state.tool = b.dataset.tool; state.sel = null; state.draft = []; update(); }
   else if (b.dataset.color != null) { state.color = parseInt(b.dataset.color, 10); update(); }
   else if (b.dataset.del != null) {
@@ -1118,7 +1189,7 @@ function hashString() {
   const d = state.items.map(function (it) {
     return it.t + it.c + it.p.map(function (i) { return CHARS[i]; }).join('') + (it.lo ? '_' + it.lo[0] + '_' + it.lo[1] : '');
   }).join('.');
-  return 'd=' + d + '&a=' + state.a + '&g=' + (state.dashed ? 1 : 0) + '&l=' + (state.lengths ? 1 : 0) + '&m=' + state.mode[0] + '&p=' + (state.showPts ? 1 : 0) +
+  return 'd=' + d + '&a=' + state.a + '&g=' + (state.dashed ? 1 : 0) + '&l=' + (state.lengths ? 1 : 0) + '&m=' + state.mode[0] + '&p=' + (state.showPts ? 1 : 0) + (Object.keys(state.hidden).length ? '&h=' + Object.keys(state.hidden).join('') : '') +
     '&v=' + Math.round(view.theta * 100) + '_' + Math.round(view.phi * 100) + '_' + Math.round(view.zoom * 100);
 }
 function writeHash() { try { history_replace('#' + hashString()); } catch (e) { /* lokal egal */ } }
@@ -1137,6 +1208,7 @@ function readHash() {
     view.zoom = Math.max(0.5, Math.min(3, +vm[3] / 100));
   }
   if (o.p === '0') state.showPts = false;
+  if (/^[0-4]{1,5}$/.test(o.h || '')) o.h.split('').forEach(function (c) { state.hidden[+c] = true; });
   if (o.d) {
     o.d.split('.').forEach(function (s) {
       const m = /^([sf])([0-4])([0-9a-q]+)(?:_(-?\d+)_(-?\d+))?$/.exec(s);
