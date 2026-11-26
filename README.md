@@ -30,6 +30,7 @@ Interaktive Web-Tools für den Unterricht.
 |------|-------------|
 | `bundesratswahl.html` | Bundesratswahl verstehen: Lernpfad, Klassensimulation der Wahl, Hinweise für Lehrpersonen |
 | `bundesratswahl-druckvorlagen.pdf` | Druckvorlagen zur Simulation (Rollenkarten, Steckbriefe, Wahlzettel) |
+| `bundesratswahl-plakate.pdf` | Wahlplakate der vier erfundenen Kandidierenden (A4) |
 
 ## Verwendung
 
