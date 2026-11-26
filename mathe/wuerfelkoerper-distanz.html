@@ -578,6 +578,14 @@
   .chips .ic { width: 16px; height: 16px; }
   .chips-lbl { font-size: 14px; color: #5f5e5a; margin-top: 10px; }
   .pts-list { font-size: 18px; font-weight: 700; color: #dc2626; letter-spacing: 1px; margin-top: 6px; min-height: 24px; }
+
+  .pts-card .stufe-toggle { margin-top: 2px; }
+  .pts-btns { display: flex; gap: 8px; margin-top: 10px; }
+  .pts-btns button { flex: 1; min-height: 44px; }
+  .sticky-bottom #btn-task, .sticky-bottom #btn-nextpair { flex: 1; }
+  .chips { gap: 5px; }
+  .chips button { padding: 0 9px; font-size: 15px; }
+  .chips button.done { padding-left: 7px; gap: 3px; }
 </style>
 </head>
 <body>
@@ -610,7 +618,6 @@
     <div class="viewbar">
     <h2 class="box-title">Distanzen</h2>
     <div class="viewctl">
-      <button class="icon" id="v-pick" title="Punkte setzen"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="14" r="3"/><path d="M10 21v-4M10 11V7M3 14h4M13 14h4"/><path d="M19 3v6M16 6h6"/></svg></button>
       <button class="icon" id="v-reset" title="Ansicht zurücksetzen"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 9.5V20h14V9.5"/></svg></button>
       <button class="icon" id="v-glass" title="Körper durchsichtig"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5l8.5 4.75v9.5L12 21.5l-8.5-4.75v-9.5z"/><path d="M3.5 16.75L12 12l8.5 4.75M12 12V2.5" stroke-dasharray="2 2.5"/></svg></button>
     </div>
@@ -1303,7 +1310,6 @@ function inputHTML(key, isHyp) {
 
 function renderPanel() {
   const panel = document.getElementById('panel-content');
-  document.getElementById('v-pick').classList.toggle('on', !!state.pick);
   renderHints();
   if (state.pick) {
     const n = state.points.length;
@@ -1323,10 +1329,14 @@ function renderPanel() {
   }
   const p = nameP(), q = nameQ();
   let h = '';
-  h += '<div class="stufe-row"><div class="stufe-toggle">' +
+  // Karte «Punkte»: woher die Punkte kommen (Zufall in gewählter Art oder selbst setzen)
+  h += '<div class="card pts-card"><div class="h">Punkte</div>' +
+       '<div class="stufe-toggle">' +
        '<button data-stufe="ebene" class="' + (state.stufe !== 'raum' ? 'on' : '') + '">Flächendiagonale</button>' +
        '<button data-stufe="raum" class="' + (state.stufe !== 'ebene' ? 'on' : '') + '">Raumdiagonale</button>' +
-       '</div></div>';
+       '</div><div class="row-btns pts-btns">' +
+       '<button id="btn-task"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>Zufällig</button>' +
+       '<button id="btn-place">Selbst setzen</button></div></div>';
   let chips = '';
   if (state.points.length > 2) {
     const curKey = pairKey(state.pair[0], state.pair[1]);
@@ -1426,13 +1436,15 @@ function renderPanel() {
     }
   }
   // Leiste unten: Prüfen und Neue Aufgabe
-  const nextBtn = '<button id="btn-task" class="' + (state.solved ? 'primary' : '') + '"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>Neue Aufgabe</button>';
+  const nextBtn = '<button id="btn-task" class="primary"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>Neue Aufgabe</button>';
   const pickBtn = '<button id="btn-pick" title="Eigene Strecke wählen"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="5.5" r="2.5"/><path d="M7.5 16.5l9-9"/></svg>Eigene Strecke</button>';
   const open = state.solved && state.points.length > 2 ? nextOpenPair() : null;
   const nextPairBtn = open ? '<button id="btn-nextpair" class="primary">Nächste Strecke ' + sg(state.points[open[0]].letter + state.points[open[1]].letter) + '</button>' : '';
-  h += '<div class="sticky-bottom">' +
-       (pathComplete() && !state.solved ? '<button id="check" class="primary full">Prüfen</button>' : '') +
-       nextPairBtn + (open ? nextBtn.replace(' class="primary"', ' class=""') : nextBtn) + '</div>';
+  // unten nur das Weiterkommen: Prüfen → Nächste Strecke → (alles gelöst) Neue Aufgabe
+  let bottom = '';
+  if (pathComplete() && !state.solved) bottom = '<button id="check" class="primary full">Prüfen</button>';
+  else if (state.solved) bottom = open ? nextPairBtn : nextBtn;
+  if (bottom) h += '<div class="sticky-bottom">' + bottom + '</div>';
   panel.innerHTML = h;
 }
 
@@ -1465,6 +1477,7 @@ document.getElementById('panel').addEventListener('click', function (e) {
   }
   else if (b.id === 'check') { checkAll(); }
   else if (b.id === 'btn-task') { newTask(); }
+  else if (b.id === 'btn-place') { placeButton(); }
 });
 document.getElementById('panel').addEventListener('change', function (e) {
   if (e.target.id === 'sel-a') state.a = parseInt(e.target.value, 10);
@@ -2186,12 +2199,12 @@ document.getElementById('btn-full').addEventListener('click', function () {
   }
 });
 document.getElementById('v-reset').addEventListener('click', resetViewFromCube);
-document.getElementById('v-pick').addEventListener('click', function () {
+function placeButton() {
   if (!state.plan || !state.allCorners.length) { setRightView('bauplan'); toast('Zuerst im Bauplan einen Körper bauen.'); return; }
   if (!state.pick) startPlacing();
   else if (state.points.length >= 2) finishPlacing();
   else cancelPlacing();
-});
+}
 document.getElementById('v-glass').addEventListener('click', function () { state.glass = !state.glass; applyGlass(); });
 // Rechte Spalte: Bauplan oder Berechnung (3D bleibt immer sichtbar)
 function setRightView(v) {
