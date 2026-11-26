@@ -976,7 +976,7 @@ function nameP() { return state.points[state.pair[0]].letter; }
 function nameQ() { return state.points[state.pair[1]].letter; }
 function isEmpty() { return !state.points || state.points.length < 2; }
 // Eine Strecke ist gewählt: bei 2 Punkten immer, bei mehr Punkten erst nach dem Antippen
-function taskOn() { return !isEmpty() && (state.points.length === 2 || !!state.chosen); }
+function taskOn() { return !isEmpty() && !!state.chosen; }
 function hasBody() { return !!state.plan && state.plan.some(function (r) { return r.some(function (h) { return h > 0; }); }); }
 function pathComplete() { return taskOn() && state.path.length > 1 && eq(state.path[state.path.length - 1], Q()); }
 function isRaum() { return taskOn() && nonzeroCount(P(), Q()) === 3; }
@@ -1105,10 +1105,6 @@ function finishPlacing() {
   if (same) { state.pair = old.pair; state.done = old.done; state.chosen = old.chosen; }
   else { state.pair = [0, 1]; state.done = {}; state.chosen = false; resetWork(); }
   afterChange();
-  if (!same && state.points.length === 2) {
-    const t = pairType(P(), Q());
-    toast(t === 'raum' ? 'Das ist eine Raumdiagonale.' : t === 'ebene' ? 'Das ist eine Flächendiagonale.' : 'Sonderfall: Die Strecke liegt auf einer Kante.');
-  }
 }
 function cancelPlacing() {
   const old = state.pick;
@@ -1458,7 +1454,7 @@ document.getElementById('ptsctl').addEventListener('click', function (e) {
   else if (b.id === 'btn-place') { state.ptsOpen = false; renderPtsMenu(); placeButton(); }
 });
 function chipsHTML() {
-  if (state.points.length <= 2) return '';
+  if (state.points.length < 2) return '';
   const curKey = taskOn() ? pairKey(state.pair[0], state.pair[1]) : '';
   return '<div class="chips">' + allPairs().map(function (pr) {
     const k = pairKey(pr[0], pr[1]), done = !!state.done[k];
@@ -2271,10 +2267,11 @@ function drawPlan() {
 // ====================================================================
 // URL (Teilen)
 // ====================================================================
-function hashString() {
+function hashString(forShare) {
   const plan = state.plan.map(function (r) { return r.join(''); }).join('');
   const pts = state.points.map(function (pt) { return pt.p.join(''); }).join('');
-  const pr = state.points.length > 2 && state.chosen ? '&t=' + state.pair[0] + state.pair[1] : '';
+  // gewählte Strecke nur in der Adresszeile (Neu laden), nicht im geteilten Link: dort wählen die Schüler selbst
+  const pr = state.chosen && !forShare ? '&t=' + state.pair[0] + state.pair[1] : '';
   return 'p=' + plan + (!rightView && rightView !== null || rightView === 'calc' ? '' : '&v=' + (rightView === 'bauplan' ? 'b' : '0')) + (state.points.length < 2 ? (hasBody() && !state.pick ? '&k=x' : '') : '&k=' + pts + (state.pick ? '' : pr)) +
     (state.points.some(function (pt) { return pt.la != null && pt.la !== 5; }) ? '&l=' + state.points.map(labelDir).join('') : '') +
     '&a=' + state.a + '&m=' + state.mode[0] + '&s=' + state.stufe[0];
@@ -2333,7 +2330,7 @@ function planFromCode(code) {
 
 function shareURL() {
   const base = /^https?:/.test(location.protocol) ? location.href.split('#')[0] : BASE_URL;
-  return base + '#' + hashString();
+  return base + '#' + hashString(true);
 }
 
 // ====================================================================
