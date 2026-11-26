@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Primfaktor-Bausteine</title>
+<style>
+/* VOICE: verspielt, klar, wie ein Spielzeugkasten im Schulzimmer
+   IDEA: eine grüne Grundplatte mit einer Säule pro Primzahl – die Höhe ist der Exponent
+   PICTURE: das Säulen-Regal selbst, gleich grosse Steine, Farbe = Primzahl
+   COLOUR and TYPE: Spielzeug-Grundfarben auf hellem Grund, Systemschrift (offline)
+   LAYOUT: Surface Go quer: links Aufgabe und Knöpfe, rechts das Regal; schmal: untereinander */
+:root{color-scheme:light dark;
+--bg:light-dark(#e6ebf2,#0f141d);--card:light-dark(#ffffff,#1a2130);--ink:light-dark(#1b2333,#eef2fa);
+--soft:light-dark(#5b6678,#a5b0c4);--line:light-dark(#d5dce7,#2d3750);--plate:light-dark(#3fae4f,#2f8a3d);--plate2:light-dark(#2f9440,#25722f);
+--ok:light-dark(#1f8a3a,#5fd27a);--bad:light-dark(#c4372d,#ff8a7d);--focus:#2f6fe0;--z:1}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+html,body{touch-action:manipulation}
+button,.fig,.cols,header,.task{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+button,.fig svg{touch-action:manipulation}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.45 "Segoe UI",system-ui,-apple-system,Roboto,sans-serif;overflow-x:clip}
+button,select,input{font:inherit;font-size:16px;color:inherit}
+.app{max-width:1500px;margin:calc(14px / var(--z)) auto;width:calc(100% - 28px / var(--z));background:var(--card);border:1px solid var(--line);border-radius:20px;
+  padding:14px 18px 16px;display:flex;flex-direction:column;gap:10px;
+  min-height:calc((100vh - 28px) / var(--z));min-height:calc((100dvh - 28px) / var(--z))}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px}
+h1{font-size:23px;line-height:1.1;margin:0 4px 0 0;font-weight:700}
+.pill{border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-weight:600;white-space:nowrap;background:var(--bg)}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{min-height:44px;padding:8px 16px;border-radius:12px;border:2px solid var(--line);background:var(--bg);cursor:pointer;font-weight:600}
+.seg{display:inline-flex;align-items:center;gap:6px;background:var(--bg);border-radius:14px;padding:4px}
+.seg .lbl{padding:0 4px 0 10px;font-weight:600}
+.tab{min-height:44px;padding:8px 14px;border:0;border-radius:10px;background:transparent;cursor:pointer;font-weight:600;color:var(--soft);white-space:nowrap}
+.tab:hover{color:var(--ink)}
+.tab[aria-selected=true]{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.sel{min-height:52px;border:0;border-radius:14px;background:var(--bg);padding:8px 32px 8px 12px;font-weight:600;cursor:pointer;
+  appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%235b6678' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 11px center}
+.panel{position:relative}
+.btn.main{background:#e3342f;border-color:#e3342f;color:#fff}
+.btn:disabled{opacity:.4;cursor:default}
+.icon{width:44px;padding:0;display:grid;place-items:center}
+.spacer{margin-left:auto}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+main{flex:1;display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+/* Spielfläche auf 960 px begrenzen, damit die Wege kurz bleiben */
+main,.foot,header{width:100%;max-width:960px;margin-left:auto;margin-right:auto}
+.panel{display:flex;flex-direction:column;gap:12px;justify-content:center;justify-content:safe center}
+.panel>.nextrow{margin-top:10px}
+.task{text-align:center}
+.lbl{color:var(--soft)}
+.big .eqn{font-weight:700}
+.big.wrap{white-space:normal!important;line-height:1.2!important;overflow-wrap:anywhere;overflow:hidden}
+.big sup{font-size:.55em;line-height:0}
+.big{display:block;font-size:72px;font-weight:700;line-height:80px;height:80px;white-space:nowrap;width:100%}
+.actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.msg{text-align:center;min-height:50px;font-weight:600}
+.msg.ok{color:var(--ok)}.msg.bad{color:var(--bad)}.msg.hint{color:var(--soft);font-weight:500}
+.nota{min-height:112px;align-content:start;align-items:baseline;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px;margin:0 auto;width:min(100%,380px);background:var(--bg);border-radius:14px;padding:10px 16px}
+.nota dt{color:var(--soft)}.nota dd{margin:0;font-weight:700;font-size:21px;line-height:1.5;overflow-wrap:anywhere}
+.nota dt{line-height:1.5}
+.nota sup{font-size:.62em;line-height:0}
+.nota dd.sm{font-size:15px;line-height:1.45;font-weight:600}
+.nota{max-height:46vh;max-height:46dvh;overflow-y:auto}
+.answer{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center}
+.answer input{width:150px;min-height:52px;border-radius:12px;border:2px solid var(--line);background:var(--bg);padding:6px 12px;font-size:26px;text-align:center;font-weight:700}
+.regal{display:flex;flex-direction:column;background:transparent;padding:0}
+.fig{position:relative;flex:1;min-height:300px}
+.fig>svg{position:absolute;inset:0;width:100%;height:100%}
+.fig .brick{cursor:pointer}
+.fig .brick.new{animation:drop .3s cubic-bezier(.3,1.4,.6,1)}
+@keyframes drop{from{transform:translateY(-50px);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.fig .brick.new{animation:none}}
+.cols{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;margin-top:14px}
+.col{display:flex;flex-direction:column;align-items:center;gap:4px}
+.lego{display:block;width:min(100%,84px);padding:0;border:0;background:none;line-height:0;border-radius:8px}
+.lego svg{width:100%;height:auto;display:block;overflow:visible}
+button.lego{cursor:pointer}
+button.lego:active{transform:translateY(2px)}
+button.lego:disabled{opacity:.45;cursor:default;transform:none}
+.val{font-weight:700;color:var(--soft);height:24px;line-height:24px;font-size:16px;white-space:nowrap}
+.val sup{line-height:0}
+.foot{color:var(--soft);font-size:14px;text-align:center;margin:0 auto}
+[hidden]{display:none!important}
+.nota[hidden]{display:grid!important;visibility:hidden}
+#next[hidden]{display:inline-block!important;visibility:hidden}
+/* mittlere Breiten: Titel weglassen, damit Modi, Stufe, Punkte und Knöpfe in eine Zeile passen */
+@media (min-width:601px){
+  h1{display:none}
+  header{gap:8px}
+  #modes .tab{padding:8px 12px}
+  #scorebox{padding:6px 12px}
+}
+/* Surface Go, Tablet, Desktop (auch schmale Fenster): Aufgabenleiste oben, Grundplatte über die ganze Breite */
+@media (min-width:601px) and (min-height:501px){
+  .app{height:calc((100vh - 28px) / var(--z));height:calc((100dvh - 28px) / var(--z))}
+  main{min-height:0;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);gap:14px}
+  .panel{flex-direction:row;flex-wrap:nowrap;align-items:center;justify-content:flex-start;gap:8px 18px;background:var(--bg);border-radius:16px;padding:14px 18px;height:104px;overflow:hidden}
+  .task{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;flex:1 1 0;min-width:0}
+  .task .lbl{font-size:14px;line-height:1.2}
+  .task .big{font-size:52px;line-height:56px;height:56px}
+  .panel .msg:empty{flex-basis:0;min-width:0}
+  .panel .msg{order:2;flex:0 1 240px;min-height:0;text-align:center;margin:0;font-size:15px;line-height:1.3}
+  .nota[hidden],#next[hidden]{display:none!important}
+  .nota{margin:0;min-height:0;max-height:none;overflow:visible;display:flex;flex-wrap:wrap;gap:2px 8px;align-items:baseline;background:var(--card);padding:6px 12px;width:auto;border-radius:12px}
+  .nota dt{font-size:13px}.nota dd{margin-right:6px;font-size:20px}
+  .nota dd.sm{font-size:14px}
+  .app.solved #buildUI,.app.solved #answerForm{display:none!important}
+  .nextrow{margin:0!important}
+  .task{order:1}.nota{order:3}#buildUI,#answerForm{order:4}.nextrow{order:5}
+  .regal{min-height:0}.fig{min-height:0}
+}
+@media(max-width:600px){
+  .app{margin:8px auto;width:calc(100% - 16px);padding:10px 10px 12px;gap:10px;border-radius:16px;min-height:calc(100vh - 16px);min-height:calc(100dvh - 16px)}
+  header{gap:8px}
+  h1{order:1;flex:1;font-size:21px}#reset{order:2}#fs{order:3}#modes{order:4;flex:1 0 100%;display:flex}#level{order:5;flex:1}#scorebox{order:6}
+  header .spacer{display:none}#modes .tab{flex:1;padding:8px 2px;font-size:14px}
+  .sel{min-height:44px;font-size:15px}
+  main{display:flex;flex-direction:column;gap:10px}
+  .panel{display:contents}
+  .task{order:1}.regal{order:2}#buildUI,#answerForm{order:3}.msg{order:4}.nota{order:5}.nextrow{order:6}
+  .big{font-size:48px;line-height:56px;height:56px}
+  .task .lbl{font-size:15px}
+  .regal{padding:8px 6px 6px}
+  .fig{flex:none;min-height:0;height:clamp(120px,calc(100vh - 560px),320px);height:clamp(120px,calc(100dvh - 560px),320px)}
+  .msg{min-height:50px;display:flex;align-items:center;justify-content:center;line-height:1.3}
+  .nota{min-height:0;padding:8px 14px;gap:0 14px}.nota dd{font-size:17px;line-height:1.4}.nota dt{line-height:1.4}
+  .nota[hidden],#next[hidden]{display:none!important}
+  .nextrow:has(#next[hidden]){display:none}
+  .app.solved .msg{display:none}
+  #scorebox{font-size:14px;padding:6px 10px}
+  .sel{padding-left:10px;padding-right:28px;background-position:right 9px center}
+  .app.solved #buildUI,.app.solved #answerForm{display:none!important}
+  .foot{font-size:12px;line-height:1.35}
+}
+@media (max-height:500px) and (orientation:landscape){
+  .app{margin:6px auto;width:calc(100% - 12px);padding:8px 12px;gap:8px;min-height:calc(100vh - 12px);min-height:calc(100dvh - 12px)}
+  h1{display:none}
+  header{gap:6px}
+  #modes .tab{padding:6px 10px;font-size:14px;min-height:40px}
+  .sel{min-height:44px;font-size:14px;padding:6px 28px 6px 10px;background-position:right 9px center}
+  #scorebox{font-size:14px;padding:5px 10px}
+  header .btn.icon{min-height:44px}
+  main{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:12px}
+  .big{font-size:44px;line-height:50px;height:50px}
+  .panel{gap:8px}
+  .msg{min-height:24px}
+  .nota{min-height:0;padding:6px 12px}.nota dd{font-size:17px}
+  .nota[hidden]{display:none!important}
+  .app.solved #buildUI,.app.solved #answerForm{display:none!important}
+  .fig{min-height:170px}
+  .foot{display:none}
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header>
+    <h1>Primfaktoren</h1>
+    <div class="seg" role="tablist" id="modes">
+      <button class="tab" role="tab" aria-selected="true" data-mode="zerlegen">Zahl → Säulen</button>
+      <button class="tab" role="tab" aria-selected="false" data-mode="rechnen">Säulen → Zahl</button>
+      <button class="tab" role="tab" aria-selected="false" data-mode="werkstatt">Werkstatt</button>
+    </div>
+    <select class="sel" id="level" aria-label="Stufe">
+      <option value="0">Stufe 1 · bis 60</option>
+      <option value="1">Stufe 2 · bis 200</option>
+      <option value="2">Stufe 3 · bis 1000</option>
+    </select>
+    <span class="spacer"></span>
+    <span class="pill" id="scorebox"><span id="pts">0 Punkte</span> · <span id="streak">Serie 0</span></span>
+    <button class="btn icon" id="reset" title="Alles zurücksetzen" aria-label="Alles zurücksetzen">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v5h5"/></svg>
+    </button>
+    <button class="btn icon" id="fs" title="Vollbild" aria-label="Vollbild">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" id="fsIcon"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+    </button>
+  </header>
+
+
+  <main>
+    <section class="panel">
+      <div class="task" id="task"></div>
+      <div class="actions" id="buildUI">
+        <button class="btn" id="undo">↶ Rückgängig</button>
+        <button class="btn" id="hintBtn">Tipp</button>
+        <button class="btn main" id="check">Prüfen</button>
+      </div>
+      <form class="answer" id="answerForm" hidden>
+        <input id="answer" inputmode="numeric" autocomplete="off" aria-label="Deine Zahl">
+        <button class="btn main" type="submit">Prüfen</button>
+      </form>
+      <div class="msg" id="msg" aria-live="polite"></div>
+      <dl class="nota" id="nota" hidden></dl>
+      <div class="actions nextrow"><button class="btn main" id="next" hidden>Nächste Zahl →</button></div>
+    </section>
+
+    <section class="regal" aria-label="Säulen der Primfaktoren">
+      <div class="fig" id="fig"></div>
+      <div class="cols" id="cols"></div>
+    </section>
+  </main>
+  <p class="foot" id="foot"></p>
+</div>
+
+<script>
+{
+var PRIMES=[2,3,5,7,11,13];
+var COL={2:["#e3342f","#a8201c","#ff8a80"],3:["#1f6fd1","#144c94","#7ab3f7"],5:["#f2b705","#b88800","#ffe07a"],
+7:["#2b9a48","#1b6b31","#7fd895"],11:["#f07f17","#b35a08","#ffb36a"],13:["#8b4fc9","#5f2f94","#c79cf2"]};
+var TXT={5:"#3a2a00"};
+var LEVELS=[{lo:4,hi:60,max:7,rows:6},{lo:20,hi:200,max:13,rows:8},{lo:100,hi:1000,max:13,rows:10}];
+function $(id){return document.getElementById(id)}
+var st={mode:"zerlegen",level:0,target:0,build:empty(),hist:[],shop:empty(),shist:[],m2:empty(),wrong:0,hadFail:false,solved:false,score:0,streak:0};
+function empty(){var o={};PRIMES.forEach(function(p){o[p]=0});return o}
+
+function factor(n){var f=[];for(var p=2;p*p<=n;p++)while(n%p===0){f.push(p);n/=p}if(n>1)f.push(n);return f}
+function toCounts(f){var o=empty();f.forEach(function(p){o[p]++});return o}
+function value(c){var v=1;PRIMES.forEach(function(p){v*=Math.pow(p,c[p])});return v}
+/* exakter Wert als Text, auch für sehr grosse Zahlen (BigInt), mit Schweizer Tausendertrennung ab 5 Stellen */
+function bigValue(c){var s;
+  if(typeof BigInt==="function"){var v=BigInt(1);PRIMES.forEach(function(p){for(var i=0;i<c[p];i++)v*=BigInt(p)});s=v.toString()}
+  else s=String(value(c));
+  return s.length>4?s.replace(/\B(?=(\d{3})+(?!\d))/g,"\u2019"):s}
+function bigClass(s){return s.length>14?" huge":s.length>8?" long":""}
+function total(c){return PRIMES.reduce(function(s,p){return s+c[p]},0)}
+function productStr(c){var a=[];PRIMES.forEach(function(p){for(var i=0;i<c[p];i++)a.push(p)});return a.length?a.join(" · "):"–"}
+function powerHTML(c){var a=PRIMES.filter(function(p){return c[p]}).map(function(p){return c[p]>1?p+"<sup>"+c[p]+"</sup>":""+p});return a.length?a.join(" · "):"–"}
+
+/* Zahlen wie aus einem gemischten Kartenstapel ziehen: jede Zahl der Stufe kommt einmal dran,
+   erst dann wird neu gemischt. So gibt es keine Wiederholungen, bis alle Zahlen dran waren. */
+var decks={};
+function pool(L){var a=[];for(var n=L.lo;n<=L.hi;n++){var f=factor(n);if(f[f.length-1]<=L.max&&f.length>1)a.push(n)}return a}
+function newNumber(mode){
+  var key=st.level+mode,d=decks[key],last=decks[key+"_last"];
+  if(!d||!d.length){
+    d=pool(LEVELS[st.level]);
+    for(var i=d.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=d[i];d[i]=d[j];d[j]=t}
+    if(d.length>1&&d[d.length-1]===last){var t2=d[0];d[0]=d[d.length-1];d[d.length-1]=t2}
+    decks[key]=d;
+  }
+  return decks[key+"_last"]=d.pop();
+}
+function cur(){return st.mode==="werkstatt"?st.shop:st.mode==="rechnen"?st.m2:st.build}
+function hist(){return st.mode==="werkstatt"?st.shist:st.hist}
+function rows(){var r=6,c=cur();PRIMES.forEach(function(p){r=Math.max(r,c[p]+1)});return r}
+
+/* ---------- Regal zeichnen ---------- */
+var lastAdd=null;
+function drawRegal(){
+  var box=$("fig"),W=box.clientWidth,H=box.clientHeight;if(!W||!H)return;
+  var c=cur(),R=rows(),colW=W/6,plateH=Math.min(22,H*.06),studH=plateH*.45;
+  var bw=Math.min(colW*.78,110),bh=Math.min(bw*.5,(H-plateH-studH-8)/R);
+  var sw=bw*.24,sh=Math.min(bh*.26,9);
+  var base=H-plateH;
+  var s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Säulen: '+productStr(c)+'">';
+  s+='<rect x="0" y="'+(base)+'" width="'+W+'" height="'+plateH+'" rx="'+(plateH*.35)+'" fill="var(--plate)"/>';
+  PRIMES.forEach(function(p,i){
+    var cx=colW*i+colW/2,x=cx-bw/2,col=COL[p];
+    if(!c[p])for(var k=0;k<2;k++)s+='<rect x="'+(cx+(k?bw*.14:-bw*.14-sw))+'" y="'+(base-studH)+'" width="'+sw+'" height="'+(studH+2)+'" rx="3" fill="var(--plate2)"/>';
+    for(var j=0;j<c[p];j++){
+      var y=base-(j+1)*bh,isNew=lastAdd===p&&j===c[p]-1?" new":"";
+      s+='<g class="brick'+isNew+'" data-p="'+p+'">';
+      for(k=0;k<2;k++){var sx=cx+(k?bw*.14:-bw*.14-sw);
+        s+='<rect x="'+sx+'" y="'+(y-sh+1)+'" width="'+sw+'" height="'+(sh+2)+'" rx="3" fill="'+col[0]+'"/><rect x="'+sx+'" y="'+(y-sh+1)+'" width="'+sw+'" height="'+Math.max(2,sh*.3)+'" rx="2" fill="'+col[2]+'"/>'}
+      s+='<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+bh+'" rx="'+Math.min(6,bh*.15)+'" fill="'+col[0]+'"/>'+
+         '<rect x="'+x+'" y="'+(y+bh*.76)+'" width="'+bw+'" height="'+(bh*.24)+'" rx="'+Math.min(5,bh*.12)+'" fill="'+col[1]+'"/>'+
+         '<rect x="'+(x+5)+'" y="'+(y+4)+'" width="'+(bw-10)+'" height="'+Math.max(2,bh*.08)+'" rx="2" fill="'+col[2]+'" opacity=".8"/>';
+      if(bh>=18)s+='<text x="'+cx+'" y="'+(y+bh*.5)+'" text-anchor="middle" dominant-baseline="middle" font-weight="800" font-size="'+Math.min(22,bh*.5)+'" fill="'+(TXT[p]||"#fff")+'">'+p+'</text>';
+      s+='</g>';
+    }
+  });
+  box.innerHTML=s+'</svg>';
+  lastAdd=null;
+  if(st.mode!=="rechnen"&&!locked())box.querySelectorAll(".brick").forEach(function(g){g.addEventListener("click",function(){removeStone(+g.dataset.p)})});
+}
+function legoSVG(p){
+  var c=COL[p],t=TXT[p]||"#fff";
+  return '<svg viewBox="0 -9 84 53" aria-hidden="true">'+
+    [18,50].map(function(x){return '<rect x="'+x+'" y="-8" width="16" height="11" rx="3" fill="'+c[0]+'"/><rect x="'+x+'" y="-8" width="16" height="3.5" rx="2" fill="'+c[2]+'"/>'}).join("")+
+    '<rect x="0" y="0" width="84" height="44" rx="6" fill="'+c[0]+'"/><rect x="0" y="34" width="84" height="10" rx="5" fill="'+c[1]+'"/>'+
+    '<rect x="5" y="4" width="74" height="3.5" rx="2" fill="'+c[2]+'" opacity=".8"/>'+
+    '<text x="42" y="21" text-anchor="middle" dominant-baseline="middle" font-weight="800" font-size="22" fill="'+t+'">'+p+'</text></svg>';
+}
+function drawCols(){
+  var add=st.mode!=="rechnen",showVal=true,fillVal=st.mode==="werkstatt"||(st.mode==="rechnen"&&(st.solved||st.wrong>=2)),c=cur(),dis=locked()?" disabled":"";
+  $("cols").innerHTML=PRIMES.map(function(p){
+    var v=c[p]?(c[p]>1?p+"<sup>"+c[p]+"</sup> = "+Math.pow(p,c[p]):""+p):"";
+    return '<div class="col">'+(add?'<button class="lego" data-p="'+p+'" aria-label="Stein '+p+' dazu"'+dis+'>'+legoSVG(p)+'</button>':'<span class="lego">'+legoSVG(p)+'</span>')+
+      (showVal?'<span class="val">'+(fillVal?v:'')+'</span>':'')+'</div>';
+  }).join("");
+}
+/* ---------- Anzeige ---------- */
+function locked(){return st.solved&&st.mode!=="werkstatt"}
+function setMsg(t,cls){var m=$("msg");m.textContent=t;m.className="msg "+(cls||"");fitBig()}
+/* Gleichung: Produktschreibweise und (falls vorhanden) Potenzschreibweise.
+   Aufgaben: 60 = 2 · 2 · 3 · 5 = 2² · 3 · 5   Werkstatt: 2 · 2 · 3 · 5 = 2² · 3 · 5 = 60 */
+function eqParts(c){if(total(c)<2)return "";var pr=productStr(c).replace(/ · /g,"\u00a0· "),hasPow=PRIMES.some(function(p){return c[p]>1});
+  return pr+(hasPow?" = "+powerHTML(c):"")}
+/* zusätzlich eine Kurzform (nur Potenzen) für extrem lange Produkte in der Werkstatt */
+function shortParts(c){return PRIMES.some(function(p){return c[p]>1})?powerHTML(c):productStr(c)}
+function eqHTML(c,show){var on=show&&total(c)>1;return '<span class="eqn">'+(on?" = "+eqParts(c):"\u00a0")+'</span><span class="eqs" hidden>'+(on?" = "+shortParts(c):"")+'</span>'}
+function eqHTMLrev(c){var on=total(c)>1;return '<span class="eqn">'+(on?eqParts(c)+" = ":"\u00a0")+'</span>'+'<span class="eqs" hidden>'+(on?shortParts(c)+" = ":"")+'</span>'}
+function showNota(c){var n=$("nota");n.hidden=false;
+  var z=bigValue(c),pr=productStr(c),sm=(z.length>16||pr.length>48)?' class="sm"':"";
+  n.innerHTML="<dt>Produkt</dt><dd"+sm+">"+pr.replace(/ · /g,"\u00a0· ")+"</dd>"+(function(){var hasPow=PRIMES.some(function(p){return c[p]>1}),hid=hasPow?"":' style="visibility:hidden" aria-hidden="true"';
+    return "<dt"+hid+">Potenzen</dt><dd"+hid+">"+powerHTML(c)+"</dd>"})()}
+function hideNota(){var n=$("nota");n.hidden=true;n.innerHTML=""}
+/* Zahl und Gleichung gleich gross; passt die Zeile nicht, wird alles zusammen kleiner */
+function fitBig(){
+  var b=document.querySelector("#task .big");if(!b)return;
+  b.classList.remove("wrap");b.style.fontSize="";var e0=b.querySelector(".eqn"),s0=b.querySelector(".eqs");if(e0)e0.hidden=false;if(s0)s0.hidden=true;
+  var base=parseFloat(getComputedStyle(b).fontSize),avail=b.clientWidth,need=b.scrollWidth;
+  if(need>avail&&avail>0){var fs=Math.floor(base*avail/need*0.98);
+    if(fs>=16){b.style.fontSize=fs+"px";return}
+    /* sehr lang: auf zwei Zeilen umbrechen, Höhe bleibt gleich, Schrift so klein wie nötig */
+    b.classList.add("wrap");fs=17;
+    var over=function(){return b.scrollHeight>b.clientHeight+1||b.scrollWidth>b.clientWidth+1};
+    do{fs--;b.style.fontSize=fs+"px"}while(fs>12&&over());
+    if(over()){var e=b.querySelector(".eqn"),s=b.querySelector(".eqs");if(e&&s){e.hidden=true;s.hidden=false;fs=17;do{fs--;b.style.fontSize=fs+"px"}while(fs>8&&over())}}}
+}
+function updateScore(){$("pts").textContent=st.score+(st.score===1?" Punkt":" Punkte");$("streak").textContent="Serie "+st.streak}
+
+function render(){
+  var m=st.mode,c=cur();
+  $("buildUI").hidden=m==="rechnen";$("answerForm").hidden=m!=="rechnen";
+  $("level").style.visibility=$("scorebox").style.visibility=m==="werkstatt"?"hidden":"";$("hintBtn").hidden=$("check").hidden=m==="werkstatt";
+  if(m==="zerlegen"){
+    $("task").innerHTML='<span class="lbl">Zerlege in Primfaktoren</span><span class="big">'+st.target+eqHTML(st.build,st.solved)+'</span>';
+    $("foot").textContent="Baustein unten antippen: Stein dazu · Stein in der Säule antippen: Stein weg";
+  }else if(m==="rechnen"){
+    $("task").innerHTML='<span class="lbl">Welche Zahl zeigen die Säulen?</span><span class="big">'+eqHTMLrev(st.m2)+(st.solved?value(st.m2):'?')+'</span>';
+    $("foot").textContent="Jeder Stein ist ein Primfaktor. Multipliziere alle Steine miteinander.";
+  }else{
+    var bv=total(c)?bigValue(c):"–";$("task").innerHTML='<span class="lbl">Deine Zahl</span><span class="big">'+eqHTMLrev(c)+bv+'</span>';
+    $("foot").textContent=total(c)===1?"Nur ein Stein: Das ist eine Primzahl.":"Setze beliebige Steine und beobachte die Schreibweisen.";
+    hideNota();
+  }
+  $("app").classList.toggle("solved",locked());$("app").classList.toggle("m-rechnen",m==="rechnen");
+  ["undo","hintBtn","check"].forEach(function(id){$(id).disabled=locked()});
+  drawCols();drawRegal();fitBig();
+}
+
+/* ---------- Aktionen ---------- */
+function addStone(p){
+  if(locked()||st.mode==="rechnen")return;
+  var c=cur();if(c[p]>=12){setMsg("Säule voll – höchstens 12 Steine.","hint");return}
+  c[p]++;hist().push(p);lastAdd=p;setMsg("");if(st.mode!=="werkstatt")hideNota();render();
+}
+function removeStone(p){
+  if(locked()||st.mode==="rechnen")return;
+  var c=cur(),h=hist();if(!c[p])return;c[p]--;var i=h.lastIndexOf(p);if(i>-1)h.splice(i,1);setMsg("");render();
+}
+function undo(){var h=hist();if(h.length)removeStone(h[h.length-1])}
+
+function check(){
+  if(st.mode!=="zerlegen"||st.solved)return;
+  var c=st.build,P=value(c),T=st.target;
+  if(!total(c)){setMsg("Setze zuerst Steine in die Säulen.","hint");return}
+  if(P===T){win(c,"Richtig! "+T+" = "+productStr(c));return}
+  fail();
+  if(P>T)setMsg("Zu gross – das ergibt mehr als "+T+". Nimm einen Stein weg.","bad");
+  else if(T%P!==0)setMsg("Ein Stein passt nicht: "+T+" ist nicht durch alle deine Steine teilbar.","bad");
+  else setMsg("Noch nicht fertig – es fehlen noch Steine.","bad");
+}
+function hint(){
+  if(st.mode!=="zerlegen"||st.solved)return;
+  var P=value(st.build),T=st.target;
+  if(T%P!==0){setMsg("Tipp: Prüfe jede Säule – geht "+T+" wirklich durch diese Zahl?","hint");return}
+  var rest=T/P;if(rest===1){setMsg("Das sieht gut aus – drück auf Prüfen!","hint");return}
+  var p=factor(rest)[0];
+  setMsg(P===1?"Tipp: Ist "+T+" durch "+p+" teilbar?":"Tipp: Rechne "+T+" : "+P+" = "+rest+". Ist "+rest+" durch "+p+" teilbar?","hint");
+}
+function checkAnswer(e){
+  e.preventDefault();if(st.solved)return;
+  var v=parseInt($("answer").value,10),T=value(st.m2);
+  if(isNaN(v)){setMsg("Gib eine Zahl ein.","hint");return}
+  if(v===T){win(st.m2,"Richtig! "+productStr(st.m2)+" = "+T);return}
+  st.wrong++;fail();
+  setMsg(st.wrong>=2?"Noch nicht. Unter den Säulen stehen jetzt die Werte – multipliziere sie.":v+" stimmt nicht. Multipliziere alle Steine miteinander.","bad");
+  render();
+}
+function win(c,text){
+  st.solved=true;st.score+=st.hadFail?1:2;st.streak++;updateScore();
+  setMsg("");$("next").hidden=false;render();
+  $("next").focus({preventScroll:true});
+  if(window.innerWidth<=600)$("next").scrollIntoView({block:"nearest",behavior:"smooth"});
+}
+function fail(){st.streak=0;st.hadFail=true;updateScore()}
+function nextRound(){
+  st.solved=false;st.wrong=0;st.hadFail=false;$("next").hidden=true;hideNota();setMsg("");
+  st.build=empty();st.hist=[];
+  if(st.mode==='zerlegen')st.target=newNumber('z');else if(st.mode==='rechnen')st.m2=toCounts(factor(newNumber('r')));
+  $("answer").value="";render();
+}
+/* Direktlinks: …#zahl-zu-saeulen, …#saeulen-zu-zahl, …#werkstatt (bleibt auch bei F5) */
+var HASH={zerlegen:"zahl-zu-saeulen",rechnen:"saeulen-zu-zahl",werkstatt:"werkstatt"};
+function modeFromHash(){var k=(location.hash||"").replace("#","");for(var m in HASH)if(HASH[m]===k)return m;return "zerlegen"}
+function setMode(m){
+  st.mode=m;
+  if(location.hash!=="#"+HASH[m]){try{history.replaceState(null,"","#"+HASH[m])}catch(e){location.hash=HASH[m]}}document.querySelectorAll("#modes .tab").forEach(function(t){t.setAttribute("aria-selected",t.dataset.mode===m)});
+  if(m==="werkstatt"){st.solved=false;$("next").hidden=true;setMsg("");render()}else nextRound();
+}
+
+/* ---------- Vollbild ---------- */
+function isFs(){return !!(document.fullscreenElement||document.webkitFullscreenElement)}
+function toggleFs(){
+  try{
+    if(isFs())(document.exitFullscreen||document.webkitExitFullscreen).call(document);
+    else{var el=document.documentElement,f=el.requestFullscreen||el.webkitRequestFullscreen;var r=f&&f.call(el);if(r&&r.catch)r.catch(function(){})}
+  }catch(err){}
+}
+function fsIcon(){$("fsIcon").innerHTML=isFs()?'<path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/>':'<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>';$("fs").title=isFs()?"Vollbild beenden":"Vollbild"}
+
+/* ---------- Grosse Bildschirme: proportional vergrössern (Massstab Surface Go quer, ca. 1250 × 700) ---------- */
+var ZOOM=1;
+function applyZoom(){
+  var wide=window.matchMedia("(min-width:900px) and (orientation:landscape)").matches;
+  var vh=(window.visualViewport&&window.visualViewport.height)||window.innerHeight;
+  var z=wide?Math.max(1,Math.min(1.6,window.innerWidth/1250,vh/700)):1;z=Math.round(z*100)/100;
+  if(z===ZOOM)return;ZOOM=z;
+  document.documentElement.style.setProperty("--z",z);$("app").style.zoom=z===1?"":z;
+}
+
+/* ---------- Aufbau ---------- */
+$("cols").addEventListener("click",function(e){var b=e.target.closest("button");if(b)addStone(+b.dataset.p)});
+document.querySelectorAll("#modes .tab").forEach(function(t){t.addEventListener("click",function(){setMode(t.dataset.mode)})});
+$("level").addEventListener("change",function(e){st.level=+e.target.value;nextRound()});
+$("undo").addEventListener("click",undo);
+$("check").addEventListener("click",check);$("hintBtn").addEventListener("click",hint);
+$("answerForm").addEventListener("submit",checkAnswer);$("next").addEventListener("click",nextRound);
+$("fs").addEventListener("click",toggleFs);
+$("reset").addEventListener("click",function(){
+  st.score=0;st.streak=0;st.shop=empty();st.shist=[];updateScore();
+  if(st.mode==="werkstatt"){setMsg("");render()}else nextRound();
+});
+document.addEventListener("fullscreenchange",fsIcon);document.addEventListener("webkitfullscreenchange",fsIcon);
+document.addEventListener("keydown",function(e){
+  var tg=e.target.tagName;if(tg==="INPUT"||tg==="SELECT")return;
+  if(st.mode==="rechnen")return;
+  if(e.key.length===1&&"2357".indexOf(e.key)>-1){addStone(+e.key);e.preventDefault()}
+  else if(e.key==="Backspace"){undo();e.preventDefault()}
+  else if(e.key==="Enter"&&tg!=="BUTTON"){st.solved?nextRound():check();e.preventDefault()}
+});
+window.addEventListener("resize",function(){applyZoom();fitBig()});
+if(window.visualViewport)window.visualViewport.addEventListener("resize",applyZoom);
+var lastSize="";var figObs=new ResizeObserver(function(en){var r=en[0].contentRect,k=Math.round(r.width)+"x"+Math.round(r.height);if(k!==lastSize){lastSize=k;drawRegal()}});
+figObs.observe($("fig"));
+if(!(document.fullscreenEnabled||document.webkitFullscreenEnabled))$("fs").hidden=true;
+window.addEventListener("hashchange",function(){var m=modeFromHash();if(m!==st.mode)setMode(m)});
+applyZoom();setMode(modeFromHash());
+}
+</script>
+</body>
+</html>
