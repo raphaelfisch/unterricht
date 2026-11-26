@@ -593,6 +593,42 @@
   /* 3D-Fläche mit runden Ecken wie die anderen Boxen (Canvas wird zugeschnitten) */
   #threed-container { overflow: hidden; }
   #threed-container canvas { border-radius: 8px; }
+
+  /* ===== Ansichten wählbar, ordnen sich ohne Scrollen an (Variante B) ===== */
+  html, body { height: 100%; }
+  body { display: flex; flex-direction: column; overflow: hidden; }
+  header { flex: none; margin-bottom: 0 !important; }
+  .container { flex: 1; min-height: 0; width: 100%; display: flex; flex-direction: column; gap: 12px; padding: 20px !important; }
+  .views-bar { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .views-bar h2 { font-size: 16px; font-weight: 600; white-space: nowrap; }
+  .view-toggle { display: flex; background: #e8e6dd; border-radius: 12px; padding: 4px; gap: 4px; }
+  .view-toggle button {
+    border: none; background: transparent; min-height: 36px; padding: 0 14px;
+    font-size: 15px; font-weight: 600; color: #5f5e5a; border-radius: 9px;
+  }
+  .view-toggle button:hover { background: rgba(255,255,255,0.5); }
+  .view-toggle button.on { background: white; color: #2c2c2a; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+  #views { flex: 1; min-height: 0; display: grid; gap: 20px; }
+  #views > .panel { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+  #views > .panel.off { display: none; }
+  #views .host { flex: 1; min-height: 0; display: flex; }
+  #views .host > canvas, #views .host > #threed-container { width: 100% !important; height: 100% !important; }
+  #views .side-host { flex-direction: column; justify-content: center; overflow: hidden; }
+  #views .side-host .views-container { flex: 1; align-items: center; align-content: center; }
+  /* Handy: untereinander, Seite scrollt */
+  @media (max-width: 700px) {
+    body { overflow: auto; height: auto; }
+    html { height: auto; }
+    .container { padding: 10px !important; }
+    #views { display: flex; flex-direction: column; gap: 12px; }
+    #views > .panel:not([data-view="side"]) { height: 380px; flex: none; }
+    .views-bar { flex-direction: column; align-items: stretch; gap: 6px; }
+    .views-bar h2 { display: none; }
+    .view-toggle button { flex: 1; padding: 0 4px; font-size: 13px; }
+  }
+
+  #views .side-host .view-cell { width: var(--cell, 38px) !important; height: var(--cell, 38px) !important; }
+  #views .side-host .views-container { gap: 20px; }
 </style>
 </head>
 <body>
@@ -641,51 +677,57 @@
 </div>
 
 <div class="container">
-  <div class="row-top">
-    <div class="panel">
+  <div class="views-bar">
+    <h2>Ansichten</h2>
+    <div class="view-toggle" id="view-toggle">
+      <button data-v="3d">3D</button>
+      <button data-v="bauplan">Bauplan</button>
+      <button data-v="dots">Punktraster</button>
+      <button data-v="grid">Häuschen</button>
+      <button data-v="side">Ansichten</button>
+    </div>
+  </div>
+  <div id="views">
+    <div class="panel" data-view="3d">
       <div class="panel-header">
         <h2>3D-Ansicht</h2>
         <div class="panel-header-controls"><button class="view-reset" title="Ansicht zurücksetzen"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 9.5V20h14V9.5"/></svg></button></div>
       </div>
-      <div id="threed-host"><div id="threed-container"></div></div>
+      <div id="threed-host" class="host"><div id="threed-container"></div></div>
     </div>
-
-    <div class="panel">
+    <div class="panel" data-view="bauplan">
       <div class="panel-header">
         <h2>Bauplan</h2>
         <div class="panel-header-controls"><button class="view-reset" title="Ansicht zurücksetzen"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 9.5V20h14V9.5"/></svg></button></div>
       </div>
-      <div id="bauplan-host"><canvas id="bauplan-canvas" width="600" height="400"></canvas></div>
+      <div id="bauplan-host" class="host"><canvas id="bauplan-canvas" width="600" height="400"></canvas></div>
     </div>
-  </div>
-
-  <div class="row-top">
-    <div class="panel">
+    <div class="panel" data-view="dots">
       <h2>auf Punktraster skizzieren</h2>
-      <div id="dots-host"><canvas id="dots-canvas" width="600" height="400"></canvas></div>
+      <div id="dots-host" class="host"><canvas id="dots-canvas" width="600" height="400"></canvas></div>
     </div>
-
-    <div class="panel">
+    <div class="panel" data-view="grid">
       <h2>auf Häuschenpapier skizzieren</h2>
-      <div id="grid-host"><canvas id="grid-canvas" width="600" height="400"></canvas></div>
+      <div id="grid-host" class="host"><canvas id="grid-canvas" width="600" height="400"></canvas></div>
     </div>
-  </div>
-
-  <div class="panel">
-    <h2>Seitenansichten</h2>
-    <div class="hint">Was sieht man, wenn man von dieser Seite auf die Figur schaut?</div>
-    <div class="views-container">
-      <div class="view-box">
-        <div class="view-title">von vorne</div>
-        <div class="view-grid" id="view-front"></div>
-      </div>
-      <div class="view-box">
-        <div class="view-title">von rechts</div>
-        <div class="view-grid" id="view-right"></div>
-      </div>
-      <div class="view-box">
-        <div class="view-title">von oben</div>
-        <div class="view-grid" id="view-top"></div>
+    <div class="panel" data-view="side">
+      <h2>Seitenansichten</h2>
+      <div class="host side-host">
+        <div class="hint">Was sieht man, wenn man von dieser Seite auf die Figur schaut?</div>
+        <div class="views-container">
+          <div class="view-box">
+            <div class="view-title">von vorne</div>
+            <div class="view-grid" id="view-front"></div>
+          </div>
+          <div class="view-box">
+            <div class="view-title">von rechts</div>
+            <div class="view-grid" id="view-right"></div>
+          </div>
+          <div class="view-box">
+            <div class="view-title">von oben</div>
+            <div class="view-grid" id="view-top"></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -2972,7 +3014,24 @@ function exitBeamer() {
   } catch (e) { /* okay */ }
 }
 
-document.getElementById('btn-beamer').addEventListener('click', enterBeamer);
+// Vollbild: zeigt die gewählten Ansichten auf dem ganzen Bildschirm
+function syncFullBtn() {
+  const on = !!(document.fullscreenElement || document.webkitFullscreenElement);
+  const b = document.getElementById('btn-beamer');
+  b.innerHTML = on ? '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M15 20v-5h5M9 20v-5H4"/></svg><span class="lt">Vollbild beenden</span>'
+                   : '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg><span class="lt">Vollbild</span>';
+  b.title = on ? 'Vollbild beenden' : 'Vollbild';
+  fitHeader();
+}
+document.addEventListener('fullscreenchange', syncFullBtn);
+document.addEventListener('webkitfullscreenchange', syncFullBtn);
+document.getElementById('btn-beamer').addEventListener('click', () => {
+  const d = document;
+  if (!d.fullscreenElement && !d.webkitFullscreenElement) {
+    const el = d.documentElement;
+    if (el.requestFullscreen) el.requestFullscreen(); else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+  } else if (d.exitFullscreen) d.exitFullscreen(); else if (d.webkitExitFullscreen) d.webkitExitFullscreen();
+});
 document.getElementById('beamer-exit').addEventListener('click', exitBeamer);
 document.getElementById('beamer-prev').addEventListener('click', () => setBeamerSlide(beamerSlide - 1));
 document.getElementById('beamer-next').addEventListener('click', () => setBeamerSlide(beamerSlide + 1));
@@ -3029,6 +3088,67 @@ function updateAll() {
   }
 }
 
+
+// ===== Ansichten wählen und anordnen =====
+const VIEW_ORDER = ['3d', 'bauplan', 'dots', 'grid', 'side'];
+let shownViews = ['3d', 'bauplan'];
+function layoutViews() {
+  const wrap = document.getElementById('views');
+  const sel = VIEW_ORDER.filter(v => shownViews.includes(v));
+  document.querySelectorAll('#view-toggle button').forEach(b => b.classList.toggle('on', sel.includes(b.dataset.v)));
+  document.querySelectorAll('#views > .panel').forEach(p => {
+    const i = sel.indexOf(p.dataset.view);
+    p.classList.toggle('off', i < 0);
+    p.style.gridArea = i < 0 ? '' : 'v' + i;
+  });
+  const n = sel.length, has3d = sel[0] === '3d';
+  const portrait = window.innerHeight > window.innerWidth;
+  let areas, cols, rows;
+  if (n === 1) { areas = ['v0']; cols = '1fr'; rows = '1fr'; }
+  else if (n === 2) {
+    if (portrait) { areas = ['v0', 'v1']; cols = '1fr'; rows = '1fr 1fr'; }
+    else { areas = ['v0 v1']; cols = '1fr 1fr'; rows = '1fr'; }
+  } else if (n === 3) {
+    if (has3d) {
+      if (portrait) { areas = ['v0 v0', 'v1 v2']; cols = '1fr 1fr'; rows = '1.3fr 1fr'; }
+      else { areas = ['v0 v1', 'v0 v2']; cols = '1.3fr 1fr'; rows = '1fr 1fr'; }
+    } else if (portrait) { areas = ['v0', 'v1', 'v2']; cols = '1fr'; rows = '1fr 1fr 1fr'; }
+    else { areas = ['v0 v1 v2']; cols = '1fr 1fr 1fr'; rows = '1fr'; }
+  } else if (n === 4) { areas = ['v0 v1', 'v2 v3']; cols = '1fr 1fr'; rows = '1fr 1fr'; }
+  else {
+    if (portrait) { areas = ['v0 v0', 'v1 v2', 'v3 v4']; cols = '1fr 1fr'; rows = '1.4fr 1fr 1fr'; }
+    else { areas = ['v0 v1 v2', 'v0 v3 v4']; cols = '1.2fr 1fr 1fr'; rows = '1fr 1fr'; }
+  }
+  wrap.style.gridTemplateAreas = areas.map(a => '"' + a + '"').join(' ');
+  wrap.style.gridTemplateColumns = cols;
+  wrap.style.gridTemplateRows = rows;
+  requestAnimationFrame(() => {
+    const c = document.getElementById('threed-container');
+    if (renderer && c.clientWidth) { renderer.setSize(c.clientWidth, c.clientHeight, false); updateCameraPosition(); }
+    drawBauplan(); drawDotsOnCanvas(); drawGridOnCanvas();
+    fitSideViews();
+  });
+}
+// Seitenansichten: Kästchengrösse an die Box anpassen, damit alle drei Ansichten Platz haben
+function fitSideViews() {
+  const host = document.querySelector('.side-host');
+  if (!host || !host.offsetParent) return;
+  const hint = host.querySelector('.hint');
+  const W = host.clientWidth, H = host.clientHeight - (hint ? hint.offsetHeight + 12 : 0);
+  const c = Math.max(12, Math.min(70, Math.floor((W - 100) / 9), Math.floor((H - 50) / 3)));
+  host.style.setProperty('--cell', c + 'px');
+}
+document.getElementById('view-toggle').addEventListener('click', (e) => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  const v = b.dataset.v;
+  if (shownViews.includes(v)) {
+    if (shownViews.length === 1) return;
+    shownViews = shownViews.filter(x => x !== v);
+  } else shownViews.push(v);
+  layoutViews();
+});
+window.addEventListener('resize', layoutViews);
 init3D();
 setupCubeReset();
 if (!loadPlanFromURL()) {
@@ -3039,6 +3159,7 @@ if (!loadPlanFromURL()) {
   ];
 }
 updateAll();
+layoutViews();
 
 // Kopfzeile auf einer Zeile halten: schrittweise kompakter machen, bis alles passt
 function fitHeader() {
