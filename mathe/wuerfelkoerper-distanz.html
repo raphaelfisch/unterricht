@@ -586,6 +586,16 @@
   .chips { gap: 5px; }
   .chips button { padding: 0 9px; font-size: 15px; }
   .chips button.done { padding-left: 7px; gap: 3px; }
+  .sticky-bottom #btn-task2, .sticky-bottom #btn-newbody { flex: 1; }
+
+  /* Punktbuchstaben: rund um den Punkt verschiebbar */
+  .pt span, .pt.other span {
+    left: calc(50% - 24px); top: calc(50% - 24px); transform: translate(-50%, -50%);
+    font-size: 24px; line-height: 1; padding: 4px;
+    pointer-events: auto; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none;
+  }
+  .pt span.drag { cursor: grabbing; }
+  @media (orientation: portrait), (orientation: landscape) and (max-height: 500px) { .pt span, .pt.other span { font-size: 22px; } }
 </style>
 </head>
 <body>
@@ -1335,7 +1345,7 @@ function renderPanel() {
        '<button data-stufe="ebene" class="' + (state.stufe !== 'raum' ? 'on' : '') + '">Flächendiagonale</button>' +
        '<button data-stufe="raum" class="' + (state.stufe !== 'ebene' ? 'on' : '') + '">Raumdiagonale</button>' +
        '</div><div class="row-btns pts-btns">' +
-       '<button id="btn-task"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>Zufällig</button>' +
+       '<button id="btn-task"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>Neue Aufgabe</button>' +
        '<button id="btn-place">Selbst setzen</button></div></div>';
   let chips = '';
   if (state.points.length > 2) {
@@ -1443,7 +1453,9 @@ function renderPanel() {
   // unten nur das Weiterkommen: Prüfen → Nächste Strecke → (alles gelöst) Neue Aufgabe
   let bottom = '';
   if (pathComplete() && !state.solved) bottom = '<button id="check" class="primary full">Prüfen</button>';
-  else if (state.solved) bottom = open ? nextPairBtn : nextBtn;
+  else if (state.solved) bottom = open ? nextPairBtn
+    : nextBtn.replace('id="btn-task" class="primary"', 'id="btn-task2"') +
+      '<button id="btn-newbody" class="primary"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5l8.5 4.75v9.5L12 21.5l-8.5-4.75v-9.5z"/><path d="M3.5 7.25L12 12l8.5-4.75M12 12v9.5"/></svg>Neuer Körper</button>';
   if (bottom) h += '<div class="sticky-bottom">' + bottom + '</div>';
   panel.innerHTML = h;
 }
@@ -1476,7 +1488,8 @@ document.getElementById('panel').addEventListener('click', function (e) {
     renderPanel();
   }
   else if (b.id === 'check') { checkAll(); }
-  else if (b.id === 'btn-task') { newTask(); }
+  else if (b.id === 'btn-task' || b.id === 'btn-task2') { newTask(); }
+  else if (b.id === 'btn-newbody') { newBody(); }
   else if (b.id === 'btn-place') { placeButton(); }
 });
 document.getElementById('panel').addEventListener('change', function (e) {
@@ -1787,8 +1800,9 @@ function buildLabels() {
       d.className = 'pt task';
       d.innerHTML = '<span>' + pt.letter + '</span>';
       layer.appendChild(d);
-      labelEls.push({ el: d, p: pt.p, isPoint: true });
+      labelEls.push({ el: d, p: pt.p, isPoint: true, pt: pt });
     });
+    labelEls.forEach(function (l) { placeLetter(l); });
     return;
   }
   state.points.forEach(function (pt, i) {
@@ -1797,8 +1811,9 @@ function buildLabels() {
     d.className = 'pt ' + (isTask ? 'task' : 'other');
     d.innerHTML = '<span>' + pt.letter + '</span>';
     layer.appendChild(d);
-    labelEls.push({ el: d, p: pt.p, isPoint: true });
+    labelEls.push({ el: d, p: pt.p, isPoint: true, pt: pt });
   });
+  labelEls.forEach(function (l) { placeLetter(l); });
   const n = state.path.length;
   for (let i = 1; i < n; i++) {
     if (pathComplete() && i === n - 1) break;
@@ -1815,6 +1830,48 @@ function project(p) {
   return { x: (v.x + 1) / 2 * container.clientWidth, y: (1 - v.y) / 2 * container.clientHeight, z: v.z };
 }
 
+// Buchstabe in festem Abstand rund um den Punkt; ziehen = Richtung ändern (rastet in 8 Richtungen ein)
+const LABEL_R = 34;
+function labelDir(pt) { return pt.la == null ? 5 : pt.la; }
+function placeLetter(l, angle) {
+  if (!l.pt) return;
+  const a = angle != null ? angle : labelDir(l.pt) * Math.PI / 4;
+  const sp = l.el.firstChild;
+  sp.style.left = 'calc(50% + ' + (Math.cos(a) * LABEL_R).toFixed(1) + 'px)';
+  sp.style.top = 'calc(50% + ' + (Math.sin(a) * LABEL_R).toFixed(1) + 'px)';
+}
+(function () {
+  const layer = document.getElementById('labels');
+  let drag = null;
+  layer.addEventListener('pointerdown', function (e) {
+    const sp = e.target.closest('.pt span');
+    if (!sp) return;
+    const l = labelEls.find(function (x) { return x.el === sp.parentNode; });
+    if (!l || !l.pt) return;
+    e.preventDefault(); e.stopPropagation();
+    sp.setPointerCapture(e.pointerId);
+    const r = l.el.getBoundingClientRect();
+    drag = { l: l, sp: sp, cx: r.left + r.width / 2, cy: r.top + r.height / 2, a: null };
+    sp.classList.add('drag');
+  });
+  layer.addEventListener('pointermove', function (e) {
+    if (!drag) return;
+    drag.a = Math.atan2(e.clientY - drag.cy, e.clientX - drag.cx);
+    placeLetter(drag.l, drag.a);
+  });
+  function end() {
+    if (!drag) return;
+    if (drag.a != null) {
+      drag.l.pt.la = ((Math.round(drag.a / (Math.PI / 4)) % 8) + 8) % 8;
+      writeHash();
+    }
+    placeLetter(drag.l);
+    drag.sp.classList.remove('drag');
+    drag = null;
+  }
+  layer.addEventListener('pointerup', end);
+  layer.addEventListener('pointercancel', end);
+})();
 function updateLabels() {
   labelEls.forEach(function (l) {
     if (l.isPoint) l.el.style.display = isShown(l.p) ? '' : 'none';
@@ -2072,6 +2129,7 @@ function hashString() {
   const pts = state.points.map(function (pt) { return pt.p.join(''); }).join('');
   const pr = state.pair[0] === 0 && state.pair[1] === 1 ? '' : '&t=' + state.pair[0] + state.pair[1];
   return 'p=' + plan + (state.points.length < 2 ? '' : '&k=' + pts + (state.pick ? '' : pr)) +
+    (state.points.some(function (pt) { return pt.la != null && pt.la !== 5; }) ? '&l=' + state.points.map(labelDir).join('') : '') +
     '&a=' + state.a + '&m=' + state.mode[0] + '&s=' + state.stufe[0];
 }
 function writeHash() {
@@ -2100,7 +2158,11 @@ function readHash() {
   }
   if (!plan.some(function (r) { return r.some(function (h) { return h > 0; }); })) { setEmptyBody(plan); return true; }
   setBody(plan);
-  if (pts) { setPoints(pts, pair); return true; }
+  if (pts) {
+    setPoints(pts, pair);
+    if (/^[0-7]{2,5}$/.test(o.l || '') && o.l.length === pts.length) state.points.forEach(function (pt, i) { pt.la = +o.l[i]; });
+    return true;
+  }
   // nur Bauplan (z. B. aus dem Würfelkörper-Tool): Strecke selbst wählen
   return pickTask(false);
 }
@@ -2425,7 +2487,10 @@ function exportPNG() {
       ctx.beginPath(); ctx.arc(p.x, p.y, 15, 0, Math.PI * 2);
       if (isTask) { ctx.fillStyle = 'rgba(220,38,38,0.15)'; ctx.fill(); }
       ctx.lineWidth = 3; ctx.strokeStyle = '#dc2626'; ctx.stroke();
-      halo(l.el.textContent, p.x - 41, p.y - 43, '700 24px -apple-system, Segoe UI, sans-serif', '#dc2626');
+      const la = labelDir(l.pt || {}) * Math.PI / 4;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      halo(l.el.textContent, p.x + Math.cos(la) * LABEL_R, p.y + Math.sin(la) * LABEL_R, '700 24px -apple-system, Segoe UI, sans-serif', l.el.classList.contains('task') ? '#dc2626' : 'rgba(220,38,38,0.55)');
+      ctx.textAlign = 'left'; ctx.textBaseline = 'top';
     } else {
       halo(l.el.textContent, p.x + 9, p.y - 30, '700 24px -apple-system, Segoe UI, sans-serif', '#374151');
     }
