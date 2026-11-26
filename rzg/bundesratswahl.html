@@ -782,6 +782,7 @@ html.fs #modal.modal #mbox{zoom:.62}
 @media(max-width:1100px){.brt{font-size:12.5px!important}.brt .p{min-width:0;padding:2px 6px}}
 @media(max-width:420px){.brt{font-size:12px!important}.brt td,.brt th{padding-left:3px!important;padding-right:3px!important}}
 @media(max-width:380px){.brt td:nth-child(2){white-space:normal}}
+.lpseg{margin:4px 0 10px}
 </style>
 </head>
 <body>
@@ -824,8 +825,9 @@ html.fs #modal.modal #mbox{zoom:.62}
 
 <section class="view" id="v-lehrperson">
   <div class="wrap lpwrap">
-    <h2>Unterlagen für 4 Lektionen</h2>
-    <p class="lead">Lernpfad am Surface (Lektion 1–2), Simulation der Wahl im Schulzimmer (Lektion 3–4), danach der Vergleich mit der echten Wahl am 9. Dezember.</p>
+    <h2>Unterlagen und Ablauf</h2>
+    <div class="seg lpseg" role="group" aria-label="Umfang"><button data-plan="4" class="on" aria-pressed="true">4 Lektionen</button><button data-plan="2" aria-pressed="false">2 Lektionen</button></div>
+<div data-pl="4"><p class="lead">Lernpfad am Surface (Lektion 1–2), Simulation der Wahl im Schulzimmer (Lektion 3–4), danach der Vergleich mit der echten Wahl am 9. Dezember.</p>
     <table class="plan">
       <thead><tr><th>Lektion</th><th>Ablauf</th><th>Material</th></tr></thead>
       <tbody>
@@ -835,7 +837,16 @@ html.fs #modal.modal #mbox{zoom:.62}
         <tr><td>4</td><td><b>Simulation Teil 2.</b><br>1. Wahl: Wahlzettel austeilen, einsammeln, auszählen. Die Lehrperson tippt die Zahlen ins Tool, das Ratspräsidium verkündet. Wahlgänge, bis jemand das absolute Mehr hat (20–25').<br>2. Annahme der Wahl und Gelübde (3').<br>3. Auswertung mit den Fragen auf der Tafel, danach Tippspiel für den 9.12. ausfüllen (15').</td><td>Beamer, Wahlzettel, Ablaufkarte Ratspräsidium, Tippspiel (PDF)</td></tr>
         <tr><td>9.12.</td><td><b>Echte Wahl:</b> Die Vereinigte Bundesversammlung tagt am Vormittag (SRF überträgt live). Je nach Stundenplan live schauen oder die Resultate am Nachmittag mit dem Beobachtungsbogen auswerten und mit dem Tippspiel und der Klassensimulation vergleichen.</td><td>Beobachtungsbogen (PDF)</td></tr>
       </tbody>
-    </table>
+    </table></div>
+<div data-pl="2" hidden><p class="lead">Kurzvariante: Lernpfad mit den wichtigsten Stationen (Lektion 1), danach eine gekürzte Simulation (Lektion 2). In der Simulation bei «1. Vorbereitung» das Häkchen «Kurzvariante» setzen, dann passen die Timer.</p>
+    <table class="plan">
+      <thead><tr><th>Lektion</th><th>Ablauf</th><th>Material</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><b>Einstieg im Plenum (5'):</b> Handzeichen zur Frage «Wer wählt den Bundesrat?» – Antworten stehen lassen.<br><b>Lernpfad nur Station 1, 4, 6, 7 und 8 (30'):</b> Wahlkette, Fraktionen, Kandidierende, Weg zur Wahl, absolutes Mehr. Die übrigen Stationen und das Quiz sind freiwillig oder Hausaufgabe.<br><b>Abschluss (10'):</b> Einstiegsfrage auflösen. Rollenkarten austeilen, die Kandidierenden bestimmen und ihnen den Steckbrief mitgeben: Bis zur nächsten Lektion bereiten sie eine Rede von 1 Minute vor. Ratspräsidium und 2 Stimmenzählende bestimmen. Auftrag: Nachrichten zur Bundesratswahl anschauen.</td><td>Surface, Lernpfad, Rollenkarten, Steckbriefe (PDF)</td></tr>
+        <tr><td>2</td><td><b>Simulation, gekürzt.</b> Tab «Simulation» am Beamer, Häkchen «Kurzvariante» gesetzt.<br>1. Vorbereitung: Pulte nach Fraktionen stellen (3').<br>2. Rücktritt vorlesen, die Kandidierenden gehen ihre Rede nochmals durch, Timer «Vorbereitung 2 Min.» (3').<br>3. Hearings: nur die Reden, Timer «Rede 1 Min.» pro Person, keine Fragerunde (5').<br>4. Fraktionssitzungen mit Timer «Sitzung 5 Min.», ohne Gespräche zwischen den Fraktionen (6').<br>5. Wahl: Wahlgänge, bis jemand das absolute Mehr hat (18').<br>6. Annahme und Gelübde (2').<br>7. Auswertung: die Fragen auf der Tafel kurz besprechen (8'). Tippspiel als Hausaufgabe.</td><td>Beamer, Wahlzettel, Ablaufkarte Ratspräsidium, Tippspiel (PDF)</td></tr>
+        <tr><td>9.12.</td><td><b>Echte Wahl:</b> Live schauen oder die Resultate mit dem Beobachtungsbogen auswerten und mit Tippspiel und Klassensimulation vergleichen.</td><td>Beobachtungsbogen (PDF)</td></tr>
+      </tbody>
+    </table></div>
     <div class="note"><b>Neutralität.</b> Die Kandidierenden in der Simulation und im Lernpfad sind erfunden. So stimmt die Klasse über Eigenschaften ab und nicht über bekannte Namen oder über die Meinung der Eltern. Echte Kandidierende kommen erst beim Vergleich am 9. Dezember dazu, und dann nur mit Fakten (Kanton, Sprache, Amt).</div>
     <h3>Hinweise zum Tool</h3>
     <p><b>Lernpfad:</b> Der Fortschritt bleibt im Browser des Geräts gespeichert, sofern der Browser das erlaubt. Für die Klasse den Link über «Teilen» auf der Artefakt-Seite freigeben.</p>
@@ -844,7 +855,8 @@ html.fs #modal.modal #mbox{zoom:.62}
     <h3>Einstellungen bei «1. Vorbereitung»</h3>
     <p><b>Lernende:</b> Anzahl Personen in der Klasse (Standard 18). Daraus berechnet das Tool, wie viele Rollenkarten jede Fraktion bekommt, und die Zahl der ausgeteilten Wahlzettel.</p>
     <p><b>Ausscheiden unter … Stimmen:</b> die Grenze für das Ausscheiden ab dem 2. Wahlgang (Standard 2, siehe unten).</p>
-    <p><b>Grüne kandidieren</b> (Standard: ein): So ist es auch bei der echten Wahl 2026. Die SVP schlägt ein Zweierticket vor, und die Grünen kandidieren mit einer eigenen Person gegen dieses Ticket. In der Simulation ist das die erfundene Sara Keller. Die Klasse diskutiert dann auch, ob die Zauberformel gelten soll. Ohne Häkchen geht es nur um das SVP-Ticket und um wilde Kandidaturen. Die Rollenkarten funktionieren in beiden Fällen. Den Steckbrief von Sara Keller brauchen Sie nur mit Häkchen.</p>
+    <p><b>Kurzvariante</b> (Standard: aus): Für den Plan mit 2 Lektionen. Die Timer werden kürzer (Vorbereitung 2 Min., nur Reden ohne Fragerunde, Fraktionssitzung 5 Min. ohne Gespräche), und die Texte auf der Tafel passen sich an.</p>
+<p><b>Grüne kandidieren</b> (Standard: ein): So ist es auch bei der echten Wahl 2026. Die SVP schlägt ein Zweierticket vor, und die Grünen kandidieren mit einer eigenen Person gegen dieses Ticket. In der Simulation ist das die erfundene Sara Keller. Die Klasse diskutiert dann auch, ob die Zauberformel gelten soll. Ohne Häkchen geht es nur um das SVP-Ticket und um wilde Kandidaturen. Die Rollenkarten funktionieren in beiden Fällen. Den Steckbrief von Sara Keller brauchen Sie nur mit Häkchen.</p>
     <h3>So entscheidet das Tool beim Auszählen</h3>
     <p>Zuerst prüft das Tool, ob jemand das absolute Mehr erreicht hat (gültige Stimmen ÷ 2, Kommastellen weglassen, plus 1). Wenn ja, ist die Wahl fertig. Wenn nein:</p>
     <table class="plan"><thead><tr><th>Wahlgang</th><th>Neue Namen</th><th>Wer scheidet aus?</th></tr></thead><tbody>
@@ -901,6 +913,7 @@ const GL={
  wild:["Wilde Kandidatur","Eine Person, die nicht auf dem Ticket ihrer Fraktion steht, aber trotzdem Stimmen bekommt oder sogar gewählt wird."],
  aus:["Ausscheiden","Wer ausscheidet, ist nicht mehr im Rennen. Stimmen für diese Person sind danach ungültig."],
  gruene:["Grüne kandidieren","Auch bei der echten Wahl 2026 kandidieren die Grünen mit einer eigenen Person gegen das SVP-Ticket. In unserer Simulation ist das die erfundene Sara Keller. Dann geht es auch um die Frage, ob die SVP nach der Zauberformel ihren zweiten Sitz behalten soll. Ohne Häkchen spielt ihr die Wahl ohne die Grünen."],
+ kurz:["Kurzvariante","Für 2 Lektionen statt 4. Die Kandidierenden haben ihren Steckbrief schon vorher bekommen. Bei den Hearings gibt es nur die Reden, keine Fragerunde. Die Fraktionen beraten 5 statt 10 Minuten und reden nicht miteinander."],
  romandie:["Romandie","Der französischsprachige Teil der Schweiz, zum Beispiel die Kantone Waadt, Genf, Neuenburg und Jura."]};
 const t=(k,txt)=>`<button class="t" data-t="${k}">${txt||GL[k][0]}</button>`;
 const $=s=>document.querySelector(s);
@@ -1198,6 +1211,7 @@ function go(i,atEnd){const from=cur;if(go.ready&&from!==i&&!doneSet.has(from)&&f
  el.querySelectorAll(".pg").forEach(pgEl=>{const body=document.createElement("div");body.className="pgbody";const kids=[...pgEl.children];const h=kids.findIndex(c=>c.tagName==="H2");const start=h>=0?h+1:(kids[0]&&kids[0].classList.contains("kicker")?1:0);kids.slice(start).forEach(c=>body.appendChild(c));pgEl.appendChild(body);});
  ST[cur].init(el);el.querySelectorAll(".fb").forEach(f=>f.setAttribute("aria-live","polite"));restoreInp(el);restoreUi(el);
  $("#stcount").textContent=`Station ${cur+1} von ${ST.length}`;showPg(atEnd===true?npg-1:typeof atEnd==="number"?Math.min(atEnd,npg-1):0);}
+{const sg=document.querySelector(".lpseg");if(sg){const setPl=v=>{sg.querySelectorAll("button").forEach(b=>{const on=b.dataset.plan===v;b.classList.toggle("on",on);b.setAttribute("aria-pressed",on);});document.querySelectorAll("[data-pl]").forEach(d=>d.hidden=d.dataset.pl!==v);store.set("lpplan",v);};sg.querySelectorAll("button").forEach(b=>b.onclick=()=>setPl(b.dataset.plan));setPl(store.get("lpplan","4")||"4");}}
 /* Ansicht im Lernpfad merken (Sortierung, Umschalter, aufgeklappte Zeile) */
 function uiSet(k,v){const u=store.get("ui",{})||{};(u[cur]=u[cur]||{})[k]=v;store.set("ui",u);}
 function restoreUi(el){const u=(store.get("ui",{})||{})[cur];if(!u)return;
@@ -1283,7 +1297,8 @@ function timerHTML(){if(!S.timer&&!S.timerEnd)return "";return `<div class="time
 function fmt(ms){const s=Math.ceil(ms/1000);return `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;}
 function runTimer(){clearInterval(tick);const step=()=>{const el=$("#tm");if(!el||!S.timerEnd){clearInterval(tick);return;}const left=S.timerEnd-Date.now();const tt=el.querySelector(".tt")||el;tt.textContent=fmt(Math.max(0,left));if(left<=0){clearInterval(tick);S.timerEnd=0;S.tleft=0;S.tup=true;saveS();sim();}};step();tick=setInterval(step,250);}
 const IC={play:'<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.6 2.2v11.6l9.8-5.8z" fill="currentColor" stroke="currentColor" stroke-width=".6" stroke-linejoin="round"/></svg>',pause:'<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><rect x="3.4" y="2.2" width="3.4" height="11.6" rx="1" fill="currentColor"/><rect x="9.2" y="2.2" width="3.4" height="11.6" rx="1" fill="currentColor"/></svg>',reset:'<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8a5 5 0 1 0 1.6-3.7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M2.2 1.8v3.6h3.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'};
-const TPRE={1:[["Vorbereitung",5]],2:[["Rede",1],["Fragen",3]],3:[["Sitzung",10],["Gespräche",5]]};
+const TPRE_L={1:[["Vorbereitung",5]],2:[["Rede",1],["Fragen",3]],3:[["Sitzung",10],["Gespräche",5]]},TPRE_K={1:[["Vorbereitung",2]],2:[["Rede",1]],3:[["Sitzung",5]]};
+const TPRE=new Proxy({},{get:(_,k)=>(S&&S.short?TPRE_K:TPRE_L)[k]});
 const timerCtrl=()=>`<div class="tmr"><div class="tmr4">${(TPRE[S.ph]||[]).map(([l,m])=>`<button class="btn ghost${S.timer===m?" on":""}" data-tmin="${m}">${l} ${m} Min.</button>`).join("")}</div><div class="tmr2"><button class="btn" data-tstart>${S.timerEnd?IC.pause+"Pause":IC.play+(S.tleft?"Fortsetzen":"Start")}</button><button class="btn ghost" data-tstop title="Zeit zurückstellen und anhalten">${IC.reset}${fmt(S.timer*60000)}</button></div></div>`;
 function bindTimer(){document.querySelectorAll("[data-tmin]").forEach(b=>b.onclick=()=>{S.timer=+b.dataset.tmin;S.timerEnd=0;S.tleft=0;S.tup=false;saveS();sim();});
  const st=document.querySelector("[data-tstart]");if(st)st.onclick=()=>{S.tup=false;if(S.timerEnd){S.tleft=Math.max(0,S.timerEnd-Date.now());S.timerEnd=0;}else{S.timerEnd=Date.now()+(S.tleft||(S.timer||5)*60000);S.tleft=0;}saveS();sim();};
@@ -1301,7 +1316,7 @@ let VR=(S&&S.vr!=null)?S.vr:null; // angezeigter früherer Wahlgang (Rückblick)
 let SIMMEASURE=false,ZUNI={k:"",z:1};
 const DW=1000; // Tafel wie eine Folie: feste Breite, wird als Ganzes skaliert
 function uniH(B,w){ // höchster Schritt (ausser Wahl-Resultate) bei Breite w
-  const key=[S.N,S.green,S.elected,S.thr,Math.round(w)].join("|");if(ZUNI.k===key)return ZUNI.z;
+  const key=[S.N,S.green,S.short,S.elected,S.thr,Math.round(w)].join("|");if(ZUNI.k===key)return ZUNI.z;
   const tmp=document.createElement("div");tmp.className="bi";tmp.style.cssText=`position:absolute;visibility:hidden;left:0;top:0;zoom:1;width:${w}px`;B.appendChild(tmp);
   const ph=S.ph,nx=NX,mo=modalOpen;let hm=0;SIMMEASURE=true;window.SIMH=[];
   try{for(const i of [0,1,2,3,5,6]){S.ph=i;tmp.innerHTML=sim();const h=tmp.offsetHeight;SIMH.push(i+":"+h);hm=Math.max(hm,h);}}
@@ -1320,16 +1335,16 @@ function sim(){
    NX={t:"Starten →",red:true,to:1};
    c=`<label class="bf">Lernende <input class="num" id="sN" type="number" min="8" max="32" value="${S.N}"></label>
    <label class="bf" ><span class="t" role="button" tabindex="0" data-t="aus">Ausscheiden</span>&nbsp;unter <input class="num" id="sT" type="number" min="1" max="6" value="${S.thr}"> Stimmen</label>
-   <label class="bf"><input type="checkbox" id="sG" ${S.green?"checked":""}> <span class="t" role="button" tabindex="0" data-t="gruene">Grüne kandidieren</span></label>
+   <label class="bf"><input type="checkbox" id="sG" ${S.green?"checked":""}> <span class="t" role="button" tabindex="0" data-t="gruene">Grüne kandidieren</span></label> <label class="bf"><input type="checkbox" id="sK" ${S.short?"checked":""}> <span class="t" role="button" tabindex="0" data-t="kurz">Kurzvariante</span></label>
 `;}
   else if(S.ph===1){b=`<div class="k">EILMELDUNG</div><h2>Bundesrat Guy Parmelin tritt zurück</h2><p>Wie in Wirklichkeit: Guy Parmelin (SVP, Waadt) tritt per Ende Jahr zurück. Die SVP-Fraktion schlägt zwei Personen vor, aber auch andere hoffen. <span style="color:#ff8a80">Unsere Kandidierenden sind erfunden.</span></p>
-   <div class="grid2 cards4" style="margin-top:14px">${cardsOf().map(k=>`<div class="bcard">${face(k.n,56,"fb")}<b>${k.n}</b><span>${k.p} · ${k.kt} · ${k.l}</span><span>${k.ticket?"Offizielles Ticket der SVP":k.p==="SVP"?"Nicht auf dem Ticket":"Kandidatur der Grünen"}</span></div>`).join("")}</div><p style="margin-top:.5em"><b style="color:#fff">Jetzt:</b> Kandidierende bestimmen. Sie bereiten mit dem Steckbrief in 5 Minuten eine Rede von 1 Minute vor. Die Reden halten sie im nächsten Schritt, bei den Hearings.</p>`;
+   <div class="grid2 cards4" style="margin-top:14px">${cardsOf().map(k=>`<div class="bcard">${face(k.n,56,"fb")}<b>${k.n}</b><span>${k.p} · ${k.kt} · ${k.l}</span><span>${k.ticket?"Offizielles Ticket der SVP":k.p==="SVP"?"Nicht auf dem Ticket":"Kandidatur der Grünen"}</span></div>`).join("")}</div><p style="margin-top:.5em"><b style="color:#fff">Jetzt:</b> ${S.short?"Die Kandidierenden haben ihren Steckbrief schon. Sie gehen ihre Rede von 1 Minute in 2 Minuten nochmals durch.":"Kandidierende bestimmen. Sie bereiten mit dem Steckbrief in 5 Minuten eine Rede von 1 Minute vor."} Die Reden halten sie im nächsten Schritt, bei den Hearings.</p>`;
    c=timerCtrl();NX={t:"Weiter →",red:true,to:2};
    }
-  else if(S.ph===2){b=`<div class="k">HEARINGS</div><h2>Die Kandidierenden stellen sich vor</h2><p><b style="color:#fff">Jetzt:</b> Jede Person hält ihre Rede (1 Minute), danach fragen die Fraktionen (3 Minuten).</p><div class="qgrid"><p class="qh"><b style="color:#fff">Mögliche Fragen:</b></p><p>Warum wollen Sie in den Bundesrat?</p><p>Sind Sie bereit, Kompromisse zu machen?</p><p>Wie vertreten Sie die ganze Schweiz, nicht nur Ihre Partei?</p><p>Was tun Sie, wenn der Bundesrat anders entscheidet als Ihre Partei?</p></div>
+  else if(S.ph===2){b=`<div class="k">HEARINGS</div><h2>Die Kandidierenden stellen sich vor</h2><p><b style="color:#fff">Jetzt:</b> Jede Person hält ihre Rede (1 Minute)${S.short?". Danach geht es direkt weiter zu den Fraktionen.":", danach fragen die Fraktionen (3 Minuten)."}</p>${S.short?"":`<div class="qgrid"><p class="qh"><b style="color:#fff">Mögliche Fragen:</b></p><p>Warum wollen Sie in den Bundesrat?</p><p>Sind Sie bereit, Kompromisse zu machen?</p><p>Wie vertreten Sie die ganze Schweiz, nicht nur Ihre Partei?</p><p>Was tun Sie, wenn der Bundesrat anders entscheidet als Ihre Partei?</p></div>`}
    <div class="grid2 cards4" style="margin-top:8px">${cardsOf().map(k=>`<div class="bcard">${face(k.n,56,"fb")}<b>${k.n}</b><span>${k.role}, ${k.a} J.</span><span>${k.trait}</span></div>`).join("")}</div>`;
    c=timerCtrl();NX={t:"Weiter →",red:true,to:3};}
-  else if(S.ph===3){b=`<div class="k">FRAKTIONSSITZUNG</div><h2>Die Fraktionen beraten</h2><p><b style="color:#fff">Jetzt:</b> Jede Fraktion trifft sich 10 Minuten und klärt drei Fragen:</p><p>1. Wen unterstützen wir im 1. Wahlgang?</p><p>2. Was machen wir, wenn unsere Person ausscheidet?</p><p>3. Mit welcher anderen Fraktion reden wir?</p><p style="color:#ff8a80">Danach: 5 Minuten Gespräche zwischen den Fraktionen. Dann beginnt die Wahl.</p>`;
+  else if(S.ph===3){b=`<div class="k">FRAKTIONSSITZUNG</div><h2>Die Fraktionen beraten</h2><p><b style="color:#fff">Jetzt:</b> Jede Fraktion trifft sich ${S.short?5:10} Minuten und klärt ${S.short?"zwei":"drei"} Fragen:</p><p>1. Wen unterstützen wir im 1. Wahlgang?</p><p>2. Was machen wir, wenn unsere Person ausscheidet?</p>${S.short?`<p style="color:#ff8a80">Dann beginnt die Wahl.</p>`:`<p>3. Mit welcher anderen Fraktion reden wir?</p><p style="color:#ff8a80">Danach: 5 Minuten Gespräche zwischen den Fraktionen. Dann beginnt die Wahl.</p>`}`;
    c=timerCtrl();NX={t:"Weiter →",red:true,to:4};}
   else if(S.ph===4){[b,c,m]=wahl(beamBtn);}
   else if(S.ph===5){const e=S.elected,last=S.rounds[S.rounds.length-1];
@@ -1393,7 +1408,7 @@ function bindSim(){
   const sn=q("#snext");if(sn)sn.onclick=()=>{S.ph=NX.to;S.timerEnd=0;modalOpen=false;saveS();sim();};
   document.querySelectorAll("[data-goto]").forEach(b=>b.onclick=()=>{S.ph=+b.dataset.goto;saveS();sim();});
   const rs=q("#reset");if(rs)rs.onclick=()=>{if(rs.dataset.sure){S=SIM0();saveS();sim();}else{rs.dataset.sure=1;rs.textContent="Wirklich? Nochmals klicken";}};
-  if(S.ph===0){q("#sN").onchange=e=>{S.N=Math.max(8,Math.min(32,+e.target.value||18));saveS();sim();};q("#sT").onchange=e=>{S.thr=Math.max(1,Math.min(6,+e.target.value||2));saveS();};q("#sG").onchange=e=>{S.green=e.target.checked;saveS();sim();};}
+  if(S.ph===0){q("#sN").onchange=e=>{S.N=Math.max(8,Math.min(32,+e.target.value||18));saveS();sim();};q("#sT").onchange=e=>{S.thr=Math.max(1,Math.min(6,+e.target.value||2));saveS();};q("#sG").onchange=e=>{S.green=e.target.checked;saveS();sim();};q("#sK").onchange=e=>{S.short=e.target.checked;S.tph=-1;saveS();sim();};}
   bindTimer();
   if(S.ph===4){
    const nw=q("#newr");if(nw)nw.onclick=()=>{S.draft=newDraft();modalOpen=false;saveS();sim();};
